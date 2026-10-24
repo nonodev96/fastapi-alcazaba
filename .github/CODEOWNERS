@@ -1,6 +1,2 @@
-# Reviewers requested automatically for each pull request. Replace OWNER with the maintainer's
-# GitHub user when the repository is created, and uncomment:
-# * @OWNER
-# /.github/ @OWNER
-# /fastapi_alcazaba/integrity.py @OWNER
-# /fastapi_alcazaba/encryption.py @OWNER
+# Reviewers requested automatically for each pull request.
+* @nonodev96

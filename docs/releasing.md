@@ -2,27 +2,20 @@
 
 Alcazaba is released from GitHub Actions: a `vX.Y.Z` tag builds the distributions, generates the
 SBOM, signs everything with Sigstore (no keys to keep), publishes to TestPyPI, checks that
-version installs, and publishes to PyPI after a manual approval. `OWNER` below is your GitHub
-user.
+version installs, and publishes to PyPI after a manual approval. The repository is
+[nonodev96/fastapi-alcazaba](https://github.com/nonodev96/fastapi-alcazaba).
 
 ## One-time setup
 
 ### 1. Repository
 
 ```shell
-git remote add origin git@github.com:OWNER/fastapi-alcazaba.git
+git remote add origin git@github.com:nonodev96/fastapi-alcazaba.git
 git push -u origin main
 ```
 
 The repository has a history of its own (the original one stays upstream), so no upstream tag
-can trigger a release. Then add the URLs to `pyproject.toml`:
-
-```toml
-[project.urls]
-Homepage = "https://github.com/OWNER/fastapi-alcazaba"
-Documentation = "https://OWNER.github.io/fastapi-alcazaba/"
-Changelog = "https://github.com/OWNER/fastapi-alcazaba/blob/main/CHANGELOG.md"
-```
+can trigger a release. The project URLs in `pyproject.toml` already point to it.
 
 ### 2. Repository settings
 
@@ -52,7 +45,7 @@ on [TestPyPI](https://test.pypi.org/manage/account/publishing/) and on
 | Field | TestPyPI | PyPI |
 | --- | --- | --- |
 | PyPI project name | `fastapi-alcazaba` | `fastapi-alcazaba` |
-| Owner | `OWNER` | `OWNER` |
+| Owner | `nonodev96` | `nonodev96` |
 | Repository | `fastapi-alcazaba` | `fastapi-alcazaba` |
 | Workflow | `release.yml` | `release.yml` |
 | Environment | `testpypi` | `pypi` |

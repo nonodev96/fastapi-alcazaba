@@ -8,7 +8,7 @@ problems, don't open an issue: follow [SECURITY.md](SECURITY.md).
 You need [uv](https://docs.astral.sh/uv/) and, for the integration tests, Docker.
 
 ```shell
-git clone https://github.com/OWNER/fastapi-alcazaba && cd fastapi-alcazaba
+git clone https://github.com/nonodev96/fastapi-alcazaba && cd fastapi-alcazaba
 uv sync --all-extras
 uvx pre-commit install --install-hooks -t pre-commit -t pre-push
 ```

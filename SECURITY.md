@@ -7,7 +7,7 @@ Only the latest release of fastapi-alcazaba gets security fixes.
 ## Reporting a vulnerability
 
 Please don't open a public issue. Report it privately through GitHub's
-[security advisories](../../security/advisories/new) for this repository, with:
+[security advisories](https://github.com/nonodev96/fastapi-alcazaba/security/advisories/new) for this repository, with:
 
 - the affected version and backend,
 - how to reproduce it (a minimal app is ideal),

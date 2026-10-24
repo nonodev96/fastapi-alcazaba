@@ -11,7 +11,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
 authors = [{ name = "long2ice and the fastapi-cache contributors" }]
-maintainers = [{ name = "Antonio Mudarra Machuca" }]
+maintainers = [{ name = "Antonio Mudarra Machuca", email = "nonodev96@gmail.com" }]
 keywords = ["fastapi", "cache", "caching", "redis", "valkey", "security"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -46,6 +46,11 @@ dynamodb = ["aiobotocore>=2.13.1"]
 all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd]"]
 
 [project.urls]
+Homepage = "https://github.com/nonodev96/fastapi-alcazaba"
+Documentation = "https://nonodev96.github.io/fastapi-alcazaba/"
+Repository = "https://github.com/nonodev96/fastapi-alcazaba"
+Issues = "https://github.com/nonodev96/fastapi-alcazaba/issues"
+Changelog = "https://github.com/nonodev96/fastapi-alcazaba/blob/main/CHANGELOG.md"
 "Upstream project" = "https://github.com/long2ice/fastapi-cache"
 
 [dependency-groups]
