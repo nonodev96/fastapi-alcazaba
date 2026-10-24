@@ -78,7 +78,9 @@ No API token is created or stored anywhere: the workflow proves its identity wit
        notes of that version from the changelog;
     8. the *Docs* workflow publishes the site.
 
-Pre-releases (`vX.Y.ZrcN`, `aN`, `bN`) stop after TestPyPI and become GitHub pre-releases.
+Pre-releases (`vX.Y.ZrcN`, `aN`, `bN`) stop after TestPyPI and become GitHub pre-releases. They
+take the changelog section of the version they lead to (`v0.1.0rc1` → `## [0.1.0]`), which can
+still say `Unreleased`: a first rc tries the whole pipeline without spending the version.
 
 ## If something goes wrong
 
