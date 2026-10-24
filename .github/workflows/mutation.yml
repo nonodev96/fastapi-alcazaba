@@ -1,0 +1,44 @@
+name: Mutation testing
+
+# mutmut changes the code (a < for a <=, a removed argument...) and checks that some unit test
+# fails. Weekly and on demand: a full run takes a while. It doesn't block anything; the score and
+# the surviving mutants are in the job summary and the artifact.
+on:
+  schedule:
+    - cron: "41 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutmut:
+    name: mutmut
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: true
+      - run: uv sync --locked --all-extras
+      - run: uv run mutmut run --max-children "$(nproc)"
+      - name: Score
+        run: |
+          uv run mutmut export-cicd-stats
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          stats = json.load(open("mutants/mutmut-cicd-stats.json"))
+          killed, survived = stats["killed"], stats["survived"]
+          print(f"## Mutation score: {killed / max(killed + survived, 1):.0%}")
+          print(f"{killed} killed, {survived} survived, {stats['timeout']} timed out")
+          PY
+          uv run mutmut results > mutants/surviving.txt || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-testing
+          path: |
+            mutants/mutmut-cicd-stats.json
+            mutants/surviving.txt

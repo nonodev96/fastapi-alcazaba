@@ -1,0 +1,57 @@
+site_name: Alcazaba
+site_description: A secure, maintained response cache for FastAPI
+# Set by the docs workflow from the repository it runs in.
+site_url: !ENV [SITE_URL, ""]
+repo_url: !ENV [REPO_URL, ""]
+edit_uri: ""
+copyright: Apache License 2.0 · a fork of fastapi-cache by long2ice and its contributors
+strict: true
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/weather-sunny, name: Light mode}
+
+nav:
+  - Home: index.md
+  - Deployment and releases: releasing.md
+  - Verifying releases: verifying.md
+  - Security policy: security.md
+  - API reference: reference.md
+  - Upstream pull requests: upstream.md
+  - Changelog: changelog.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc: {permalink: true}
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.snippets: {check_paths: true}
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: sphinx
+            show_source: false
+            show_root_heading: true
+            members_order: source
+            filters: ["!^_"]
+
+validation:
+  links:
+    not_found: warn
+    unrecognized_links: ignore

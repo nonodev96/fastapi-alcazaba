@@ -1,0 +1,155 @@
+[build-system]
+requires = ["hatchling>=1.27", "hatch-vcs>=0.5"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastapi-alcazaba"
+dynamic = ["version"]
+description = "Secure, maintained response cache for FastAPI (a fork of fastapi-cache2)"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+authors = [{ name = "long2ice and the fastapi-cache contributors" }]
+maintainers = [{ name = "Antonio Mudarra Machuca" }]
+keywords = ["fastapi", "cache", "caching", "redis", "valkey", "security"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Typing :: Typed",
+]
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.7",
+    "typing-extensions>=4.10",
+]
+
+[project.optional-dependencies]
+redis = ["redis>=5.0.8"]
+valkey = ["valkey>=6.0"]
+glide = ["valkey-glide>=2.5"]
+otel = ["opentelemetry-api>=1.27"]
+crypto = ["cryptography>=44"]
+# zstd is in the standard library from Python 3.14.
+zstd = ["backports.zstd>=1.0; python_version < '3.14'"]
+memcache = ["aiomcache>=0.8.2"]
+dynamodb = ["aiobotocore>=2.13.1"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd]"]
+
+[project.urls]
+"Upstream project" = "https://github.com/long2ice/fastapi-cache"
+
+[dependency-groups]
+dev = [
+    "coverage[toml]>=7.6",
+    "cyclonedx-python-lib[json-validation]>=11.12",
+    "fakeredis[lua]>=2.26",
+    "hypothesis>=6.100",
+    "httpx2>=2.0",
+    "jinja2>=3.1",
+    "mypy>=1.13",
+    "mutmut>=3.7",
+    "opentelemetry-sdk>=1.27",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-benchmark>=5.1",
+    "pytest-randomly>=4.1",
+    "ruff>=0.8",
+    "types-aiobotocore[dynamodb]>=2.13",
+    "uvicorn>=0.30",
+]
+
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.6",
+    "mkdocstrings-python>=1.16",
+]
+
+[tool.uv]
+# Don't resolve releases younger than three days: compromised versions are usually pulled sooner,
+# and the PyPI CDN of the CI may not serve them yet.
+exclude-newer = "3 days"
+
+# The version comes from the Git tag (vX.Y.Z); between tags it's a .devN version.
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fastapi_alcazaba"]
+
+[tool.hatch.build.targets.sdist]
+include = ["fastapi_alcazaba", "tests", "examples", "README.md", "CHANGELOG.md", "SECURITY.md", "UPSTREAM.md", "LICENSE", "NOTICE"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "S",   # flake8-bandit
+    "W",   # pycodestyle warnings
+    "UP",  # pyupgrade
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["examples", "fastapi_alcazaba"]
+
+[tool.mypy]
+files = ["fastapi_alcazaba", "tests", "scripts"]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["aiomcache.*", "fakeredis.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# Suites: tests/unit (default), tests/integration and tests/e2e (need servers, skipped
+# otherwise), tests/benchmarks (only with --benchmark-only) and tests/typing (checked by mypy).
+addopts = "--benchmark-skip"
+markers = [
+    "integration: needs real servers (REDIS_URL, VALKEY_URL, CLUSTER_URL, MEMCACHED_URL, DYNAMODB_URL)",
+    "e2e: runs the example app in uvicorn processes against a real Valkey (VALKEY_URL)",
+    "benchmark: performance measurements (pytest-benchmark)",
+    "cache_options: keyword arguments for FastAPICache.init() in test_decorator",
+]
+filterwarnings = [
+    "error",
+    # valkey-glide's deprecated module aliases warn when hypothesis' plugin walks sys.modules.
+    "ignore:Importing from 'glide.:DeprecationWarning",
+]
+
+[tool.mutmut]
+# Mutation testing (make mutation): mutmut changes the code and checks that some test fails.
+source_paths = ["fastapi_alcazaba/"]
+also_copy = ["examples/", "tests/"]
+pytest_add_cli_args = ["-q", "-p", "no:cacheprovider", "-x"]
+pytest_add_cli_args_test_selection = ["tests/unit/", "tests/typing/"]
+
+[tool.coverage.run]
+branch = true
+source = ["fastapi_alcazaba"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]

@@ -1,0 +1,37 @@
+name: Bug report
+description: Something doesn't work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems (another user's data served, entries that can be forged, code run from
+        the backend...) go through a private security advisory, not here: see SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal example to reproduce it
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: fastapi-alcazaba, Python, FastAPI, Pydantic
+      placeholder: fastapi-alcazaba 0.1.0, Python 3.13, FastAPI 0.162, Pydantic 2.14
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options: [InMemory, Redis, Valkey (valkey-py), Valkey GLIDE, Memcached, DynamoDB, Tiered, Other]
+    validations:
+      required: true

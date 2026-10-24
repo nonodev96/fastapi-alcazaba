@@ -1,0 +1,53 @@
+# Install once with: uvx pre-commit install --install-hooks -t pre-commit -t pre-push
+# The Python tools run from the project environment (uv.lock), so they match CI exactly.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+        args: [--unsafe] # mkdocs.yml uses !ENV tags
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+        require_serial: true
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, markdown]
+        require_serial: true
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: uv-lock
+        name: uv.lock in sync with pyproject.toml
+        entry: uv lock --check
+        language: system
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+      - id: workflows
+        name: zizmor and actionlint
+        entry: bash -c 'uvx zizmor --offline .github/workflows/ && uvx --from actionlint-py --with shellcheck-py actionlint'
+        language: system
+        files: ^\.github/workflows/
+        pass_filenames: false
+      - id: unit-tests
+        name: unit tests
+        entry: uv run pytest -q tests/unit tests/typing
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

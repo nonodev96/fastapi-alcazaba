@@ -1,0 +1,19 @@
+name: Feature request
+description: An idea to make Alcazaba better
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What do you propose?
+  - type: textarea
+    id: security
+    attributes:
+      label: Security impact
+      description: Could it serve one user's data to another, trust data from the backend, or let clients bypass the cache?

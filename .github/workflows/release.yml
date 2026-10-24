@@ -1,0 +1,231 @@
+name: Release
+
+# A vX.Y.Z tag on main: test, build, SBOM, sign (Sigstore, no keys), TestPyPI, check what TestPyPI
+# serves, PyPI after a manual approval (environment "pypi"), GitHub release. No caches anywhere:
+# what this builds is published. Pre-releases (rcN, aN, bN) stop after TestPyPI.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify the tag and test
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:8
+        ports: ["6379:6379"]
+      valkey:
+        image: valkey/valkey:8
+        ports: ["6380:6379"]
+    env:
+      REDIS_URL: redis://localhost:6379/15
+      VALKEY_URL: valkey://localhost:6380/15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check the tag
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?$'; then
+            echo "::error::$TAG is not a release version (vX.Y.Z or vX.Y.ZrcN)"; exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$TAG doesn't point to a commit on main"; exit 1
+          fi
+          if ! grep -q "^## \[$version\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no section for $version"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if echo "$version" | grep -Eq '(a|b|rc)[0-9]+$'; then prerelease=true; else prerelease=false; fi
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+      - run: uv sync --locked --all-extras
+      - run: uv run ruff check .
+      - run: uv run mypy
+      - run: uv run pytest tests/unit tests/integration tests/typing
+
+  build:
+    name: Build, SBOM and signatures
+    needs: [verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Sigstore
+      attestations: write
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+      - name: Build
+        run: |
+          # Timestamps from the commit: the same tag always gives the same files.
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          export SOURCE_DATE_EPOCH
+          uv build
+          built="$(basename dist/*.whl | cut -d- -f2)"
+          if [ "$built" != "$VERSION" ]; then
+            echo "::error::built $built but the tag says $VERSION"; exit 1
+          fi
+      - run: uvx twine@7.0.0 check --strict dist/*
+      - run: uvx check-wheel-contents@0.6.3 dist/*.whl
+      - name: Smoke test of the installed wheel
+        run: uv run --isolated --no-project --with dist/*.whl python -I scripts/smoke_test.py --version "$VERSION"
+      - name: SBOM (CycloneDX)
+        run: |
+          # The components come from `uv export --no-dev`; the environment only provides licences.
+          uv sync --frozen --all-extras
+          uv run --no-sync python scripts/sbom.py --version "$VERSION" -o "sbom/fastapi-alcazaba-$VERSION.cdx.json"
+      - name: Attest the build provenance (SLSA)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
+      - name: Attest the SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: dist/*
+          sbom-path: sbom/fastapi-alcazaba-${{ needs.verify.outputs.version }}.cdx.json
+      # Signed copies apart: the .sigstore.json bundles must not end up in dist/ (uploaded to PyPI).
+      - run: mkdir release && cp dist/* sbom/* release/
+      - name: Sign with Sigstore
+        uses: sigstore/gh-action-sigstore-python@790bc6befb9d733738f18d8f895854b453640ec9 # v3.5.0
+        with:
+          inputs: release/*
+          verify: true
+          verify-cert-identity: ${{ github.server_url }}/${{ github.workflow_ref }}
+          verify-oidc-issuer: https://token.actions.githubusercontent.com
+          release-signing-artifacts: false
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: release/
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: [build]
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/fastapi-alcazaba/
+    permissions:
+      id-token: write # trusted publishing and PEP 740 attestations
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  check-testpypi:
+    name: Install from TestPyPI
+    needs: [verify, publish-testpypi]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+      - name: Download our wheel from TestPyPI
+        run: |
+          # Only our file comes from TestPyPI (anyone can upload anything there); the dependencies
+          # come from PyPI when the wheel is installed. TestPyPI may take a moment to serve it.
+          for _ in 1 2 3 4 5 6; do
+            uvx pip@26.2.2 download --no-deps --only-binary :all: --dest testpypi \
+              --index-url https://test.pypi.org/simple/ "fastapi-alcazaba==$VERSION" && break
+            sleep 20
+          done
+          cmp testpypi/*.whl dist/*.whl
+      - name: Smoke test of what TestPyPI serves
+        run: uv run --isolated --no-project --with testpypi/*.whl python -I scripts/smoke_test.py --version "$VERSION"
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [verify, check-testpypi]
+    if: needs.verify.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi # requires your approval
+      url: https://pypi.org/project/fastapi-alcazaba/
+    permissions:
+      id-token: write # trusted publishing and PEP 740 attestations
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+
+  github-release:
+    name: GitHub release
+    needs: [verify, check-testpypi, publish-pypi]
+    if: >-
+      !cancelled() && needs.check-testpypi.result == 'success' &&
+      (needs.publish-pypi.result == 'success' || needs.verify.outputs.prerelease == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-assets
+          path: release/
+      - name: Notes from the changelog
+        run: |
+          awk -v version="$VERSION" '
+            index($0, "## [" version "]") == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          printf '\nVerify these files as explained in docs/verifying.md.\n' >> notes.md
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" release/* --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "$TAG" --notes-file notes.md "${flags[@]}"
