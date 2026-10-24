@@ -32,7 +32,7 @@ And more: invalidation by tag, early refresh of popular entries, OpenTelemetry m
 through valkey-py or Valkey GLIDE, and the fixes that waited in upstream pull requests: cache hits
 returning Pydantic models again (not dicts), deterministic `ETag`s, the response model back in
 OpenAPI, `exclude_params`, `stale-while-revalidate`, Starlette 1.x without jinja2… See
-[UPSTREAM.md](UPSTREAM.md) for what happened to every upstream pull request.
+[UPSTREAM.md](https://github.com/nonodev96/fastapi-alcazaba/blob/main/UPSTREAM.md) for what happened to every upstream pull request.
 
 ## Install
 
@@ -289,7 +289,7 @@ or a user would get the cached response in another user's language.
 - **Fail open:** if the backend is down or an entry can't be decoded, the endpoint runs as if
   there were no cache.
 
-Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+Report vulnerabilities as described in [SECURITY.md](https://github.com/nonodev96/fastapi-alcazaba/blob/main/SECURITY.md).
 
 ## Encrypted entries
 
@@ -483,10 +483,10 @@ make lint                     # ruff, ruff format --check, mypy --strict
 
 Tests run in a random order (pytest-randomly; the seed is printed to reproduce a failure), and CI
 fails a pull request whose benchmarks are more than 50 % slower than main's. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](https://github.com/nonodev96/fastapi-alcazaba/blob/main/CONTRIBUTING.md).
 
 ## License and credits
 
 Apache License 2.0. Alcazaba is a fork of fastapi-cache by long2ice and its contributors; see
-[NOTICE](NOTICE). The name comes from the Andalusian fortresses — a cache that guards your
+[NOTICE](https://github.com/nonodev96/fastapi-alcazaba/blob/main/NOTICE). The name comes from the Andalusian fortresses — a cache that guards your
 endpoints.
