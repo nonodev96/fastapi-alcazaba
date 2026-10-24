@@ -164,19 +164,23 @@ jobs:
       - run: uv sync --locked --all-extras
       - run: uv run pytest tests/benchmarks --benchmark-only --benchmark-json=benchmarks.json
       # The last results of main, saved in the Actions cache (pull requests can read the base
-      # branch's caches): a regression of more than 50 % fails the job. No write permission needed.
+      # branch's caches). No write permission needed.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: benchmark-history
           key: benchmarks-${{ github.sha }}
           restore-keys: benchmarks-
-      - uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
+      # A benchmark more than 50 % slower than the others fails the job. The runner's speed
+      # changes between runs, so absolute numbers only go to the summary below.
+      - run: uv run python scripts/bench_gate.py benchmarks.json benchmark-history/data.json
+      - if: ${{ !cancelled() }}
+        uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
         with:
           tool: pytest
           output-file-path: benchmarks.json
           external-data-json-path: benchmark-history/data.json
           alert-threshold: "150%"
-          fail-on-alert: true
+          fail-on-alert: false
           summary-always: true
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

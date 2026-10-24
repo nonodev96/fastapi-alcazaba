@@ -482,7 +482,8 @@ make lint                     # ruff, ruff format --check, mypy --strict
 ```
 
 Tests run in a random order (pytest-randomly; the seed is printed to reproduce a failure), and CI
-fails a pull request whose benchmarks are more than 50 % slower than main's. See
+fails a pull request with a benchmark more than 50 % slower than main's, compared with the others
+so the speed of the runner doesn't count. See
 [CONTRIBUTING.md](https://github.com/nonodev96/fastapi-alcazaba/blob/main/CONTRIBUTING.md).
 
 ## License and credits
