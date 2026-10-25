@@ -8,14 +8,16 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 from pytest_benchmark.fixture import BenchmarkFixture
+from starlette.requests import Request
 
-from fastapi_alcazaba import FastAPICache
+from fastapi_alcazaba import Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.coder import JsonCoder
 from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.encryption import Encrypter
 from fastapi_alcazaba.integrity import Signer
 from fastapi_alcazaba.key_builder import default_key_builder
+from fastapi_alcazaba.limiter import FastAPIRateLimiter
 
 
 class Item(BaseModel):
@@ -107,3 +109,10 @@ def test_encrypt_and_decrypt(benchmark: BenchmarkFixture) -> None:
         return encrypter.open("key", encrypter.seal("key", payload))
 
     assert benchmark(round_trip) == payload
+
+
+def test_rate_limiter_hit(benchmark: BenchmarkFixture, loop: asyncio.AbstractEventLoop) -> None:
+    """A request within the limit, with the in-memory backend: the limiter's own work."""
+    limiter = FastAPIRateLimiter(times=10**9, minutes=1, cache=Cache(InMemoryBackend()))
+    request = Request({"type": "http", "path": "/search", "client": ("192.0.2.1", 1234)})
+    assert benchmark(lambda: loop.run_until_complete(limiter.hit(request))) is None

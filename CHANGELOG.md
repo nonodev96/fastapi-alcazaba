@@ -7,6 +7,104 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Rate limiting: `FastAPIRateLimiter` (`fastapi_alcazaba.limiter`), a FastAPI dependency that lets
+  each client make `times` requests per sliding window to a route, with a 429 and `Retry-After`
+  beyond. The counters live in the cache's backend, shared by every process, behind its timeout
+  and circuit breaker (`fail_open`). A port of fastapi-limiter without its weaknesses: clients are
+  told apart by the address the ASGI server reports, not by `X-Forwarded-For` (which any client
+  can set), and IPv6 addresses by their /64 network (`client_network` for other sizes); the
+  budget is per route, not per URL (`/items/1`, `/items/2`… had one each); requests over the
+  limit don't count, checked and counted atomically. `name` shares a budget across routes, `cost`
+  makes a route take more of it, `identifier` counts per user, and `hit()` limits anything else
+  (WebSocket messages, login attempts). Responses carry the `RateLimit` and `RateLimit-Policy`
+  headers of the IETF draft. Each process refuses a client with nothing left without asking the
+  backend until something fits again.
+- Counters in every backend, for the rate limiter: `Backend.incr`, `Backend.get_counter`,
+  `Backend.incr_window` (a Lua script on Redis, Valkey and GLIDE, a conditional write on
+  DynamoDB) and `Backend.supports_counters`.
+- The `fastapi_alcazaba.rate_limit` metric.
+- `get_cache` works in WebSocket routes.
+- Pagination without another library (`fastapi_alcazaba.pagination`): `FastAPIPagination` (page
+  and size), `FastAPIPaginationLimitOffset` and `FastAPIPaginationCursor`, each configured once
+  with its limits and used as a dependency that checks the query parameters, and with a
+  `paginate` for a whole list or a page already queried. `Page` and `LimitOffsetPage` have the
+  JSON of fastapi-pagination's. Cursors are keyset pagination on a unique sort key that keeps its
+  types (datetimes, UUIDs, decimals…), optionally signed (HMAC-SHA256, rotation), with a 400 for
+  invalid ones. The page parameters are arguments of the endpoint, so `@cache` keeps each page
+  under its own key. An example (`examples/pagination`): a catalogue cached page by page, whole,
+  or by cursor.
+- Locks shared by every process: `Cache.lock()` / `FastAPICache.lock()` (`fastapi_alcazaba.locks`),
+  with an expiry, renewal while held, a random token per holder, waiting (`wait`) and
+  `LockNotAcquired`. `InMemoryBackend` (within the process) and `DynamoBackend` (conditional
+  writes) can now hold locks, and backends gain `extend_lock`.
+- Idempotency keys: `IdempotencyMiddleware` and `require_idempotency_key`
+  (`fastapi_alcazaba.idempotency`, draft-ietf-httpapi-idempotency-key-header). A retried POST or
+  PATCH gets the first response (`Idempotent-Replayed: true`) and runs once; a retry while it
+  runs gets a 409, the same key for another request a 422. Keys are per client (`Authorization`
+  by default), responses are stored signed or encrypted, and a failing backend answers 503 unless
+  `fail_open=True`.
+- Revoked tokens and one-time codes (`fastapi_alcazaba.tokens`): `TokenBlocklist` keeps revoked
+  JWTs (`revoke`, by `jti`) and subjects logged out everywhere (`revoke_subject`) in the cache's
+  backend until the tokens would have expired, and refuses them when the backend fails unless
+  `fail_open=True`. `OneTimeCodes` issues e-mail or SMS codes, stored as HMACs with a secret,
+  with an expiry, a limit of guesses and single use that holds under concurrent requests.
+- Outbound calls: `ResilientTransport` (`fastapi_alcazaba.outbound`), an httpx2/httpx transport
+  that gives each call a deadline for the whole response (httpx's timeouts are per phase, so a
+  server that trickles bytes kept a request open forever) and a circuit breaker per origin
+  (`CircuitOpenError`, an `httpx.TransportError`). 5xx responses count as failures
+  (`failure_statuses`), the caller's own errors (an illegal header, an unsupported scheme) don't.
+  `max_response_size` caps the bytes read (`ResponseTooLargeError`).
+- `SecurityHeadersMiddleware` and `BodySizeLimitMiddleware` (`fastapi_alcazaba.middleware`): the
+  OWASP REST security headers on every response (HSTS only over HTTPS, a strict CSP for
+  everything but HTML), and a 413 for request bodies over a size limit, checked from
+  `Content-Length` and counted for chunked bodies.
+- Health checks: `health_router()` (`fastapi_alcazaba.health`) adds `/health/live` (the process
+  answers) and `/health/ready` (the app's checks run concurrently with timeouts: 200 `ok` or
+  `degraded`, 503 `fail`), with a non-critical check of the cache's backend. Errors are logged,
+  never returned, and concurrent probes share one run, reused for `reuse_for` seconds.
+- Scheduled jobs: `FastAPIScheduler` (`fastapi_alcazaba.scheduler`) runs async or sync jobs
+  every N seconds (`every`) or by a cron expression in a time zone (`cron`, with its own parser:
+  ranges, steps, names, `@daily`…; clock changes handled as cronie does), in every process and
+  each tick once across them: ticks are claimed with an atomic counter in the backend, and a lock
+  held while a job runs keeps long runs from overlapping elsewhere (`exclusive=False` runs a job
+  everywhere). Errors are logged and counted without stopping the schedule, a failing backend
+  skips the tick unless `fail_open=True`, and `lifespan` / `async with` start and stop it with a
+  `grace` period for running jobs.
+- Circuit breakers: `FastAPIBreaker` (`fastapi_alcazaba.breaker`) for any dependency, as a
+  decorator of async or sync functions or around a block (`attempt()`), with a `timeout` for
+  async calls, `failures` and `exclude` to say what counts, and `BreakerOpen`, an
+  `HTTPException` that FastAPI answers with a 503 and `Retry-After`.
+- The `fastapi_alcazaba.breaker.calls`, `fastapi_alcazaba.breaker.transitions` and
+  `fastapi_alcazaba.scheduler.runs` metrics.
+- Locks, rate-limit counters, revoked tokens, one-time codes and idempotency records live under
+  `{prefix}!` (`Cache.state_key`), apart from the cached responses: `clear()` never frees a held
+  lock, resets a limit or takes a revocation back, and `InMemoryBackend` gives them a store of
+  their own that caching responses never evicts.
+- `Backend.invalidate_tags_with_keys`: an invalidation that also tells which keys it deleted.
+
+### Changed
+
+- `CircuitBreaker.allow()` returns the state the call goes through in (`"closed"`, or
+  `"half-open"` for the single trial) or None when it's refused, instead of a bool; truthiness is
+  the same.
+
+### Fixed
+
+- `TieredBackend`: a tag invalidation didn't reach the copies of processes that had only read the
+  entry (they never saw its tags), not even in the process that invalidated, so they kept serving
+  it for up to `local_ttl`. Invalidations now name the keys they deleted.
+- `TieredBackend`: a value read from the shared backend, or written to it, while an invalidation
+  arrived could be kept as the local copy although it was already the old one.
+- The circuit breaker let a second trial through while the first one ran, when a call that wasn't
+  the trial was cancelled.
+- `TieredBackend` with a client that has a `socket_timeout`: the subscription to the invalidation
+  channel ended every time the channel was quiet for that long, emptying the local level and
+  logging a warning each time. The channel is now read with its own timeout and pinged when quiet;
+  a connection that died silently is given up within 10 seconds, and a reconnection made by the
+  client itself empties the local level (messages may have been missed).
+
 ## [0.1.0] - 2026-10-24
 
 First release of Alcazaba, forked from fastapi-cache2 0.2.2. The "Migrating from fastapi-cache2"

@@ -5,14 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "fastapi-alcazaba"
 dynamic = ["version"]
-description = "Secure, maintained response cache for FastAPI (a fork of fastapi-cache2)"
+description = "Secure, maintained tools for FastAPI: response cache, rate limiter and more (started as a fork of fastapi-cache2)"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
 authors = [{ name = "long2ice and the fastapi-cache contributors" }]
 maintainers = [{ name = "Antonio Mudarra Machuca", email = "nonodev96@gmail.com" }]
-keywords = ["fastapi", "cache", "caching", "redis", "valkey", "security"]
+keywords = ["fastapi", "toolkit", "cache", "caching", "rate-limiting", "pagination", "scheduler", "cron", "circuit-breaker", "redis", "valkey", "security"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: FastAPI",

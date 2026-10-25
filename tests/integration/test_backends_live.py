@@ -12,15 +12,22 @@ import asyncio
 import os
 import uuid
 from collections.abc import AsyncIterator
+from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
+import httpx2 as httpx
 import pytest
+from fastapi import FastAPI
+from starlette.requests import Request
 
-from fastapi_alcazaba import FastAPICache
+from fastapi_alcazaba import Cache, FastAPICache, FastAPIScheduler
 from fastapi_alcazaba.compression import Codec
 from fastapi_alcazaba.decorator import cache
+from fastapi_alcazaba.idempotency import IdempotencyMiddleware
 from fastapi_alcazaba.key_builder import default_key_builder
+from fastapi_alcazaba.limiter import FastAPIRateLimiter
+from fastapi_alcazaba.tokens import OneTimeCodes, TokenBlocklist
 from fastapi_alcazaba.types import Backend
 
 pytestmark = pytest.mark.integration
@@ -206,6 +213,97 @@ async def test_locks(backend: Backend, prefix: str) -> None:
     await backend.release_lock(lock, "mine")
 
 
+async def test_extend_lock(backend: Backend, prefix: str) -> None:
+    if not backend.supports_locks:
+        pytest.skip("no locks")
+    lock = f"{prefix}:lock:{{x}}"
+    assert await backend.acquire_lock(lock, "mine", 0.5)
+    assert await backend.extend_lock(lock, "mine", 5)
+    assert not await backend.extend_lock(lock, "theirs", 5)
+    await asyncio.sleep(0.8)
+    assert not await backend.acquire_lock(lock, "theirs", 5)  # extended
+    await backend.release_lock(lock, "mine")
+    assert await backend.acquire_lock(lock, "theirs", 0.05)
+    await asyncio.sleep(0.2)
+    assert not await backend.extend_lock(lock, "theirs", 5)  # expired
+
+
+async def test_cache_lock(backend: Backend, prefix: str) -> None:
+    """Renewed while held: it outlives its ttl, and only one of many contenders gets it."""
+    if not backend.supports_locks:
+        pytest.skip("no locks")
+    cache = Cache(backend, prefix=prefix)
+    async with cache.lock("job", ttl=1) as lock:
+        await asyncio.sleep(1.5)
+        assert lock.held
+        assert not await cache.lock("job").acquire()
+    contenders = [cache.lock("race") for _ in range(10)]
+    assert sum(await asyncio.gather(*(c.acquire() for c in contenders))) == 1
+    for contender in contenders:
+        await contender.release()
+
+
+async def test_one_time_codes(backend: Backend, prefix: str) -> None:
+    """Of several requests with the right code at the same time, exactly one succeeds."""
+    codes = OneTimeCodes("s" * 32, Cache(backend, prefix=prefix), max_attempts=10)
+    code = await codes.issue("someone@example.com", purpose="login")
+    tries = [codes.verify("someone@example.com", code, purpose="login") for _ in range(5)]
+    assert sum(await asyncio.gather(*tries)) == 1
+    assert not await codes.verify("someone@example.com", code, purpose="login")
+
+
+async def test_scheduled_ticks_run_once(backend: Backend, prefix: str) -> None:
+    """Two processes' schedulers: the backend gives each tick to one of them."""
+    ticks: list[datetime | None] = []
+    schedulers = [FastAPIScheduler(Cache(backend, prefix=prefix)) for _ in range(2)]
+    for scheduler in schedulers:
+
+        @scheduler.every(seconds=0.25, name="job")
+        async def job(scheduler: FastAPIScheduler = scheduler) -> None:
+            ticks.append(scheduler.next_run("job"))  # the tick being run
+
+    for scheduler in schedulers:
+        await scheduler.start()
+    await asyncio.sleep(1.4)
+    for scheduler in schedulers:
+        await scheduler.stop()
+    assert len(ticks) >= 4
+    assert len(ticks) == len(set(ticks))
+
+
+async def test_token_blocklist(backend: Backend, prefix: str) -> None:
+    blocklist = TokenBlocklist(Cache(backend, prefix=prefix, signing_key="k" * 32))
+    await blocklist.revoke("jti-1", ttl=60)
+    await blocklist.revoke_subject("user", ttl=60)
+    assert await blocklist.is_revoked("jti-1")
+    assert not await blocklist.is_revoked("jti-2")
+    assert await blocklist.is_revoked("jti-2", subject="user", issued_at=0)
+
+
+async def test_idempotency(backend: Backend, prefix: str) -> None:
+    """Five copies of a request at once: it runs once, the others wait for it or get it back."""
+    if not backend.supports_locks:
+        pytest.skip("no locks")
+    app = FastAPI()
+    Cache(backend, prefix=prefix, encryption_key="e" * 32).install(app)
+    app.add_middleware(IdempotencyMiddleware)
+    runs: list[int] = []
+
+    @app.post("/orders", status_code=201)
+    async def create() -> dict[str, int]:
+        runs.append(1)
+        await asyncio.sleep(0.3)
+        return {"id": len(runs)}
+
+    key = {"Idempotency-Key": f'"{uuid.uuid4()}"'}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        responses = await asyncio.gather(*(c.post("/orders", headers=key) for _ in range(5)))
+        assert sorted(r.status_code for r in responses) == [201, 409, 409, 409, 409]
+        replay = await c.post("/orders", headers=key)
+    assert (replay.headers["idempotent-replayed"], replay.json()) == ("true", {"id": 1})
+    assert runs == [1]
+
+
 async def test_tags(backend: Backend, prefix: str) -> None:
     if not backend.supports_tags:
         pytest.skip("no tags")
@@ -217,7 +315,47 @@ async def test_tags(backend: Backend, prefix: str) -> None:
     assert await backend.get(f"{prefix}:e0") is None
     assert await backend.get(f"{prefix}:e2") == b"v"
     assert await backend.invalidate_tags([tag]) == 0
-    assert await backend.invalidate_tags([other]) == 1
+    assert await backend.invalidate_tags_with_keys([other]) == (1, [f"{prefix}:e2"])
+
+
+async def test_counters(backend: Backend, prefix: str) -> None:
+    assert backend.supports_counters
+    key = f"{prefix}:counter"
+    assert await backend.get_counter(key) == 0
+    assert await backend.incr(key, expire=60) == 1
+    assert await backend.incr(key, 4, expire=60) == 5
+    assert await backend.incr(key, -2, expire=60) == 3
+    assert await backend.get_counter(key) == 3
+    # Atomic: 50 concurrent increments, each sees its own value.
+    race = [backend.incr(f"{prefix}:race", expire=60) for _ in range(50)]
+    assert sorted(await asyncio.gather(*race)) == list(range(1, 51))
+    await backend.incr(f"{prefix}:short", expire=1)
+    await asyncio.sleep(2.5)  # memcached rounds expiry times to the second
+    assert await backend.get_counter(f"{prefix}:short") == 0
+
+
+async def test_incr_window(backend: Backend, prefix: str) -> None:
+    """50 concurrent requests for 10 places: exactly 10 counted. Both windows share a hash tag,
+    as the limiter's keys do: a Lua script with keys in two cluster slots would fail."""
+    base = f"{prefix}:window:{{client}}"
+    await backend.incr(f"{base}:0", 4, expire=60)  # weighs 2
+    calls = [
+        backend.incr_window(f"{base}:1", f"{base}:0", amount=1, limit=12, weight=0.5, expire=60)
+        for _ in range(50)
+    ]
+    results = await asyncio.gather(*calls)
+    assert sum(added for added, _, _ in results) == 10
+    assert await backend.get_counter(f"{base}:1") == 10
+
+
+async def test_rate_limiter(backend: Backend, prefix: str) -> None:
+    """Concurrent requests over the limit: exactly `times` get through."""
+    limiter = FastAPIRateLimiter(times=3, minutes=1, cache=Cache(backend, prefix=prefix))
+    request = Request({"type": "http", "path": "/search", "client": ("192.0.2.1", 1234)})
+    results = await asyncio.gather(*(limiter.hit(request) for _ in range(10)))
+    assert sum(result is None for result in results) == 3
+    other = Request({"type": "http", "path": "/search", "client": ("192.0.2.2", 1234)})
+    assert await limiter.hit(other) is None
 
 
 @pytest.mark.parametrize(

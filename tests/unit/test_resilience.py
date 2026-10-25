@@ -44,6 +44,18 @@ class TestCircuitBreaker:
         breaker.record_failure()
         assert breaker.state == "open"
 
+    def test_allow_says_whether_the_call_is_the_trial(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        breaker = CircuitBreaker(failure_threshold=1, reset_timeout=10)
+        assert breaker.allow() == "closed"
+        breaker.record_failure()
+        assert breaker.allow() is None
+        now = time.monotonic()
+        monkeypatch.setattr(time, "monotonic", lambda: now + 11)
+        assert breaker.allow() == "half-open"
+        assert breaker.allow() is None
+
     def test_an_abandoned_trial_does_not_block_it(self, monkeypatch: pytest.MonkeyPatch) -> None:
         breaker = CircuitBreaker(failure_threshold=1, reset_timeout=10)
         breaker.record_failure()
@@ -87,6 +99,23 @@ class TestBackendGuard:
             await guard.run("get", failing)
         assert len(calls) == 2
 
+    async def test_a_successful_trial_closes_the_breaker(self) -> None:
+        breaker = CircuitBreaker(1, 0.01)
+        guard = BackendGuard(None, breaker, Metrics(enabled=False))
+
+        async def broken() -> None:
+            raise ConnectionError("down")
+
+        async def works() -> int:
+            return 1
+
+        with pytest.raises(BackendUnavailable):
+            await guard.run("get", broken)
+        await asyncio.sleep(0.02)
+        assert await guard.run("get", works) == 1
+        assert breaker.state == "closed"
+        assert await BackendGuard(None, None, Metrics(enabled=False)).run("get", works) == 1
+
     async def test_cancellation_abandons_the_trial(self) -> None:
         breaker = CircuitBreaker(1, 30)
         guard = BackendGuard(None, breaker, Metrics(enabled=False))
@@ -100,6 +129,33 @@ class TestBackendGuard:
         with pytest.raises(asyncio.CancelledError):
             await task
         assert breaker.state == "closed"
+
+    async def test_cancelling_a_call_that_isnt_the_trial_keeps_it(self) -> None:
+        """A call sent while it was closed and cancelled during the trial doesn't let a second
+        trial through."""
+        guard = BackendGuard(None, CircuitBreaker(1, 0.01), Metrics(enabled=False))
+
+        async def hangs() -> None:
+            await asyncio.sleep(10)
+
+        async def broken() -> None:
+            raise ConnectionError("down")
+
+        before = asyncio.create_task(guard.run("get", hangs))
+        await asyncio.sleep(0)
+        with pytest.raises(BackendUnavailable):
+            await guard.run("get", broken)
+        await asyncio.sleep(0.02)
+        trial = asyncio.create_task(guard.run("get", hangs))
+        await asyncio.sleep(0)
+        before.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await before
+        with pytest.raises(CircuitOpen):
+            await guard.run("get", hangs)
+        trial.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await trial
 
     def test_timeout_must_be_positive(self) -> None:
         with pytest.raises(ValueError, match="backend_timeout"):

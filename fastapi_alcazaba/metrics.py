@@ -8,6 +8,15 @@ Instruments (attributes in brackets):
 - fastapi_alcazaba.entry.size: bytes of stored entries [fastapi_alcazaba.namespace]
 - fastapi_alcazaba.backend.duration: seconds per backend call [fastapi_alcazaba.operation]
 - fastapi_alcazaba.backend.errors: failed backend calls [fastapi_alcazaba.operation, error.type]
+- fastapi_alcazaba.rate_limit: requests seen by a FastAPIRateLimiter [fastapi_alcazaba.outcome:
+  allowed, limited, unchecked (the backend failed); fastapi_alcazaba.limiter: its name or route]
+- fastapi_alcazaba.breaker.calls: calls through a FastAPIBreaker [fastapi_alcazaba.outcome:
+  success, failure, refused; fastapi_alcazaba.breaker: its name]
+- fastapi_alcazaba.breaker.transitions: a FastAPIBreaker opening or closing again
+  [fastapi_alcazaba.state: open, closed; fastapi_alcazaba.breaker]
+- fastapi_alcazaba.scheduler.runs: ticks of a FastAPIScheduler job [fastapi_alcazaba.outcome:
+  ran, failed, skipped (another process has it), overlapping (its last run is still going),
+  unchecked (the backend failed); fastapi_alcazaba.job: its name]
 """
 
 from typing import Any
@@ -41,6 +50,26 @@ class Metrics:
         self._backend_errors = meter.create_counter(
             "fastapi_alcazaba.backend.errors", unit="{error}", description="Failed backend calls"
         )
+        self._rate_limit = meter.create_counter(
+            "fastapi_alcazaba.rate_limit",
+            unit="{request}",
+            description="Requests seen by the rate limiters, by outcome",
+        )
+        self._breaker_calls = meter.create_counter(
+            "fastapi_alcazaba.breaker.calls",
+            unit="{call}",
+            description="Calls through the circuit breakers, by outcome",
+        )
+        self._breaker_transitions = meter.create_counter(
+            "fastapi_alcazaba.breaker.transitions",
+            unit="{transition}",
+            description="Circuit breakers opening or closing again",
+        )
+        self._scheduler_runs = meter.create_counter(
+            "fastapi_alcazaba.scheduler.runs",
+            unit="{tick}",
+            description="Ticks of the scheduled jobs, by outcome",
+        )
 
     def lookup(self, result: str, namespace: str) -> None:
         if self.enabled:
@@ -63,4 +92,28 @@ class Metrics:
         if self.enabled:
             self._backend_errors.add(
                 1, {"fastapi_alcazaba.operation": operation, "error.type": error_type}
+            )
+
+    def rate_limit(self, outcome: str, limiter: str) -> None:
+        if self.enabled:
+            self._rate_limit.add(
+                1, {"fastapi_alcazaba.outcome": outcome, "fastapi_alcazaba.limiter": limiter}
+            )
+
+    def breaker_call(self, outcome: str, breaker: str) -> None:
+        if self.enabled:
+            self._breaker_calls.add(
+                1, {"fastapi_alcazaba.outcome": outcome, "fastapi_alcazaba.breaker": breaker}
+            )
+
+    def breaker_transition(self, state: str, breaker: str) -> None:
+        if self.enabled:
+            self._breaker_transitions.add(
+                1, {"fastapi_alcazaba.state": state, "fastapi_alcazaba.breaker": breaker}
+            )
+
+    def scheduler_run(self, outcome: str, job: str) -> None:
+        if self.enabled:
+            self._scheduler_runs.add(
+                1, {"fastapi_alcazaba.outcome": outcome, "fastapi_alcazaba.job": job}
             )

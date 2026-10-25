@@ -17,6 +17,14 @@ logger.addHandler(logging.NullHandler())
 
 # Local copies carry the expiry of the shared entry (Unix time, 0 for none) in front of the value.
 _EXPIRY = struct.Struct("!d")
+# A tag invalidation names the keys it deleted, up to this many; beyond, every copy is dropped.
+_MAX_ANNOUNCED_KEYS = 1_000
+# The invalidation channel is read with a timeout of its own (the client's socket_timeout would end
+# every quiet wait with an error), pinged after _PING_AFTER seconds without a message, and given up
+# as lost after _LOST_AFTER: a connection that died silently mustn't keep stale copies around.
+_READ_TIMEOUT = 1.0
+_PING_AFTER = 5.0
+_LOST_AFTER = 10.0
 
 
 class TieredBackend(Backend):
@@ -28,9 +36,11 @@ class TieredBackend(Backend):
 
     With a Redis or Valkey shared backend whose client supports pub/sub (RedisBackend,
     ValkeyBackend; not a valkey-py cluster), writes, clears and tag invalidations are announced on
-    `invalidation_channel`, and every process drops its copy right away. Local copies are only
+    `invalidation_channel`, and every process drops its copy right away (a tag invalidation names
+    the keys it deleted; beyond 1000, every process drops all its copies). Local copies are only
     kept while the process is subscribed: when the subscription drops (and messages may have been
-    missed), the local level is emptied and bypassed until it's back.
+    missed), the local level is emptied and bypassed until it's back. A value read from the shared
+    backend while an invalidation arrives isn't kept: it may be the old one.
 
     Values are kept locally as the shared backend stores them, so signed or encrypted entries stay
     signed or encrypted in memory too.
@@ -51,6 +61,7 @@ class TieredBackend(Backend):
         self.local_ttl = local_ttl
         self.supports_locks = remote.supports_locks
         self.supports_tags = remote.supports_tags
+        self.supports_counters = remote.supports_counters
         client = getattr(remote, "_client", None)
         self._client = client if hasattr(client, "pubsub") else None
         self.channel = invalidation_channel if self._client is not None else None
@@ -67,6 +78,9 @@ class TieredBackend(Backend):
         # Each listener belongs to a generation; close() starts a new one, so a listener that
         # survives its cancellation (Python 3.11's wait_for can swallow it) stops by itself.
         self._generation = 0
+        # Moves on with every invalidation: a value read from the shared backend while one
+        # arrives may be the old one, and isn't kept.
+        self._epoch = 0
         self.local_hits = 0
         self.local_misses = 0
 
@@ -100,6 +114,7 @@ class TieredBackend(Backend):
         return remaining, value
 
     def _drop_local(self) -> None:
+        self._epoch += 1
         self.local = InMemoryBackend(max_size=self.local.max_size)
 
     # endregion
@@ -115,20 +130,34 @@ class TieredBackend(Backend):
 
     async def _listen(self, generation: int) -> None:
         assert self._client is not None and self.channel is not None  # noqa: S101
+        loop = asyncio.get_running_loop()
         backoff = 0.5
         while generation == self._generation:
             pubsub = self._pubsub = self._client.pubsub()
             try:
                 await pubsub.subscribe(self.channel)
-                if generation != self._generation:
-                    return
-                self._subscribed = True
-                backoff = 0.5
-                async for message in pubsub.listen():
+                heard, pinged = loop.time(), False
+                while True:
+                    message = await pubsub.get_message(timeout=_READ_TIMEOUT)
                     if generation != self._generation:
                         return
+                    now = loop.time()
+                    if message is None:
+                        if now - heard >= _LOST_AFTER:
+                            raise ConnectionError("the invalidation channel stopped answering")
+                        if now - heard >= _PING_AFTER and not pinged:
+                            await pubsub.ping()
+                            pinged = True
+                        continue
+                    heard, pinged = now, False
                     if message.get("type") == "message":
                         await self._apply(message.get("data"))
+                    elif message.get("type") == "subscribe":
+                        if self._subscribed:
+                            # The client reconnected by itself: messages may have been missed.
+                            self._drop_local()
+                        self._subscribed = True
+                        backoff = 0.5
             except asyncio.CancelledError:
                 raise
             except Exception:
@@ -149,13 +178,23 @@ class TieredBackend(Backend):
             return
         if not isinstance(message, dict) or message.get("sender") == self._id:
             return
+        self._epoch += 1
+        keys = message.get("keys", [])
+        if (
+            message.get("everything") is True
+            or not isinstance(keys, list)
+            or not all(isinstance(key, str) for key in keys)
+            # Tags without keys: fastapi-alcazaba 0.1, during a rolling deploy.
+            or ("tags" in message and "keys" not in message)
+        ):
+            self._drop_local()
+            return
         if isinstance(message.get("key"), str):
-            await self.local.clear(key=message["key"])
+            keys = [*keys, message["key"]]
+        for key in keys:
+            await self.local.clear(key=key)
         if isinstance(message.get("namespace"), str):
             await self.local.clear(namespace=message["namespace"])
-        tags = message.get("tags")
-        if isinstance(tags, list) and all(isinstance(tag, str) for tag in tags):
-            await self.local.invalidate_tags(tags)
 
     async def _announce(self, **message: Any) -> None:
         if self.channel is None or self._client is None:
@@ -191,8 +230,9 @@ class TieredBackend(Backend):
             self.local_hits += 1
             return local
         self.local_misses += 1
+        epoch = self._epoch
         ttl, value = await self.remote.get_with_ttl(key)
-        if value is not None:
+        if value is not None and epoch == self._epoch:
             await self._keep_locally(key, value, ttl)
         return ttl, value
 
@@ -201,12 +241,19 @@ class TieredBackend(Backend):
 
     async def set(self, key: str, value: bytes, expire: int | None = None) -> None:
         await self._ensure_listener()
+        epoch = self._epoch
         await self.remote.set(key, value, expire)
-        await self._keep_locally(key, value, expire or -1)
+        # Another write in the meantime may have overtaken this one in the shared backend.
+        overtaken, self._epoch = epoch != self._epoch, self._epoch + 1
+        if overtaken:
+            await self.local.clear(key=key)
+        else:
+            await self._keep_locally(key, value, expire or -1)
         await self._announce(key=key)
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
         deleted = await self.remote.clear(namespace, key)
+        self._epoch += 1
         await self.local.clear(namespace, key)
         if namespace:
             await self._announce(namespace=namespace)
@@ -220,14 +267,42 @@ class TieredBackend(Backend):
     async def release_lock(self, key: str, token: str) -> None:
         await self.remote.release_lock(key, token)
 
+    async def extend_lock(self, key: str, token: str, ttl: float) -> bool:
+        return await self.remote.extend_lock(key, token, ttl)
+
     async def add_tags(self, key: str, tags: Sequence[str], expire: int | None) -> None:
+        # Only the shared backend knows every entry's tags (a process that read an entry didn't
+        # see them): invalidations name the keys they deleted.
         await self.remote.add_tags(key, tags, expire)
-        await self.local.add_tags(key, tags, expire)
 
     async def invalidate_tags(self, tags: Sequence[str]) -> int:
-        deleted = await self.remote.invalidate_tags(tags)
-        await self.local.invalidate_tags(tags)
-        await self._announce(tags=list(tags))
-        return deleted
+        return (await self.invalidate_tags_with_keys(tags))[0]
+
+    async def invalidate_tags_with_keys(self, tags: Sequence[str]) -> tuple[int, list[str] | None]:
+        deleted, keys = await self.remote.invalidate_tags_with_keys(tags)
+        if keys is None or len(keys) > _MAX_ANNOUNCED_KEYS:
+            self._drop_local()
+            await self._announce(tags=list(tags), everything=True)
+        else:
+            self._epoch += 1
+            for key in keys:
+                await self.local.clear(key=key)
+            await self._announce(tags=list(tags), keys=keys)
+        return deleted, keys
+
+    # Counters are shared by every process: they're never kept locally.
+
+    async def incr(self, key: str, amount: int = 1, expire: int | None = None) -> int:
+        return await self.remote.incr(key, amount, expire)
+
+    async def get_counter(self, key: str) -> int:
+        return await self.remote.get_counter(key)
+
+    async def incr_window(
+        self, key: str, previous_key: str, *, amount: int, limit: int, weight: float, expire: int
+    ) -> tuple[bool, int, int]:
+        return await self.remote.incr_window(
+            key, previous_key, amount=amount, limit=limit, weight=weight, expire=expire
+        )
 
     # endregion

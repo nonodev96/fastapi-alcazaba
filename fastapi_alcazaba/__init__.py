@@ -1,6 +1,7 @@
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
+from fastapi_alcazaba.breaker import BreakerOpen, FastAPIBreaker
 from fastapi_alcazaba.cache import (
     DEFAULT_VARY_HEADERS,
     Cache,
@@ -16,9 +17,19 @@ from fastapi_alcazaba.errors import (
     UnstableCacheKeyWarning,
 )
 from fastapi_alcazaba.key_builder import default_key_builder
+from fastapi_alcazaba.limiter import FastAPIRateLimiter
 from fastapi_alcazaba.metrics import Metrics
+from fastapi_alcazaba.pagination import (
+    FastAPIPagination,
+    FastAPIPaginationCursor,
+    FastAPIPaginationLimitOffset,
+)
 from fastapi_alcazaba.resilience import BackendGuard
+from fastapi_alcazaba.scheduler import FastAPIScheduler
 from fastapi_alcazaba.types import Backend, KeyBuilder
+
+if TYPE_CHECKING:
+    from fastapi_alcazaba.locks import Lock
 
 try:
     __version__ = version("fastapi-alcazaba")
@@ -29,10 +40,17 @@ __all__ = [
     "DEFAULT_VARY_HEADERS",
     "Backend",
     "BackendUnavailable",
+    "BreakerOpen",
     "Cache",
     "CacheOptions",
     "Coder",
+    "FastAPIBreaker",
     "FastAPICache",
+    "FastAPIPagination",
+    "FastAPIPaginationCursor",
+    "FastAPIPaginationLimitOffset",
+    "FastAPIRateLimiter",
+    "FastAPIScheduler",
     "JsonCoder",
     "KeyBuilder",
     "UnsignedEntriesWarning",
@@ -117,6 +135,13 @@ class FastAPICache:
     async def invalidate_tags(cls, *tags: str) -> int:
         """Delete every entry stored with any of `tags` (see `@cache(tags=...)`)."""
         return await cls.instance().invalidate_tags(*tags)
+
+    @classmethod
+    def lock(
+        cls, name: str, *, ttl: float = 30.0, wait: float | None = 0.0, renew: bool = True
+    ) -> "Lock":
+        """A lock shared by every process (see `Cache.lock`)."""
+        return cls.instance().lock(name, ttl=ttl, wait=wait, renew=renew)
 
     @classmethod
     async def clear(cls, namespace: str | None = None, key: str | None = None) -> int:

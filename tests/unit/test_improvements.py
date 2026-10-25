@@ -1,20 +1,25 @@
 import asyncio
 import random
 import warnings
+from collections.abc import Sequence
 from typing import Annotated, Any
 
 import fakeredis
 import pytest
 from fastapi import Depends, FastAPI
+from starlette.requests import Request
 from starlette.testclient import TestClient
 
-from fastapi_alcazaba import FastAPICache, UnstableCacheKeyWarning
+from fastapi_alcazaba import Cache, FastAPICache, UnstableCacheKeyWarning
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.memcached import MemcachedBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.coder import JsonCoder
 from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.key_builder import default_key_builder
+from fastapi_alcazaba.limiter import FastAPIRateLimiter
+from fastapi_alcazaba.tokens import TokenBlocklist
+from fastapi_alcazaba.types import Backend
 
 
 class Session:
@@ -265,8 +270,11 @@ class TestDistributedLock:
         assert await redis.get(f"{key}:lock") is None  # released
 
     async def test_backends_without_locks(self) -> None:
+        class WithoutLocks(InMemoryBackend):
+            supports_locks = False
+
         with pytest.warns(UserWarning, match="can't hold locks"):
-            FastAPICache.init(InMemoryBackend(), distributed_lock=True)
+            FastAPICache.init(WithoutLocks(), distributed_lock=True)
 
         @cache(expire=60)
         async def value() -> int:
@@ -362,6 +370,52 @@ class TestTags:
         assert await redis.ttl("t:{1}") == -1  # an entry without expiry keeps it forever
         await backend.add_tags("a", ["t:{1}"], 10)
         assert await redis.ttl("t:{1}") == -1
+
+    @pytest.mark.parametrize("decode_responses", [False, True])
+    async def test_invalidations_tell_the_keys_they_deleted(self, decode_responses: bool) -> None:
+        memory = InMemoryBackend()
+        redis = RedisBackend(fakeredis.FakeAsyncRedis(decode_responses=decode_responses))
+        for backend in (memory, redis):
+            for key in ("a", "b"):
+                await backend.set(key, b"x", 60)
+                await backend.add_tags(key, ["t:{1}"], 60)
+            deleted, keys = await backend.invalidate_tags_with_keys(["t:{1}", "t:{2}"])
+            assert (deleted, sorted(keys or [])) == (2, ["a", "b"])
+            assert await backend.invalidate_tags_with_keys(["t:{1}"]) == (0, [])
+
+    async def test_backends_that_cant_tell_the_keys(self) -> None:
+        class Untold(InMemoryBackend):
+            invalidate_tags_with_keys = Backend.invalidate_tags_with_keys
+
+            async def invalidate_tags(self, tags: Sequence[str]) -> int:
+                return 3
+
+        assert await Untold().invalidate_tags_with_keys(["t"]) == (3, None)
+
+
+@pytest.mark.parametrize("backend_kind", ["memory", "redis"])
+async def test_clearing_the_cache_keeps_locks_limits_and_revocations(backend_kind: str) -> None:
+    backend: Backend = (
+        InMemoryBackend() if backend_kind == "memory" else RedisBackend(fakeredis.FakeAsyncRedis())
+    )
+    cache = Cache(backend, prefix="app")
+    blocklist = TokenBlocklist(cache)
+    limiter = FastAPIRateLimiter(times=1, minutes=1, cache=cache, name="login")
+    request = Request({"type": "http", "headers": [], "client": ("203.0.113.9", 1)})
+    lock = cache.lock("job")
+    assert await lock.acquire()
+    await blocklist.revoke("jti", ttl=60)
+    assert await limiter.hit(request) is None
+    await cache.get_or_set("k", _one, expire=60)
+    assert await cache.clear() == 1  # the cached value
+    assert not await cache.lock("job").acquire()
+    assert await blocklist.is_revoked("jti")
+    assert await limiter.hit(request) is not None  # the counter is still there
+    await lock.release()
+
+
+async def _one() -> int:
+    return 1
 
 
 async def test_locks_release_only_with_their_token() -> None:

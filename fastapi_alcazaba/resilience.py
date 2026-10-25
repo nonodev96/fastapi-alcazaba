@@ -40,13 +40,22 @@ class CircuitBreaker:
             return "open"
         return "half-open"
 
-    def allow(self) -> bool:
+    @property
+    def retry_after(self) -> float:
+        """Seconds until a trial call may go through; 0 unless it's open."""
         if self._opened_at is None:
-            return True
+            return 0.0
+        return max(0.0, self.reset_timeout - (time.monotonic() - self._opened_at))
+
+    def allow(self) -> str | None:
+        """The state the call goes through in: "closed", or "half-open" when it's the single
+        trial; None when it's refused."""
+        if self._opened_at is None:
+            return "closed"
         if self._trial_running or time.monotonic() - self._opened_at < self.reset_timeout:
-            return False
+            return None
         self._trial_running = True
-        return True
+        return "half-open"
 
     def record_success(self) -> None:
         self._failures = 0
@@ -60,7 +69,8 @@ class CircuitBreaker:
             self._opened_at = time.monotonic()
 
     def abandon_trial(self) -> None:
-        """The trial call was cancelled: let the next call try."""
+        """The trial call ended without a verdict (cancelled): let the next call try. Only for the
+        call `allow()` let through "half-open": another one would let a second trial through."""
         self._trial_running = False
 
 
@@ -84,9 +94,12 @@ class BackendGuard:
 
     async def run(self, operation: str, call: Callable[[], Awaitable[T]]) -> T:
         breaker = self.breaker
-        if breaker is not None and not breaker.allow():
-            self.metrics.backend_error(operation, "CircuitOpen")
-            raise CircuitOpen(f"{operation}: the circuit breaker is open")
+        trial = False
+        if breaker is not None:
+            if (state := breaker.allow()) is None:
+                self.metrics.backend_error(operation, "CircuitOpen")
+                raise CircuitOpen(f"{operation}: the circuit breaker is open")
+            trial = state == "half-open"
         start = time.perf_counter()
         try:
             with self.tracer.backend(operation):
@@ -98,7 +111,7 @@ class BackendGuard:
             self.metrics.backend_error(operation, type(exc).__name__)
             raise BackendUnavailable(f"{operation} failed: {exc!r}") from exc
         except BaseException:
-            if breaker is not None:
+            if trial and breaker is not None:
                 breaker.abandon_trial()
             raise
         finally:

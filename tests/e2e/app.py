@@ -11,12 +11,13 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import valkey.asyncio
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.tiered import TieredBackend
 from fastapi_alcazaba.backends.valkey import ValkeyBackend
 from fastapi_alcazaba.decorator import cache
+from fastapi_alcazaba.limiter import FastAPIRateLimiter
 
 PREFIX = os.environ.get("ALCAZABA_E2E_PREFIX", "fastapi-alcazaba-e2e")
 client: Any = None
@@ -44,11 +45,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(lifespan=lifespan)
 
 
-async def computed(name: str) -> None:
+async def computed(name: str) -> int:
+    """Counts a computation of `name`; returns how many there have been."""
     try:
-        await client.incr(f"{PREFIX}:computed:{name}")
-    except Exception:  # noqa: S110  # the fail-open test runs without a reachable Valkey
-        pass
+        return int(await client.incr(f"{PREFIX}:computed:{name}"))
+    except Exception:  # the fail-open test runs without a reachable Valkey
+        return 0
 
 
 @app.get("/health")
@@ -75,10 +77,14 @@ async def me(request: Request) -> dict[str, str | None]:
 @app.get("/products/{product_id}")
 @cache(expire=60, vary_headers=(), tags=lambda product_id, **_: [f"product:{product_id}"])
 async def product(product_id: int) -> dict[str, int]:
-    await computed(f"product:{product_id}")
-    return {"id": product_id}
+    return {"id": product_id, "computation": await computed(f"product:{product_id}")}
 
 
 @app.post("/products/{product_id}/invalidate")
 async def invalidate(product_id: int) -> dict[str, int]:
     return {"deleted": await FastAPICache.invalidate_tags(f"product:{product_id}")}
+
+
+@app.get("/limited/{item_id}", dependencies=[Depends(FastAPIRateLimiter(times=5, minutes=1))])
+async def limited(item_id: int) -> dict[str, int]:
+    return {"id": item_id, "pid": os.getpid()}

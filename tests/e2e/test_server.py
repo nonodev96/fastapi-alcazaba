@@ -4,6 +4,7 @@ sharing the cache, its lock and its tags."""
 
 import asyncio
 import os
+import re
 import secrets
 import socket
 import subprocess
@@ -28,15 +29,19 @@ def free_port() -> int:
 
 
 class Server:
-    def __init__(self, valkey_url: str, workers: int = 2) -> None:
-        self.prefix = f"fastapi-alcazaba-e2e-{uuid.uuid4().hex}"
+    """The app under uvicorn; `like=` another server shares its prefix, channel and key, as
+    another container of the same app would."""
+
+    def __init__(self, valkey_url: str, workers: int = 2, *, like: "Server | None" = None) -> None:
+        self.prefix: str = like.prefix if like else f"fastapi-alcazaba-e2e-{uuid.uuid4().hex}"
+        self.encryption_key: str = like.encryption_key if like else secrets.token_urlsafe(32)
         self.port = free_port()
         self.base_url = f"http://127.0.0.1:{self.port}"
         env = {
             **os.environ,
             "ALCAZABA_E2E_VALKEY_URL": valkey_url,
             "ALCAZABA_E2E_PREFIX": self.prefix,
-            "ALCAZABA_E2E_ENCRYPTION_KEY": secrets.token_urlsafe(32),
+            "ALCAZABA_E2E_ENCRYPTION_KEY": self.encryption_key,
         }
         self.process = subprocess.Popen(  # noqa: S603  # our own interpreter and arguments
             [
@@ -136,14 +141,46 @@ async def test_conditional_requests(server: Server) -> None:
 
 
 async def test_invalidating_a_tag_reaches_every_process(valkey_url: str, server: Server) -> None:
-    async with httpx2.AsyncClient(base_url=server.base_url) as client:
-        for _ in range(4):
-            await client.get("/products/7")
-        invalidated = await client.post("/products/7/invalidate")
-        for _ in range(4):
-            await client.get("/products/7")
+    """One process computes the value; another reads it from Valkey and keeps a copy in memory,
+    without its tags. After the first invalidates the tag, neither serves the value again."""
+    first, second = (Server(valkey_url, workers=1, like=server) for _ in range(2))
+    try:
+        first.wait_ready()
+        second.wait_ready()
+        async with (
+            httpx2.AsyncClient(base_url=first.base_url) as one,
+            httpx2.AsyncClient(base_url=second.base_url) as other,
+        ):
+
+            async def computation(client: httpx2.AsyncClient) -> int:
+                computed: int = (await client.get("/products/7")).json()["computation"]
+                return computed
+
+            before = [await computation(one), await computation(other)]
+            await asyncio.sleep(0.3)  # the second subscribed to the channel on its first request
+            before.append(await computation(other))  # now kept in its memory
+            invalidated = await one.post("/products/7/invalidate")
+            await asyncio.sleep(0.5)  # the announcement takes milliseconds
+            after = [await computation(other), await computation(one)]
+    finally:
+        first.stop()
+        second.stop()
     assert invalidated.json() == {"deleted": 1}
+    assert (before, after) == ([1, 1, 1], [2, 2])
     assert computed(valkey_url, server, "product:7") == 2
+
+
+async def test_processes_share_the_rate_limit(server: Server) -> None:
+    """The counters live in Valkey, not in each process (nor in TieredBackend's local copies)."""
+    async with httpx2.AsyncClient(base_url=server.base_url, timeout=10) as client:
+        responses = await asyncio.gather(*(client.get(f"/limited/{i}") for i in range(20)))
+    codes = [response.status_code for response in responses]
+    assert codes.count(200) == 5
+    assert codes.count(429) == 15
+    assert all(int(r.headers["Retry-After"]) > 0 for r in responses if r.status_code == 429)
+    assert all(r.headers["RateLimit-Policy"] == '"5/60s";q=5;w=60' for r in responses)
+    allowed = [r.headers["RateLimit"] for r in responses if r.status_code == 200]
+    assert sorted(re.findall(r";r=(\d+)", ",".join(allowed))) == ["0", "1", "2", "3", "4"]
 
 
 async def test_an_unreachable_valkey_does_not_break_the_app() -> None:

@@ -19,7 +19,14 @@ credit to you, unless you prefer otherwise.
 ## Scope
 
 In scope: anything that lets a request read another user's cached data, write or poison
-entries, run code, or exhaust the server through the cache.
+entries, run code, or exhaust the server through the cache; and anything that lets a client get
+past a rate limiter, or use up someone else's budget, other than by having several IPv4
+addresses, IPv6 /64 networks or identities. The same goes for the other tools: getting another
+client's response through an idempotency key or a request run twice, a lock held by two
+processes while their renewals work, a revoked token accepted or a one-time code guessed beyond
+its attempts, a header injected or a body over the limit accepted by the middlewares, errors
+leaked by the health checks, an exclusive scheduled job run twice for one tick while the backend
+works, and a call let through an open circuit breaker.
 
 Out of scope: problems that need write access to the backend when no `signing_key` or
 `encryption_key` is configured, reading the backend when no `encryption_key` is configured (the

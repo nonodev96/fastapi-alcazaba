@@ -2,6 +2,7 @@ import hashlib
 import time
 
 from aiomcache import Client
+from aiomcache.exceptions import ClientException
 
 from fastapi_alcazaba.types import Backend
 
@@ -19,7 +20,16 @@ def memcached_key(key: str) -> bytes:
     return b"fastapi_alcazaba:sha256:" + hashlib.sha256(raw).hexdigest().encode()
 
 
+def _exptime(expire: int | None) -> int:
+    exptime = expire or 0
+    if exptime > _MAX_RELATIVE_EXPTIME:
+        exptime += int(time.time())
+    return exptime
+
+
 class MemcachedBackend(Backend):
+    supports_counters = True
+
     def __init__(self, mcache: Client) -> None:
         self.mcache = mcache
 
@@ -33,10 +43,33 @@ class MemcachedBackend(Backend):
         return value
 
     async def set(self, key: str, value: bytes, expire: int | None = None) -> None:
-        exptime = expire or 0
-        if exptime > _MAX_RELATIVE_EXPTIME:
-            exptime += int(time.time())
-        await self.mcache.set(memcached_key(key), value, exptime=exptime)
+        await self.mcache.set(memcached_key(key), value, exptime=_exptime(expire))
+
+    async def incr(self, key: str, amount: int = 1, expire: int | None = None) -> int:
+        """memcached counters don't go below 0."""
+        raw = memcached_key(key)
+        while True:
+            if (value := await self._change(raw, amount)) is not None:
+                return value
+            # No counter: create it, unless another client did since our incr.
+            initial = max(amount, 0)
+            if await self.mcache.add(raw, str(initial).encode(), exptime=_exptime(expire)):
+                return initial
+
+    async def _change(self, raw: bytes, amount: int) -> int | None:
+        """The counter's new value; None when there is no counter."""
+        try:
+            if amount >= 0:
+                value: int | None = await self.mcache.incr(raw, amount)
+            else:
+                value = await self.mcache.decr(raw, -amount)
+        except ClientException as exc:
+            # aiomcache raises for a missing key, though it documents returning None; the
+            # server's reply only survives in the message.
+            if "NOT_FOUND" in str(exc):
+                return None
+            raise
+        return value
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
         if namespace:

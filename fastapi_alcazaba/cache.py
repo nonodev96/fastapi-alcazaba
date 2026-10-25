@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from starlette.requests import Request
+from starlette.requests import HTTPConnection
 
 from fastapi_alcazaba.coder import Coder, JsonCoder
 from fastapi_alcazaba.compression import MAX_DECOMPRESSED_SIZE, Codec, Compressor
@@ -20,6 +20,7 @@ from fastapi_alcazaba.types import Backend, KeyBuilder
 
 if TYPE_CHECKING:
     from fastapi_alcazaba.decorator import Tags, _CacheDecorator
+    from fastapi_alcazaba.locks import Lock
 
 T = TypeVar("T")
 
@@ -251,6 +252,13 @@ class Cache:
         )(compute)
         return await decorated()  # type: ignore[return-value]  # no request: never a Response
 
+    def state_key(self, kind: str, rest: str) -> str:
+        """Backend key of state other than cached responses: locks, rate-limit counters, revoked
+        tokens, one-time codes, idempotency records. It goes under `{prefix}!`, not `{prefix}:`,
+        so that `clear()` never frees a held lock, resets a rate limit or takes a revocation
+        back, and InMemoryBackend keeps it apart from the entries it evicts."""
+        return f"{self.prefix}!{kind}:{rest}"
+
     def tag_key(self, tag: str) -> str:
         """Backend key of a tag. The digest goes in {braces} (a cluster hash tag) so that the set
         and its temporary copy share a slot, whatever characters the tag has."""
@@ -263,9 +271,22 @@ class Cache:
             raise NotImplementedError(f"{type(self.backend).__name__} can't invalidate by tag")
         return await self.backend.invalidate_tags([self.tag_key(tag) for tag in tags])
 
+    def lock(
+        self, name: str, *, ttl: float = 30.0, wait: float | None = 0.0, renew: bool = True
+    ) -> "Lock":
+        """A lock shared by every process using this backend (see `fastapi_alcazaba.locks`):
+
+        async with cache.lock("nightly-report", ttl=60):
+            ...
+        """
+        from fastapi_alcazaba.locks import Lock
+
+        return Lock(self, name, ttl=ttl, wait=wait, renew=renew)
+
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
         """Delete the entry `key` (a full cache key), or every entry of `namespace`, or of the
-        whole prefix when neither is given."""
+        whole prefix when neither is given. Cached responses only: locks, counters, revoked tokens
+        and the like are kept apart (`state_key`)."""
         if key is not None and namespace is None:
             # Upstream PR #529: the prefix used to be passed as the namespace too, so clearing
             # one key with a prefix configured cleared the whole prefix instead.
@@ -285,8 +306,9 @@ class Cache:
         return self
 
 
-def get_cache(request: Request) -> Cache:
+def get_cache(request: HTTPConnection) -> Cache:
     """FastAPI dependency: the cache installed on the app (`Cache.install`), else FastAPICache's.
+    Works in WebSocket routes too.
 
     @app.post("/products/{product_id}")
     async def update(product_id: int, cache: Annotated[Cache, Depends(get_cache)]) -> None:

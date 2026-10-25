@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import time
 from collections.abc import AsyncIterator, Callable
 from typing import Any
@@ -118,9 +119,7 @@ class TestInvalidationChannel:
         self, processes: tuple[TieredBackend, TieredBackend]
     ) -> None:
         first, second = processes
-        for key in ("ns:1", "ns:2", "other:1"):
-            await first.set(key, b"v", expire=60)
-            await second.get(key)
+        await copies_in(second, first, "ns:1", "ns:2", "other:1")
         await first.clear(namespace="ns")
         await eventually(lambda: set(second.local._store) == {"other:1"})
         await first.clear(key="other:1")
@@ -129,14 +128,80 @@ class TestInvalidationChannel:
     async def test_tag_invalidations_reach_every_process(
         self, processes: tuple[TieredBackend, TieredBackend]
     ) -> None:
+        """Also the copies of a process that read the entry, and so never saw its tags."""
         first, second = processes
-        await first.set("product:1", b"v", expire=60)
+        await copies_in(second, first, "product:1", "product:2")
         await first.add_tags("product:1", ["t:{p1}"], 60)
-        await second.get("product:1")
-        await second.local.add_tags("product:1", ["t:{p1}"], 60)
         assert await first.invalidate_tags(["t:{p1}"]) == 1
-        await eventually(lambda: not second.local._store)
+        await eventually(lambda: set(second.local._store) == {"product:2"})
         assert await second.get("product:1") is None
+
+    async def test_own_tag_invalidations_drop_copies_read_from_the_shared_backend(
+        self, processes: tuple[TieredBackend, TieredBackend]
+    ) -> None:
+        first, second = processes
+        await copies_in(second, first, "product:1")
+        await first.add_tags("product:1", ["t:{p1}"], 60)
+        assert await second.invalidate_tags(["t:{p1}"]) == 1
+        assert "product:1" not in second.local._store  # right away
+
+    async def test_large_tag_invalidations_drop_every_copy(
+        self, processes: tuple[TieredBackend, TieredBackend], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("fastapi_alcazaba.backends.tiered._MAX_ANNOUNCED_KEYS", 1)
+        first, second = processes
+        await copies_in(second, first, "a", "b", "untagged")
+        for key in ("a", "b"):
+            await first.add_tags(key, ["t:{x}"], 60)
+        assert await first.invalidate_tags(["t:{x}"]) == 2
+        assert not first.local._store
+        await eventually(lambda: not second.local._store)
+
+    async def test_tag_invalidations_from_version_0_1_drop_every_copy(
+        self, processes: tuple[TieredBackend, TieredBackend], redis: Any
+    ) -> None:
+        """They named the tags only: a rolling deploy runs both versions for a while."""
+        first, second = processes
+        await copies_in(second, first, "a", "untagged")
+        await redis.publish("fastapi_alcazaba:invalidations", b'{"sender": "0.1", "tags": ["t"]}')
+        await eventually(lambda: not second.local._store)
+
+    async def test_a_value_read_while_an_invalidation_arrives_is_not_kept(
+        self, processes: tuple[TieredBackend, TieredBackend], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        first, second = processes
+        await first.set("k", b"old", expire=60)
+        await eventually(lambda: second._epoch == 1)
+        read = second.remote.get_with_ttl
+
+        async def overtaken(key: str) -> tuple[int, bytes | None]:
+            result = await read(key)
+            await first.set(key, b"new", expire=60)  # while the old value is on its way back
+            await eventually(lambda: second._epoch == 2)
+            return result
+
+        monkeypatch.setattr(second.remote, "get_with_ttl", overtaken)
+        assert await second.get("k") == b"old"  # the value when it was read
+        assert "k" not in second.local._store
+        monkeypatch.undo()
+        assert await second.get("k") == b"new"
+
+    async def test_a_write_overtaken_by_another_is_not_kept(
+        self, processes: tuple[TieredBackend, TieredBackend], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        first, second = processes
+        write = second.remote.set
+
+        async def overtaken(key: str, value: bytes, expire: int | None = None) -> None:
+            await write(key, value, expire)
+            await first.set(key, b"theirs", expire=60)  # lands after this one
+            await eventually(lambda: second._epoch == 1)
+
+        monkeypatch.setattr(second.remote, "set", overtaken)
+        await second.set("k", b"mine", expire=60)
+        assert "k" not in second.local._store
+        monkeypatch.undo()
+        assert await second.get("k") == b"theirs"
 
     async def test_closing_drops_the_local_level(
         self, processes: tuple[TieredBackend, TieredBackend], redis: Any
@@ -180,8 +245,10 @@ async def test_capabilities_follow_the_shared_backend(redis: Any) -> None:
     assert tiered.supports_tags
     assert await tiered.acquire_lock("lock", "mine", 5)
     assert not await tiered.acquire_lock("lock", "theirs", 5)
+    assert await tiered.extend_lock("lock", "mine", 5)
+    assert not await tiered.extend_lock("lock", "theirs", 5)
     await tiered.release_lock("lock", "mine")
-    assert not TieredBackend(InMemoryBackend()).supports_locks
+    assert not TieredBackend(WithoutLocks()).supports_locks
 
 
 async def test_through_the_decorator(processes: tuple[TieredBackend, TieredBackend]) -> None:
@@ -208,23 +275,21 @@ async def test_close_does_not_hang_when_the_cancellation_gets_lost() -> None:
     close() must still return, and the listener stop once its connection is closed."""
 
     class StubbornPubSub:
-        closed = False
-        messages: list[dict[str, Any]] = []
+        confirmed = False
 
         async def subscribe(self, channel: str) -> None:
             pass
 
-        async def listen(self) -> AsyncIterator[dict[str, Any]]:
-            while not self.closed:
-                try:
-                    await asyncio.sleep(0.01)
-                except asyncio.CancelledError:
-                    continue  # what a buggy wait_for does
-                while self.messages:
-                    yield self.messages.pop()
+        async def get_message(self, timeout: float) -> dict[str, Any] | None:
+            if not self.confirmed:
+                self.confirmed = True
+                return {"type": "subscribe"}
+            with contextlib.suppress(asyncio.CancelledError):  # what a buggy wait_for does
+                await asyncio.sleep(0.01)
+            return None
 
         async def aclose(self) -> None:
-            self.closed = True
+            pass
 
     class StubbornClient:
         def pubsub(self) -> StubbornPubSub:
@@ -245,3 +310,125 @@ async def test_close_does_not_hang_when_the_cancellation_gets_lost() -> None:
     assert time.monotonic() - start < 2.5
     assert listener is not None
     await eventually(listener.done)
+
+
+async def test_counters_are_shared_not_kept_locally(
+    processes: tuple[TieredBackend, TieredBackend], redis: Any
+) -> None:
+    first, second = processes
+    assert first.supports_counters
+    assert await first.incr("c", expire=60) == 1
+    assert await second.incr("c", expire=60) == 2
+    assert await first.get_counter("c") == 2
+    assert await redis.get("c") == b"2"
+    for tiered, added in ((first, True), (second, False)):
+        window = await tiered.incr_window("w:1", "w:0", amount=1, limit=1, weight=1.0, expire=60)
+        assert window == (added, 1, 0)
+    assert not TieredBackend(WithoutCounters()).supports_counters
+
+
+async def copies_in(reader: TieredBackend, writer: TieredBackend, *keys: str) -> None:
+    """The writer stores `keys`, and the reader keeps copies of them read from Redis."""
+    epoch = reader._epoch
+    for key in keys:
+        await writer.set(key, b"v", expire=60)
+    await eventually(lambda: reader._epoch == epoch + len(keys))  # the announcements arrived
+    for key in keys:
+        await reader.get(key)
+    assert set(keys) <= set(reader.local._store)
+
+
+class WithoutCounters(InMemoryBackend):
+    supports_counters = False
+
+
+class WithoutLocks(InMemoryBackend):
+    supports_locks = False
+
+
+class QueuePubSub:
+    """A pub/sub connection whose messages the test hands over."""
+
+    def __init__(self, answers_pings: bool) -> None:
+        self.answers_pings = answers_pings
+        self.messages: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        self.pings = 0
+
+    async def subscribe(self, channel: str) -> None:
+        await self.messages.put({"type": "subscribe"})
+
+    async def get_message(self, timeout: float) -> dict[str, Any] | None:
+        try:
+            return await asyncio.wait_for(self.messages.get(), timeout)
+        except TimeoutError:
+            return None
+
+    async def ping(self) -> None:
+        self.pings += 1
+        if self.answers_pings:
+            await self.messages.put({"type": "pong"})
+
+    async def aclose(self) -> None:
+        pass
+
+
+class QueueClient:
+    def __init__(self, answers_pings: bool = True) -> None:
+        self.answers_pings = answers_pings
+        self.connections: list[QueuePubSub] = []
+
+    def pubsub(self) -> QueuePubSub:
+        self.connections.append(QueuePubSub(self.answers_pings))
+        return self.connections[-1]
+
+    async def publish(self, channel: str, message: str) -> None:
+        pass
+
+
+def tiered_over(client: QueueClient) -> TieredBackend:
+    class Remote(InMemoryBackend):
+        _client = client
+
+    return TieredBackend(Remote())
+
+
+class TestChannelHealth:
+    @pytest.fixture(autouse=True)
+    def quick(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("fastapi_alcazaba.backends.tiered._READ_TIMEOUT", 0.01)
+        monkeypatch.setattr("fastapi_alcazaba.backends.tiered._PING_AFTER", 0.05)
+        monkeypatch.setattr("fastapi_alcazaba.backends.tiered._LOST_AFTER", 0.15)
+
+    async def test_a_quiet_channel_that_answers_pings_is_kept(self) -> None:
+        client = QueueClient()
+        tiered = tiered_over(client)
+        await tiered.set("k", b"v", expire=60)
+        await eventually(lambda: tiered._subscribed)
+        await tiered.set("k", b"v", expire=60)
+        await asyncio.sleep(0.4)
+        assert client.connections[0].pings >= 2
+        assert (len(client.connections), "k" in tiered.local._store) == (1, True)
+        await tiered.close()
+
+    async def test_a_channel_that_stops_answering_is_given_up(self) -> None:
+        client = QueueClient(answers_pings=False)
+        tiered = tiered_over(client)
+        await tiered.set("k", b"v", expire=60)
+        await eventually(lambda: tiered._subscribed)
+        await tiered.set("k", b"v", expire=60)
+        await eventually(lambda: not tiered._subscribed)
+        assert client.connections[0].pings == 1
+        assert not tiered.local._store
+        await eventually(lambda: len(client.connections) == 2)  # subscribes again
+        await tiered.close()
+
+    async def test_a_reconnection_by_the_client_drops_the_copies(self) -> None:
+        client = QueueClient()
+        tiered = tiered_over(client)
+        await tiered.set("k", b"v", expire=60)
+        await eventually(lambda: tiered._subscribed)
+        await tiered.set("k", b"v", expire=60)
+        await client.connections[0].messages.put({"type": "subscribe"})  # once more
+        await eventually(lambda: not tiered.local._store)
+        assert tiered._subscribed
+        await tiered.close()
