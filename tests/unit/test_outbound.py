@@ -1,14 +1,25 @@
-"""ResilientTransport: a deadline for the whole call and a circuit breaker per origin."""
+"""ResilientTransport: a deadline for the whole call and a circuit breaker per origin.
+SSRFGuardTransport: only public addresses, pinned against DNS rebinding."""
 
 import asyncio
 import gzip
+import ipaddress
 import logging
+import socket
 from collections.abc import AsyncIterator, Awaitable, Callable
+from typing import Any
 
 import httpx2 as httpx
 import pytest
 
-from fastapi_alcazaba.outbound import CircuitOpenError, ResilientTransport, ResponseTooLargeError
+from fastapi_alcazaba.outbound import (
+    BlockedDestinationError,
+    CircuitOpenError,
+    ResilientTransport,
+    ResponseTooLargeError,
+    SSRFGuardTransport,
+    _is_public,
+)
 
 Handler = Callable[[httpx.Request], Awaitable[httpx.Response]]
 
@@ -525,3 +536,554 @@ class TestTransport:
     def test_validation(self, options: dict[str, object], message: str) -> None:
         with pytest.raises(ValueError, match=message):
             ResilientTransport(Inner(), **options)  # type: ignore[arg-type]
+
+
+# region SSRF guard
+
+
+class DNS:
+    """Stands in for the event loop's getaddrinfo: answers from `records`, and counts."""
+
+    def __init__(self) -> None:
+        self.records: dict[str, list[list[str]]] = {}
+        self.queries: list[tuple[str, int]] = []
+        self.delay = 0.0
+
+    def add(self, host: str, *answers: list[str]) -> None:
+        """Each answer is a list of addresses; the last one repeats."""
+        self.records[host] = list(answers)
+
+    async def getaddrinfo(
+        self, host: str, port: int, **options: object
+    ) -> list[tuple[int, int, int, str, tuple[Any, ...]]]:
+        assert options == {"type": socket.SOCK_STREAM}
+        self.queries.append((host, port))
+        await asyncio.sleep(self.delay)
+        answers = self.records.get(host)
+        if answers is None:
+            raise socket.gaierror(socket.EAI_NONAME, "Name or service not known")
+        addresses = answers.pop(0) if len(answers) > 1 else answers[0]
+        return [
+            (socket.AF_INET6, socket.SOCK_STREAM, 6, "", (address, port, 0, 0))
+            if ":" in address
+            else (socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, port))
+            for address in addresses
+        ]
+
+
+@pytest.fixture
+def dns(monkeypatch: pytest.MonkeyPatch) -> DNS:
+    dns = DNS()
+
+    async def getaddrinfo(
+        loop: object, host: str, port: int, **options: object
+    ) -> list[tuple[int, int, int, str, tuple[Any, ...]]]:
+        return await dns.getaddrinfo(host, port, **options)
+
+    monkeypatch.setattr(asyncio.BaseEventLoop, "getaddrinfo", getaddrinfo)
+    return dns
+
+
+class Origin:
+    """A MockTransport handler that records what reaches the network, and answers `routes`."""
+
+    def __init__(self) -> None:
+        self.requests: list[httpx.Request] = []
+        self.routes: dict[str, httpx.Response] = {}
+        self.unreachable: set[str] = set()
+
+    async def __call__(self, request: httpx.Request) -> httpx.Response:
+        if request.url.host in self.unreachable:
+            raise httpx.ConnectError("network unreachable", request=request)
+        self.requests.append(request)
+        return self.routes.get(request.url.path, httpx.Response(200, text="ok"))
+
+    @property
+    def sent(self) -> list[tuple[str, str, str | None]]:
+        """(URL, Host header, SNI) of each request."""
+        return [
+            (str(r.url), r.headers["host"], r.extensions.get("sni_hostname")) for r in self.requests
+        ]
+
+
+@pytest.fixture
+def origin() -> Origin:
+    return Origin()
+
+
+def guarded(origin: Origin, **options: Any) -> httpx.AsyncClient:
+    transport = SSRFGuardTransport(httpx.MockTransport(origin), **options)
+    return httpx.AsyncClient(transport=transport, follow_redirects=True)
+
+
+PUBLIC = [
+    "8.8.8.8",
+    "93.184.216.34",
+    "2606:4700:4700::1111",
+    "2a00:1450:4001:80b::200e",
+    "64:ff9b::808:808",  # NAT64 of 8.8.8.8
+    "::ffff:8.8.8.8",
+]
+BLOCKED = [
+    "127.0.0.1",
+    "127.255.0.1",
+    "10.1.2.3",
+    "172.16.0.1",
+    "192.168.1.1",
+    "169.254.169.254",  # cloud metadata
+    "100.64.0.1",  # carrier-grade NAT
+    "0.0.0.0",  # noqa: S104
+    "0.1.2.3",
+    "224.0.0.1",
+    "239.255.255.250",
+    "255.255.255.255",
+    "240.0.0.1",
+    "192.0.0.9",
+    "192.0.2.1",
+    "198.18.0.1",
+    "198.51.100.1",
+    "203.0.113.1",
+    "192.88.99.1",
+    "::",
+    "::1",
+    "::ffff:127.0.0.1",
+    "::ffff:169.254.169.254",
+    "::127.0.0.1",  # IPv4-compatible, deprecated
+    "::ffff:0:127.0.0.1",  # IPv4-translated
+    "64:ff9b::7f00:1",  # NAT64 of 127.0.0.1
+    "64:ff9b::a9fe:a9fe",  # NAT64 of 169.254.169.254
+    "64:ff9b:1::1",  # local-use NAT64
+    "2002:808:808::1",  # 6to4
+    "2002:7f00:1::1",
+    "2001::1",  # Teredo
+    "2001:db8::1",
+    "3fff::1",
+    "fc00::1",
+    "fd00:ec2::254",  # AWS metadata over IPv6
+    "fe80::1",
+    "fec0::1",
+    "ff02::1",
+    "100::1",
+    "2001:20::1",
+]
+
+
+class TestAddresses:
+    @pytest.mark.parametrize("address", PUBLIC)
+    def test_public(self, address: str) -> None:
+        assert _is_public(ipaddress.ip_address(address))
+
+    @pytest.mark.parametrize("address", BLOCKED)
+    def test_not_public(self, address: str) -> None:
+        assert not _is_public(ipaddress.ip_address(address))
+
+
+class TestSSRFGuard:
+    async def test_pinned_to_the_address_it_checked(self, dns: DNS, origin: Origin) -> None:
+        dns.add("api.example", ["93.184.216.34"])
+        async with guarded(origin) as client:
+            response = await client.get("https://api.example:8443/hooks?x=1")
+            await client.get("http://api.example/")
+        assert response.text == "ok"
+        assert str(response.url) == "https://api.example:8443/hooks?x=1"
+        assert origin.sent == [
+            ("https://93.184.216.34:8443/hooks?x=1", "api.example:8443", "api.example"),
+            ("http://93.184.216.34/", "api.example", None),
+        ]
+        assert dns.queries == [("api.example", 8443), ("api.example", 80)]
+
+    async def test_international_names(self, dns: DNS, origin: Origin) -> None:
+        dns.add("xn--bcher-kva.example", ["93.184.216.34"])
+        async with guarded(origin) as client:
+            await client.get("https://bücher.example/")
+        assert origin.sent == [
+            ("https://93.184.216.34/", "xn--bcher-kva.example", "xn--bcher-kva.example")
+        ]
+
+    async def test_ipv6_addresses(self, dns: DNS, origin: Origin) -> None:
+        dns.add("v6.example", ["2606:4700:4700::1111"])
+        async with guarded(origin) as client:
+            await client.get("https://v6.example/")
+        assert origin.sent == [("https://[2606:4700:4700::1111]/", "v6.example", "v6.example")]
+
+    async def test_ipv4_mapped_answers_connect_over_ipv4(self, dns: DNS, origin: Origin) -> None:
+        dns.add("mapped.example", ["::ffff:8.8.8.8"])
+        async with guarded(origin) as client:
+            await client.get("http://mapped.example/")
+        assert origin.sent == [("http://8.8.8.8/", "mapped.example", None)]
+
+    @pytest.mark.parametrize("address", BLOCKED)
+    async def test_names_with_blocked_addresses(
+        self, dns: DNS, origin: Origin, caplog: pytest.LogCaptureFixture, address: str
+    ) -> None:
+        dns.add("evil.example", [address])
+        async with guarded(origin) as client:
+            with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
+                with pytest.raises(BlockedDestinationError) as error:
+                    await client.get("https://evil.example/latest/meta-data")
+        assert str(error.value) == "https://evil.example: its address isn't allowed"
+        # In the logs, not in the error, which may reach a user.
+        assert str(ipaddress.ip_address(address)) in caplog.text
+        assert origin.requests == []
+
+    async def test_any_blocked_address_blocks(self, dns: DNS, origin: Origin) -> None:
+        dns.add("mixed.example", ["93.184.216.34", "10.0.0.1"])
+        async with guarded(origin) as client:
+            with pytest.raises(BlockedDestinationError):
+                await client.get("http://mixed.example/")
+        assert origin.requests == []
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://127.0.0.1/",
+            "http://169.254.169.254/latest/meta-data/",
+            "http://[::1]:8080/",
+            "http://[::ffff:127.0.0.1]/",
+            "http://[::ffff:7f00:1]/",
+            "http://[fe80::1%25eth0]/",
+            "http://0.0.0.0:6379/",
+        ],
+    )
+    async def test_literal_addresses(self, dns: DNS, origin: Origin, url: str) -> None:
+        async with guarded(origin) as client:
+            with pytest.raises(BlockedDestinationError):
+                await client.get(url)
+        assert (dns.queries, origin.requests) == ([], [])
+
+    async def test_literal_public_addresses(self, dns: DNS, origin: Origin) -> None:
+        async with guarded(origin) as client:
+            await client.get("https://8.8.8.8/")
+            await client.get("http://[::ffff:8.8.8.8]/")
+        assert origin.sent == [
+            ("https://8.8.8.8/", "8.8.8.8", None),
+            ("http://8.8.8.8/", "[::ffff:8.8.8.8]", None),
+        ]
+        assert dns.queries == []
+
+    @pytest.mark.parametrize("host", ["2130706433", "0x7f.1", "127.1", "localhost", "localhost."])
+    async def test_numeric_spellings_and_local_names(
+        self, dns: DNS, origin: Origin, host: str
+    ) -> None:
+        """httpx sends them to DNS as names; the system resolver turns them into 127.0.0.1."""
+        dns.add(host, ["127.0.0.1"])
+        async with guarded(origin) as client:
+            with pytest.raises(BlockedDestinationError):
+                await client.get(f"http://{host}/")
+        assert origin.requests == []
+
+    async def test_dns_rebinding(self, dns: DNS, origin: Origin) -> None:
+        """Public to the check, private to the connection: the connection uses the checked
+        address, and every request resolves again."""
+        dns.add("rebind.example", ["93.184.216.34"], ["127.0.0.1"])
+        async with guarded(origin) as client:
+            await client.get("http://rebind.example/")
+            with pytest.raises(BlockedDestinationError):
+                await client.get("http://rebind.example/")
+        assert origin.sent == [("http://93.184.216.34/", "rebind.example", None)]
+
+    async def test_every_redirect_is_checked(self, dns: DNS, origin: Origin) -> None:
+        dns.add("public.example", ["93.184.216.34"])
+        dns.add("internal.example", ["10.0.0.5"])
+        origin.routes = {
+            "/to-ip": httpx.Response(302, headers={"Location": "http://127.0.0.1/admin"}),
+            "/to-name": httpx.Response(307, headers={"Location": "http://internal.example/"}),
+        }
+        async with guarded(origin) as client:
+            for path in ("/to-ip", "/to-name"):
+                with pytest.raises(BlockedDestinationError):
+                    await client.get(f"https://public.example{path}")
+        assert [request.url.path for request in origin.requests] == ["/to-ip", "/to-name"]
+
+    async def test_redirects_to_allowed_places(self, dns: DNS, origin: Origin) -> None:
+        dns.add("public.example", ["93.184.216.34"])
+        dns.add("other.example", ["8.8.8.8"])
+        origin.routes = {
+            "/relative": httpx.Response(301, headers={"Location": "/next"}),
+            "/next": httpx.Response(302, headers={"Location": "https://other.example/end"}),
+        }
+        async with guarded(origin) as client:
+            response = await client.get("https://public.example/relative")
+        assert str(response.url) == "https://other.example/end"
+        assert origin.sent == [
+            ("https://93.184.216.34/relative", "public.example", "public.example"),
+            ("https://93.184.216.34/next", "public.example", "public.example"),
+            ("https://8.8.8.8/end", "other.example", "other.example"),
+        ]
+
+    async def test_only_http_and_https(self, origin: Origin) -> None:
+        guard = SSRFGuardTransport(httpx.MockTransport(origin))
+        with pytest.raises(BlockedDestinationError, match="ftp: only http and https"):
+            await guard.handle_async_request(httpx.Request("GET", "ftp://files.example/"))
+
+    async def test_a_url_without_host(self, origin: Origin) -> None:
+        guard = SSRFGuardTransport(httpx.MockTransport(origin))
+        with pytest.raises(BlockedDestinationError, match="no host"):
+            await guard.handle_async_request(httpx.Request("GET", "http:///path"))
+
+    async def test_ports(self, dns: DNS, origin: Origin) -> None:
+        dns.add("api.example", ["93.184.216.34"])
+        async with guarded(origin, ports=[443]) as client:
+            await client.get("https://api.example/")
+            for url in ("https://api.example:8443/", "http://api.example/"):
+                with pytest.raises(BlockedDestinationError, match="port"):
+                    await client.get(url)
+        assert len(origin.requests) == 1
+
+    async def test_requests_without_a_host_header(self, dns: DNS, origin: Origin) -> None:
+        dns.add("api.example", ["93.184.216.34"])
+        guard = SSRFGuardTransport(httpx.MockTransport(origin))
+        request = httpx.Request("GET", "http://api.example:81/", stream=httpx.ByteStream(b""))
+        assert "host" not in request.headers
+        await guard.handle_async_request(request)
+        assert origin.sent == [("http://93.184.216.34:81/", "api.example:81", None)]
+
+
+class TestAllowed:
+    async def test_names(self, dns: DNS, origin: Origin) -> None:
+        dns.add("billing.internal", ["10.0.0.5"])
+        dns.add("a.svc.cluster.local", ["10.0.0.6"])
+        dns.add("svc.cluster.local", ["10.0.0.7"])
+        async with guarded(origin, allow=["Billing.Internal.", "*.svc.cluster.local"]) as client:
+            await client.get("https://billing.internal/")
+            await client.get("http://a.svc.cluster.local/")
+            with pytest.raises(BlockedDestinationError):
+                await client.get("http://svc.cluster.local/")  # not a subdomain of itself
+        assert origin.sent == [
+            ("https://10.0.0.5/", "billing.internal", "billing.internal"),
+            ("http://10.0.0.6/", "a.svc.cluster.local", None),
+        ]
+
+    async def test_networks_and_addresses(self, dns: DNS, origin: Origin) -> None:
+        dns.add("in.example", ["10.1.2.3"])
+        dns.add("mapped.example", ["::ffff:10.1.2.4"])
+        dns.add("out.example", ["10.1.3.1"])
+        allow = [
+            "10.1.2.0/24",
+            ipaddress.ip_address("192.168.0.10"),
+            ipaddress.ip_network("fd00::/8"),
+        ]
+        async with guarded(origin, allow=allow) as client:
+            await client.get("http://in.example/")
+            await client.get("http://mapped.example/")
+            await client.get("http://192.168.0.10/")
+            await client.get("http://[fd00::1]/")
+            for url in ("http://out.example/", "http://192.168.0.11/"):
+                with pytest.raises(BlockedDestinationError):
+                    await client.get(url)
+        assert len(origin.requests) == 4
+
+    @pytest.mark.parametrize(
+        "entry", ["", "a/b", "http://x", "user@host", "*.", "a b", ".", "a..b", "<a>", "a\tb"]
+    )
+    def test_invalid_entries(self, entry: str) -> None:
+        with pytest.raises(ValueError, match="isn't a host name"):
+            SSRFGuardTransport(Inner(), allow=[entry])
+
+
+class TestResolution:
+    async def test_names_that_dont_resolve(self, dns: DNS, origin: Origin) -> None:
+        dns.add("empty.example", [])
+        async with guarded(origin) as client:
+            for host in ("nowhere.example", "empty.example"):
+                with pytest.raises(httpx.ConnectError, match="couldn't resolve it"):
+                    await client.get(f"http://{host}/")
+
+    async def test_a_slow_dns(self, dns: DNS, origin: Origin) -> None:
+        dns.add("slow.example", ["93.184.216.34"])
+        dns.delay = 1
+        transport = SSRFGuardTransport(httpx.MockTransport(origin))
+        timeout = httpx.Timeout(5, connect=0.01)
+        async with httpx.AsyncClient(transport=transport, timeout=timeout) as client:
+            with pytest.raises(httpx.ConnectTimeout, match="no answer from DNS"):
+                await client.get("http://slow.example/")
+
+    async def test_the_other_family_when_the_first_cant_connect(
+        self, dns: DNS, origin: Origin
+    ) -> None:
+        dns.add("dual.example", ["2606:4700:4700::1111", "2606:4700:4700::1001", "93.184.216.34"])
+        origin.unreachable = {"2606:4700:4700::1111"}
+        async with guarded(origin) as client:
+            assert (await client.get("http://dual.example/")).text == "ok"
+        assert origin.sent == [("http://93.184.216.34/", "dual.example", None)]
+
+    async def test_no_other_family(self, dns: DNS, origin: Origin) -> None:
+        dns.add("v6.example", ["2606:4700:4700::1111", "2606:4700:4700::1001"])
+        origin.unreachable = {"2606:4700:4700::1111"}
+        async with guarded(origin) as client:
+            with pytest.raises(httpx.ConnectError):
+                await client.get("http://v6.example/")
+
+    async def test_neither_family(self, dns: DNS, origin: Origin) -> None:
+        dns.add("dual.example", ["2606:4700:4700::1111", "93.184.216.34"])
+        origin.unreachable = {"2606:4700:4700::1111", "93.184.216.34"}
+        async with guarded(origin) as client:
+            with pytest.raises(httpx.ConnectError):
+                await client.get("http://dual.example/")
+
+
+class TestWithResilientTransport:
+    def test_blocked_is_a_request_error_not_a_transport_error(self) -> None:
+        assert issubclass(BlockedDestinationError, httpx.RequestError)
+        assert not issubclass(BlockedDestinationError, httpx.TransportError)
+
+    async def test_blocked_requests_dont_open_the_breaker(self, dns: DNS, origin: Origin) -> None:
+        dns.add("evil.example", ["127.0.0.1"])
+        transport = ResilientTransport(
+            SSRFGuardTransport(httpx.MockTransport(origin)), failure_threshold=1
+        )
+        async with httpx.AsyncClient(transport=transport) as client:
+            for _ in range(3):
+                with pytest.raises(BlockedDestinationError):
+                    await client.get("http://evil.example/")
+        assert transport.state("http://evil.example") == "closed"
+
+    async def test_the_breaker_is_per_name(self, dns: DNS, origin: Origin) -> None:
+        dns.add("down.example", ["93.184.216.34"])
+        dns.add("up.example", ["93.184.216.34"])
+        origin.routes = {"/fail": httpx.Response(503)}
+        transport = ResilientTransport(
+            SSRFGuardTransport(httpx.MockTransport(origin)), failure_threshold=1
+        )
+        async with httpx.AsyncClient(transport=transport) as client:
+            await client.get("http://down.example/fail")
+            assert (await client.get("http://up.example/")).text == "ok"
+        assert transport.state("http://down.example") == "open"
+
+
+class Tracked(httpx.AsyncBaseTransport):
+    """A transport per host name, that knows whether it was closed."""
+
+    def __init__(self, origin: Origin, made: list["Tracked"], *, close_fails: bool = False) -> None:
+        self.inner = httpx.MockTransport(origin)
+        self.closed = False
+        self.close_fails = close_fails
+        made.append(self)
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/stream":
+            return httpx.Response(200, stream=Trickle([b"a", b"b"], 0))
+        return await self.inner.handle_async_request(request)
+
+    async def aclose(self) -> None:
+        self.closed = True
+        if self.close_fails:
+            raise OSError("can't close")
+
+
+class TestTransportPerName:
+    async def test_names_on_the_same_address_dont_share_connections(
+        self, dns: DNS, origin: Origin
+    ) -> None:
+        for host in ("a.example", "b.example", "a.example."):
+            dns.add(host, ["93.184.216.34"])
+        made: list[Tracked] = []
+        transport = SSRFGuardTransport(lambda: Tracked(origin, made))
+        async with httpx.AsyncClient(transport=transport) as client:
+            for host in ("a.example", "b.example", "a.example", "a.example."):
+                await client.get(f"https://{host}/")
+        assert len(made) == 2
+        assert all(tracked.closed for tracked in made)
+
+    async def test_least_recently_used_names_are_closed(self, dns: DNS, origin: Origin) -> None:
+        for host in "abc":
+            dns.add(f"{host}.example", ["93.184.216.34"])
+        made: list[Tracked] = []
+        transport = SSRFGuardTransport(lambda: Tracked(origin, made), max_hosts=2)
+        async with httpx.AsyncClient(transport=transport) as client:
+            for host in "abac":  # a was used after b: b goes
+                await client.get(f"http://{host}.example/")
+            assert [tracked.closed for tracked in made] == [False, True, False]
+            await client.get("http://b.example/")
+        assert len(made) == 4
+
+    async def test_names_with_an_open_response_stay(self, dns: DNS, origin: Origin) -> None:
+        for host in "abc":
+            dns.add(f"{host}.example", ["93.184.216.34"])
+        made: list[Tracked] = []
+        transport = SSRFGuardTransport(lambda: Tracked(origin, made), max_hosts=1)
+        async with httpx.AsyncClient(transport=transport) as client:
+            async with client.stream("GET", "http://a.example/stream") as streaming:
+                await client.get("http://b.example/")  # a is busy: one over the limit for now
+                assert [tracked.closed for tracked in made] == [False, False]
+                assert await streaming.aread() == b"ab"
+            await client.get("http://c.example/")
+            assert [tracked.closed for tracked in made] == [True, True, False]
+
+    async def test_a_transport_that_fails_to_close(
+        self, dns: DNS, origin: Origin, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        for host in "ab":
+            dns.add(f"{host}.example", ["93.184.216.34"])
+        made: list[Tracked] = []
+        transport = SSRFGuardTransport(lambda: Tracked(origin, made, close_fails=True), max_hosts=1)
+        client = httpx.AsyncClient(transport=transport)
+        await client.get("http://a.example/")
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
+            assert (await client.get("http://b.example/")).text == "ok"
+        assert "Couldn't close the transport" in caplog.text
+
+    async def test_a_failed_request_frees_its_name(self, dns: DNS, origin: Origin) -> None:
+        for host in "ab":
+            dns.add(f"{host}.example", ["93.184.216.34"])
+        made: list[Tracked] = []
+        origin.unreachable = {"93.184.216.34"}
+        transport = SSRFGuardTransport(lambda: Tracked(origin, made), max_hosts=1)
+        async with httpx.AsyncClient(transport=transport) as client:
+            for host in "ab":
+                with pytest.raises(httpx.ConnectError):
+                    await client.get(f"http://{host}.example/")
+            assert [tracked.closed for tracked in made] == [True, False]
+
+    async def test_responses_are_released_once(self, dns: DNS, origin: Origin) -> None:
+        dns.add("a.example", ["93.184.216.34"])
+        transport = SSRFGuardTransport(lambda: Tracked(origin, []))
+        request = httpx.Request("GET", "http://a.example/stream")
+        response = await transport.handle_async_request(request)
+        assert transport._destinations["a.example"].active == 1
+        assert isinstance(response.stream, httpx.AsyncByteStream)
+        await response.stream.aclose()
+        await response.stream.aclose()
+        assert transport._destinations["a.example"].active == 0
+
+    async def test_the_default_transports(self) -> None:
+        guard = SSRFGuardTransport()
+        made = guard._factory()
+        assert isinstance(made, httpx.AsyncHTTPTransport)
+        await made.aclose()
+        await guard.aclose()
+
+    async def test_closing_a_shared_transport(self) -> None:
+        inner = Inner()
+        async with SSRFGuardTransport(inner):
+            pass
+        assert inner.closed
+
+
+class TestProxies:
+    def test_a_proxied_transport_is_refused(self) -> None:
+        with pytest.raises(ValueError, match="proxy"):
+            SSRFGuardTransport(httpx.AsyncHTTPTransport(proxy="http://proxy.internal:3128"))
+
+    async def test_a_factory_of_proxied_transports_is_refused(self, dns: DNS) -> None:
+        dns.add("a.example", ["93.184.216.34"])
+        guard = SSRFGuardTransport(lambda: httpx.AsyncHTTPTransport(proxy="http://proxy:3128"))
+        with pytest.raises(ValueError, match="proxy"):
+            await guard.handle_async_request(httpx.Request("GET", "http://a.example/"))
+
+
+class TestGuardValidation:
+    @pytest.mark.parametrize(
+        ("options", "message"),
+        [
+            ({"ports": [0]}, "ports"),
+            ({"ports": [65_536]}, "ports"),
+            ({"max_hosts": 0}, "max_hosts"),
+        ],
+    )
+    def test_validation(self, options: dict[str, Any], message: str) -> None:
+        with pytest.raises(ValueError, match=message):
+            SSRFGuardTransport(Inner(), **options)
+
+
+# endregion

@@ -27,6 +27,7 @@ from fastapi import HTTPException
 
 from fastapi_alcazaba.metrics import Metrics
 from fastapi_alcazaba.resilience import CircuitBreaker
+from fastapi_alcazaba.tracing import add_event
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -150,6 +151,7 @@ class FastAPIBreaker:
             retry_after = self._breaker.retry_after
         if state is None:
             self._metrics_now().breaker_call("refused", self.name)
+            add_event("fastapi_alcazaba.breaker.refused", breaker=self.name)
             raise BreakerOpen(self.name, retry_after)
         return state == "half-open"
 
@@ -181,9 +183,11 @@ class FastAPIBreaker:
                 self._breaker.reset_timeout,
             )
             metrics.breaker_transition("open", self.name)
+            add_event("fastapi_alcazaba.breaker.opened", breaker=self.name)
         elif after == "closed" and before != "closed":
             logger.info("Circuit breaker %r closed: the dependency answers again", self.name)
             metrics.breaker_transition("closed", self.name)
+            add_event("fastapi_alcazaba.breaker.closed", breaker=self.name)
 
 
 class _Attempt:

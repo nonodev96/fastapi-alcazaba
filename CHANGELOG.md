@@ -76,8 +76,147 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   decorator of async or sync functions or around a block (`attempt()`), with a `timeout` for
   async calls, `failures` and `exclude` to say what counts, and `BreakerOpen`, an
   `HTTPException` that FastAPI answers with a 503 and `Retry-After`.
-- The `fastapi_alcazaba.breaker.calls`, `fastapi_alcazaba.breaker.transitions` and
-  `fastapi_alcazaba.scheduler.runs` metrics.
+- Problem details (`fastapi_alcazaba.problems`): `FastAPIProblemDetails().install(app)` answers
+  HTTPExceptions, validation errors and unhandled exceptions with RFC 9457
+  `application/problem+json` (`type`, `title`, `status`, `detail`, `instance` and the
+  `request_id` of `RequestIDMiddleware`), keeping the exceptions' headers (`Retry-After`,
+  `WWW-Authenticate`…). 5xx details are never sent (a hidden HTTPException detail is logged);
+  4xx ones are unless `expose_detail=False`; validation errors list `loc`, `msg` and `type`, never
+  FastAPI's `input` (which echoes passwords) nor `ctx`, at most `max_errors`. Unhandled exceptions
+  get a bare 500 and are still raised again for the server to log. `Problem` is an HTTPException
+  with a type URI, a title and checked extension members; `problems.response()` answers one from
+  your own exception handlers.
+- Request IDs (`fastapi_alcazaba.request_id`): `RequestIDMiddleware`, a pure ASGI middleware that
+  gives every HTTP request and WebSocket an ID, reusing the incoming `X-Request-ID` only when it's
+  a single value safe to log (`[A-Za-z0-9._:-]{1,128}`, `trust_incoming=False` to never reuse
+  it) and making a random 128-bit one otherwise, and sends it back in the response. `request_id()`
+  returns it while the request is handled (sync endpoints' threads included), and it stays set
+  after an unhandled exception so that the 500 handler and the server's error log still know the
+  request. `RequestIDLogFilter` puts it in log records as `%(request_id)s`.
+- Request timeouts (`fastapi_alcazaba.timeouts`): `RequestTimeoutMiddleware`, a pure ASGI
+  middleware that gives every HTTP request a deadline (`timeout=30` seconds, other ones by path
+  prefix with `paths`, None for none) from its arrival until its response has been sent, reading
+  the body included. At the deadline the app is cancelled (its `finally` blocks and `yield`
+  dependencies' exits run) and the client gets a 504; a response already streaming is cut by
+  raising the TimeoutError again, so that the server closes the connection instead of ending a
+  short body as if it were complete. Background tasks after the response have no deadline;
+  WebSockets and lifespan events go through untouched.
+- Concurrency limits: `FastAPIConcurrencyLimiter` (`fastapi_alcazaba.concurrency`), a FastAPI
+  dependency (with `yield`) that lets at most `limit` requests run at the same time across every
+  process, per route, per `name` shared by routes, or per client (`identifier`, answered with a
+  429 instead of a 503), with `Retry-After`. The semaphore is `limit` (up to 100) renewed locks in
+  the cache's backend, tried in random order and expiring if their holder dies; requests wait up
+  to `wait` seconds with jittered backoff. The slot is held until the response has been sent (the
+  whole body of a `StreamingResponse` since FastAPI 0.118; `scope="function"` releases it
+  earlier), and while a WebSocket is open. `slot()` takes one outside requests. When the backend
+  fails, each process enforces the limit on its own (`fail_open=False` refuses with a 503).
+- Leader election: `FastAPILeader` (`fastapi_alcazaba.leader`) elects one process among those
+  sharing the cache's backend, on a renewed lock, and runs the async functions given to `run` (a
+  decorator) while it leads: they're cancelled when the leadership is lost or the leader stops,
+  and the process campaigns again. `start()`/`stop()`, `lifespan` and `async with`; `is_leader`
+  works from sync code too. A stopping leader releases the lock for a quick hand-over; a dead one
+  is replaced within `ttl` and a third. Nobody is elected while the backend fails.
+- Maintenance mode: `FastAPIMaintenance` (`fastapi_alcazaba.maintenance`) with `enable(message,
+  retry_after)`, `disable()` and `status()`, shared by every process through the cache's backend,
+  and `MaintenanceMiddleware`, a pure ASGI middleware that answers 503 with `Retry-After` (and
+  closes WebSockets with 1013) while it's on, except for `allow_paths` and the requests `allow`
+  lets through. Each process keeps a copy of the state refreshed at most every `refresh` seconds,
+  so requests don't reach the backend; when the backend fails, the last state read stays. The
+  state is sealed with the cache's signing or encryption key when it has one.
+- Feature flags: `FastAPIFeatureFlags` (`fastapi_alcazaba.flags`) stores flags in the cache's
+  backend: `set(name, enabled=..., percentage=..., allow=..., deny=...)`, `delete`, `get`,
+  `enabled(name, subject, default)` and `require(name, subject=...)`, a FastAPI dependency that
+  answers 404 while the flag is off, without revealing it. Percentage rollouts are sticky (a hash
+  of the flag and the subject) and only grow with the percentage. Each process keeps definitions
+  for `refresh` seconds and falls back on the last one read, or the default, when the backend
+  fails. Subjects are stored as salted SHA-256 digests, never in clear, and definitions are
+  sealed with the cache's signing or encryption key when it has one.
+- API keys (`fastapi_alcazaba.apikeys`): `FastAPIAPIKeys(lookup)`, a dependency that
+  authenticates machine clients by keys like `ak_<id>_<secret>` (80-bit id, 256-bit secret),
+  read from `X-API-Key` or, with `bearer=True`, `Authorization: Bearer`, both declared in the
+  OpenAPI schema. `generate()` returns the key, to show once, and an `APIKeyRecord` to store: a
+  SHA-256 digest of the secret bound to its id, an HMAC with an optional `pepper` (rotation),
+  scopes and an expiry. The app's own `lookup(key_id)` (async or sync, in a thread) returns its
+  row, which the dependency returns after a constant-time comparison and the expiry check; every
+  failure gets the same 401 with `WWW-Authenticate`, and `require(*scopes)` a 403. Keys are never
+  logged. An optional per-process cache of records (`cache_ttl`, `cache_size`, `forget()`)
+  trades revocation latency for fewer lookups.
+- Signed webhooks (`fastapi_alcazaba.webhooks`), compatible with Standard Webhooks (Svix,
+  Supabase, Clerk, Resend...): `WebhookSigner` signs outgoing ones (`whsec_` secrets, a random
+  `webhook-id`, every secret of a rotation), and `FastAPIWebhooks`, a dependency, verifies
+  incoming ones over the raw body, which the endpoint can still read (capped by `max_body_size`,
+  413 beyond), with a timestamp `tolerance` both ways, constant-time comparison against every
+  secret, and replay protection: each accepted delivery is counted in the cache's backend (hashed,
+  under `state_key`) until it can't be accepted anymore, while the sender's retries (new timestamp
+  and signature) still go through. Wrong signatures, stale timestamps and replays get the same 401;
+  a failing backend a 503 (`fail_open` to accept instead). `verify()` checks a message without
+  the replay check.
+- SSRF protection for outbound calls: `SSRFGuardTransport` (`fastapi_alcazaba.outbound`), an httpx
+  transport that resolves the host itself and refuses the request (`BlockedDestinationError`, an
+  `httpx.RequestError` that `ResilientTransport` doesn't count against the origin) when any of its
+  addresses isn't public: private, loopback, link-local and cloud metadata, carrier-grade NAT,
+  multicast, reserved and documentation ranges, unique-local IPv6, and IPv4-mapped, NAT64, 6to4
+  and Teredo forms. Literal addresses and numeric spellings are caught too. The connection is
+  pinned to the checked address (URL rewritten to it, `Host` kept, SNI and certificate checked
+  against the name), so DNS rebinding can't swap it; every redirect hop is checked; one address of
+  the other family is tried if the first can't connect. `allow` lets internal names (`*.` for
+  subdomains) and networks through, `ports` restricts ports, each host name gets its own
+  connection pool (`max_hosts`), and proxied inner transports are refused. Composes as
+  `ResilientTransport(SSRFGuardTransport())`.
+- CSRF protection: `CSRFMiddleware` (`fastapi_alcazaba.csrf`), a plain ASGI middleware that
+  refuses with a 403 the unsafe requests a page on another site made the browser send with the
+  user's cookies or HTTP authentication. It trusts `Sec-Fetch-Site` (same-origin passes, same-site
+  and cross-site only from `trusted_origins`), and else requires an `Origin` or `Referer` of the
+  app's own origin (scheme and `Host` as the server sees them) or a trusted one; `Origin: null` and
+  requests with neither are refused. Requests without cookies go through (token APIs aren't
+  exposed), except form submissions from other sites (login CSRF); `check_all` checks everything.
+  `exempt_paths` skips prefixes. `require_token` adds a double-submit token (a `__Host-` cookie
+  compared in constant time with a header, also in `request.state.csrf_token`). WebSocket
+  handshakes are checked too, against cross-site WebSocket hijacking.
+- Server-side sessions: `ServerSessionMiddleware` (`fastapi_alcazaba.sessions`), a plain ASGI
+  middleware that keeps each browser's session in the cache's backend and only a random 256-bit id
+  in the cookie (`HttpOnly`, `Secure`, `SameSite=Lax`), so that, unlike Starlette's signed-cookie
+  sessions, the client can't read it and logging out revokes it. `request.session` works as usual.
+  The data is stored under a digest of the id, sealed with the cache's signing or encryption key,
+  saved only when it changed (nested changes too), JSON-only with a size limit, and expires after
+  `max_age` and `idle_timeout`. Ids are always generated by the server; `rotate_session` (at
+  login, against session fixation) and `clear_session` (at logout) are included. A backend that
+  can't be read gives an empty session; a change that can't be saved gives a 503.
+- Upload checks with nothing but the standard library (`fastapi_alcazaba.uploads`):
+  `FastAPIUploads(types, max_size=..., max_pixels=...)`, a dependency (or `check(file)`) that
+  reads the upload in chunks, counting its size whatever `UploadFile.size` says (413), detects its
+  real type from its bytes (415 when it isn't allowed), refuses images with more than
+  `max_pixels` pixels (decompression bombs, 413) and returns a `CheckedFile` read back to its
+  start, with the detected type, size, dimensions, extension and a safe name. `sniff(data)` tells
+  PNG, JPEG, GIF, WebP, PDF, ZIP, GZIP, MP4, QuickTime, UTF-8 text, and Office documents (from the
+  content types the archive declares, macro-enabled ones apart) from each other, and keeps HTML,
+  SVG and XML apart from text; SVG is never an image. `image_size(data)` reads image dimensions
+  from their headers, and `safe_filename(name)` makes a client's file name safe to display and to
+  use on any file system.
+- Task queue: `FastAPITaskQueue` (`fastapi_alcazaba.tasks`), on Redis 6.2+ or Valkey streams
+  (clusters too). `@queue.task()` registers async or sync functions; `await queue.enqueue(task,
+  *args, delay=...)` queues a run with JSON arguments checked against the function; the processes
+  that `start()` it (or use `lifespan`) run them, `concurrency` at a time. Delivery is at least
+  once: tasks are acknowledged when they finish, those of a worker that stopped answering are
+  taken over after `visibility_timeout` (heartbeats keep long ones), and one handed out more than
+  `max_deliveries` times is dead-lettered. Failures are retried with exponential backoff and
+  jitter, then dead-lettered with the type of their error only (`dead_letters()`,
+  `requeue_dead_letters()`, `discard_dead_letters()`). Only registered tasks run, never pickle;
+  with the cache's signing or encryption key every task is sealed and bound to its queue, so
+  planted or altered ones are refused and dead-lettered, never run. Delayed tasks move to the
+  stream atomically, the queue is bounded (`QueueFull`) and payloads are size-capped. `stop()`
+  gives running tasks `grace` seconds and puts back those it cancels.
+- Telemetry for the tools: each run of a scheduled job, and of a task (linked to the span that
+  enqueued it), is the root span of a trace of its own; rate-limit, breaker, outbound-breaker and
+  CSRF refusals and breaker transitions are events on the request's span, and idempotency
+  outcomes an attribute of it. New metrics: `fastapi_alcazaba.breaker.calls`,
+  `.breaker.transitions`, `.scheduler.runs`, `.idempotency`, `.tokens.checks`,
+  `.otp.verifications`, `.lock.wait`, `.lock.lost`, `.health.checks`, `.health.check.duration`,
+  `.concurrency`, `.leader.transitions`, `.maintenance.refused`, `.flags.evaluations`,
+  `.problems`, `.request_timeouts`, `.request_ids`, `.outbound.breaker`, `.outbound.ssrf.blocked`,
+  `.webhooks`, `.api_keys`, `.csrf.refused`, `.sessions`, `.uploads`, `.uploads.size`,
+  `.tasks.enqueued`, `.tasks`, `.tasks.duration` and `.tasks.reclaimed`. The README shows the recommended setup (OpenTelemetry's zero-code
+  instrumentation and its standard variables): Alcazaba only uses the API.
 - Locks, rate-limit counters, revoked tokens, one-time codes and idempotency records live under
   `{prefix}!` (`Cache.state_key`), apart from the cached responses: `clear()` never frees a held
   lock, resets a limit or takes a revocation back, and `InMemoryBackend` gives them a store of

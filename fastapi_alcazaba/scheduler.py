@@ -36,6 +36,7 @@ from fastapi_alcazaba.cache import Cache
 from fastapi_alcazaba.errors import BackendUnavailable
 from fastapi_alcazaba.locks import Lock
 from fastapi_alcazaba.metrics import Metrics
+from fastapi_alcazaba.tracing import Tracer, record_failure
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -45,6 +46,8 @@ F = TypeVar("F", bound=Callable[..., Any])
 # Seconds the lock of a running job outlives a process that dies while running it; renewed while
 # the job runs.
 _RUN_LOCK_TTL = 60.0
+# Spans of jobs when neither the scheduler nor FastAPICache has a cache: the global provider's.
+_TRACER = Tracer()
 # Whatever an expression asks for comes back within 8 years (29 February, but not in 2100).
 _MAX_DAYS = 8 * 366
 
@@ -342,6 +345,14 @@ class FastAPIScheduler:
 
         return FastAPICache.get_metrics()
 
+    def _tracer(self) -> Tracer:
+        if self._resolved is not None:
+            return self._resolved.tracer
+        from fastapi_alcazaba import FastAPICache
+
+        instance = FastAPICache._instance
+        return instance.tracer if instance is not None else _TRACER
+
     async def _loop(self, job: _Job) -> None:
         while not self._stopping:
             job.next_run = tick = job.trigger.next_after(datetime.now(UTC))
@@ -381,15 +392,18 @@ class FastAPIScheduler:
                 )
                 lock = None
         try:
-            if _is_async(job.func):
-                await job.func()
-            else:
-                await asyncio.to_thread(job.func)
-        except Exception:
-            logger.exception("Scheduled job %r failed", job.name)
-            metrics.scheduler_run("failed", job.name)
-        else:
-            metrics.scheduler_run("ran", job.name)
+            with self._tracer().job(job.name, tick.isoformat()) as span:
+                try:
+                    if _is_async(job.func):
+                        await job.func()
+                    else:
+                        await asyncio.to_thread(job.func)
+                except Exception as exc:
+                    logger.exception("Scheduled job %r failed", job.name)
+                    metrics.scheduler_run("failed", job.name)
+                    record_failure(span, exc)
+                else:
+                    metrics.scheduler_run("ran", job.name)
         finally:
             if lock is not None:
                 await lock.release()

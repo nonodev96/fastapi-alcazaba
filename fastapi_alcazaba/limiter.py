@@ -30,6 +30,7 @@ from starlette.status import (
 
 from fastapi_alcazaba.cache import Cache, get_cache
 from fastapi_alcazaba.errors import BackendUnavailable, CircuitOpen
+from fastapi_alcazaba.tracing import add_event
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -78,6 +79,12 @@ def client_network(ipv4_prefix: int = 32, ipv6_prefix: int = 64) -> Identifier:
         return _network(host, ipv4_prefix, ipv6_prefix)
 
     return identify
+
+
+def _record(cache: Cache, outcome: str, limiter: str) -> None:
+    cache.metrics.rate_limit(outcome, limiter)
+    if outcome != "allowed":  # what explains a 429 or an unchecked request in its trace
+        add_event("fastapi_alcazaba.rate_limit", outcome=outcome, limiter=limiter)
 
 
 def too_many_requests(
@@ -283,7 +290,7 @@ class FastAPIRateLimiter:
             until, blocked_index, blocked_previous, blocked_current = blocked
             # No block lasts two windows: a longer one means the clock was stepped back.
             if now < until <= now + 2 * self.window:
-                cache.metrics.rate_limit("limited", scope)
+                _record(cache, "limited", scope)
                 counts = (blocked_index, blocked_previous, blocked_current)
                 wait = max(until - now, self._wait_since(now, *counts, cost))
                 return _Outcome(0, math.ceil((until - now) / 1000), wait / 1000)
@@ -303,7 +310,7 @@ class FastAPIRateLimiter:
                 ),
             )
         except BackendUnavailable as exc:
-            cache.metrics.rate_limit("unchecked", scope)
+            _record(cache, "unchecked", scope)
             if isinstance(exc, CircuitOpen):
                 logger.debug("Rate limiter of %s not checked: %s", scope, exc)
             else:
@@ -321,9 +328,9 @@ class FastAPIRateLimiter:
             refill = _wait(self.times, self.window, elapsed, previous, current)
             reset = math.ceil(refill / 1000)
         if added:
-            cache.metrics.rate_limit("allowed", scope)
+            _record(cache, "allowed", scope)
             return _Outcome(remaining, reset, None)
-        cache.metrics.rate_limit("limited", scope)
+        _record(cache, "limited", scope)
         if not remaining:
             # Nothing fits until then, whatever its cost and whatever other requests come.
             self._blocked[base] = (now + refill, int(index), previous, current)

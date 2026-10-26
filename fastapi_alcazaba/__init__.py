@@ -1,6 +1,7 @@
 from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from fastapi_alcazaba.apikeys import FastAPIAPIKeys
 from fastapi_alcazaba.breaker import BreakerOpen, FastAPIBreaker
 from fastapi_alcazaba.cache import (
     DEFAULT_VARY_HEADERS,
@@ -11,22 +12,30 @@ from fastapi_alcazaba.cache import (
     warn_unsigned,
 )
 from fastapi_alcazaba.coder import Coder, JsonCoder
+from fastapi_alcazaba.concurrency import FastAPIConcurrencyLimiter
 from fastapi_alcazaba.errors import (
     BackendUnavailable,
     UnsignedEntriesWarning,
     UnstableCacheKeyWarning,
 )
+from fastapi_alcazaba.flags import FastAPIFeatureFlags
 from fastapi_alcazaba.key_builder import default_key_builder
+from fastapi_alcazaba.leader import FastAPILeader
 from fastapi_alcazaba.limiter import FastAPIRateLimiter
+from fastapi_alcazaba.maintenance import FastAPIMaintenance
 from fastapi_alcazaba.metrics import Metrics
 from fastapi_alcazaba.pagination import (
     FastAPIPagination,
     FastAPIPaginationCursor,
     FastAPIPaginationLimitOffset,
 )
+from fastapi_alcazaba.problems import FastAPIProblemDetails, Problem
 from fastapi_alcazaba.resilience import BackendGuard
 from fastapi_alcazaba.scheduler import FastAPIScheduler
+from fastapi_alcazaba.tasks import FastAPITaskQueue
 from fastapi_alcazaba.types import Backend, KeyBuilder
+from fastapi_alcazaba.uploads import FastAPIUploads
+from fastapi_alcazaba.webhooks import FastAPIWebhooks
 
 if TYPE_CHECKING:
     from fastapi_alcazaba.locks import Lock
@@ -44,15 +53,25 @@ __all__ = [
     "Cache",
     "CacheOptions",
     "Coder",
+    "FastAPIAPIKeys",
     "FastAPIBreaker",
     "FastAPICache",
+    "FastAPIConcurrencyLimiter",
+    "FastAPIFeatureFlags",
+    "FastAPILeader",
+    "FastAPIMaintenance",
     "FastAPIPagination",
     "FastAPIPaginationCursor",
     "FastAPIPaginationLimitOffset",
+    "FastAPIProblemDetails",
     "FastAPIRateLimiter",
     "FastAPIScheduler",
+    "FastAPITaskQueue",
+    "FastAPIUploads",
+    "FastAPIWebhooks",
     "JsonCoder",
     "KeyBuilder",
+    "Problem",
     "UnsignedEntriesWarning",
     "UnstableCacheKeyWarning",
     "default_key_builder",

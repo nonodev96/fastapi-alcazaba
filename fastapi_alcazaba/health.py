@@ -28,6 +28,7 @@ from starlette.requests import Request
 from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 
 from fastapi_alcazaba.cache import Cache, get_cache
+from fastapi_alcazaba.metrics import Metrics
 from fastapi_alcazaba.types import Backend
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -171,12 +172,21 @@ class _Readiness:
             return JSONResponse(last[2], last[1], headers=_NO_STORE)
         running = self._running
         if running is None or running.done():
-            running = self._running = asyncio.ensure_future(self._run(self._cache(request)))
+            run = self._run(self._cache(request), self._metrics(request))
+            running = self._running = asyncio.ensure_future(run)
         # Shielded: a request that goes away doesn't cancel the run the others are waiting for.
         status, body = await asyncio.shield(running)
         return JSONResponse(body, status, headers=_NO_STORE)
 
-    async def _run(self, cache: Cache | None) -> tuple[int, dict[str, Any]]:
+    def _metrics(self, request: Request) -> Metrics:
+        if self.cache is not None:
+            return self.cache.metrics
+        try:
+            return get_cache(request).metrics
+        except RuntimeError:
+            return Metrics(enabled=False)
+
+    async def _run(self, cache: Cache | None, metrics: Metrics) -> tuple[int, dict[str, Any]]:
         checks = dict(self.checks)
         if cache is not None:
             # Not critical: the cache fails open, so its outage mustn't take every instance out
@@ -190,6 +200,9 @@ class _Readiness:
             )
         )
         outcome = dict(zip(names, results, strict=True))
+        for name, result in outcome.items():
+            metrics.count("health.checks", check=name, status=result["status"])
+            metrics.record("health.check.duration", result["duration_ms"] / 1000, check=name)
         failed = [name for name, result in outcome.items() if result["status"] == "fail"]
         if any(checks[name].critical for name in failed):
             status, summary = HTTP_503_SERVICE_UNAVAILABLE, "fail"

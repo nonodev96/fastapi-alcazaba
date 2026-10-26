@@ -320,3 +320,12 @@ def get_cache(request: HTTPConnection) -> Cache:
     from fastapi_alcazaba import FastAPICache
 
     return FastAPICache.instance()
+
+
+def metrics_of(connection: HTTPConnection) -> Metrics:
+    """The metrics of the cache `get_cache` gives, disabled when there's none: for the tools that
+    record metrics without needing a cache (middlewares, error handlers)."""
+    try:
+        return get_cache(connection).metrics
+    except (RuntimeError, KeyError):  # no cache configured, or a bare ASGI app without "app"
+        return Metrics(enabled=False)

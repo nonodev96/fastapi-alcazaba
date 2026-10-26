@@ -12,11 +12,24 @@ built with security in mind and tested against real servers:
 | [Locks](#locks) | `async with cache.lock("job")`: one process at a time, renewed while held |
 | [Idempotency keys](#idempotency-keys) | a retried POST gets the first response instead of running twice |
 | [Revoked tokens and one-time codes](#revoked-tokens-and-one-time-codes) | a JWT blocklist and e-mail/SMS codes, nothing stored in clear |
-| [Outbound calls](#outbound-calls) | an httpx transport with a deadline per call and a circuit breaker per origin |
+| [API keys](#api-keys) | keys stored only as digests, with scopes and expiry |
+| [Signed webhooks](#signed-webhooks) | Standard Webhooks signing and verification, replays refused |
+| [Outbound calls](#outbound-calls) | an httpx transport with a deadline per call, a circuit breaker per origin and SSRF protection |
 | [Security headers and body size](#security-headers-and-body-size) | the OWASP headers, and a 413 for endless bodies |
+| [CSRF protection](#csrf-protection) | `CSRFMiddleware`: a 403 for what another site makes the browser send with its cookies |
+| [Server-side sessions](#server-side-sessions) | `request.session` kept in the backend, only a random id in the cookie: revocable |
+| [Checking uploads](#checking-uploads) | `FastAPIUploads`: the real type from the bytes, size, image dimensions, safe names |
+| [Problem details](#problem-details) | errors as RFC 9457 `application/problem+json`, never leaking internals |
+| [Request IDs](#request-ids) | an ID per request in logs, responses and errors |
+| [Request timeouts](#request-timeouts) | a deadline per request: a 504 instead of a request hung forever |
 | [Health checks](#health-checks) | `/health/live` and `/health/ready` for load balancers and orchestrators |
 | [Scheduled jobs](#scheduled-jobs) | `FastAPIScheduler`: every N seconds or by cron, each tick once across processes |
+| [Task queue](#task-queue) | `FastAPITaskQueue`: background tasks on Redis streams, retried, at least once, never pickle |
 | [Circuit breakers](#circuit-breakers) | `FastAPIBreaker`: stop calling a dependency that keeps failing, a 503 meanwhile |
+| [Concurrency limits](#concurrency-limits) | `FastAPIConcurrencyLimiter`: at most N requests at a time, across processes |
+| [Leader election](#leader-election) | `FastAPILeader`: work that must run in exactly one process at a time |
+| [Maintenance mode](#maintenance-mode) | `FastAPIMaintenance`: a 503 with `Retry-After` for every process at once |
+| [Feature flags](#feature-flags) | `FastAPIFeatureFlags`: on, off, by percentage or by subject, shared by every process |
 | [Pagination](#pagination) | `FastAPIPagination`, `…LimitOffset` and `…Cursor`, each page cached under its own key |
 | [Invalidation by tag](#invalidating-by-tag) | drop every entry of a product, a user… without knowing their keys |
 | [Two-level cache](#two-level-cache) | a copy in each process in front of Redis, kept in sync by pub/sub |
@@ -501,6 +514,114 @@ async def login(email: str, code: str) -> Token:
   With a `signing_key` or `encryption_key`, revocations are sealed and planted ones are ignored.
   Whoever can delete keys in the backend can still un-revoke tokens.
 
+## API keys
+
+`FastAPIAPIKeys` authenticates machine clients by an API key. It generates the keys and checks
+them; your database keeps a record of each, never the key itself:
+
+```python
+from fastapi_alcazaba.apikeys import FastAPIAPIKeys
+
+
+async def load_key(key_id: str) -> ApiKeyRow | None:  # any object with digest, scopes, expires_at
+    return await db.get(ApiKeyRow, key_id)
+
+
+keys = FastAPIAPIKeys(load_key, pepper=os.environ["API_KEY_PEPPER"], bearer=True)
+
+
+@app.post("/api-keys")
+async def create_key(user: Annotated[User, Depends(current_user)]) -> dict[str, str]:
+    new = keys.generate(scopes=["orders:read"], expires_at=datetime.now(UTC) + timedelta(days=90))
+    await db.add(ApiKeyRow(owner=user.id, **dataclasses.asdict(new.record)))
+    return {"key": new.key}  # shown once: only its digest is stored
+
+
+@app.get("/orders")
+async def orders(key: Annotated[ApiKeyRow, Depends(keys.require("orders:read"))]) -> list[Order]:
+    return await db.orders(owner=key.owner)
+```
+
+- **Key format:** `ak_<id>_<secret>` (`prefix` changes `ak`; `sk_live` works too): an 80-bit id
+  that finds the record and a 256-bit secret, in lowercase base32. A distinctive prefix lets
+  secret scanners (GitHub's, GitLab's) spot leaked keys.
+- **Stored as a digest:** the record holds a SHA-256 digest of the secret, bound to the key's id.
+  Random 256-bit secrets don't need a slow password hash. With a `pepper` (a server secret of at
+  least 32 bytes, kept out of the database) the digest is an HMAC, so a copy of the database
+  alone can't even test a guess. A list of peppers rotates them: the first one makes new keys,
+  all of them are accepted.
+- **Your database:** `lookup(key_id)` returns your row, async or not (a plain function runs in a
+  thread, like FastAPI's sync dependencies), and the dependency returns that same row. Any object
+  with `digest`, `scopes` (a collection, or a space-separated string) and `expires_at` works;
+  `APIKeyRecord` is what `generate()` gives.
+- **Where the key comes from:** the `X-API-Key` header (`header=...`) and, with `bearer=True`,
+  `Authorization: Bearer <key>`. Both appear in the OpenAPI schema, for the docs' Authorize
+  button.
+- **One answer:** a missing, malformed, unknown, wrong or expired key gets the same 401, with
+  `WWW-Authenticate`; the secret is compared in constant time, and malformed keys don't reach
+  `lookup`. `keys.require("a", "b")` adds a 403 for a valid key without all those scopes (with an
+  RFC 6750 `insufficient_scope` challenge in bearer mode). Keys and secrets are never logged.
+- **Revocation:** delete the record, or set its `expires_at` in the past (naive datetimes are
+  taken as UTC). `cache_ttl` keeps looked-up records in each process for that many seconds to
+  spare the database, so a revocation then takes up to `cache_ttl` to reach every process;
+  `keys.forget(key_id)` drops one from this process at once. Unknown ids are never cached.
+- **Floods:** each request with a well-formed key costs a lookup: put a `FastAPIRateLimiter`
+  in front.
+- **Without a dependency:** `await keys.authenticate(key)` for keys that come some other way (a
+  WebSocket message).
+
+## Signed webhooks
+
+`FastAPIWebhooks` accepts only webhooks signed with your secret, and each delivery once.
+`WebhookSigner` signs the ones you send. Both follow
+[Standard Webhooks](https://www.standardwebhooks.com), the format of Svix, Supabase, Clerk,
+Resend, OpenAI and others: `webhook-id`, `webhook-timestamp` and
+`webhook-signature: v1,<base64 HMAC-SHA256 of "id.timestamp.body">`, with `whsec_...` secrets.
+
+```python
+from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookMessage, WebhookSigner
+
+webhooks = FastAPIWebhooks(os.environ["WEBHOOK_SECRET"])  # "whsec_..."
+
+
+@app.post("/webhooks/payments")
+async def payment_event(message: Annotated[WebhookMessage, Depends(webhooks)]) -> None:
+    event = message.json()
+    ...  # idempotent on message.id: retries of a message keep its id
+
+
+# Sending them: sign the exact bytes you send.
+signer = WebhookSigner(os.environ["WEBHOOK_SECRET"])  # WebhookSigner.generate_secret() makes one
+body = json.dumps(event).encode()
+await client.post(url, content=body, headers=signer.sign(body))
+```
+
+- **Raw body, still readable:** the signature is checked over the body exactly as it arrived,
+  read up to `max_body_size` bytes (1 MiB; a 413 beyond, and a `Content-Length` over it is
+  refused before reading). It stays in the request: the endpoint can still take a pydantic model,
+  `await request.json()` or `message.json()`. Not a form parameter, which consumes the body
+  first.
+- **Freshness:** a timestamp more than `tolerance` seconds (300) away from the server's clock,
+  in the past or the future, is refused.
+- **Constant time, one answer:** every signature in the header is compared in constant time
+  against each secret. A wrong signature, a stale timestamp and a replay all get the same 401
+  (`"Invalid webhook"`); only missing or malformed headers get a 400.
+- **Replays:** each accepted delivery (its id and timestamp, as a SHA-256 digest under
+  `Cache.state_key`) is counted in the cache's backend until its timestamp can't be accepted
+  anymore, so a captured request sent again is refused by every process. Only accepted
+  deliveries are counted: a forged copy can't burn the id of the real one. A retry of the sender
+  has a new timestamp and signature and goes through, as it must after a failed attempt: make the
+  endpoint idempotent on `message.id` (a unique constraint) if a message must not be processed
+  twice. The backend must support counters, as every built-in backend does.
+- **Backend down:** a 503 with `Retry-After` (fail closed): senders retry later, while a replay
+  would run its effects again. `fail_open=True` accepts correctly signed webhooks without the
+  replay check instead.
+- **Rotation:** `FastAPIWebhooks([new, old])` accepts a signature by either secret;
+  `WebhookSigner([new, old])` signs every message with both, so receivers with either secret
+  accept it.
+- **Without a dependency:** `webhooks.verify(headers, body)` checks the signature and the
+  timestamp (not replays), for queues and scripts.
+
 ## Outbound calls
 
 `ResilientTransport` is an httpx transport for the calls your app makes to other services: a
@@ -553,6 +674,66 @@ async def quote(request: Request) -> Quote:
 - **Your own transport settings:** `ResilientTransport(httpx.AsyncHTTPTransport(verify=...,
   limits=..., proxy=...))`.
 
+### URLs your users give: SSRF
+
+Calling a URL that a user typed (a webhook endpoint, a link preview, an avatar by URL) lets them
+make your server call its own network: `http://169.254.169.254/` (the cloud's metadata service
+and its credentials), `http://localhost:6379/`, an admin panel on `10.0.0.0/8`.
+`SSRFGuardTransport` only calls the public internet:
+
+```python
+from fastapi_alcazaba.outbound import (
+    BlockedDestinationError,
+    ResilientTransport,
+    SSRFGuardTransport,
+)
+
+client = httpx.AsyncClient(
+    transport=ResilientTransport(SSRFGuardTransport(ports=(443,)), timeout=10),
+    follow_redirects=True,
+)
+
+try:
+    await client.post(subscription.url, content=body, headers=signer.sign(body))
+except BlockedDestinationError:
+    ...  # tell the user the URL isn't allowed
+```
+
+- **What's refused:** a host with any address that isn't public: private, loopback, link-local
+  (169.254.0.0/16 and its metadata services, `fe80::/10`), carrier-grade NAT (100.64.0.0/10),
+  multicast, reserved, documentation and benchmarking ranges, unique-local IPv6 (`fc00::/7`, AWS's
+  `fd00:ec2::254`), and the IPv6 forms of those IPv4 addresses (`::ffff:127.0.0.1`, NAT64
+  `64:ff9b::/96`, 6to4, Teredo). Literal addresses in URLs are checked without DNS; anything else
+  goes to DNS, so numeric spellings (`http://2130706433/`, `http://0x7f.1/`) and `localhost`
+  are refused for what they resolve to. Also refused: schemes other than http and https and, with
+  `ports`, other ports. `BlockedDestinationError` says which host, never the address it resolved
+  to (that's logged instead).
+- **Pinned against DNS rebinding:** the transport resolves the host itself and connects to the
+  address it checked: the URL is rewritten to it, the `Host` header keeps the name, and TLS gets
+  the name for SNI and the certificate check. A DNS server that answers a public address to the
+  check and a private one to the connection gets nowhere. If the first address can't be reached,
+  one of the other family (IPv4/IPv6) is tried.
+- **Redirects:** with `follow_redirects=True`, every hop goes through the transport and is checked
+  like the first one.
+- **Allowed internal destinations:** `allow=["billing.internal", "*.svc.cluster.local",
+  "10.1.2.0/24"]` lets those names (exact, or subdomains) and networks through although they
+  aren't public; they're still pinned.
+- **With `ResilientTransport`:** wrap the guard in it (not the other way round): the deadline
+  then covers the DNS lookup and each breaker is per host name. `BlockedDestinationError` is an
+  `httpx.RequestError` but not a `TransportError`, so it doesn't count against the origin's
+  breaker or trigger retry policies.
+- **Connections:** each host name gets an `httpx.AsyncHTTPTransport` of its own (sharing one SSL
+  context), at most `max_hosts` (100) kept open: pinned connections are pooled by address, and two
+  names on one address (a CDN) must not share a connection whose certificate was checked for the
+  other. Pass a factory for your own settings, `SSRFGuardTransport(lambda:
+  httpx.AsyncHTTPTransport(http2=True))`, or a transport instance (a mock in tests), which then
+  carries every request.
+- **Proxies:** a proxy connects on its own, so pinning can't work through it:
+  `httpx.AsyncHTTPTransport(proxy=...)` as the inner transport is refused. Don't pass `proxy=` or
+  `mounts=` to the client either: those requests would bypass the transport. (The client ignores
+  the `HTTP_PROXY` variables when it's given a transport.) An egress proxy that filters
+  destinations itself, such as Smokescreen, is the alternative.
+
 ## Security headers and body size
 
 Two ASGI middlewares for what FastAPI leaves to the deployment:
@@ -589,6 +770,297 @@ app.add_middleware(SecurityHeadersMiddleware)  # last: the outermost
   without the `root_path`.
 - Both are plain ASGI middlewares, not `BaseHTTPMiddleware`: streaming responses still stream,
   and WebSockets go through untouched.
+
+## CSRF protection
+
+A page on another site can make the user's browser send a form, or a `fetch`, to your app, and
+the browser adds the user's cookies by itself. `CSRFMiddleware` refuses those requests with a 403,
+from the headers browsers send to say where a request comes from:
+
+```python
+from fastapi_alcazaba.csrf import CSRFMiddleware
+
+app.add_middleware(
+    CSRFMiddleware,
+    trusted_origins=["https://admin.example.com"],  # other origins whose pages may post here
+    exempt_paths=["/webhooks"],  # signed in their own way
+)
+```
+
+- **Fetch metadata first:** every current browser sends `Sec-Fetch-Site`. `same-origin` (and
+  `none`, a request the user typed) goes through; `same-site` and `cross-site` are refused unless
+  their `Origin` is in `trusted_origins`. Sibling subdomains are other origins too.
+- **Older browsers:** without `Sec-Fetch-Site`, the `Origin` header (or else the `Referer`) must
+  be the app's own origin or a trusted one. `Origin: null` (sandboxed frames, redirects) is
+  refused, and so is a request with neither header.
+- **Only what the browser adds by itself is protected:** requests without cookies or remembered
+  HTTP authentication (Basic, Digest, Negotiate, NTLM) go through, so APIs that take a bearer
+  token in a header keep working from anywhere (a page on another site can't set the header).
+  Except form submissions from other sites (`Sec-Fetch-Mode` other than `cors`): before the user
+  has a cookie they would log the browser into the attacker's account (login CSRF).
+  `check_all=True` checks every request, for apps that trust TLS client certificates or the
+  network.
+- **Safe methods** (GET, HEAD, OPTIONS, TRACE) always go through: they mustn't change anything.
+- **The app's own origin** is the scheme and the `Host` header as the server sees them. Behind a
+  proxy that terminates TLS, let the server trust it (`uvicorn --proxy-headers
+  --forwarded-allow-ips=<proxy address>`) and have the proxy pass `Host` on; otherwise every
+  request looks cross-site, so list the public origin in `trusted_origins`.
+- **Double-submit token** for single-page apps, as defence in depth: with `require_token=True`
+  every response to a request without a valid token sets a random one (256 bits) in the
+  `__Host-csrftoken` cookie (readable by JavaScript, `Secure`, `SameSite=Lax`, the `__Host-`
+  prefix keeps sibling subdomains from planting one), also in `request.state.csrf_token`. Requests
+  with cookies must send it back in `X-CSRF-Token`; it's compared in constant time. A browser that
+  sends neither Origin nor Referer passes with a valid token. HTML forms without JavaScript can't
+  set headers: rely on the origin checks for them.
+- **WebSockets:** browsers don't apply CORS to WebSocket handshakes, so any site could open one
+  with the user's cookies and talk to it (cross-site WebSocket hijacking). Handshakes with cookies
+  get the same checks and are closed with 1008 before they're accepted (the server answers 403);
+  handshakes without `Origin` aren't from a browser and go through.
+- Refusals are logged at INFO with the method and the reason (never cookies or tokens), and
+  counted in `fastapi_alcazaba.csrf.refused`. A plain ASGI middleware: streaming responses still
+  stream.
+
+## Server-side sessions
+
+Starlette's `SessionMiddleware` keeps the whole session in a signed cookie: the client can read
+it (it's only base64), it can't be revoked (a copied cookie keeps working after logout, until it
+expires) and it can't hold much more than 4 KB. `ServerSessionMiddleware` keeps the data in the
+cache's backend instead, and the cookie only carries a random id; `request.session` works the
+same:
+
+```python
+from fastapi_alcazaba.sessions import ServerSessionMiddleware, clear_session, rotate_session
+
+app.add_middleware(ServerSessionMiddleware, max_age=8 * 3600, idle_timeout=1800)
+
+
+@app.post("/login")
+async def login(request: Request, form: Annotated[Login, Form()]) -> RedirectResponse:
+    user = await authenticate(form)
+    request.session["user_id"] = user.id
+    rotate_session(request)  # a new id: one planted in the browser before is now worthless
+    return RedirectResponse("/", status_code=303)
+
+
+@app.post("/logout")
+async def logout(request: Request) -> RedirectResponse:
+    clear_session(request)  # deleted from the backend: a copied cookie is worth nothing now
+    return RedirectResponse("/", status_code=303)
+```
+
+- **The cookie** holds 256 random bits (`secrets.token_urlsafe(32)`), `HttpOnly`, `Secure` and
+  `SameSite=Lax` by default, with `Max-Age` = `max_age`. Use `cookie_name="__Host-session"` so that
+  a sibling subdomain can't plant one (cookie tossing).
+- **The backend** keeps the data under a SHA-256 digest of the id (whoever reads the keys can't use
+  them as cookies), sealed with the cache's `signing_key` or `encryption_key` (use the latter when
+  sessions hold personal data). Without either, whoever can write to the backend can forge a
+  session, and a warning is logged. With a `TieredBackend` only the shared tier is used, so a
+  logout is seen by every process at once.
+- **Saved only when it changed**, nested changes included (`request.session["cart"].append(...)`),
+  when the response starts. Empty sessions aren't stored and get no cookie; a session the app
+  empties is deleted and its cookie expired. Responses that read it get `Vary: Cookie`, and those
+  that set the cookie `Cache-Control: no-store` unless they set their own.
+- **New ids are always the server's:** a cookie whose session doesn't exist (expired, made up)
+  never becomes the id of a new session. `rotate_session` gives a new id with the same data (and
+  a fresh `max_age`) at login, against session fixation; `clear_session` deletes the session and
+  expires the cookie at logout, and data stored afterwards goes to a new session.
+- **Expiry:** `max_age` seconds after creation or rotation, and `idle_timeout` seconds without
+  requests (refreshed in the backend at most every tenth of it, not on every request). Both are
+  checked when the session is read, and the backend drops it then as well.
+- **JSON only**, up to `max_size` bytes (16 KiB): more, or a value that isn't JSON, raises when
+  the response starts.
+- **Backend failures:** if the session can't be read, the request goes on with an empty one
+  (anonymous, which fails closed) and a warning. Changing it then, or failing to save, rotate or
+  clear it, replaces the response with a 503 and leaves the cookie alone: the response would claim
+  a login or a logout that didn't happen. Concurrent requests of one session: the last save wins.
+- WebSockets get `websocket.session` too, read-only (`rotate_session` and `clear_session` raise
+  there). A plain ASGI middleware: streaming responses still stream.
+
+## Checking uploads
+
+The name and the `Content-Type` of an upload are whatever the client chose: an HTML page sent as
+`cat.png` would be served back as HTML. `FastAPIUploads` checks the file itself, with nothing but
+the standard library:
+
+```python
+from fastapi_alcazaba.uploads import IMAGES, CheckedFile, FastAPIUploads
+
+uploads = FastAPIUploads(types=IMAGES, max_size=5 * 1024 * 1024, max_pixels=25_000_000)
+
+
+@app.post("/avatars")
+async def avatar(upload: Annotated[CheckedFile, Depends(uploads)]) -> dict[str, str]:
+    name = f"{uuid4()}{upload.extension}"  # never the client's name
+    await storage.save(name, upload.file.file, content_type=upload.content_type)
+    return {"name": name}
+```
+
+As a dependency it reads the form field `file`; for other fields or several files, call
+`await uploads.check(file)`. It returns a `CheckedFile`: the `UploadFile` read back to its start,
+the `content_type` found in its bytes, its `size`, its `width` and `height` (images) and a safe
+`filename`.
+
+- **The real type** (`sniff(data)`): PNG, JPEG, GIF, WebP, PDF, ZIP, GZIP, MP4 and QuickTime from
+  their signatures; Word, Excel and PowerPoint documents from the content types their
+  `[Content_Types].xml` declares (as Office reads them), with the macro-enabled ones (`.docm`,
+  `.xlsm`, `.pptm`) told apart, and anything ambiguous reported as a plain ZIP; UTF-8 text without
+  control characters (`text/plain`: CSV is text, it can't be told apart). Text that starts with a
+  tag is HTML, SVG or XML, never plain text, and SVG is never an image: all three can carry
+  scripts. `types` must come from `KNOWN_TYPES` (`IMAGES`, `OFFICE_DOCUMENTS`...), so a typo like
+  `image/jpg` fails at start-up. Store and serve files with the detected type, never the
+  client's, plus `X-Content-Type-Options: nosniff` (`SecurityHeadersMiddleware`).
+- **Size:** counted while the file is read in chunks, whatever `UploadFile.size` says; 413 beyond
+  `max_size`, 415 for a type that isn't allowed, 422 for an empty file. By the time an endpoint
+  runs the multipart parser has stored the whole request already, so limit it with
+  `BodySizeLimitMiddleware` on the route as well.
+- **Decompression bombs:** the width and height of PNG, JPEG (however much metadata comes before
+  the frame), GIF and WebP images are read from their headers (`image_size(data)`) without
+  decoding them; more than `max_pixels` (40 million by default) gets a 413, and an image whose
+  dimensions can't be read a 415.
+- **Safe names** (`safe_filename(name)`): NFKC-normalised, only the last path component, without
+  control or invisible characters (such as the right-to-left override that shows `exe.txt` as
+  `txt.exe`), `<>:"|?*` replaced, without leading dots or dashes, `_` in front of the names Windows
+  reserves (`CON`, `NUL`, `COM1`...), and at most 255 bytes, keeping the extension. For display and
+  `Content-Disposition`; store files under names of your own (`CheckedFile.extension`).
+- **What it doesn't do:** look inside the files. A PDF can carry scripts, Office documents
+  macros, archives may expand to far more than their size, and the frames of a GIF aren't counted.
+  Allow HTML, SVG or XML only to serve them as attachments from another domain.
+
+## Problem details
+
+`FastAPIProblemDetails` answers errors with RFC 9457 problem details
+(`application/problem+json`) instead of FastAPI's `{"detail": ...}`, and without telling clients
+what they shouldn't know:
+
+```python
+from fastapi_alcazaba.problems import FastAPIProblemDetails, Problem
+
+problems = FastAPIProblemDetails()
+problems.install(app)
+
+
+@app.post("/orders")
+async def order(item: Item) -> Order:
+    if stock[item.id] < item.quantity:
+        raise Problem(
+            409,
+            f"Only {stock[item.id]} left",
+            type="https://example.com/problems/out-of-stock",
+            title="Out of stock",
+            extensions={"available": stock[item.id]},
+        )
+    ...
+```
+
+```json
+{"type": "https://example.com/problems/out-of-stock", "title": "Out of stock", "status": 409,
+ "detail": "Only 3 left", "instance": "/orders", "available": 3, "request_id": "4bf92f35…"}
+```
+
+- **Members:** `type` (`about:blank` unless a `Problem` says otherwise), `title` (the RFC 9110
+  status phrase), `status`, `detail` when there's something to tell, `instance` (the request's
+  path, percent-encoded) and `request_id` when `RequestIDMiddleware` gave the request one.
+- **HTTPExceptions:** FastAPI's, Starlette's and their subclasses (`BreakerOpen`, the rate
+  limiter's 429…) keep their headers: `Retry-After`, `WWW-Authenticate`, `Allow`. A 4xx's detail
+  is sent, since it's written for clients (`expose_detail=False` keeps it); a 5xx's never is: an
+  `HTTPException(500, str(error))` becomes a bare 500, and the hidden detail is logged as a
+  warning. A detail that isn't a string goes in an `errors` member. Codes under 400 (a redirect
+  raised as an exception) keep FastAPI's answer.
+- **Validation errors:** a 422 whose `errors` list each error's `loc`, `msg` and `type`, never
+  its `input` (FastAPI echoes what was sent, passwords included) nor its `ctx`. At most
+  `max_errors=100`, so that a huge invalid body doesn't get a huge answer.
+- **Unhandled exceptions:** a 500 that says nothing about them. Starlette raises the exception
+  again after the response, so the server logs it with its traceback (uvicorn's "Exception in
+  ASGI application", with the request ID when you use `RequestIDLogFilter`) and `TestClient`
+  raises it in tests; it isn't logged a second time. With `debug=True` Starlette shows its
+  traceback page instead.
+- **Problem:** an `HTTPException` with a `type` URI, a `title` and extension members, whose names
+  are checked (three or more letters, digits or `_`, starting with a letter; never a standard
+  member) and whose values are encoded when it's raised. Its detail is always sent, also with a
+  5xx: you wrote it for the client. `problems.response(request, Problem(...))` answers one from
+  your own exception handlers.
+- Handlers you register for a status code or an exception subclass still win; install it before
+  the app starts.
+
+## Request IDs
+
+`RequestIDMiddleware` gives every request an ID, to find all the log lines of one request and to
+let a client quote it when it reports an error:
+
+```python
+import logging
+
+from fastapi_alcazaba.request_id import RequestIDLogFilter, RequestIDMiddleware, request_id
+
+app.add_middleware(RequestIDMiddleware)  # last: the outermost
+
+handler = logging.StreamHandler()
+handler.addFilter(RequestIDLogFilter())
+handler.setFormatter(logging.Formatter("%(asctime)s [%(request_id)s] %(name)s: %(message)s"))
+logging.getLogger().addHandler(handler)
+
+
+@app.post("/jobs")
+async def create_job() -> dict[str, str | None]:
+    return {"ticket": request_id()}
+```
+
+With uvicorn, add the filter to its handlers too (`"filters": {"request_id": {"()":
+"fastapi_alcazaba.request_id.RequestIDLogFilter"}}` in its `log_config`), and its access and
+error lines carry the ID.
+
+- **Incoming IDs:** the request's `X-Request-ID` (`header=` for another) is reused when a proxy
+  or the client set one that's safe to log: a single value matching `[A-Za-z0-9._:-]{1,128}`.
+  Anything else (line breaks that would forge log lines, an endless value, several values) gets
+  a new random one, 128 bits in hex. `trust_incoming=False` always makes a new one.
+- **Everywhere in the request:** `request_id()` returns it in endpoints, dependencies, sync
+  endpoints' threads and WebSockets; None outside a request. The response carries it in the
+  same header (unless the app set that header itself), and so do WebSocket handshakes.
+- **In errors:** after an unhandled exception the ID stays set for the rest of the request's
+  task, so Starlette's 500 handler and the server's error log, which run outside every
+  middleware, still know which request failed. `FastAPIProblemDetails` puts it in every problem,
+  500s included, and in their header.
+- **In logs:** `RequestIDLogFilter` sets `record.request_id` (`default="-"` outside a request; a
+  `request_id` passed in `extra=` is kept). Add it to handlers: a logger's filters don't see the
+  records of its child loggers.
+- Add it last, the outermost, so that the answers of the other middlewares (a 413, a 504) carry
+  the ID too.
+
+## Request timeouts
+
+`RequestTimeoutMiddleware` gives every request a deadline, so that a hung dependency or a client
+that trickles its body doesn't hold a request (and its database connection, its memory…)
+forever:
+
+```python
+from fastapi_alcazaba.timeouts import RequestTimeoutMiddleware
+
+app.add_middleware(
+    RequestTimeoutMiddleware,
+    timeout=30,
+    paths={"/reports": 120, "/events": None},  # Server-Sent Events: no deadline
+)
+```
+
+- **Before the response starts:** at the deadline the app is cancelled, its `finally` blocks and
+  the exit of its `yield` dependencies run, and the client gets a 504
+  (`{"detail": "Request timed out"}`). Reading the request body counts: a client that sends it a
+  byte at a time runs out of time too.
+- **While a response streams:** it's too late for a 504. The app is cancelled all the same and
+  the TimeoutError raised again, so the server closes the connection: the client sees an
+  incomplete body (an unfinished chunked read), never a short one that looks complete. Give
+  streaming endpoints their own deadline in `paths`, or None.
+- **After the response:** once its last byte is sent the deadline is off, so background tasks run
+  as long as they need.
+- **Sync endpoints** run in a thread that can't be interrupted: the client gets its 504 on time,
+  but the thread runs to its end, after the exit of its `yield` dependencies has run. Endpoints
+  that may hit the deadline are better async.
+- **Paths:** `paths` sets other deadlines by path prefix (the longest wins, None for none),
+  matched like the routes, without the `root_path`; `timeout=None` leaves the other paths
+  without one. The app's own TimeoutErrors go through untouched, and WebSockets and lifespan
+  events too.
+- Both cases are logged as warnings with the method and the route template. A plain ASGI
+  middleware: streaming responses still stream.
 
 ## Health checks
 
@@ -682,6 +1154,66 @@ app = FastAPI(lifespan=scheduler.lifespan)  # or `async with scheduler:` in your
   job runs next. A job is named after its module and function (`name=` for another), the name
   that its ticks have in the backend.
 
+## Task queue
+
+`FastAPITaskQueue` hands work over from an endpoint to run in the background, in this process or
+in any other that shares the cache's Redis or Valkey:
+
+```python
+from fastapi_alcazaba import FastAPITaskQueue
+
+queue = FastAPITaskQueue()  # FastAPICache's backend; or FastAPITaskQueue(cache)
+
+
+@queue.task(retries=5)
+async def send_welcome_email(user_id: int) -> None: ...
+
+
+app = FastAPI(lifespan=queue.lifespan)  # this process runs tasks too
+
+
+@app.post("/users")
+async def create_user(user: NewUser) -> None:
+    ...
+    await queue.enqueue(send_welcome_email, user.id)  # delay=60 or a timedelta to wait first
+```
+
+- **At least once:** tasks live in a Redis stream read by a consumer group, and leave it only once
+  they've finished. A process that dies while running one, or can't reach the backend to say it
+  finished, means that it runs again elsewhere: write tasks so that running one twice does no harm
+  (check first whether the e-mail went out). A worker that stops answering has its tasks taken
+  over after `visibility_timeout` (60 s); running tasks are kept from that by heartbeats, however
+  long they run. A task handed out more than `max_deliveries` times (5) goes to the dead letters
+  instead: it may be what kills the workers.
+- **Only registered tasks run, with JSON arguments**, never pickle. `enqueue` checks that the
+  arguments fit the function and serialise (TypeError otherwise), up to `max_payload_size` bytes
+  (64 KiB); they arrive as JSON gives them back (tuples as lists).
+- **Sealed:** with a `signing_key` or `encryption_key` on the cache, every task is signed or
+  encrypted and bound to its queue. A task that someone planted in the backend or altered is
+  refused, logged and sent to the dead letters, never run. Without a key a warning is logged at
+  start: whoever can write to the backend can run your tasks with arguments of their choosing.
+- **Retries:** a task that raises is tried again `retries` times (3), `backoff` seconds after the
+  first failure (1), twice that after the second… up to `max_backoff` (600), each with jitter so
+  that tasks that failed together (a service down) don't all retry at once. Then it goes to the
+  dead letters with the type of its error, never the message, which may hold personal data.
+  `dead_letters()` lists them, `requeue_dead_letters()` puts them back with their attempts reset,
+  and `discard_dead_letters(ids)` deletes them.
+- **Delayed tasks and retries** wait in a sorted set, and move to the stream when they're due in
+  a Lua script: two processes never both move one.
+- **Bounded:** the queue holds at most `max_length` tasks (100,000: waiting, running or delayed),
+  and `enqueue` raises `QueueFull` beyond, instead of dropping any; about `max_dead_letters`
+  (10,000) are kept. `pending()` counts the tasks that haven't finished.
+- **Workers:** `start()` and `stop()`, `lifespan` or `async with`, running `concurrency` tasks at a
+  time (10) in each process; sync functions run in a thread. `stop()` takes no more tasks and gives
+  the running ones `grace` seconds (10); those still running then are cancelled and go back to the
+  queue at once (a sync task's thread can't be stopped: it runs to its end, so that task may run
+  twice). A process that only runs tasks: `async with queue: await asyncio.Event().wait()`.
+- **Backends:** Redis 6.2+ or Valkey through `RedisBackend` or `ValkeyBackend` (or a
+  `TieredBackend` in front of one), clusters included: a queue's keys share a hash tag. Other
+  backends raise `NotImplementedError`. Its keys are state keys, which `clear()` never deletes.
+- **Small on purpose:** no results, priorities or workflows. Each run is the root of a trace of its
+  own, linked to the span of the request that enqueued it.
+
 ## Circuit breakers
 
 `FastAPIBreaker` stops calling a dependency that keeps failing (a database, an SDK, a service
@@ -721,6 +1253,185 @@ async def refund(order: Order) -> None:
   `"closed"`, `"open"` or `"half-open"`, handy in a health check:
   `HealthCheck(lambda: payments.state != "open", critical=False)`.
 
+## Concurrency limits
+
+`FastAPIConcurrencyLimiter` limits how many requests run *at the same time*, across every process
+and container, for endpoints whose cost is how long they run (AI, OCR, PDF rendering). The rate
+limiter counts requests per window; this counts the ones in flight:
+
+```python
+from fastapi_alcazaba.concurrency import FastAPIConcurrencyLimiter
+from fastapi_alcazaba.limiter import client_ip
+
+ocr = FastAPIConcurrencyLimiter(4, name="ocr", wait=2)  # FastAPICache's backend, or cache=...
+
+
+@app.post("/invoices/scan", dependencies=[Depends(ocr)])
+async def scan(file: UploadFile) -> Invoice: ...
+
+
+@app.post("/summaries", dependencies=[Depends(FastAPIConcurrencyLimiter(1, identifier=client_ip))])
+async def summarise(text: str) -> Summary: ...  # one at a time per client
+
+
+async def scan_pending() -> None:  # outside requests: a job, a queue consumer
+    async with ocr.slot():
+        ...
+```
+
+- **Slots in the backend:** `limit` locks (up to 100), tried in random order so that the
+  processes don't all queue on the first; a request holds one while it runs, renewed every
+  `ttl / 3` seconds, and the slots of a process that dies expire after `ttl` (60). Keys are
+  SHA-256 digests: client identities never reach the backend in clear.
+- **When it's full:** a request waits up to `wait` seconds (0: tries once), polling with
+  jittered backoff, then gets a 503 with `Retry-After` (`retry_after`, 1 s by default); a 429 when
+  the limit is per client (`identifier`). There's no queue and no order among the waiters.
+  WebSockets are closed with 1013 (1008 per client) and hold their slot while connected.
+- **Sharing:** by default each route (methods and path template) has its own slots; limiters with
+  the same `name` and `limit` share them. `slot(key=...)` gives each key its own slots outside
+  requests (it needs a `name`), and `slot(connection=request)` takes one around just the
+  expensive part of an endpoint.
+- **Streaming:** the slot is released when FastAPI runs the dependency's exit code. Since FastAPI
+  0.118 that's after the response is sent, so a `StreamingResponse` keeps its slot until its last
+  byte; `Depends(limiter, scope="function")` (FastAPI 0.121) releases it when the endpoint
+  returns, before the body. FastAPI 0.115 to 0.117 release it before the response is sent: take
+  a `slot()` inside the stream there.
+- **Failures:** if the backend fails, each process counts the slots on its own (`fail_open=True`,
+  the default: at most `limit` per process run); `fail_open=False` refuses with a 503 instead
+  (`slot()` raises `BackendUnavailable`). memcached can't hold locks.
+- **Limits:** like any lock on a cache-like store, a holder that stalls for longer than `ttl`
+  loses its slot while it still runs, and someone else may take it. Taking a slot when most are
+  busy costs a round trip per busy slot tried.
+
+## Leader election
+
+`FastAPILeader` elects one process among all those sharing the backend, for work that must run in
+exactly one of them all the time (a queue consumer, an outbox relay, a watcher) rather than at
+given times (that's the scheduler):
+
+```python
+from fastapi_alcazaba.leader import FastAPILeader
+
+leader = FastAPILeader("outbox")  # FastAPICache's backend; or FastAPILeader("outbox", cache=cache)
+
+
+@leader.run
+async def relay_outbox() -> None:
+    while True:
+        await relay_pending()
+        await asyncio.sleep(1)
+
+
+app = FastAPI(lifespan=leader.lifespan)  # or `async with leader:` in your lifespan
+
+...
+if leader.is_leader:  # anywhere, sync code included
+    ...
+```
+
+- **Election:** every process campaigns for a lock named after the leader, renewed every
+  `ttl / 3` seconds (`ttl` is 15 by default). The one that takes it leads and runs the functions
+  given to `run`; the others try again every `ttl / 3` seconds or so, with jitter.
+- **Hand-over:** a leader that stops releases the lock, and another process takes over within
+  `ttl / 3` seconds; one that dies, within `ttl` and a third. A leader that loses the lock (its
+  renewals couldn't keep up) cancels its functions within a second and campaigns again; at the
+  next election they run again.
+- **Functions:** async, without arguments, added before `start()`. They're cancelled when the
+  leadership ends and must let the cancellation through. An exception is logged with its
+  traceback; the process keeps leading.
+- **Failures:** while the backend is down nobody is elected, and a leader that can't renew steps
+  down when its lock expires: no leader is better than two. memcached can't hold locks.
+- **Limits:** a leader that stalls for longer than `ttl` (a long pause, a network partition) can
+  overlap the next one for a moment. Check `is_leader` between the steps of long work, and keep
+  that work idempotent.
+
+## Maintenance mode
+
+`FastAPIMaintenance` is a switch shared by every process; while it's on, `MaintenanceMiddleware`
+answers 503 with `Retry-After` to every request but the allowed ones:
+
+```python
+from fastapi_alcazaba.limiter import client_ip
+from fastapi_alcazaba.maintenance import FastAPIMaintenance, MaintenanceMiddleware
+
+maintenance = FastAPIMaintenance()  # FastAPICache's backend; or FastAPIMaintenance(cache)
+app.add_middleware(
+    MaintenanceMiddleware,
+    maintenance=maintenance,
+    allow_paths=("/health", "/admin"),  # always served
+    allow=lambda request: client_ip(request) in OFFICE,  # the team keeps working
+)
+
+await maintenance.enable("Back at 10:30", retry_after=900)  # from an admin route, a script...
+await (
+    maintenance.status()
+)  # MaintenanceStatus(enabled=True, message=..., retry_after=900, since=...)
+await maintenance.disable()
+```
+
+- **Shared, but not asked on every request:** the state lives in the backend, and each process
+  keeps a copy refreshed at most every `refresh` seconds (1 by default), so a change reaches every
+  process within about that. `status()` reads the backend now.
+- **Responses:** a 503 whose `detail` is the message ("Service Unavailable" without one), with
+  `Retry-After` when given and `Cache-Control: no-store`. WebSockets are closed with 1013 (try
+  again later). Lifespan events go through. A pure ASGI middleware: streaming isn't affected.
+- **Exceptions:** `allow_paths` are prefixes (`/health` covers `/health/live`, not `/healthz`),
+  matched without the `root_path` of a proxy or a mount, and are served without reading the state.
+  `allow` (sync or async) receives the request: use the address the server reports
+  (`client_ip`), never `X-Forwarded-For`.
+- **Failures:** when the backend fails, each process keeps the last state it read (maintenance
+  often means work on the backend itself: its failure mustn't reopen an app closed on purpose)
+  and serves normally if it never read one. `enable()` and `disable()` raise
+  `BackendUnavailable`: nothing changes then.
+- **Integrity:** with a `signing_key` or `encryption_key` on the cache the state is sealed, and a
+  state planted in the backend by someone else is ignored; the message is capped at 1000
+  characters.
+
+## Feature flags
+
+`FastAPIFeatureFlags` keeps flags in the backend: turn features on and off for everybody, for some
+users or tenants, or for a percentage of them, from any process and without a deploy:
+
+```python
+from fastapi_alcazaba.flags import FastAPIFeatureFlags
+
+flags = FastAPIFeatureFlags()  # FastAPICache's backend; or FastAPIFeatureFlags(cache, refresh=5)
+
+await flags.set("new-checkout", enabled=True, percentage=10, allow=["user-42"], deny=["user-7"])
+
+if await flags.enabled("new-checkout", subject=str(user.id)):
+    ...
+
+
+def user_id(request: Request) -> str | None:
+    return request.headers.get("x-user-id")
+
+
+@app.get("/beta/report", dependencies=[Depends(flags.require("beta-report", subject=user_id))])
+async def beta_report() -> Report: ...  # 404 while the flag is off for the user
+```
+
+- **Rules:** a flag is on for a subject when it's enabled, the subject isn't in `deny`, and it's
+  in `allow` or falls within `percentage` (none: everybody). `enabled=False` turns it off for
+  everyone, `allow` included. Without a subject, a partial rollout counts as off. An undefined
+  flag gives `default` (False).
+- **Sticky rollouts:** a subject's place comes from a hash of the flag's name and the subject, so
+  it keeps its answer while the percentage stays, raising the percentage only adds subjects, and
+  each flag picks different subjects.
+- **Hidden when off:** `require()` answers FastAPI's own `404 Not Found`, so the flag isn't
+  revealed, and closes WebSockets with 1008. For subjects that need other dependencies (the
+  current user), call `enabled()` from your own dependency.
+- **Local copies:** each process keeps the definitions it reads for `refresh` seconds (5), so a
+  change reaches every process within that, and a flag costs at most one round trip per
+  `refresh`. When the backend fails, the last definition read is used, or the default.
+  `get(name)` reads the backend now; `delete(name)` removes a flag.
+- **Privacy and integrity:** subjects are stored as SHA-256 digests salted with the flag's name,
+  never in clear (at most 10,000 per list). Whoever reads the backend can still confirm a guess
+  of a guessable subject (an e-mail address): prefer opaque ids, or give the cache an
+  `encryption_key`, which encrypts the definitions. With a `signing_key` or `encryption_key`,
+  definitions planted by someone else are ignored. Names are up to 100 letters, digits, `.`, `_`
+  and `-`.
+
 ## Resilience
 
 The cache never makes a request fail. Every backend call has a timeout (`backend_timeout`, 1 s by
@@ -738,10 +1449,39 @@ fails, the cached value is served.
 
 ## Metrics and traces
 
-With the `otel` extra and an OpenTelemetry SDK configured, Alcazaba records a span per cached call
-(`fastapi_alcazaba <function>`, with `fastapi_alcazaba.result`: hit, miss, refresh or bypass) and, inside it, one
-per backend call (`fastapi_alcazaba.backend get`, `set`, `lock`…, with failures recorded). Instrumented
-Redis/Valkey clients nest their own spans inside. And these metrics:
+Alcazaba only uses the OpenTelemetry API (the `otel` extra): it records nothing until the app
+configures an SDK, and never configures one itself. The simplest way is OpenTelemetry's own
+zero-code instrumentation, with the standard variables:
+
+```bash
+pip install opentelemetry-distro opentelemetry-exporter-otlp
+opentelemetry-bootstrap -a install  # instrumentations for FastAPI, httpx2, redis, SQLAlchemy…
+
+OTEL_SERVICE_NAME=shop-api \
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=production \
+OTEL_EXPORTER_OTLP_ENDPOINT=https://collector.internal:4317 \
+OTEL_PYTHON_LOG_CORRELATION=true \
+OTEL_PYTHON_FASTAPI_EXCLUDED_URLS="health/live,health/ready" \
+opentelemetry-instrument uvicorn app:app
+```
+
+Give the collector's endpoint explicitly, over TLS: traces and logs carry what your app does.
+Then Alcazaba adds to them:
+
+- **Spans:** one per cached call (`fastapi_alcazaba <function>`, with `fastapi_alcazaba.result`:
+  hit, miss, refresh or bypass) and, inside it, one per backend call (`fastapi_alcazaba.backend
+  get`, `set`, `lock`…, with failures recorded); instrumented Redis/Valkey clients nest their own
+  inside. Each run of a scheduled job is the root of a trace of its own
+  (`fastapi_alcazaba.scheduler <job>`, failures recorded), so what the job does (queries, calls)
+  is grouped under it instead of scattered. So is each run of a task (`fastapi_alcazaba.task
+  <task>`, with its queue, ID and attempt), linked to the span that enqueued it.
+- **On the request's span:** the events `fastapi_alcazaba.rate_limit` (a request limited or
+  unchecked), `fastapi_alcazaba.breaker.refused`, `.opened` and `.closed`,
+  `fastapi_alcazaba.outbound.refused` (an outbound call to an origin whose breaker is open) and
+  `fastapi_alcazaba.csrf.refused`, and the attribute `fastapi_alcazaba.idempotency` with the
+  outcome of an Idempotency-Key.
+- **Never:** keys, tokens, identities, codes or request bodies. Attributes are names, routes and
+  outcomes, few enough to keep the cardinality of the metrics low.
 
 | Metric | Attributes |
 | --- | --- |
@@ -754,6 +1494,32 @@ Redis/Valkey clients nest their own spans inside. And these metrics:
 | `fastapi_alcazaba.breaker.calls` | `fastapi_alcazaba.outcome` (success, failure, refused), `fastapi_alcazaba.breaker` |
 | `fastapi_alcazaba.breaker.transitions` | `fastapi_alcazaba.state` (open, closed), `fastapi_alcazaba.breaker` |
 | `fastapi_alcazaba.scheduler.runs` | `fastapi_alcazaba.outcome` (ran, failed, skipped, overlapping, unchecked), `fastapi_alcazaba.job` |
+| `fastapi_alcazaba.idempotency` | `fastapi_alcazaba.outcome` (stored, replayed, conflict, mismatch, not_kept, invalid, too_large, unchecked) |
+| `fastapi_alcazaba.tokens.checks` | `fastapi_alcazaba.outcome` (valid, revoked, unchecked) |
+| `fastapi_alcazaba.otp.verifications` | `fastapi_alcazaba.outcome` (success, wrong, missing, exhausted, malformed, unchecked): a burst of wrong or exhausted is someone guessing |
+| `fastapi_alcazaba.lock.wait` | `fastapi_alcazaba.acquired` (true, false): seconds spent acquiring locks |
+| `fastapi_alcazaba.lock.lost` | locks whose renewals couldn't keep up |
+| `fastapi_alcazaba.health.checks` | `fastapi_alcazaba.check`, `fastapi_alcazaba.status` (ok, fail) |
+| `fastapi_alcazaba.health.check.duration` | `fastapi_alcazaba.check` |
+| `fastapi_alcazaba.concurrency` | `fastapi_alcazaba.outcome` (acquired, local: counted in the process while the backend failed, refused, unavailable), `fastapi_alcazaba.limiter` |
+| `fastapi_alcazaba.leader.transitions` | `fastapi_alcazaba.leader`, `fastapi_alcazaba.event` (elected, lost, resigned) |
+| `fastapi_alcazaba.maintenance.refused` | requests refused during maintenance |
+| `fastapi_alcazaba.flags.evaluations` | `fastapi_alcazaba.flag`, `fastapi_alcazaba.result` (on, off, default) |
+| `fastapi_alcazaba.problems` | `fastapi_alcazaba.status`, `fastapi_alcazaba.kind` (http_exception, problem, validation, unhandled) |
+| `fastapi_alcazaba.request_timeouts` | `fastapi_alcazaba.outcome` (504, cut: already streaming), `fastapi_alcazaba.route` |
+| `fastapi_alcazaba.request_ids` | `fastapi_alcazaba.source` (incoming, generated, rejected): many rejected may be a misconfigured proxy, or someone forging log lines |
+| `fastapi_alcazaba.outbound.breaker` | `fastapi_alcazaba.event` (opened, refused), `server.address` |
+| `fastapi_alcazaba.outbound.ssrf.blocked` | `fastapi_alcazaba.reason` (scheme, host, port, address) |
+| `fastapi_alcazaba.webhooks` | `fastapi_alcazaba.outcome` (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable) |
+| `fastapi_alcazaba.api_keys` | `fastapi_alcazaba.outcome` (accepted, malformed, unknown, wrong_secret, expired, insufficient_scope) |
+| `fastapi_alcazaba.csrf.refused` | `fastapi_alcazaba.kind` (http, websocket), `fastapi_alcazaba.reason` (fetch_site, origin, no_source, token) |
+| `fastapi_alcazaba.sessions` | `fastapi_alcazaba.event` (created, updated, rotated, deleted, touched, rejected: forged or altered, unreadable, unavailable) |
+| `fastapi_alcazaba.uploads` | `fastapi_alcazaba.outcome` (accepted, too_large, too_many_pixels, unsupported, unreadable, empty) |
+| `fastapi_alcazaba.uploads.size` | `fastapi_alcazaba.content_type` (the detected one): bytes of the uploads accepted |
+| `fastapi_alcazaba.tasks.enqueued` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task` |
+| `fastapi_alcazaba.tasks` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` (succeeded, retried, failed, interrupted; for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered) |
+| `fastapi_alcazaba.tasks.duration` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` |
+| `fastapi_alcazaba.tasks.reclaimed` | `fastapi_alcazaba.queue`: tasks taken over from workers that stopped answering |
 
 ## Responses in several languages
 

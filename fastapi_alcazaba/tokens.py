@@ -21,6 +21,7 @@ from fastapi_alcazaba.backends.tiered import TieredBackend
 from fastapi_alcazaba.cache import Cache
 from fastapi_alcazaba.errors import BackendUnavailable
 from fastapi_alcazaba.integrity import Secrets, secret_list
+from fastapi_alcazaba.metrics import Metrics
 from fastapi_alcazaba.types import Backend
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -47,6 +48,25 @@ def _shared(backend: Backend) -> Backend:
     """The backend every process shares: TieredBackend's copies in each process could lag behind
     a revocation or a new code."""
     return backend.remote if isinstance(backend, TieredBackend) else backend
+
+
+def _cut_off(issued: float | None, cutoff: bytes | None) -> bool:
+    """Whether a token issued at `issued` is before the subject's `cutoff`."""
+    if cutoff is None or issued is None:
+        return False
+    try:
+        return issued < int(cutoff)
+    except ValueError:
+        return False  # not a cutoff we stored
+
+
+def _metrics(cache: Cache | None) -> Metrics:
+    """The metrics of `cache`, else FastAPICache's (disabled when there's none)."""
+    if cache is not None:
+        return cache.metrics
+    from fastapi_alcazaba import FastAPICache
+
+    return FastAPICache.get_metrics()
 
 
 def _resolve(cache: Cache | None) -> Cache:
@@ -169,15 +189,11 @@ class TokenBlocklist:
         except BackendUnavailable as exc:
             verdict = "accepted" if self.fail_open else "refused"
             logger.warning("Couldn't check whether a token is revoked: %s", verdict, exc_info=exc)
+            cache.metrics.count("tokens.checks", outcome="unchecked")
             return not self.fail_open
-        if mark is not None:
-            return True
-        if cutoff is None or issued is None:
-            return False
-        try:
-            return issued < int(cutoff)
-        except ValueError:
-            return False  # not a cutoff we stored
+        revoked = mark is not None or _cut_off(issued, cutoff)
+        cache.metrics.count("tokens.checks", outcome="revoked" if revoked else "valid")
+        return revoked
 
 
 class OneTimeCodes:
@@ -257,6 +273,11 @@ class OneTimeCodes:
         several requests with the right code at the same time, only one gets True. False when the
         backend fails."""
         cache = _resolve(self.cache)
+        outcome = await self._verify(cache, subject, code, purpose)
+        cache.metrics.count("otp.verifications", outcome=outcome)
+        return outcome == "success"
+
+    async def _verify(self, cache: Cache, subject: str, code: str, purpose: str) -> str:
         backend, guard = _shared(cache.backend), cache.guard
         code_key, attempts_key = self._keys(cache, subject, purpose)
         try:
@@ -264,23 +285,23 @@ class OneTimeCodes:
             attempts = await guard.run("incr", lambda: backend.incr(attempts_key, 1, self.ttl))
             if attempts > self.max_attempts:
                 await guard.run("delete", lambda: backend.clear(key=code_key))
-                return False
+                return "exhausted"
             if len(code) != self.digits or not (code.isascii() and code.isdigit()):
-                return False
+                return "malformed"
             stored = await guard.run("get", lambda: backend.get(code_key))
             if stored is None:
-                return False
+                return "missing"
             macs = [self._mac(secret, subject, purpose, code) for secret in self._secrets]
             if not any(hmac.compare_digest(stored, mac) for mac in macs):
-                return False
+                return "wrong"
             # Used up by whoever deletes it: of two requests with the right code, one wins.
             if await guard.run("delete", lambda: backend.clear(key=code_key)) != 1:
-                return False
+                return "missing"
         except BackendUnavailable as exc:
             logger.warning("Couldn't verify a one-time code", exc_info=exc)
-            return False
+            return "unchecked"
         try:
             await guard.run("delete", lambda: backend.clear(key=attempts_key))
         except BackendUnavailable as exc:
             logger.debug("Couldn't reset the attempts at a used code (they expire): %s", exc)
-        return True
+        return "success"

@@ -49,6 +49,8 @@ class Lock:
     :param wait: seconds to wait for the lock when someone else holds it; 0 tries once, None
         waits as long as it takes.
     :param renew: keep renewing it while it's held.
+    :param record_wait: record the time spent acquiring it (`fastapi_alcazaba.lock.wait`); off
+        for the locks that are tried over and over (concurrency slots, leader elections).
     """
 
     def __init__(
@@ -59,6 +61,7 @@ class Lock:
         ttl: float = 30.0,
         wait: float | None = 0.0,
         renew: bool = True,
+        record_wait: bool = True,
     ) -> None:
         if ttl <= 0:
             raise ValueError("ttl must be positive")
@@ -76,6 +79,7 @@ class Lock:
         self.ttl = ttl
         self.wait = wait
         self.renew = renew
+        self.record_wait = record_wait
         digest = hashlib.sha256(name.encode()).hexdigest()[:32]
         self.key = cache.state_key("lock", f"{{{digest}}}")
         self._token: str | None = None
@@ -95,7 +99,8 @@ class Lock:
         if self._token is not None:
             raise RuntimeError(f"the lock {self.name!r} is already held by this Lock")
         loop = asyncio.get_running_loop()
-        deadline = None if self.wait is None else loop.time() + self.wait
+        first = loop.time()
+        deadline = None if self.wait is None else first + self.wait
         token, delay = secrets.token_hex(16), 0.025
         while True:
             started = loop.time()
@@ -105,10 +110,14 @@ class Lock:
             if acquired:
                 break
             if deadline is not None and loop.time() >= deadline:
+                if self.record_wait:
+                    self.cache.metrics.record("lock.wait", loop.time() - first, acquired="false")
                 return False
             pause = delay if deadline is None else min(delay, deadline - loop.time())
             await asyncio.sleep(max(pause, 0))
             delay = min(delay * 2, 0.4)
+        if self.record_wait:
+            self.cache.metrics.record("lock.wait", loop.time() - first, acquired="true")
         self._token = token
         self._expires_at = started + self.ttl
         if self.renew:
@@ -153,6 +162,7 @@ class Lock:
                 renewed = False
             if not renewed:
                 logger.warning("Lost the lock %r: it expired before it could be renewed", self.name)
+                self.cache.metrics.count("lock.lost")
                 self._expires_at = 0.0
                 return
             self._expires_at = started + self.ttl

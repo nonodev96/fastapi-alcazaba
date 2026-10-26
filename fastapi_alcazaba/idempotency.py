@@ -22,6 +22,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fastapi_alcazaba.cache import Cache, get_cache
 from fastapi_alcazaba.errors import BackendUnavailable
+from fastapi_alcazaba.tracing import set_attributes
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -130,12 +131,14 @@ class IdempotencyMiddleware:
             return
         key = _parse_key(raw)
         if key is None:
+            self._note(scope, "invalid")
             await _reply(send, 400, "Invalid Idempotency-Key header")
             return
         body = await self._read_body(receive)
         if body is None:
             return  # the client went away before sending the whole body: nothing to run
         if len(body) > self.max_body_size:
+            self._note(scope, "too_large")
             await _reply(send, 413, "Request body too large")
             return
         connection = HTTPConnection(scope)
@@ -153,9 +156,13 @@ class IdempotencyMiddleware:
         replay = _replay_body(body, receive)
         lock = cache.lock(f"idempotency:{digest}", ttl=self.lock_ttl)
         try:
-            if await self._answer_from(cache, record_key, fingerprint, send):
+            if (
+                answer := await self._answer_from(cache, record_key, fingerprint, send)
+            ) is not None:
+                self._note(scope, answer, cache)
                 return
             if not await lock.acquire():
+                self._note(scope, "conflict", cache)
                 await _reply(
                     send,
                     409,
@@ -164,29 +171,45 @@ class IdempotencyMiddleware:
                 )
                 return
         except BackendUnavailable as exc:
-            await self._backend_failed(exc, scope, replay, send)
+            await self._backend_failed(exc, scope, replay, send, cache)
             return
         try:
             # The first request may have finished between the read and the lock.
             try:
-                answered = await self._answer_from(cache, record_key, fingerprint, send)
+                answer = await self._answer_from(cache, record_key, fingerprint, send)
             except BackendUnavailable as exc:
-                await self._backend_failed(exc, scope, replay, send)
+                await self._backend_failed(exc, scope, replay, send, cache)
                 return
-            if answered:
+            if answer is not None:
+                self._note(scope, answer, cache)
                 return
             # The app's own exceptions, BackendUnavailable included, aren't ours to answer.
-            response = _Recorder(send, self.max_response_size)
-            await self.app(scope, replay, response.send)
-            if response.keepable:
-                await self._store(cache, record_key, fingerprint, response)
+            response, kept = _Recorder(send, self.max_response_size), False
+            try:
+                await self.app(scope, replay, response.send)
+                kept = response.keepable and await self._store(
+                    cache, record_key, fingerprint, response
+                )
+            finally:
+                self._note(scope, "stored" if kept else "not_kept", cache)
         finally:
             await lock.release()
 
+    def _note(self, scope: Scope, outcome: str, cache: Cache | None = None) -> None:
+        """Count the outcome, and put it on the request's span."""
+        set_attributes(idempotency=outcome)
+        if cache is None:
+            try:
+                cache = self.cache if self.cache is not None else get_cache(HTTPConnection(scope))
+            except RuntimeError:  # no cache configured: the request fails anyway
+                return
+        cache.metrics.count("idempotency", outcome=outcome)
+
     async def _backend_failed(
-        self, exc: BackendUnavailable, scope: Scope, receive: Receive, send: Send
+        self, exc: BackendUnavailable, scope: Scope, receive: Receive, send: Send, cache: Cache
     ) -> None:
         logger.warning("Idempotency not checked: the backend failed", exc_info=exc)
+        self._note(scope, "unchecked", cache)
         if self.fail_open:
             await self.app(scope, receive, send)
         else:
@@ -209,21 +232,22 @@ class IdempotencyMiddleware:
 
     async def _answer_from(
         self, cache: Cache, record_key: str, fingerprint: str, send: Send
-    ) -> bool:
-        """Answer from the stored response, if there is one; False otherwise."""
+    ) -> str | None:
+        """Answer from the stored response, if there is one: "replayed", or "mismatch" when it
+        was another request's; None otherwise."""
         stored = await cache.guard.run("get", lambda: cache.backend.get(record_key))
         if stored is None:
-            return False
+            return None
         protector = cache.options.protector
         payload = protector.open(record_key, stored) if protector is not None else stored
         record = _load_record(payload)
         if record is None:
             logger.warning("Ignoring an idempotency record that isn't ours: %r", record_key)
-            return False
+            return None
         stored_fingerprint, status, headers, body = record
         if stored_fingerprint != fingerprint:
             await _reply(send, 422, "This Idempotency-Key was used with a different request")
-            return True
+            return "mismatch"
         await send(
             {
                 "type": "http.response.start",
@@ -232,11 +256,11 @@ class IdempotencyMiddleware:
             }
         )
         await send({"type": "http.response.body", "body": body})
-        return True
+        return "replayed"
 
     async def _store(
         self, cache: Cache, record_key: str, fingerprint: str, response: "_Recorder"
-    ) -> None:
+    ) -> bool:
         record = {
             "fingerprint": fingerprint,
             "status": response.status,
@@ -254,6 +278,8 @@ class IdempotencyMiddleware:
         except BackendUnavailable as exc:
             # The request ran; a retry would run it again.
             logger.warning("Couldn't keep the response for its Idempotency-Key", exc_info=exc)
+            return False
+        return True
 
 
 class _Recorder:
