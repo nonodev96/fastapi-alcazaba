@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-26
+
 ### Added
 
 - Rate limiting: `FastAPIRateLimiter` (`fastapi_alcazaba.limiter`), a FastAPI dependency that lets
