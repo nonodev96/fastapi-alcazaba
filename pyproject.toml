@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.27", "hatch-vcs>=0.5"]
+requires = ["hatchling>=1.32.4", "hatch-vcs>=0.5"]
 build-backend = "hatchling.build"
 
 [project]
@@ -27,21 +27,21 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "fastapi>=0.115",
-    "pydantic>=2.7",
-    "typing-extensions>=4.10",
+    "fastapi>=0.148.0",
+    "pydantic>=2.14.1",
+    "typing-extensions>=4.16.0",
 ]
 
 [project.optional-dependencies]
-redis = ["redis>=5.0.8"]
-valkey = ["valkey>=6.0"]
-glide = ["valkey-glide>=2.5"]
-otel = ["opentelemetry-api>=1.27"]
-crypto = ["cryptography>=44"]
+redis = ["redis>=8.1.0"]
+valkey = ["valkey>=6.2.0"]
+glide = ["valkey-glide>=2.5.3"]
+otel = ["opentelemetry-api>=1.45.1"]
+crypto = ["cryptography>=50.0.2"]
 # zstd is in the standard library from Python 3.14.
 zstd = ["backports.zstd>=1.0; python_version < '3.14'"]
 memcache = ["aiomcache>=0.8.2"]
-dynamodb = ["aiobotocore>=2.13.1"]
+dynamodb = ["aiobotocore>=3.9.2"]
 all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd]"]
 
 [project.urls]
@@ -54,30 +54,30 @@ Changelog = "https://github.com/nonodev96/fastapi-alcazaba/blob/main/CHANGELOG.m
 # Install with pip 26.2 or later: pip install -e ".[all]" --group dev (`make deps` does it).
 [dependency-groups]
 dev = [
-    "actionlint-py>=1.7.12",
-    "coverage[toml]>=7.6",
+    "actionlint-py>=1.7.12.25",
+    "coverage[toml]>=7.16.2",
     "cyclonedx-python-lib[json-validation]>=11.12",
-    "fakeredis[lua]>=2.26",
-    "hypothesis>=6.100",
-    "httpx2>=2.0",
-    "jinja2>=3.1",
-    "mutmut>=3.7",
-    "mypy>=1.13",
-    "opentelemetry-sdk>=1.27",
-    "pip-audit>=2.10",
-    "pre-commit>=4.0",
+    "fakeredis[lua]>=2.40.0",
+    "hypothesis>=6.170.2",
+    "httpx2>=2.14.0",
+    "jinja2>=3.1.6",
+    "mutmut>=3.8.0",
+    "mypy>=2.4.0",
+    "opentelemetry-sdk>=1.45.1",
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.7.0",
     "pydantic-settings>=2.16",
-    "pylint>=4",
-    "pytest>=8.3",
-    "pytest-asyncio>=0.24",
-    "pytest-benchmark>=5.1",
-    "pytest-randomly>=4.1",
-    "python-multipart>=0.0.20",
-    "ruff>=0.8",
-    "shellcheck-py>=0.11",
-    "types-aiobotocore[dynamodb]>=2.13",
-    "uvicorn>=0.30",
-    "zizmor>=1.31",
+    "pylint>=4.1.3",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-benchmark>=5.3.0",
+    "pytest-randomly>=5.0.0",
+    "python-multipart>=0.0.32",
+    "ruff>=0.17.1",
+    "shellcheck-py>=0.11.0.1",
+    "types-aiobotocore[dynamodb]>=3.9.2",
+    "uvicorn>=0.54.0",
+    "zizmor>=1.31.1",
 ]
 
 # The documentation site. MkDocs 2.0 drops plugins and themes, so neither Material nor
@@ -85,15 +85,15 @@ dev = [
 # that doesn't print a notice about MkDocs 2.0 on every build; its search suggestions have an XSS
 # (GHSA-xvg9-69gf-fjrf, fixed in 9.7.7), so mkdocs.yml leaves them off.
 docs = [
-    "mkdocs>=1.6,<2",
+    "mkdocs>=1.6.1,<2",
     "mkdocs-material==9.7.1",
-    "mkdocstrings-python>=1.16",
+    "mkdocstrings-python>=2.0.10",
 ]
 
 # Building and checking the distributions (CI and releases).
 package = [
-    "build>=1.2",
-    "check-wheel-contents>=0.6",
+    "build>=1.6.1",
+    "check-wheel-contents>=0.6.3",
     "twine>=7.0",
 ]
 
