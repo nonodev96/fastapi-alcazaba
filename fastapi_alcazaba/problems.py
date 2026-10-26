@@ -37,6 +37,7 @@ from starlette.responses import JSONResponse, Response
 from starlette.types import Scope
 
 from fastapi_alcazaba.cache import metrics_of
+from fastapi_alcazaba.middleware import _RATE_LIMIT_HEADERS
 from fastapi_alcazaba.request_id import _current_header
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -115,7 +116,7 @@ class Problem(HTTPException):
         status: int,
         detail: str | None = None,
         *,
-        type: str = "about:blank",
+        type: str = "about:blank",  # pylint: disable=redefined-builtin  # RFC 9457's member name
         title: str | None = None,
         headers: Mapping[str, str] | None = None,
         extensions: Mapping[str, Any] | None = None,
@@ -169,7 +170,9 @@ class FastAPIProblemDetails:
 
     def install(self, app: Starlette) -> None:
         """Register the handlers in `app`, before it starts. A handler you register for a
-        status code or an exception subclass still wins for those."""
+        status code or an exception subclass still wins for those. Alcazaba's middlewares answer
+        with problems too (the 504 of a timeout, the 413 of a body too large...)."""
+        app.state.fastapi_alcazaba_problems = self  # what the middlewares look for
         app.add_exception_handler(HTTPException, self._http_exception)
         app.add_exception_handler(RequestValidationError, self._validation_error)
         # Starlette gives the handlers of Exception (or 500) to ServerErrorMiddleware, around
@@ -192,7 +195,7 @@ class FastAPIProblemDetails:
             return self._problem(
                 request,
                 status,
-                type=exc.type,
+                problem_type=exc.type,
                 title=exc.title,
                 detail=exc.detail,
                 extensions=exc.extensions,
@@ -225,13 +228,17 @@ class FastAPIProblemDetails:
         request: Request,
         status: int,
         *,
-        type: str = "about:blank",
+        problem_type: str = "about:blank",
         title: str | None = None,
         detail: str | None = None,
         extensions: Mapping[str, Any] | None = None,
         headers: Mapping[str, str] | None = None,
     ) -> Response:
-        body: dict[str, Any] = {"type": type, "title": title or _title(status), "status": status}
+        body: dict[str, Any] = {
+            "type": problem_type,
+            "title": title or _title(status),
+            "status": status,
+        }
         if detail is not None and not _says_nothing(detail, status) and detail != body["title"]:
             body["detail"] = detail
         # Percent-encoded: the path in the scope is decoded, and `instance` is a URI reference.
@@ -244,7 +251,11 @@ class FastAPIProblemDetails:
             # The 500 doesn't go through RequestIDMiddleware: it's answered outside of it.
             if all(key.lower() != name.lower() for key in response_headers):
                 response_headers[name] = value
-        return JSONResponse(body, status, headers=response_headers, media_type=MEDIA_TYPE)
+        response = JSONResponse(body, status, headers=response_headers, media_type=MEDIA_TYPE)
+        # The rate limiters' headers, which a response built from an exception doesn't get.
+        for name, value in request.scope.get("state", {}).get(_RATE_LIMIT_HEADERS, ()):
+            response.headers.append(name, value)
+        return response
 
     async def _http_exception(self, request: Request, exc: Exception) -> Response:
         http_exc = cast(HTTPException, exc)

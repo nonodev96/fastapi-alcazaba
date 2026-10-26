@@ -1,3 +1,4 @@
+import contextlib
 import math
 import time
 from typing import TYPE_CHECKING, Any
@@ -36,7 +37,11 @@ class DynamoBackend(Backend):
     supports_counters = True
 
     def __init__(
-        self, table_name: str, region: str | None = None, *, endpoint_url: str | None = None
+        self,
+        table_name: str,
+        region: str | None = None,
+        *,
+        endpoint_url: str | None = None,
     ) -> None:
         """`endpoint_url` points to DynamoDB Local, LocalStack or a VPC endpoint."""
         self.session: AioSession = get_session()
@@ -44,16 +49,18 @@ class DynamoBackend(Backend):
         self.region = region
         self.endpoint_url = endpoint_url
         self.client: DynamoDBClient | None = None
+        self._exit_stack = contextlib.AsyncExitStack()  # closes the client
 
     async def init(self) -> None:
-        self.client = await self.session.create_client(
-            "dynamodb", region_name=self.region, endpoint_url=self.endpoint_url
-        ).__aenter__()
+        self.client = await self._exit_stack.enter_async_context(
+            self.session.create_client(
+                "dynamodb", region_name=self.region, endpoint_url=self.endpoint_url
+            )
+        )
 
     async def close(self) -> None:
-        if self.client is not None:
-            await self.client.__aexit__(None, None, None)
-            self.client = None
+        self.client = None
+        await self._exit_stack.aclose()
 
     def _get_client(self) -> DynamoDBClient:
         if self.client is None:
@@ -92,7 +99,12 @@ class DynamoBackend(Backend):
         return await self._add(key, amount, expire)
 
     async def _add(
-        self, key: str, amount: int, expire: int | None, *, at_most: int | None = None
+        self,
+        key: str,
+        amount: int,
+        expire: int | None,
+        *,
+        at_most: int | None = None,
     ) -> int:
         """Add `amount` to the counter `key`; with `at_most`, only if it holds no more than that
         (ConditionalCheckFailedException otherwise)."""
@@ -130,7 +142,14 @@ class DynamoBackend(Backend):
         return int(count)
 
     async def incr_window(
-        self, key: str, previous_key: str, *, amount: int, limit: int, weight: float, expire: int
+        self,
+        key: str,
+        previous_key: str,
+        *,
+        amount: int,
+        limit: int,
+        weight: float,
+        expire: int,
     ) -> tuple[bool, int, int]:
         """Atomic for the current window: a conditional update. The previous window is read first;
         it no longer changes (but for clients with a clock behind)."""
@@ -215,10 +234,20 @@ class DynamoBackend(Backend):
         if namespace:
             raise NotImplementedError("DynamoDB can't delete a namespace without a table scan")
         if key:
-            response = await self._get_client().delete_item(
-                TableName=self.table_name, Key={"key": {"S": key}}, ReturnValues="ALL_OLD"
-            )
-            return 1 if response.get("Attributes") else 0
+            # Conditional, so that of several deleting the item at once only one is told it was
+            # there: unconditional deletes can each get it back (one-time codes rely on this).
+            try:
+                await self._get_client().delete_item(
+                    TableName=self.table_name,
+                    Key={"key": {"S": key}},
+                    ConditionExpression="attribute_exists(#key)",
+                    ExpressionAttributeNames={"#key": "key"},
+                )
+            except ClientError as exc:
+                if not _condition_failed(exc):
+                    raise
+                return 0
+            return 1
         return 0
 
 

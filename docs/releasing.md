@@ -14,8 +14,7 @@ git remote add origin git@github.com:nonodev96/fastapi-alcazaba.git
 git push -u origin main
 ```
 
-The repository has a history of its own (the original one stays upstream), so no upstream tag
-can trigger a release. The project URLs in `pyproject.toml` already point to it.
+The project URLs in `pyproject.toml` already point to it.
 
 ### 2. Repository settings
 

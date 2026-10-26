@@ -11,6 +11,7 @@ connection is closed, so that the client sees a cut response rather than one tha
 
 import asyncio
 import logging
+import math
 from collections.abc import Mapping
 
 from starlette.requests import HTTPConnection
@@ -70,7 +71,7 @@ class RequestTimeoutMiddleware:
         timeout: float | None = 30.0,
         paths: Mapping[str, float | None] | None = None,
     ) -> None:
-        if timeout is not None and not timeout > 0:
+        if timeout is not None and (math.isnan(timeout) or timeout <= 0):
             raise ValueError("timeout must be positive (or None for no deadline)")
         for prefix, seconds in (paths or {}).items():
             if not prefix.startswith("/"):
@@ -134,4 +135,4 @@ class RequestTimeoutMiddleware:
         metrics_of(HTTPConnection(scope)).count(
             "request_timeouts", outcome="504", route=_route(scope)
         )
-        await _respond(send, _GATEWAY_TIMEOUT, "Request timed out")
+        await _respond(scope, send, _GATEWAY_TIMEOUT, "Request timed out")

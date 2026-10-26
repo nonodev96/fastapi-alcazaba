@@ -158,8 +158,6 @@ class TieredBackend(Backend):
                             self._drop_local()
                         self._subscribed = True
                         backoff = 0.5
-            except asyncio.CancelledError:
-                raise
             except Exception:
                 logger.warning("Lost the invalidation channel: local copies dropped", exc_info=True)
             finally:
@@ -299,7 +297,14 @@ class TieredBackend(Backend):
         return await self.remote.get_counter(key)
 
     async def incr_window(
-        self, key: str, previous_key: str, *, amount: int, limit: int, weight: float, expire: int
+        self,
+        key: str,
+        previous_key: str,
+        *,
+        amount: int,
+        limit: int,
+        weight: float,
+        expire: int,
     ) -> tuple[bool, int, int]:
         return await self.remote.incr_window(
             key, previous_key, amount=amount, limit=limit, weight=weight, expire=expire

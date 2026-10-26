@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any, NoReturn
@@ -45,7 +47,6 @@ class TestInMemoryBackend:
         assert 59 <= ttl <= 60
 
     async def test_entries_without_expire_do_not_expire(self) -> None:
-        """fastapi-cache2 stored expire=None entries as already expiring."""
         backend = InMemoryBackend()
         await backend.set("k", b"v")
         assert await backend.get_with_ttl("k") == (-1, b"v")
@@ -121,8 +122,8 @@ class TestInMemoryBackend:
         assert await backend.get_counter("a") == 0  # evicted, like any entry
 
 
-@pytest.fixture
-def fake_redis() -> Any:
+@pytest.fixture(name="fake_redis")
+def fixture_fake_redis() -> Any:
     return fakeredis.FakeAsyncRedis()
 
 
@@ -151,7 +152,7 @@ class TestRedisBackend:
         assert sorted(await fake_redis.keys()) == [b"app:ns10:1", b"other"]
 
     async def test_clear_namespace_is_not_a_script_injection(self, fake_redis: Any) -> None:
-        """fastapi-cache2 pasted the namespace into a Lua script: this one ran FLUSHALL."""
+        """A namespace pasted into a Lua script would run FLUSHALL."""
         await fake_redis.set("keep", b"x")
         backend = RedisBackend(fake_redis)
         assert await backend.clear(namespace="x') redis.call('FLUSHALL') --") == 0
@@ -308,6 +309,15 @@ class TestMemcachedBackend:
         with pytest.raises(NotImplementedError):
             await backend.clear(namespace="ns")
 
+    async def test_what_it_cant_do_says_so(self) -> None:
+        backend = MemcachedBackend(FakeMemcache())  # type: ignore[arg-type]
+        assert not backend.supports_locks
+        assert not backend.supports_tags
+        with pytest.raises(NotImplementedError, match="^MemcachedBackend can't hold locks$"):
+            await backend.acquire_lock("lock", "token", 5)
+        with pytest.raises(NotImplementedError, match="^MemcachedBackend can't keep tags$"):
+            await backend.invalidate_tags(["tag"])
+
     async def test_counters(self) -> None:
         mcache = FakeMemcache()
         backend = MemcachedBackend(mcache)  # type: ignore[arg-type]
@@ -337,7 +347,6 @@ class TestMemcachedBackend:
 
 class TestFastAPICacheClear:
     async def test_clear_key_with_a_prefix_only_deletes_that_key(self) -> None:
-        """Upstream PR #529."""
         backend = InMemoryBackend()
         FastAPICache.init(backend, prefix="app")
         await backend.set("app:ns:1", b"x")
@@ -355,19 +364,16 @@ class TestFastAPICacheClear:
 
 
 class FakeDynamoClient:
+    """The calls DynamoBackend makes, on one table: TableName and the like are left out."""
+
     def __init__(self) -> None:
         self.items: dict[str, dict[str, Any]] = {}
 
-    async def get_item(
-        self,
-        TableName: str,  # noqa: N803
-        Key: dict[str, Any],  # noqa: N803
-        ConsistentRead: bool = False,  # noqa: N803
-    ) -> dict[str, Any]:
+    async def get_item(self, Key: dict[str, Any], **_: Any) -> dict[str, Any]:  # noqa: N803  # pylint: disable=invalid-name
         item = self.items.get(Key["key"]["S"])
         return {} if item is None else {"Item": item}
 
-    async def put_item(self, TableName: str, Item: dict[str, Any], **kwargs: Any) -> None:  # noqa: N803
+    async def put_item(self, Item: dict[str, Any], **kwargs: Any) -> None:  # noqa: N803  # pylint: disable=invalid-name
         key = Item["key"]["S"]
         if "ConditionExpression" in kwargs:  # only DynamoBackend.acquire_lock's
             assert kwargs["ConditionExpression"] == "attribute_not_exists(#key) OR #expires < :now"
@@ -377,16 +383,19 @@ class FakeDynamoClient:
                 conditional_check_failed()
         self.items[key] = Item
 
-    async def delete_item(self, TableName: str, Key: dict[str, Any], **kwargs: Any) -> Any:  # noqa: N803
+    async def delete_item(self, Key: dict[str, Any], **kwargs: Any) -> Any:  # noqa: N803  # pylint: disable=invalid-name
         key = Key["key"]["S"]
-        if "ConditionExpression" in kwargs:  # only DynamoBackend.release_lock's
+        existing = self.items.get(key)
+        if kwargs["ConditionExpression"] == "attribute_exists(#key)":  # DynamoBackend.clear's
+            if existing is None:
+                conditional_check_failed()
+        else:  # DynamoBackend.release_lock's
             assert kwargs["ConditionExpression"] == "#token = :token"
-            existing = self.items.get(key)
             token = kwargs["ExpressionAttributeValues"][":token"]
             if existing is None or existing["token"] != token:
                 conditional_check_failed()
-        item = self.items.pop(key, None)
-        return {"Attributes": item} if item else {}
+        del self.items[key]
+        return {}
 
     async def update_item(self, **kwargs: Any) -> dict[str, Any]:
         """Only what DynamoBackend sends: ADD to a number, SET if_not_exists, and the condition
@@ -453,12 +462,22 @@ class TestDynamoBackend:
         assert await backend.get_with_ttl("k") == (0, None)
 
     async def test_clear(self, backend: Any) -> None:
+        """A conditional delete: of several deleting an entry at once, one is told it was there."""
         await backend.set("k", b"v")
         assert await backend.clear(key="k") == 1
         assert await backend.clear(key="k") == 0
         assert await backend.clear() == 0
         with pytest.raises(NotImplementedError):
             await backend.clear(namespace="ns")
+
+    async def test_other_clear_errors_go_through(self, backend: Any) -> None:
+        async def throttled(**_: Any) -> Any:
+            error = {"Error": {"Code": "ProvisionedThroughputExceededException", "Message": "slow"}}
+            raise ClientError(error, "DeleteItem")  # type: ignore[arg-type]
+
+        backend.client.delete_item = throttled
+        with pytest.raises(ClientError):
+            await backend.clear(key="k")
 
     async def test_counters(self, backend: Any) -> None:
         assert backend.supports_counters
@@ -497,7 +516,7 @@ class TestDynamoBackend:
 
     @pytest.mark.parametrize("operation", ["put_item", "delete_item", "update_item"])
     async def test_other_lock_errors_go_through(self, backend: Any, operation: str) -> None:
-        async def throttled(**kwargs: Any) -> Any:
+        async def throttled(**_: Any) -> Any:
             error = {"Error": {"Code": "ProvisionedThroughputExceededException", "Message": "slow"}}
             raise ClientError(error, operation)  # type: ignore[arg-type]
 
@@ -511,7 +530,7 @@ class TestDynamoBackend:
             await calls[operation]()
 
     async def test_other_errors_go_through(self, backend: Any) -> None:
-        async def throttled(**kwargs: Any) -> Any:
+        async def throttled(**_: Any) -> Any:
             error = {"Error": {"Code": "ProvisionedThroughputExceededException", "Message": "slow"}}
             raise ClientError(error, "UpdateItem")  # type: ignore[arg-type]
 
@@ -560,7 +579,8 @@ class TestInMemoryState:
         assert list(backend._state) == ["app!otp:long", "app!otp:new"]
 
     async def test_expired_state_is_looked_for_once_a_second(
-        self, monkeypatch: pytest.MonkeyPatch
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         backend, clock = InMemoryBackend(max_size=3), [time.monotonic()]
         monkeypatch.setattr(time, "monotonic", lambda: clock[0])

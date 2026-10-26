@@ -1,4 +1,5 @@
 import datetime
+import itertools
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -21,14 +22,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(lifespan=lifespan)
 
-ret = 0
+calls = itertools.count(1)  # how many times get_ret() really ran
 
 
 @cache(namespace="test", expire=1)
 async def get_ret():
-    global ret
-    ret = ret + 1
-    return ret
+    return next(calls)
 
 
 @app.get("/")
@@ -50,7 +49,7 @@ async def get_date():
 
 @app.get("/datetime")
 @cache(namespace="test", expire=2)
-async def get_datetime(request: Request, response: Response):
+async def get_datetime(_request: Request, _response: Response):
     return {"now": datetime.datetime.now().astimezone()}
 
 
@@ -105,32 +104,29 @@ async def pydantic_instance() -> Item:
     return Item(name="Something", description="An instance of a Pydantic model", price=10.5)
 
 
-put_ret = 0
+puts = itertools.count(1)
 
 
 @app.put("/uncached_put")
 @cache(namespace="test", expire=5)
 async def uncached_put():
-    global put_ret
-    put_ret = put_ret + 1
-    return {"value": put_ret}
+    return {"value": next(puts)}
 
 
-put_ret2 = 0
+cached_puts = itertools.count(1)
 
 
 @app.get("/cached_put")
 @cache(namespace="test", expire=5)
 async def cached_put():
-    global put_ret2
-    put_ret2 = put_ret2 + 1
-    return {"value": put_ret2}
+    return {"value": next(cached_puts)}
 
 
 @app.get("/namespaced_injection")
 @cache(namespace="test", expire=5, injected_dependency_namespace="monty_python")
 def namespaced_injection(
-    __fastapi_alcazaba_request: int = 42, __fastapi_alcazaba_response: int = 17
+    __fastapi_alcazaba_request: int = 42,
+    __fastapi_alcazaba_response: int = 17,
 ) -> dict[str, int]:
     return {
         "__fastapi_alcazaba_request": __fastapi_alcazaba_request,

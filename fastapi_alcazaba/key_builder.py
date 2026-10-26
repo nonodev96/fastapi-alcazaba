@@ -18,8 +18,8 @@ def default_key_builder(
     """`namespace` plus the SHA-256 of the function's module, qualified name and the repr() of
     its arguments.
 
-    fastapi-cache2 hashed with MD5 (upstream PRs #264 and #338) and used `__name__`, so two
-    methods with the same name in one module shared their entries. Request headers that change
+    SHA-256, not MD5, and `__qualname__`, not `__name__`, so that two methods with the same name
+    in one module don't share their entries. Request headers that change
     the response, such as Authorization, are added by the decorator (`vary_headers`), whatever the
     key builder.
     """

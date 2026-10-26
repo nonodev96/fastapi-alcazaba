@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # pip takes no release younger than three days: compromised versions are usually pulled sooner.
+  PIP_UPLOADED_PRIOR_TO: P3D
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -23,14 +28,15 @@ jobs:
           persist-credentials: false
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
         id: pages
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: $/.github/actions/python
         with:
-          enable-cache: false
+          groups: docs
+          cache: ""
       - name: Build the site
         env:
           SITE_URL: ${{ steps.pages.outputs.base_url }}/
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-        run: uv run --locked --group docs mkdocs build --strict
+        run: mkdocs build --strict
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site/

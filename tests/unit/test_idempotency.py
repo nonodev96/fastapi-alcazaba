@@ -1,5 +1,7 @@
 """Idempotency-Key: a retried POST gets the first response again and runs once."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import json
 import logging
@@ -415,7 +417,8 @@ class TestASGI:
         ],
     )
     async def test_a_client_that_disconnects_while_sending_the_body(
-        self, incoming: list[Message]
+        self,
+        incoming: list[Message],
     ) -> None:
         """The app doesn't run with half a body, whose answer a retry with all of it would get."""
         backend = InMemoryBackend()

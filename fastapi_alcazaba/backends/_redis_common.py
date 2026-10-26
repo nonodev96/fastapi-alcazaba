@@ -103,10 +103,10 @@ def is_missing_key_error(exc: Exception) -> bool:
 class RedisLikeBackend(Backend):
     """Backend for redis-py style clients (standalone or cluster).
 
-    `clear(namespace=...)` walks the namespace with SCAN and deletes in batches with UNLINK.
-    fastapi-cache2 ran a Lua script with KEYS, which blocks the server while it walks every key,
-    and interpolated the namespace into the script source: a namespace coming from user input
-    could run arbitrary commands (e.g. "x') redis.call('FLUSHALL') --").
+    `clear(namespace=...)` walks the namespace with SCAN and deletes in batches with UNLINK. Never
+    KEYS, which blocks the server while it walks every key, and never a Lua script with the
+    namespace in its source: a namespace coming from user input could run arbitrary commands
+    (e.g. "x') redis.call('FLUSHALL') --").
     """
 
     supports_locks = True
@@ -119,6 +119,11 @@ class RedisLikeBackend(Backend):
         self._client = client
         self.is_cluster = is_cluster
         self.scan_count = scan_count
+
+    @property
+    def client(self) -> Any:
+        """The client the backend talks through."""
+        return self._client
 
     async def get_with_ttl(self, key: str) -> tuple[int, bytes | None]:
         async with self._client.pipeline(transaction=not self.is_cluster) as pipe:
@@ -159,7 +164,14 @@ class RedisLikeBackend(Backend):
         return int(await self._client.eval(INCR_SCRIPT, 1, key, str(amount), str(expire or 0)))
 
     async def incr_window(
-        self, key: str, previous_key: str, *, amount: int, limit: int, weight: float, expire: int
+        self,
+        key: str,
+        previous_key: str,
+        *,
+        amount: int,
+        limit: int,
+        weight: float,
+        expire: int,
     ) -> tuple[bool, int, int]:
         args = window_args(amount, limit, weight, expire)
         added, current, previous = await self._client.eval(

@@ -9,8 +9,8 @@ from examples.pagination.main import Catalog, app
 from fastapi_alcazaba import FastAPICache
 
 
-@pytest.fixture
-def client() -> Iterator[TestClient]:
+@pytest.fixture(name="client")
+def fixture_client() -> Iterator[TestClient]:
     with TestClient(app) as client:
         yield client
     FastAPICache.reset()

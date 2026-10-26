@@ -77,7 +77,9 @@ def body_of(*chunks: bytes) -> Receive:
 
 
 def http_scope(
-    path: str = "/", headers: list[tuple[bytes, bytes]] | None = None, **extra: Any
+    path: str = "/",
+    headers: list[tuple[bytes, bytes]] | None = None,
+    **extra: Any,
 ) -> Scope:
     return {"type": "http", "method": "POST", "path": path, "headers": headers or [], **extra}
 
@@ -179,13 +181,13 @@ class Item(BaseModel):
     name: str
 
 
-@pytest.fixture
-def calls() -> list[str]:
+@pytest.fixture(name="calls")
+def fixture_calls() -> list[str]:
     return []
 
 
-@pytest.fixture
-def limited(calls: list[str]) -> FastAPI:
+@pytest.fixture(name="limited")
+def fixture_limited(calls: list[str]) -> FastAPI:
     app = FastAPI()
 
     @app.post("/echo")
@@ -215,7 +217,7 @@ def limited(calls: list[str]) -> FastAPI:
     return app
 
 
-def chunks(*parts: bytes) -> Iterator[bytes]:
+def chunked(*parts: bytes) -> Iterator[bytes]:
     """A body without Content-Length: httpx sends it chunked."""
     yield from parts
 
@@ -229,13 +231,13 @@ class TestBodySizeLimit:
         assert (response.status_code, response.json()) == (413, TOO_LARGE)
         assert calls == []
 
-    def test_a_chunked_body_over_the_limit(self, limited: FastAPI, calls: list[str]) -> None:
-        response = TestClient(limited).post("/echo", content=chunks(b"x" * 9, b"x" * 9))
+    def test_a_chunked_body_over_the_limit(self, limited: FastAPI) -> None:
+        response = TestClient(limited).post("/echo", content=chunked(b"x" * 9, b"x" * 9))
         assert (response.status_code, response.json()) == (413, TOO_LARGE)
 
     def test_fastapi_doesnt_turn_it_into_a_400(self, limited: FastAPI, calls: list[str]) -> None:
         """FastAPI answers 400 to any error while it parses a body, except HTTPExceptions."""
-        body = chunks(b'{"name": ', b'"far too long"}')
+        body = chunked(b'{"name": ', b'"far too long"}')
         response = TestClient(limited).post("/items", content=body)
         assert (response.status_code, response.json()) == (413, TOO_LARGE)
         assert calls == []
@@ -243,7 +245,7 @@ class TestBodySizeLimit:
     def test_bodies_within_the_limit(self, limited: FastAPI) -> None:
         client = TestClient(limited)
         assert client.post("/echo", content=b"x" * 10).json() == {"size": 10}
-        assert client.post("/echo", content=chunks(b"x" * 5, b"x" * 5)).json() == {"size": 10}
+        assert client.post("/echo", content=chunked(b"x" * 5, b"x" * 5)).json() == {"size": 10}
         assert client.post("/items", json={"name": "a"}).json() == {"name": "a"}
 
     @pytest.mark.parametrize(
@@ -259,7 +261,7 @@ class TestBodySizeLimit:
     )
     def test_limits_by_path(self, limited: FastAPI, path: str, size: int, status: int) -> None:
         assert TestClient(limited).post(path, content=b"x" * size).status_code == status
-        body = chunks(*[b"x"] * size)
+        body = chunked(*[b"x"] * size)
         assert TestClient(limited).post(path, content=body).status_code == status
 
     def test_websockets_and_lifespan_go_through(self, limited: FastAPI) -> None:
@@ -308,7 +310,9 @@ class TestBodySizeLimitInASGI:
         ],
     )
     async def test_content_lengths_with_thousands_of_digits(
-        self, length: bytes, status: int
+        self,
+        length: bytes,
+        status: int,
     ) -> None:
         """httptools accepts them; int() would raise on more than 4300 digits."""
         messages: list[Message] = []
@@ -370,7 +374,10 @@ class TestBodySizeLimitInASGI:
         ],
     )
     async def test_paths_without_the_root_path(
-        self, path: str, root_path: str, status: int
+        self,
+        path: str,
+        root_path: str,
+        status: int,
     ) -> None:
         messages: list[Message] = []
         middleware = BodySizeLimitMiddleware(self.reader, max_size=1, paths={"/uploads": 100})

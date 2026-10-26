@@ -23,8 +23,10 @@ from fastapi_alcazaba.cache import Cache, CacheOptions, normalise_headers, warn_
 from fastapi_alcazaba.coder import Coder, type_adapter_for
 from fastapi_alcazaba.compression import decompress
 from fastapi_alcazaba.errors import BackendUnavailable, CircuitOpen, UnstableCacheKeyWarning
+from fastapi_alcazaba.integrity import EntryProtector
 from fastapi_alcazaba.key_builder import default_key_builder
-from fastapi_alcazaba.types import KeyBuilder
+from fastapi_alcazaba.resilience import BackendGuard
+from fastapi_alcazaba.types import Backend, KeyBuilder
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -65,7 +67,7 @@ def _locate_param(sig: Signature, dep: Parameter, to_inject: list[Parameter]) ->
 
 
 def _check_excluded_params(sig: Signature, exclude_params: Collection[str]) -> None:
-    """A typo in exclude_params fails when the function is decorated (upstream PR #574).
+    """A typo in exclude_params fails when the function is decorated.
     Functions taking **kwargs accept any name."""
     if any(p.kind is Parameter.VAR_KEYWORD for p in sig.parameters.values()):
         return
@@ -91,7 +93,7 @@ def _exclude_params(
     kwargs: dict[str, Any],
 ) -> tuple[tuple[Any, ...], dict[str, Any]]:
     """Drop the named parameters from the arguments used to build the cache key; positional
-    arguments are matched to their names by position (upstream PR #574)."""
+    arguments are matched to their names by position."""
     filtered_kwargs = {k: v for k, v in kwargs.items() if k not in exclude_params}
     if not args:
         return args, filtered_kwargs
@@ -112,7 +114,10 @@ def _has_unstable_repr(value: object) -> bool:
 
 
 def _warn_unstable_key(
-    func: Callable[..., Any], sig: Signature, args: tuple[Any, ...], kwargs: dict[str, Any]
+    func: Callable[..., Any],
+    sig: Signature,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
 ) -> None:
     positional = _positional_names(sig)
     names = [
@@ -133,7 +138,7 @@ def _warn_unstable_key(
 
 def _cache_control_directives(request: Request | None) -> frozenset[str]:
     """Directive names of a Cache-Control header: "no-cache, max-age=0" -> {"no-cache",
-    "max-age"}. fastapi-cache2 only recognised the exact strings "no-cache" and "no-store"."""
+    "max-age"}, so that "no-cache, max-age=0" counts as no-cache too."""
     if request is None:
         return frozenset()
     header = request.headers.get("cache-control", "")
@@ -143,8 +148,8 @@ def _cache_control_directives(request: Request | None) -> frozenset[str]:
 
 
 def _compute_etag(payload: bytes) -> str:
-    """Weak ETag of the stored bytes, the same in every process and after restarts (upstream PR
-    #569). fastapi-cache2 used hash(), which changes with each process, and didn't quote it."""
+    """Weak ETag of the stored bytes, quoted, the same in every process and after restarts (not
+    hash(), which changes with each process)."""
     return f'W/"{hashlib.sha256(payload).hexdigest()[:32]}"'
 
 
@@ -184,7 +189,7 @@ def _forbids_storing(target: Response | None) -> bool:
 def _is_cacheable(result: object, response: Response | None) -> bool:
     """Only successful responses that don't say no-store. A Response returned with another
     status, or a status set on the injected response, would come back from the cache as a 200
-    with the error body (upstream PR #575)."""
+    with the error body."""
     if isinstance(result, Response) and (
         result.status_code != HTTP_200_OK or _forbids_storing(result)
     ):
@@ -205,12 +210,15 @@ class _HeaderPolicy:
         if max_age is not None and max_age > 0:
             directives.append(f"max-age={max_age}")
             if self.stale_while_revalidate:
-                # Upstream PR #455.
                 directives.append(f"stale-while-revalidate={self.stale_while_revalidate}")
         return ", ".join(directives) or None
 
     def apply(
-        self, targets: Iterable[Response], status: str, etag: str, max_age: int | None
+        self,
+        targets: Iterable[Response],
+        status: str,
+        etag: str,
+        max_age: int | None,
     ) -> None:
         cache_control = self.cache_control(max_age)
         for target in targets:
@@ -230,7 +238,7 @@ class _HeaderPolicy:
 
 def _targets(response: Response | None, result: object) -> list[Response]:
     """The injected response, plus the result when the endpoint returned a Response itself:
-    FastAPI ignores the injected response's headers then (upstream integration branch)."""
+    FastAPI ignores the injected response's headers then."""
     targets = [] if response is None else [response]
     if isinstance(result, Response) and result is not response:
         targets.append(result)
@@ -274,6 +282,16 @@ class _Endpoint:
 
 class _CachedCall:
     """One call of a cached function: lookup, then compute and store on a miss."""
+
+    # Set once the call goes through the cache (not a bypass): _execute(), then _build_key().
+    coder: type[Coder]
+    expire: int | None
+    backend: Backend
+    guard: BackendGuard
+    protector: EntryProtector | None
+    cache_key: str
+    policy: _HeaderPolicy
+    if_none_match: str | None
 
     def __init__(
         self,
@@ -320,8 +338,8 @@ class _CachedCall:
             self._lookup("bypass")
             return await self.run()
 
-        self.coder: type[Coder] = endpoint.coder or self.config.coder
-        self.expire: int | None = endpoint.expire or self.config.expire
+        self.coder = endpoint.coder or self.config.coder
+        self.expire = endpoint.expire or self.config.expire
         self.backend = self.config.backend
         self.guard = self.config.guard
         self.protector = options.protector
@@ -384,7 +402,7 @@ class _CachedCall:
         vary_digest = _vary_digest(self.request, vary)
         if vary_digest is not None:
             cache_key = f"{cache_key}:vary:{vary_digest}"
-        self.cache_key: str = cache_key
+        self.cache_key = cache_key
         self.policy = _HeaderPolicy(
             status_header=self.config.cache_status_header,
             vary=vary,
@@ -635,7 +653,9 @@ class _CachedCall:
 class _CacheDecorator(Protocol):
     @overload
     def __call__(
-        self, func: Callable[P, Awaitable[R]], /
+        self,
+        func: Callable[P, Awaitable[R]],
+        /,
     ) -> Callable[P, Awaitable[R | Response]]: ...
 
     @overload
@@ -675,8 +695,8 @@ def cache(
     :param vary_headers: request headers that give each value its own entry and make the
         response `private`; `()` when the response is the same for everybody.
     :param respect_cache_control: let clients skip the cache with Cache-Control no-cache or
-        no-store (upstream PR #182).
-    :param stale_while_revalidate: adds that directive to Cache-Control (upstream PR #455).
+        no-store.
+    :param stale_while_revalidate: adds that directive to Cache-Control.
     :param single_flight: concurrent misses for the same key wait for the first one.
     :param max_value_size: don't store values larger than this many bytes.
     :param distributed_lock: one process computes a missing value while the others wait.
@@ -762,7 +782,7 @@ def cache(
             (isinstance(return_type, type) and issubclass(return_type, Response))
             or type_adapter_for(return_type) is not None
         ):
-            # FastAPI takes the response model from the return annotation (upstream PR #390).
+            # FastAPI takes the response model from the return annotation.
             signature = signature.replace(return_annotation=return_type)
         inner.__signature__ = signature  # type: ignore[attr-defined]
 

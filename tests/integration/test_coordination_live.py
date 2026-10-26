@@ -20,8 +20,8 @@ from tests.integration.test_backends_live import ENV, KINDS, _make
 pytestmark = pytest.mark.integration
 
 
-@pytest.fixture(params=KINDS)
-async def backend(request: pytest.FixtureRequest) -> AsyncIterator[Backend]:
+@pytest.fixture(name="backend", params=KINDS)
+async def fixture_backend(request: pytest.FixtureRequest) -> AsyncIterator[Backend]:
     url = os.environ.get(ENV[request.param])
     if not url:
         pytest.skip(f"{ENV[request.param]} not set")
@@ -30,8 +30,8 @@ async def backend(request: pytest.FixtureRequest) -> AsyncIterator[Backend]:
     await close()
 
 
-@pytest.fixture
-def cache(backend: Backend) -> Cache:
+@pytest.fixture(name="cache")
+def fixture_cache(backend: Backend) -> Cache:
     return Cache(backend, prefix=f"fastapi-alcazaba-test-{uuid.uuid4().hex}")
 
 

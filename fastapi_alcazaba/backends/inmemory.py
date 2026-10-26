@@ -17,8 +17,8 @@ class InMemoryBackend(Backend):
     """Cache in the memory of the process: for development, tests and single-process apps.
 
     Each instance has its own store, bounded to `max_size` entries (the least recently used are
-    evicted). fastapi-cache2 shared one dict between all instances and never evicted, so varying
-    a query string grew it until the process ran out of memory. State (rate-limit counters,
+    evicted): a store that never evicted would grow with every new query string until the
+    process ran out of memory. State (rate-limit counters,
     revoked tokens, one-time codes, idempotency records: `Cache.state_key`) has a store of its own
     with the same bound, expired keys evicted first, so that caching many responses never evicts
     it.
@@ -120,7 +120,14 @@ class InMemoryBackend(Backend):
         return count
 
     async def incr_window(
-        self, key: str, previous_key: str, *, amount: int, limit: int, weight: float, expire: int
+        self,
+        key: str,
+        previous_key: str,
+        *,
+        amount: int,
+        limit: int,
+        weight: float,
+        expire: int,
     ) -> tuple[bool, int, int]:
         """Atomic: nothing awaits between the check and the addition."""
         current, previous = (int(v.data) if (v := self._get(k)) else 0 for k in (key, previous_key))

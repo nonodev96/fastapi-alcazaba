@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 from typing import Any
 
@@ -104,15 +106,13 @@ def test_status_header_can_be_turned_off() -> None:
 
 
 def test_openapi_keeps_the_response_model() -> None:
-    """Upstream PR #390: the decorator hid the return annotation from FastAPI."""
+    """The decorator keeps the return annotation, where FastAPI finds the response model."""
     schema = make_app().openapi()
     content = schema["paths"]["/item"]["get"]["responses"]["200"]["content"]
     assert content["application/json"]["schema"] == {"$ref": "#/components/schemas/Item"}
 
 
 class TestExcludeParams:
-    """Upstream PR #574."""
-
     async def test_excluded_params_share_an_entry(self) -> None:
         FastAPICache.init(InMemoryBackend())
         calls: list[tuple[str, str]] = []
@@ -161,7 +161,7 @@ class TestExcludeParams:
 
 
 def test_methods_with_the_same_name_get_different_keys() -> None:
-    """fastapi-cache2 used __name__: these two shared their entries."""
+    """Keys use __qualname__: with __name__, these two would share their entries."""
 
     class First:
         def handler(self) -> None: ...
@@ -187,6 +187,7 @@ async def test_sync_functions_run_in_the_thread_pool() -> None:
 
 class TestKeyBuilders:
     async def test_async_key_builders(self) -> None:
+        # pylint: disable-next=unused-argument  # a key builder's signature
         async def key_builder(func: Any, namespace: str = "", **kwargs: Any) -> str:
             return f"{namespace}:fixed"
 
@@ -202,6 +203,7 @@ class TestKeyBuilders:
         assert list(backend._store) == [":ns:fixed"]
 
     async def test_key_builders_must_return_a_string(self) -> None:
+        # pylint: disable-next=unused-argument  # a key builder's signature
         def key_builder(func: Any, namespace: str = "", **kwargs: Any) -> str:
             return 42  # type: ignore[return-value]
 

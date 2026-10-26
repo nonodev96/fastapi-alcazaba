@@ -67,7 +67,10 @@ def set_attributes(**attributes: str | int | float | bool) -> None:
 
 class Tracer:
     def __init__(
-        self, enabled: bool = True, tracer_provider: Any = None, version: str = ""
+        self,
+        enabled: bool = True,
+        tracer_provider: Any = None,
+        version: str = "",
     ) -> None:
         self.enabled = enabled and otel_trace is not None
         if self.enabled:
@@ -101,7 +104,12 @@ class Tracer:
         )
 
     def task(
-        self, queue: str, task: str, task_id: str, attempt: int, origin: str | None
+        self,
+        queue: str,
+        task: str,
+        task_id: str,
+        attempt: int,
+        origin: str | None,
     ) -> AbstractContextManager[Any]:
         """Span of a task's run: the root of a trace of its own (a task may run long after, and
         many times), linked to the span that enqueued it (`origin`, its traceparent). Yields it

@@ -1,17 +1,22 @@
 version: 2
 updates:
-  - package-ecosystem: uv
+  # The ranges of pyproject.toml; CI and contributors install the latest releases in them that
+  # are at least three days old (pip's --uploaded-prior-to).
+  - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: weekly
     # Wait a week before proposing a release: compromised versions are usually pulled sooner.
     cooldown:
       default-days: 7
+    ignore:
+      # Pinned to 9.7.1 on purpose: see the docs group of pyproject.toml.
+      - dependency-name: mkdocs-material
     groups:
       python:
         patterns: ["*"]
   - package-ecosystem: github-actions
-    directory: "/"
+    directories: ["/", "/.github/actions/python"]
     schedule:
       interval: weekly
     cooldown:

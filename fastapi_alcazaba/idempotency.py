@@ -22,6 +22,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fastapi_alcazaba.cache import Cache, get_cache
 from fastapi_alcazaba.errors import BackendUnavailable
+from fastapi_alcazaba.middleware import _respond
 from fastapi_alcazaba.tracing import set_attributes
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -132,14 +133,14 @@ class IdempotencyMiddleware:
         key = _parse_key(raw)
         if key is None:
             self._note(scope, "invalid")
-            await _reply(send, 400, "Invalid Idempotency-Key header")
+            await _respond(scope, send, 400, "Invalid Idempotency-Key header")
             return
         body = await self._read_body(receive)
         if body is None:
             return  # the client went away before sending the whole body: nothing to run
         if len(body) > self.max_body_size:
             self._note(scope, "too_large")
-            await _reply(send, 413, "Request body too large")
+            await _respond(scope, send, 413, "Request body too large")
             return
         connection = HTTPConnection(scope)
         cache = self.cache if self.cache is not None else get_cache(connection)
@@ -157,17 +158,18 @@ class IdempotencyMiddleware:
         lock = cache.lock(f"idempotency:{digest}", ttl=self.lock_ttl)
         try:
             if (
-                answer := await self._answer_from(cache, record_key, fingerprint, send)
+                answer := await self._answer_from(cache, record_key, fingerprint, scope, send)
             ) is not None:
                 self._note(scope, answer, cache)
                 return
             if not await lock.acquire():
                 self._note(scope, "conflict", cache)
-                await _reply(
+                await _respond(
+                    scope,
                     send,
                     409,
                     "A request with this Idempotency-Key is still being processed",
-                    retry_after=1,
+                    {"Retry-After": "1"},
                 )
                 return
         except BackendUnavailable as exc:
@@ -176,7 +178,7 @@ class IdempotencyMiddleware:
         try:
             # The first request may have finished between the read and the lock.
             try:
-                answer = await self._answer_from(cache, record_key, fingerprint, send)
+                answer = await self._answer_from(cache, record_key, fingerprint, scope, send)
             except BackendUnavailable as exc:
                 await self._backend_failed(exc, scope, replay, send, cache)
                 return
@@ -206,14 +208,19 @@ class IdempotencyMiddleware:
         cache.metrics.count("idempotency", outcome=outcome)
 
     async def _backend_failed(
-        self, exc: BackendUnavailable, scope: Scope, receive: Receive, send: Send, cache: Cache
+        self,
+        exc: BackendUnavailable,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
+        cache: Cache,
     ) -> None:
         logger.warning("Idempotency not checked: the backend failed", exc_info=exc)
         self._note(scope, "unchecked", cache)
         if self.fail_open:
             await self.app(scope, receive, send)
         else:
-            await _reply(send, 503, "Service Unavailable")
+            await _respond(scope, send, 503, "Service Unavailable")
 
     async def _read_body(self, receive: Receive) -> bytes | None:
         """The request body, None if the client went away before sending all of it. Stops
@@ -231,7 +238,12 @@ class IdempotencyMiddleware:
         return b"".join(chunks)
 
     async def _answer_from(
-        self, cache: Cache, record_key: str, fingerprint: str, send: Send
+        self,
+        cache: Cache,
+        record_key: str,
+        fingerprint: str,
+        scope: Scope,
+        send: Send,
     ) -> str | None:
         """Answer from the stored response, if there is one: "replayed", or "mismatch" when it
         was another request's; None otherwise."""
@@ -246,7 +258,9 @@ class IdempotencyMiddleware:
             return None
         stored_fingerprint, status, headers, body = record
         if stored_fingerprint != fingerprint:
-            await _reply(send, 422, "This Idempotency-Key was used with a different request")
+            await _respond(
+                scope, send, 422, "This Idempotency-Key was used with a different request"
+            )
             return "mismatch"
         await send(
             {
@@ -259,7 +273,11 @@ class IdempotencyMiddleware:
         return "replayed"
 
     async def _store(
-        self, cache: Cache, record_key: str, fingerprint: str, response: "_Recorder"
+        self,
+        cache: Cache,
+        record_key: str,
+        fingerprint: str,
+        response: "_Recorder",
     ) -> bool:
         record = {
             "fingerprint": fingerprint,
@@ -349,12 +367,3 @@ def _replay_body(body: bytes, receive: Receive) -> Receive:
         return await receive()
 
     return replay
-
-
-async def _reply(send: Send, status: int, detail: str, retry_after: int | None = None) -> None:
-    body = json.dumps({"detail": detail}).encode()
-    headers = [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]
-    if retry_after is not None:
-        headers.append((b"retry-after", str(retry_after).encode()))
-    await send({"type": "http.response.start", "status": status, "headers": headers})
-    await send({"type": "http.response.body", "body": body})

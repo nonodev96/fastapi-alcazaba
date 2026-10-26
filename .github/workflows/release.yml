@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # pip takes no release younger than three days: compromised versions are usually pulled sooner.
+  PIP_UPLOADED_PRIOR_TO: P3D
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
 concurrency:
   group: release
   cancel-in-progress: false
@@ -58,13 +63,14 @@ jobs:
           echo "notes_version=$notes_version" >> "$GITHUB_OUTPUT"
           if echo "$version" | grep -Eq '(a|b|rc)[0-9]+$'; then prerelease=true; else prerelease=false; fi
           echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: $/.github/actions/python
         with:
-          enable-cache: false
-      - run: uv sync --locked --all-extras
-      - run: uv run ruff check .
-      - run: uv run mypy
-      - run: uv run pytest tests/unit tests/integration tests/typing
+          cache: ""
+      - run: ruff check .
+      - run: python scripts/check_signatures.py fastapi_alcazaba examples tests scripts
+      - run: mypy
+      - run: pylint fastapi_alcazaba examples tests scripts
+      - run: pytest tests/unit tests/integration tests/typing
 
   build:
     name: Build, SBOM and signatures
@@ -81,28 +87,34 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: $/.github/actions/python
         with:
-          enable-cache: false
+          groups: dev package
+          cache: ""
       - name: Build
         run: |
           # Timestamps from the commit: the same tag always gives the same files.
           SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
           export SOURCE_DATE_EPOCH
-          uv build
+          python -m build
           built="$(basename dist/*.whl | cut -d- -f2)"
           if [ "$built" != "$VERSION" ]; then
             echo "::error::built $built but the tag says $VERSION"; exit 1
           fi
-      - run: uvx twine@7.0.0 check --strict dist/*
-      - run: uvx check-wheel-contents@0.6.3 dist/*.whl
+      - run: twine check --strict dist/*
+      - run: check-wheel-contents dist/*.whl
       - name: Smoke test of the installed wheel
-        run: uv run --isolated --no-project --with dist/*.whl python -I scripts/smoke_test.py --version "$VERSION"
+        run: |
+          # In an environment of its own, with nothing but the wheel and what it requires.
+          python -m venv "$RUNNER_TEMP/smoke"
+          "$RUNNER_TEMP/smoke/bin/python" -m pip install --quiet dist/*.whl
+          "$RUNNER_TEMP/smoke/bin/python" -I scripts/smoke_test.py --version "$VERSION"
       - name: SBOM (CycloneDX)
         run: |
-          # The components come from `uv export --no-dev`; the environment only provides licences.
-          uv sync --frozen --all-extras
-          uv run --no-sync python scripts/sbom.py --version "$VERSION" -o "sbom/fastapi-alcazaba-$VERSION.cdx.json"
+          # What installing the wheel with every extra resolves to, dated like the build.
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          export SOURCE_DATE_EPOCH
+          python scripts/sbom.py dist/*.whl -o "sbom/fastapi-alcazaba-$VERSION.cdx.json"
       - name: Attest the build provenance (SLSA)
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -163,21 +175,27 @@ jobs:
         with:
           name: dist
           path: dist/
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: $/.github/actions/python
         with:
-          enable-cache: false
+          install: "false"
+          cache: ""
       - name: Download our wheel from TestPyPI
+        env:
+          PIP_UPLOADED_PRIOR_TO: "" # our own file, uploaded a moment ago
         run: |
           # Only our file comes from TestPyPI (anyone can upload anything there); the dependencies
           # come from PyPI when the wheel is installed. TestPyPI may take a moment to serve it.
           for _ in 1 2 3 4 5 6; do
-            uvx pip@26.2.2 download --no-deps --only-binary :all: --dest testpypi \
+            python -m pip download --no-deps --only-binary :all: --dest testpypi \
               --index-url https://test.pypi.org/simple/ "fastapi-alcazaba==$VERSION" && break
             sleep 20
           done
           cmp testpypi/*.whl dist/*.whl
       - name: Smoke test of what TestPyPI serves
-        run: uv run --isolated --no-project --with testpypi/*.whl python -I scripts/smoke_test.py --version "$VERSION"
+        run: |
+          python -m venv "$RUNNER_TEMP/smoke"
+          "$RUNNER_TEMP/smoke/bin/python" -m pip install --quiet testpypi/*.whl
+          "$RUNNER_TEMP/smoke/bin/python" -I scripts/smoke_test.py --version "$VERSION"
 
   publish-pypi:
     name: Publish to PyPI

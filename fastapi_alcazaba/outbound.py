@@ -52,6 +52,8 @@ def _origin(url: "httpx.URL") -> _Origin:
 
 def _name(origin: _Origin) -> str:
     scheme, host, port = origin
+    if ":" in host:  # IPv6, bracketed as in URLs: http://[::1]:8080
+        host = f"[{host}]"
     return f"{scheme}://{host}" + (f":{port}" if port is not None else "")
 
 
@@ -463,7 +465,31 @@ class SSRFGuardTransport(httpx.AsyncBaseTransport):
                         self._hosts.add(_host_name(name))
         self._destinations: OrderedDict[str, _Destination] = OrderedDict()
 
+    async def check(self, url: "httpx.URL | str", *, timeout: float | None = 5.0) -> None:
+        """Check `url` as a request to it would be, without sending anything: its scheme, its port
+        and every address its host resolves to (within `timeout` seconds). Raises
+        BlockedDestinationError when a request would be refused, and httpx.ConnectError when the
+        host doesn't resolve. For a URL that users give (a webhook's endpoint), when they give it;
+        every request is checked again all the same, as DNS answers change."""
+        await self._check(httpx.Request("GET", url, extensions={"timeout": {"connect": timeout}}))
+
     async def handle_async_request(self, request: "httpx.Request") -> "httpx.Response":
+        host, addresses = await self._check(request)
+        name = _name(_origin(request.url))
+        targets = list(dict.fromkeys(_unwrap(address) for address in addresses))
+        first = targets[0]
+        # The first address of the other family, if any: the network may lack IPv6 (or IPv4).
+        other = next((target for target in targets if target.version != first.version), None)
+        try:
+            return await self._send(request, host, first)
+        except httpx.ConnectError:
+            if other is None:
+                raise
+            logger.debug("%s: couldn't connect to %s, trying %s", name, first, other)
+        return await self._send(request, host, other)
+
+    async def _check(self, request: "httpx.Request") -> tuple[str, list[_Address]]:
+        """The host and its addresses, when they're allowed; else BlockedDestinationError."""
         url = request.url
         name = _name(_origin(url))
         if url.scheme not in _DEFAULT_PORTS:
@@ -486,17 +512,7 @@ class SSRFGuardTransport(httpx.AsyncBaseTransport):
                 logger.warning("Blocked a request to %s, at %s", name, address)
                 self._blocked("address")
                 raise BlockedDestinationError(f"{name}: its address isn't allowed", request=request)
-        targets = list(dict.fromkeys(_unwrap(address) for address in addresses))
-        first = targets[0]
-        # The first address of the other family, if any: the network may lack IPv6 (or IPv4).
-        other = next((target for target in targets if target.version != first.version), None)
-        try:
-            return await self._send(request, host, first)
-        except httpx.ConnectError:
-            if other is None:
-                raise
-            logger.debug("%s: couldn't connect to %s, trying %s", name, first, other)
-        return await self._send(request, host, other)
+        return host, addresses
 
     def _blocked(self, reason: str) -> None:
         _metrics(self._metrics).count("outbound.ssrf.blocked", reason=reason)
@@ -542,7 +558,10 @@ class SSRFGuardTransport(httpx.AsyncBaseTransport):
         )
 
     async def _send(
-        self, request: "httpx.Request", host: str, address: _Address
+        self,
+        request: "httpx.Request",
+        host: str,
+        address: _Address,
     ) -> "httpx.Response":
         """Send `request` to `address`, with `host` for Host and TLS."""
         extensions = dict(request.extensions)

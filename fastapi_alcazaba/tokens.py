@@ -135,7 +135,11 @@ class TokenBlocklist:
         return protector.open(key, data)
 
     async def revoke(
-        self, token_id: str, *, expires_at: Moment | None = None, ttl: int | None = None
+        self,
+        token_id: str,
+        *,
+        expires_at: Moment | None = None,
+        ttl: int | None = None,
     ) -> None:
         """Refuse the token `token_id` (its `jti`) until it would have expired anyway: give its
         `exp` as `expires_at`, or the seconds it has left as `ttl`. Raises BackendUnavailable
@@ -168,7 +172,11 @@ class TokenBlocklist:
         await self._store(cache, key, cutoff, ttl + self.leeway)
 
     async def is_revoked(
-        self, token_id: str, *, subject: str | None = None, issued_at: Moment | None = None
+        self,
+        token_id: str,
+        *,
+        subject: str | None = None,
+        issued_at: Moment | None = None,
     ) -> bool:
         """Whether the token is refused: its `jti` was revoked, or its subject was logged out
         everywhere after it was issued (give its `sub` and `iat`). When the backend fails,

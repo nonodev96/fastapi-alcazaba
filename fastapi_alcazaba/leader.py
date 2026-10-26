@@ -73,6 +73,7 @@ class FastAPILeader:
         self._funcs: list[Callable[[], Awaitable[Any]]] = []
         self._campaign: asyncio.Task[None] | None = None
         self._lock: Lock | None = None
+        self._stopping = False
         # How often a leader checks that it still holds the lock: it stops its functions at most
         # this long after the lock lapses.
         self._check = min(ttl / 10, 1.0)
@@ -113,6 +114,7 @@ class FastAPILeader:
         # Its waits aren't recorded: the followers try it over and over.
         lock = Lock(cache, f"leader:{self.name}", ttl=self.ttl, record_wait=False)
         loop = asyncio.get_running_loop()
+        self._stopping = False
         self._campaign = loop.create_task(self._campaign_loop(lock), name=f"leader {self.name}")
 
     async def stop(self) -> None:
@@ -121,6 +123,9 @@ class FastAPILeader:
         campaign, self._campaign = self._campaign, None
         if campaign is None:
             return
+        # Told as well as cancelled: a client that swallows the cancellation (fakeredis does on
+        # Python 3.11) would otherwise keep the campaign going, and stop() waiting for it.
+        self._stopping = True
         campaign.cancel()
         await asyncio.wait({campaign})
 
@@ -146,7 +151,7 @@ class FastAPILeader:
         await self.stop()
 
     async def _campaign_loop(self, lock: Lock) -> None:
-        while True:
+        while not self._stopping:
             try:
                 elected = await lock.acquire()
             except BackendUnavailable as exc:
@@ -157,8 +162,9 @@ class FastAPILeader:
                 elected = False
             if elected:
                 await self._lead(lock)
-            # Jittered, so that the followers don't all ask at once.
-            await asyncio.sleep(self.ttl / 3 * _random.uniform(0.5, 1))
+            if not self._stopping:
+                # Jittered, so that the followers don't all ask at once.
+                await asyncio.sleep(self.ttl / 3 * _random.uniform(0.5, 1))
 
     async def _lead(self, lock: Lock) -> None:
         self._lock = lock
@@ -171,10 +177,11 @@ class FastAPILeader:
             for func in self._funcs
         ]
         try:
-            while lock.held:
+            while lock.held and not self._stopping:
                 await asyncio.sleep(self._check)
-            logger.warning("Lost the leadership of %r: its functions are cancelled", self.name)
-            event = "lost"
+            if not self._stopping:
+                logger.warning("Lost the leadership of %r: its functions are cancelled", self.name)
+                event = "lost"
         finally:
             metrics.count("leader.transitions", leader=self.name, event=event)
             self._lock = None

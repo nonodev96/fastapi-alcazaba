@@ -106,7 +106,14 @@ class GlideBackend(Backend):
         return int(value)
 
     async def incr_window(
-        self, key: str, previous_key: str, *, amount: int, limit: int, weight: float, expire: int
+        self,
+        key: str,
+        previous_key: str,
+        *,
+        amount: int,
+        limit: int,
+        weight: float,
+        expire: int,
     ) -> tuple[bool, int, int]:
         added, current, previous = await self.client.invoke_script(
             _INCR_WINDOW,

@@ -105,7 +105,8 @@ class _Loaded:
 
 
 def _dump(data: dict[str, Any]) -> bytes:
-    return json.dumps(data, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    # Not sorted: keys come back in the order they were stored, as with Starlette's sessions.
+    return json.dumps(data, separators=(",", ":"), allow_nan=False).encode()
 
 
 def _count(cache: Cache, event: str) -> None:
@@ -243,7 +244,7 @@ class ServerSessionMiddleware:
                     logger.warning("Couldn't save the session: answering 503", exc_info=exc)
                     _count(cache, "unavailable")
                     replaced = True
-                    await _respond(send, _UNAVAILABLE, "Service Unavailable")
+                    await _respond(scope, send, _UNAVAILABLE, "Service Unavailable")
                     return
                 headers = list(message.get("headers", []))
                 if cookie is not None:
@@ -287,7 +288,11 @@ class ServerSessionMiddleware:
         return ServerSession(data), _Loaded(key, _dump(data), created, seen, cookie_sent=True)
 
     def _open(
-        self, cache: Cache, key: str, stored: bytes, now: int
+        self,
+        cache: Cache,
+        key: str,
+        stored: bytes,
+        now: int,
     ) -> tuple[dict[str, Any], int, int] | None:
         """(data, created, seen) of a live session; None if it expired or isn't ours."""
         protector = cache.options.protector
@@ -308,7 +313,10 @@ class ServerSessionMiddleware:
         return data, created, seen
 
     async def _commit(
-        self, cache: Cache, session: ServerSession, loaded: _Loaded
+        self,
+        cache: Cache,
+        session: ServerSession,
+        loaded: _Loaded,
     ) -> tuple[bytes, bytes] | None:
         """Save, rotate or delete the session as it ended up; the `Set-Cookie` header if the
         cookie changes. Raises BackendUnavailable when the backend fails."""

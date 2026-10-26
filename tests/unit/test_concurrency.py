@@ -1,5 +1,7 @@
 """FastAPIConcurrencyLimiter: simultaneous requests across processes, on lock slots."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import logging
 from collections.abc import AsyncIterator, Callable
@@ -25,8 +27,8 @@ from fastapi_alcazaba.concurrency import (
 from fastapi_alcazaba.types import Backend
 
 
-@pytest.fixture(params=["memory", "redis"])
-def cache(request: pytest.FixtureRequest) -> Cache:
+@pytest.fixture(name="cache", params=["memory", "redis"])
+def fixture_cache(request: pytest.FixtureRequest) -> Cache:
     backend: Backend = (
         InMemoryBackend()
         if request.param == "memory"
@@ -219,7 +221,8 @@ class TestLimit:
         async with client(app) as http:
             held = asyncio.create_task(http.get("/work"))
             await until(lambda: gate.entered == 1)
-            [key] = backend._locks
+            assert len(backend._locks) == 1
+            key = next(iter(backend._locks))
             assert "example" not in key
             assert all("example" not in index for index in limiter._held)
             gate.opened.set()
@@ -267,7 +270,9 @@ class TestStreaming:
 class TestWebSockets:
     @pytest.mark.parametrize(("identifier", "code"), [(None, 1013), (by_header, 1008)])
     def test_held_while_connected(
-        self, identifier: Callable[[HTTPConnection], str] | None, code: int
+        self,
+        identifier: Callable[[HTTPConnection], str] | None,
+        code: int,
     ) -> None:
         limiter = FastAPIConcurrencyLimiter(
             1, identifier=identifier, cache=Cache(InMemoryBackend())

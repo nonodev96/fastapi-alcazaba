@@ -1,11 +1,14 @@
 """What the tools record in OpenTelemetry: spans of scheduled jobs, events and attributes on the
 request's span, and the counters and histograms of `Metrics.count` and `Metrics.record`."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import hashlib
+import json
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Any
 
 import fakeredis
 import httpx2 as httpx
@@ -56,37 +59,37 @@ from fastapi_alcazaba.timeouts import RequestTimeoutMiddleware
 from fastapi_alcazaba.tokens import OneTimeCodes, TokenBlocklist
 from fastapi_alcazaba.tracing import add_event, set_attributes
 from fastapi_alcazaba.uploads import IMAGES, FastAPIUploads
-from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookMessage, WebhookSigner
+from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookSigner
 from tests.unit.test_metrics import points
 from tests.unit.test_uploads import png, upload
 
 TICK = 0.1
 
 
-@pytest.fixture
-def exporter() -> InMemorySpanExporter:
+@pytest.fixture(name="exporter")
+def fixture_exporter() -> InMemorySpanExporter:
     return InMemorySpanExporter()
 
 
-@pytest.fixture
-def provider(exporter: InMemorySpanExporter) -> TracerProvider:
+@pytest.fixture(name="provider")
+def fixture_provider(exporter: InMemorySpanExporter) -> TracerProvider:
     tracer_provider = TracerProvider()
     tracer_provider.add_span_processor(SimpleSpanProcessor(exporter))
     return tracer_provider
 
 
-@pytest.fixture
-def reader() -> InMemoryMetricReader:
+@pytest.fixture(name="reader")
+def fixture_reader() -> InMemoryMetricReader:
     return InMemoryMetricReader()
 
 
-@pytest.fixture
-def meters(reader: InMemoryMetricReader) -> MeterProvider:
+@pytest.fixture(name="meters")
+def fixture_meters(reader: InMemoryMetricReader) -> MeterProvider:
     return MeterProvider([reader])
 
 
-@pytest.fixture
-def cache(provider: TracerProvider, meters: MeterProvider) -> Cache:
+@pytest.fixture(name="cache")
+def fixture_cache(provider: TracerProvider, meters: MeterProvider) -> Cache:
     return Cache(InMemoryBackend(), tracer_provider=provider, meter_provider=meters)
 
 
@@ -103,7 +106,10 @@ def counts(reader: InMemoryMetricReader, name: str, *keys: str) -> dict[tuple[An
 
 class TestScheduledJobs:
     async def test_each_run_is_the_root_of_a_trace(
-        self, cache: Cache, provider: TracerProvider, exporter: InMemorySpanExporter
+        self,
+        cache: Cache,
+        provider: TracerProvider,
+        exporter: InMemorySpanExporter,
     ) -> None:
         scheduler = FastAPIScheduler(cache)
         scheduler.every(seconds=TICK, name="report")(noop)
@@ -118,7 +124,9 @@ class TestScheduledJobs:
         assert "fastapi_alcazaba.tick" in run.attributes
 
     async def test_failures_are_recorded(
-        self, cache: Cache, exporter: InMemorySpanExporter
+        self,
+        cache: Cache,
+        exporter: InMemorySpanExporter,
     ) -> None:
         scheduler = FastAPIScheduler(cache)
         scheduler.every(seconds=TICK, name="boom")(boom)
@@ -130,7 +138,9 @@ class TestScheduledJobs:
         assert [event.name for event in run.events] == ["exception"]
 
     async def test_skipped_ticks_make_no_spans(
-        self, provider: TracerProvider, exporter: InMemorySpanExporter
+        self,
+        provider: TracerProvider,
+        exporter: InMemorySpanExporter,
     ) -> None:
         backend = InMemoryBackend()
         schedulers = [FastAPIScheduler(Cache(backend, tracer_provider=provider)) for _ in range(2)]
@@ -145,7 +155,9 @@ class TestScheduledJobs:
         assert len(ticks) == len(set(ticks)) >= 2
 
     async def test_with_tracing_off(
-        self, provider: TracerProvider, exporter: InMemorySpanExporter
+        self,
+        provider: TracerProvider,
+        exporter: InMemorySpanExporter,
     ) -> None:
         calls: list[int] = []
         quiet = Cache(InMemoryBackend(), tracing=False, tracer_provider=provider)
@@ -169,7 +181,9 @@ class TestScheduledJobs:
 
 class TestEventsOnTheRequestSpan:
     async def test_breaker_refusals_and_transitions(
-        self, provider: TracerProvider, exporter: InMemorySpanExporter
+        self,
+        provider: TracerProvider,
+        exporter: InMemorySpanExporter,
     ) -> None:
         breaker = FastAPIBreaker("db", failure_threshold=1, reset_timeout=0.05)
 
@@ -194,7 +208,10 @@ class TestEventsOnTheRequestSpan:
         assert all(event.attributes == {"breaker": "db"} for event in request.events)
 
     async def test_rate_limits(
-        self, cache: Cache, provider: TracerProvider, exporter: InMemorySpanExporter
+        self,
+        cache: Cache,
+        provider: TracerProvider,
+        exporter: InMemorySpanExporter,
     ) -> None:
         limiter = FastAPIRateLimiter(times=1, minutes=1, cache=cache, name="search")
         app = FastAPI()
@@ -218,7 +235,10 @@ class TestEventsOnTheRequestSpan:
         ]
 
     def test_idempotency(
-        self, cache: Cache, provider: TracerProvider, exporter: InMemorySpanExporter
+        self,
+        cache: Cache,
+        provider: TracerProvider,
+        exporter: InMemorySpanExporter,
     ) -> None:
         tracer, app = provider.get_tracer("app"), FastAPI()
         cache.install(app)
@@ -278,12 +298,12 @@ class TestIdempotencyMetrics:
         }
 
     def test_backend_failures(self, meters: MeterProvider, reader: InMemoryMetricReader) -> None:
-        class Down(InMemoryBackend):
+        class Failing(InMemoryBackend):
             async def get(self, key: str) -> bytes | None:
                 raise ConnectionError("down")
 
         app = FastAPI()
-        down = Cache(Down(), meter_provider=meters)
+        down = Cache(Failing(), meter_provider=meters)
         app.add_middleware(IdempotencyMiddleware, cache=down)
 
         @app.post("/orders")
@@ -327,10 +347,18 @@ class TestIdempotencyMetrics:
         assert refused.status_code == 400  # nothing to count with
 
 
-def digest_of(identity: str, key: str) -> str:
-    import hashlib
-    import json
+def receiving(webhooks: FastAPIWebhooks) -> FastAPI:
+    """An app that receives webhooks at /hooks."""
+    app = FastAPI()
 
+    @app.post("/hooks", dependencies=[Depends(webhooks)])
+    async def hook() -> None:
+        pass
+
+    return app
+
+
+def digest_of(identity: str, key: str) -> str:
     return hashlib.sha256(json.dumps([identity, key]).encode()).hexdigest()[:32]
 
 
@@ -350,7 +378,10 @@ class TestLockMetrics:
 
 class TestTokenMetrics:
     async def test_revocation_checks(
-        self, cache: Cache, meters: MeterProvider, reader: InMemoryMetricReader
+        self,
+        cache: Cache,
+        meters: MeterProvider,
+        reader: InMemoryMetricReader,
     ) -> None:
         blocklist = TokenBlocklist(cache)
         await blocklist.revoke("old", ttl=60)
@@ -365,7 +396,10 @@ class TestTokenMetrics:
         }
 
     async def test_one_time_codes(
-        self, cache: Cache, meters: MeterProvider, reader: InMemoryMetricReader
+        self,
+        cache: Cache,
+        meters: MeterProvider,
+        reader: InMemoryMetricReader,
     ) -> None:
         codes = OneTimeCodes("s" * 32, cache, max_attempts=3)
         assert not await codes.verify("alice", "123456")  # missing
@@ -442,7 +476,9 @@ class TestMetricsAPI:
         metrics.record("lock.wait", 1.0)
 
     def test_dotted_attributes_keep_their_names(
-        self, meters: MeterProvider, reader: InMemoryMetricReader
+        self,
+        meters: MeterProvider,
+        reader: InMemoryMetricReader,
     ) -> None:
         metrics = Metrics(meter_provider=meters)
         metrics.count("outbound.breaker", event="opened", **{"server.address": "api.example.com"})
@@ -636,8 +672,8 @@ class TestIntegrationMetrics:
         Cache(InMemoryBackend(), meter_provider=meters).install(app)
         webhooks = FastAPIWebhooks(secret, max_body_size=100)
 
-        @app.post("/hooks")
-        async def hook(message: Annotated[WebhookMessage, Depends(webhooks)]) -> None:
+        @app.post("/hooks", dependencies=[Depends(webhooks)])
+        async def hook() -> None:
             pass
 
         client = TestClient(app)
@@ -659,19 +695,15 @@ class TestIntegrationMetrics:
         }
 
     def test_webhooks_with_the_backend_down(
-        self, meters: MeterProvider, reader: InMemoryMetricReader
+        self,
+        meters: MeterProvider,
+        reader: InMemoryMetricReader,
     ) -> None:
         secret = WebhookSigner.generate_secret()
         signer, body = WebhookSigner(secret), b"{}"
         for fail_open in (False, True):
             down = Cache(Down(), meter_provider=meters)
-            webhooks = FastAPIWebhooks(secret, cache=down, fail_open=fail_open)
-            app = FastAPI()
-
-            @app.post("/hooks")
-            async def hook(message: Annotated[WebhookMessage, Depends(webhooks)]) -> None:
-                pass
-
+            app = receiving(FastAPIWebhooks(secret, cache=down, fail_open=fail_open))
             TestClient(app).post("/hooks", content=body, headers=signer.sign(body))
         assert counts(reader, "webhooks", "outcome") == {("unavailable",): 1, ("unchecked",): 1}
 
@@ -709,7 +741,10 @@ class TestIntegrationMetrics:
         }
 
     async def test_outbound_breakers(
-        self, meters: MeterProvider, reader: InMemoryMetricReader, provider: TracerProvider
+        self,
+        meters: MeterProvider,
+        reader: InMemoryMetricReader,
+        provider: TracerProvider,
     ) -> None:
         async def broken(request: httpx.Request) -> httpx.Response:
             return httpx.Response(503)
@@ -821,7 +856,9 @@ class TestBrowserMetrics:
         }
 
     def test_sessions_with_the_backend_down(
-        self, meters: MeterProvider, reader: InMemoryMetricReader
+        self,
+        meters: MeterProvider,
+        reader: InMemoryMetricReader,
     ) -> None:
         app = FastAPI()
         Cache(Down(), meter_provider=meters).install(app)
@@ -852,7 +889,9 @@ class TestBrowserMetrics:
             ("too_many_pixels",): 1,
             ("unreadable",): 1,
         }
-        ((attributes, accepted),) = points(reader, "fastapi_alcazaba.uploads.size")
+        sizes = points(reader, "fastapi_alcazaba.uploads.size")
+        assert len(sizes) == 1
+        attributes, accepted = sizes[0]
         assert attributes == {"fastapi_alcazaba.content_type": "image/png"}
         assert accepted == 1
 
@@ -871,7 +910,10 @@ class TestTaskTelemetry:
 
     @pytest.fixture
     def queue(
-        self, server: fakeredis.FakeServer, provider: TracerProvider, meters: MeterProvider
+        self,
+        server: fakeredis.FakeServer,
+        provider: TracerProvider,
+        meters: MeterProvider,
     ) -> FastAPITaskQueue:
         cache = Cache(
             RedisBackend(fakeredis.FakeAsyncRedis(server=server)),
@@ -882,11 +924,15 @@ class TestTaskTelemetry:
         return FastAPITaskQueue(cache, name="mail", poll_interval=0.02, visibility_timeout=0.3)
 
     async def test_runs_are_traced_and_linked_to_the_enqueuer(
-        self, queue: FastAPITaskQueue, provider: TracerProvider, exporter: InMemorySpanExporter
+        self,
+        queue: FastAPITaskQueue,
+        provider: TracerProvider,
+        exporter: InMemorySpanExporter,
     ) -> None:
         done = asyncio.Event()
 
         @queue.task("welcome")
+        # pylint: disable-next=unused-argument  # the task's signature
         async def welcome(user_id: int) -> None:
             done.set()
 
@@ -907,7 +953,9 @@ class TestTaskTelemetry:
         }
 
     async def test_without_an_enqueuing_span(
-        self, queue: FastAPITaskQueue, exporter: InMemorySpanExporter
+        self,
+        queue: FastAPITaskQueue,
+        exporter: InMemorySpanExporter,
     ) -> None:
         done = asyncio.Event()
 
@@ -923,7 +971,9 @@ class TestTaskTelemetry:
         assert not run.links
 
     async def test_with_tracing_off(
-        self, server: fakeredis.FakeServer, exporter: InMemorySpanExporter
+        self,
+        server: fakeredis.FakeServer,
+        exporter: InMemorySpanExporter,
     ) -> None:
         backend = RedisBackend(fakeredis.FakeAsyncRedis(server=server))
         cache = Cache(backend, signing_key="s" * 32, tracing=False)
@@ -999,7 +1049,10 @@ class TestTaskTelemetry:
         assert sorted(attempts, key=str) == [0, 1]
 
     async def test_interrupted_and_reclaimed(
-        self, queue: FastAPITaskQueue, server: fakeredis.FakeServer, reader: InMemoryMetricReader
+        self,
+        queue: FastAPITaskQueue,
+        server: fakeredis.FakeServer,
+        reader: InMemoryMetricReader,
     ) -> None:
         started = asyncio.Event()
 

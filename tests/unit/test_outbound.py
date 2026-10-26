@@ -1,6 +1,8 @@
 """ResilientTransport: a deadline for the whole call and a circuit breaker per origin.
 SSRFGuardTransport: only public addresses, pinned against DNS rebinding."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import gzip
 import ipaddress
@@ -35,8 +37,8 @@ class Clock:
         return self.now
 
 
-@pytest.fixture
-def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
+@pytest.fixture(name="clock")
+def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     clock = Clock()
     monkeypatch.setattr("fastapi_alcazaba.resilience.time", clock)
     return clock
@@ -74,7 +76,7 @@ class Trickle(httpx.AsyncByteStream):
         self.closed = True
 
 
-def client(handler: Handler, **options: object) -> httpx.AsyncClient:
+def resilient_client(handler: Handler, **options: object) -> httpx.AsyncClient:
     transport = ResilientTransport(httpx.MockTransport(handler), **options)  # type: ignore[arg-type]
     return httpx.AsyncClient(transport=transport, base_url="https://api.example")
 
@@ -90,7 +92,7 @@ class TestDeadline:
                 extensions={"http_version": b"HTTP/2", "network_stream": object()},
             )
 
-        async with client(handler, timeout=1) as api:
+        async with resilient_client(handler, timeout=1) as api:
             response = await api.post("/items", content=b"payload")
         assert (response.status_code, response.headers["x-id"], response.text) == (
             201,
@@ -105,7 +107,7 @@ class TestDeadline:
             await asyncio.sleep(10)
             raise AssertionError("unreachable")  # pragma: no cover
 
-        async with client(handler, timeout=0.05) as api:
+        async with resilient_client(handler, timeout=0.05) as api:
             with pytest.raises(httpx.TimeoutException, match="api.example: no complete response"):
                 await api.get("/")
 
@@ -116,7 +118,7 @@ class TestDeadline:
         async def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, stream=body)
 
-        async with client(handler, timeout=0.1) as api:
+        async with resilient_client(handler, timeout=0.1) as api:
             with pytest.raises(httpx.TimeoutException):
                 await api.get("/")
         assert body.closed
@@ -128,7 +130,7 @@ class TestDeadline:
             stream = Trickle([compressed[:5], compressed[5:]], 0)
             return httpx.Response(200, headers={"Content-Encoding": "gzip"}, stream=stream)
 
-        async with client(handler) as api:
+        async with resilient_client(handler) as api:
             assert (await api.get("/")).text == "hello"
 
     async def test_responses_already_in_memory_go_through(self) -> None:
@@ -137,18 +139,18 @@ class TestDeadline:
                 200, headers={"Content-Encoding": "gzip"}, content=gzip.compress(b"hi")
             )
 
-        async with client(handler) as api:
+        async with resilient_client(handler) as api:
             assert (await api.get("/")).text == "hi"
 
     async def test_none(self) -> None:
-        async with client(Server(), timeout=None) as api:
+        async with resilient_client(Server(), timeout=None) as api:
             assert (await api.get("/")).text == "ok"
 
 
 class TestCircuitBreaker:
     async def test_failures_open_it(self, caplog: pytest.LogCaptureFixture) -> None:
         server = Server(error=True)
-        async with client(server, failure_threshold=2) as api:
+        async with resilient_client(server, failure_threshold=2) as api:
             for _ in range(2):
                 with pytest.raises(httpx.ConnectError):
                     await api.get("/")
@@ -165,7 +167,9 @@ class TestCircuitBreaker:
 
     async def test_it_warns_when_it_opens(self, caplog: pytest.LogCaptureFixture) -> None:
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
-            async with client(Server(error=True), failure_threshold=1, reset_timeout=7) as api:
+            async with resilient_client(
+                Server(error=True), failure_threshold=1, reset_timeout=7
+            ) as api:
                 with pytest.raises(httpx.ConnectError):
                     await api.get("/")
         assert caplog.messages == ["Circuit breaker of https://api.example open: no calls for 7 s"]
@@ -176,7 +180,7 @@ class TestCircuitBreaker:
 
     async def test_failure_statuses_count_and_are_returned(self) -> None:
         server = Server(503)
-        async with client(server, failure_threshold=2) as api:
+        async with resilient_client(server, failure_threshold=2) as api:
             assert [(await api.get("/")).status_code for _ in range(2)] == [503, 503]
             with pytest.raises(CircuitOpenError):
                 await api.get("/")
@@ -184,7 +188,7 @@ class TestCircuitBreaker:
 
     async def test_other_statuses_are_successes(self) -> None:
         server = Server(503)
-        async with client(server, failure_threshold=2) as api:
+        async with resilient_client(server, failure_threshold=2) as api:
             await api.get("/")
             server.status = 404
             await api.get("/")  # resets the count
@@ -194,7 +198,9 @@ class TestCircuitBreaker:
         assert server.calls == 4
 
     async def test_custom_failure_statuses(self) -> None:
-        async with client(Server(429), failure_threshold=1, failure_statuses={429}) as api:
+        async with resilient_client(
+            Server(429), failure_threshold=1, failure_statuses={429}
+        ) as api:
             assert (await api.get("/")).status_code == 429
             with pytest.raises(CircuitOpenError):
                 await api.get("/")
@@ -204,7 +210,7 @@ class TestCircuitBreaker:
             await asyncio.sleep(10)
             raise AssertionError("unreachable")  # pragma: no cover
 
-        async with client(handler, timeout=0.01, failure_threshold=1) as api:
+        async with resilient_client(handler, timeout=0.01, failure_threshold=1) as api:
             with pytest.raises(httpx.TimeoutException):
                 await api.get("/")
             with pytest.raises(CircuitOpenError):
@@ -223,7 +229,7 @@ class TestCircuitBreaker:
         async def handler(request: httpx.Request) -> httpx.Response:
             raise error
 
-        async with client(handler, failure_threshold=1) as api:
+        async with resilient_client(handler, failure_threshold=1) as api:
             with pytest.raises(type(error)):
                 await api.get("/")
             with pytest.raises(CircuitOpenError):
@@ -238,7 +244,7 @@ class TestCircuitBreaker:
                 raise httpx.LocalProtocolError("Illegal header value b'a\\nb'", request=request)
             return await server(request)
 
-        async with client(handler, failure_threshold=1) as api:
+        async with resilient_client(handler, failure_threshold=1) as api:
             for _ in range(3):
                 with pytest.raises(httpx.LocalProtocolError):
                     await api.get("/", headers={"X-Query": "a b"})
@@ -261,7 +267,7 @@ class TestCircuitBreaker:
             yield b"x"
             raise ValueError("a bug in the caller's generator")
 
-        async with client(handler, failure_threshold=1) as api:
+        async with resilient_client(handler, failure_threshold=1) as api:
             with pytest.raises(ValueError, match="caller's generator"):
                 await api.post("/", content=body())
             assert api._transport.state("https://api.example") == "closed"  # type: ignore[attr-defined]
@@ -274,7 +280,7 @@ class TestCircuitBreaker:
             calls.append(1)
             return httpx.Response(200, stream=Trickle([b"too large"], 0))
 
-        async with client(handler, failure_threshold=1, max_response_size=1) as api:
+        async with resilient_client(handler, failure_threshold=1, max_response_size=1) as api:
             for _ in range(2):
                 with pytest.raises(ResponseTooLargeError):
                     await api.get("/")
@@ -288,7 +294,7 @@ class TestCircuitBreaker:
                 raise httpx.LocalProtocolError("Illegal header value", request=request)
             return await server(request)
 
-        async with client(handler, failure_threshold=1) as api:
+        async with resilient_client(handler, failure_threshold=1) as api:
             with pytest.raises(httpx.ConnectError):
                 await api.get("/")
             clock.now += 30
@@ -301,7 +307,7 @@ class TestCircuitBreaker:
 
     async def test_a_successful_trial_closes_it(self, clock: Clock) -> None:
         server = Server(error=True)
-        async with client(server, failure_threshold=1, reset_timeout=30) as api:
+        async with resilient_client(server, failure_threshold=1, reset_timeout=30) as api:
             with pytest.raises(httpx.ConnectError):
                 await api.get("/")
             clock.now += 29
@@ -315,10 +321,12 @@ class TestCircuitBreaker:
         assert server.calls == 4
 
     async def test_a_failed_trial_opens_it_again(
-        self, clock: Clock, caplog: pytest.LogCaptureFixture
+        self,
+        clock: Clock,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         server = Server(error=True)
-        async with client(server, failure_threshold=3, reset_timeout=30) as api:
+        async with resilient_client(server, failure_threshold=3, reset_timeout=30) as api:
             for _ in range(3):
                 with pytest.raises(httpx.ConnectError):
                     await api.get("/")
@@ -342,7 +350,7 @@ class TestCircuitBreaker:
             await release.wait()
             return httpx.Response(200)
 
-        async with client(handler, failure_threshold=1) as api:
+        async with resilient_client(handler, failure_threshold=1) as api:
             with pytest.raises(httpx.ConnectError):
                 await api.get("/")
             clock.now += 30
@@ -363,7 +371,7 @@ class TestCircuitBreaker:
             await asyncio.sleep(10)
             raise AssertionError("unreachable")  # pragma: no cover
 
-        async with client(handler, failure_threshold=1, timeout=None) as api:
+        async with resilient_client(handler, failure_threshold=1, timeout=None) as api:
             with pytest.raises(httpx.ConnectError):
                 await api.get("/")
             clock.now += 30
@@ -389,7 +397,7 @@ class TestCircuitBreaker:
             await asyncio.sleep(10)
             raise AssertionError("unreachable")  # pragma: no cover
 
-        async with client(handler, failure_threshold=1, timeout=None) as api:
+        async with resilient_client(handler, failure_threshold=1, timeout=None) as api:
             slow = asyncio.create_task(api.get("/slow"))
             await asyncio.sleep(0.01)
             with pytest.raises(httpx.ConnectError):
@@ -495,7 +503,7 @@ class TestTransport:
         async def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, stream=body)
 
-        async with client(handler, max_response_size=10) as api:
+        async with resilient_client(handler, max_response_size=10) as api:
             with pytest.raises(ResponseTooLargeError, match="api.example: response body larger"):
                 await api.get("/")
         assert body.closed
@@ -504,7 +512,7 @@ class TestTransport:
         async def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, stream=Trickle([b"x" * 5, b"x" * 5], 0))
 
-        async with client(handler, max_response_size=10) as api:
+        async with resilient_client(handler, max_response_size=10) as api:
             assert (await api.get("/")).text == "x" * 10
 
     async def test_max_response_size_counts_the_bytes_received_not_decoded(self) -> None:
@@ -514,7 +522,7 @@ class TestTransport:
             stream = Trickle([compressed], 0)
             return httpx.Response(200, headers={"Content-Encoding": "gzip"}, stream=stream)
 
-        async with client(handler, max_response_size=len(compressed)) as api:
+        async with resilient_client(handler, max_response_size=len(compressed)) as api:
             assert (await api.get("/")).text == "x" * 1_000
 
     def test_too_large_is_a_request_error_not_a_transport_error(self) -> None:
@@ -554,7 +562,10 @@ class DNS:
         self.records[host] = list(answers)
 
     async def getaddrinfo(
-        self, host: str, port: int, **options: object
+        self,
+        host: str,
+        port: int,
+        **options: object,
     ) -> list[tuple[int, int, int, str, tuple[Any, ...]]]:
         assert options == {"type": socket.SOCK_STREAM}
         self.queries.append((host, port))
@@ -571,12 +582,15 @@ class DNS:
         ]
 
 
-@pytest.fixture
-def dns(monkeypatch: pytest.MonkeyPatch) -> DNS:
+@pytest.fixture(name="dns")
+def fixture_dns(monkeypatch: pytest.MonkeyPatch) -> DNS:
     dns = DNS()
 
     async def getaddrinfo(
-        loop: object, host: str, port: int, **options: object
+        _loop: object,
+        host: str,
+        port: int,
+        **options: object,
     ) -> list[tuple[int, int, int, str, tuple[Any, ...]]]:
         return await dns.getaddrinfo(host, port, **options)
 
@@ -606,8 +620,8 @@ class Origin:
         ]
 
 
-@pytest.fixture
-def origin() -> Origin:
+@pytest.fixture(name="origin")
+def fixture_origin() -> Origin:
     return Origin()
 
 
@@ -678,6 +692,46 @@ class TestAddresses:
         assert not _is_public(ipaddress.ip_address(address))
 
 
+class TestCheck:
+    """A URL checked as a request to it would be, without sending one."""
+
+    async def test_an_allowed_url(self, dns: DNS, origin: Origin) -> None:
+        dns.add("hooks.example", ["93.184.216.34"])
+        guard = SSRFGuardTransport(httpx.MockTransport(origin), ports=(443,))
+        await guard.check("https://hooks.example/orders")
+        assert (dns.queries, origin.requests) == ([("hooks.example", 443)], [])
+
+    @pytest.mark.parametrize(
+        ("url", "message"),
+        [
+            ("https://metadata.example/", "its address isn't allowed"),
+            ("https://hooks.example:8443/", "port 8443 isn't allowed"),
+            ("ftp://hooks.example/", "only http and https URLs are allowed"),
+            ("https://169.254.169.254/latest/meta-data/", "its address isn't allowed"),
+        ],
+    )
+    async def test_refused_urls(self, dns: DNS, origin: Origin, url: str, message: str) -> None:
+        dns.add("metadata.example", ["93.184.216.34", "169.254.169.254"])
+        dns.add("hooks.example", ["93.184.216.34"])
+        guard = SSRFGuardTransport(httpx.MockTransport(origin), ports=(443,))
+        with pytest.raises(BlockedDestinationError, match=message):
+            await guard.check(url)
+        assert origin.requests == []
+
+    @pytest.mark.usefixtures("dns")
+    async def test_a_host_that_doesnt_resolve(self, origin: Origin) -> None:
+        guard = SSRFGuardTransport(httpx.MockTransport(origin))
+        with pytest.raises(httpx.ConnectError, match="couldn't resolve it"):
+            await guard.check("https://nowhere.example/")
+
+    async def test_a_slow_dns_server(self, dns: DNS, origin: Origin) -> None:
+        dns.add("slow.example", ["93.184.216.34"])
+        dns.delay = 1
+        guard = SSRFGuardTransport(httpx.MockTransport(origin))
+        with pytest.raises(httpx.ConnectTimeout):
+            await guard.check("https://slow.example/", timeout=0.01)
+
+
 class TestSSRFGuard:
     async def test_pinned_to_the_address_it_checked(self, dns: DNS, origin: Origin) -> None:
         dns.add("api.example", ["93.184.216.34"])
@@ -714,7 +768,11 @@ class TestSSRFGuard:
 
     @pytest.mark.parametrize("address", BLOCKED)
     async def test_names_with_blocked_addresses(
-        self, dns: DNS, origin: Origin, caplog: pytest.LogCaptureFixture, address: str
+        self,
+        dns: DNS,
+        origin: Origin,
+        caplog: pytest.LogCaptureFixture,
+        address: str,
     ) -> None:
         dns.add("evil.example", [address])
         async with guarded(origin) as client:
@@ -751,6 +809,11 @@ class TestSSRFGuard:
                 await client.get(url)
         assert (dns.queries, origin.requests) == ([], [])
 
+    async def test_ipv6_addresses_are_named_as_in_urls(self, origin: Origin) -> None:
+        async with guarded(origin) as client:
+            with pytest.raises(BlockedDestinationError, match=r"^http://\[::1\]:8080: "):
+                await client.get("http://[::1]:8080/")
+
     async def test_literal_public_addresses(self, dns: DNS, origin: Origin) -> None:
         async with guarded(origin) as client:
             await client.get("https://8.8.8.8/")
@@ -763,7 +826,10 @@ class TestSSRFGuard:
 
     @pytest.mark.parametrize("host", ["2130706433", "0x7f.1", "127.1", "localhost", "localhost."])
     async def test_numeric_spellings_and_local_names(
-        self, dns: DNS, origin: Origin, host: str
+        self,
+        dns: DNS,
+        origin: Origin,
+        host: str,
     ) -> None:
         """httpx sends them to DNS as names; the system resolver turns them into 127.0.0.1."""
         dns.add(host, ["127.0.0.1"])
@@ -899,7 +965,9 @@ class TestResolution:
                 await client.get("http://slow.example/")
 
     async def test_the_other_family_when_the_first_cant_connect(
-        self, dns: DNS, origin: Origin
+        self,
+        dns: DNS,
+        origin: Origin,
     ) -> None:
         dns.add("dual.example", ["2606:4700:4700::1111", "2606:4700:4700::1001", "93.184.216.34"])
         origin.unreachable = {"2606:4700:4700::1111"}
@@ -973,7 +1041,9 @@ class Tracked(httpx.AsyncBaseTransport):
 
 class TestTransportPerName:
     async def test_names_on_the_same_address_dont_share_connections(
-        self, dns: DNS, origin: Origin
+        self,
+        dns: DNS,
+        origin: Origin,
     ) -> None:
         for host in ("a.example", "b.example", "a.example."):
             dns.add(host, ["93.184.216.34"])
@@ -1011,7 +1081,10 @@ class TestTransportPerName:
             assert [tracked.closed for tracked in made] == [True, True, False]
 
     async def test_a_transport_that_fails_to_close(
-        self, dns: DNS, origin: Origin, caplog: pytest.LogCaptureFixture
+        self,
+        dns: DNS,
+        origin: Origin,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         for host in "ab":
             dns.add(f"{host}.example", ["93.184.216.34"])

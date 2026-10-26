@@ -83,7 +83,9 @@ def mp4(brand: bytes = b"isom", box: int = 24) -> bytes:
 
 
 def archive(
-    files: Mapping[str, bytes | str], method: int = zipfile.ZIP_DEFLATED, comment: bytes = b""
+    files: Mapping[str, bytes | str],
+    method: int = zipfile.ZIP_DEFLATED,
+    comment: bytes = b"",
 ) -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", method) as zipped:

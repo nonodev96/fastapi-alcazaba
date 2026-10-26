@@ -290,43 +290,44 @@ class TestInvalidCursors:
             FastAPIPaginationCursor(secret=too_short)
 
 
-pages = FastAPIPagination(default_size=10, max_size=30)
-offsets = FastAPIPaginationLimitOffset()
-cursors = FastAPIPaginationCursor(secret="c" * 32, default_size=4)
+app_pages = FastAPIPagination(default_size=10, max_size=30)
+app_offsets = FastAPIPaginationLimitOffset()
+app_cursors = FastAPIPaginationCursor(secret="c" * 32, default_size=4)
 
 
-@pytest.fixture
-def calls() -> list[str]:
+@pytest.fixture(name="calls")
+def fixture_calls() -> list[str]:
     return []
 
 
-@pytest.fixture
-def client(calls: list[str]) -> TestClient:
+@pytest.fixture(name="client")
+def fixture_client(calls: list[str]) -> TestClient:
     FastAPICache.init(InMemoryBackend())
     app = FastAPI()
 
     @app.get("/items")
     @cache(expire=60)
     async def items(
-        params: Annotated[PageParams, Depends(pages)], q: str | None = None
+        params: Annotated[PageParams, Depends(app_pages)],
+        q: str | None = None,
     ) -> Page[Item]:
         calls.append("items")
         found = [item for item in ITEMS if q is None or str(item.id).startswith(q)]
-        return pages.paginate(found, params)
+        return app_pages.paginate(found, params)
 
-    @app.get("/offsets")
+    @app.get("/app_offsets")
     @cache(expire=60)
     async def by_offset(
-        params: Annotated[LimitOffsetParams, Depends(offsets)],
+        params: Annotated[LimitOffsetParams, Depends(app_offsets)],
     ) -> LimitOffsetPage[Item]:
-        calls.append("offsets")
-        return offsets.paginate(ITEMS, params)
+        calls.append("app_offsets")
+        return app_offsets.paginate(ITEMS, params)
 
     @app.get("/events")
     @cache(expire=60)
-    async def events(params: Annotated[CursorParams, Depends(cursors)]) -> CursorPage[Event]:
+    async def events(params: Annotated[CursorParams, Depends(app_cursors)]) -> CursorPage[Event]:
         calls.append("events")
-        return cursors.paginate(EVENTS, params, key=by_time)
+        return app_cursors.paginate(EVENTS, params, key=by_time)
 
     return TestClient(app)
 
@@ -348,10 +349,10 @@ class TestWithTheCache:
         assert len(calls) == 2
 
     def test_limit_and_offset(self, client: TestClient, calls: list[str]) -> None:
-        assert ids(client.get("/offsets?limit=2&offset=10").json()) == [10, 11]
-        assert ids(client.get("/offsets?limit=2&offset=12").json()) == [12, 13]
-        assert ids(client.get("/offsets?limit=2&offset=10").json()) == [10, 11]
-        assert calls == ["offsets", "offsets"]
+        assert ids(client.get("/app_offsets?limit=2&offset=10").json()) == [10, 11]
+        assert ids(client.get("/app_offsets?limit=2&offset=12").json()) == [12, 13]
+        assert ids(client.get("/app_offsets?limit=2&offset=10").json()) == [10, 11]
+        assert calls == ["app_offsets", "app_offsets"]
 
     def test_each_cursor_has_its_entry(self, client: TestClient, calls: list[str]) -> None:
         first = client.get("/events").json()
@@ -367,8 +368,8 @@ class TestWithTheCache:
             ("/items?page=0", 422),
             ("/items?size=31", 422),  # this tool's maximum
             ("/items?size=lots", 422),
-            ("/offsets?limit=101", 422),
-            ("/offsets?offset=-1", 422),
+            ("/app_offsets?limit=101", 422),
+            ("/app_offsets?offset=-1", 422),
             ("/events?size=101", 422),
             ("/events?cursor=has%20spaces", 422),
             ("/events?cursor=a.b.c", 422),
@@ -377,7 +378,11 @@ class TestWithTheCache:
         ],
     )
     def test_wrong_parameters_never_reach_the_endpoint(
-        self, client: TestClient, calls: list[str], path: str, status: int
+        self,
+        client: TestClient,
+        calls: list[str],
+        path: str,
+        status: int,
     ) -> None:
         response = client.get(path)
         assert response.status_code == status
@@ -387,12 +392,15 @@ class TestWithTheCache:
         ("path", "names"),
         [
             ("/items", {"page", "size", "q"}),
-            ("/offsets", {"limit", "offset"}),
+            ("/app_offsets", {"limit", "offset"}),
             ("/events", {"cursor", "size"}),
         ],
     )
     def test_the_parameters_are_documented(
-        self, client: TestClient, path: str, names: set[str]
+        self,
+        client: TestClient,
+        path: str,
+        names: set[str],
     ) -> None:
         operation = client.get("/openapi.json").json()["paths"][path]["get"]
         assert {parameter["name"] for parameter in operation["parameters"]} == names

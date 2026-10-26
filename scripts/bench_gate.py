@@ -1,7 +1,7 @@
 """Fail when a benchmark got slower than the others since main's last run.
 
-    uv run pytest tests/benchmarks --benchmark-only --benchmark-json=benchmarks.json
-    uv run python scripts/bench_gate.py benchmarks.json benchmark-history/data.json
+    pytest tests/benchmarks --benchmark-only --benchmark-json=benchmarks.json
+    python scripts/bench_gate.py benchmarks.json benchmark-history/data.json
 
 GitHub's shared runners change from one run to the next, and a slower machine makes every
 benchmark slower at once (twice as slow is common), so the absolute numbers of two runs can't be

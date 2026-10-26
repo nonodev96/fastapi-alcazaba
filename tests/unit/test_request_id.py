@@ -210,20 +210,20 @@ class TestRequestIDContext:
         assert seen == {b"a": "a", b"b": "b", b"c": "c"}
 
 
-def record() -> logging.LogRecord:
+def log_record() -> logging.LogRecord:
     return logging.LogRecord("app", logging.INFO, __file__, 1, "message", None, None)
 
 
 class TestRequestIDLogFilter:
     def test_outside_a_request(self) -> None:
-        entry = record()
+        entry = log_record()
         assert RequestIDLogFilter().filter(entry) is True
         assert entry.__dict__["request_id"] == "-"
-        RequestIDLogFilter(default="none").filter(entry := record())
+        RequestIDLogFilter(default="none").filter(entry := log_record())
         assert entry.__dict__["request_id"] == "none"
 
     def test_an_extra_request_id_is_kept(self) -> None:
-        entry = record()
+        entry = log_record()
         entry.__dict__["request_id"] = "given"
         RequestIDLogFilter().filter(entry)
         assert entry.__dict__["request_id"] == "given"

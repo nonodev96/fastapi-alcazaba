@@ -108,7 +108,10 @@ async def _in_thread(check: Check, name: str, threads: dict[str, threading.Threa
 
 
 async def _run_check(
-    name: str, health_check: HealthCheck, default: float, threads: dict[str, threading.Thread]
+    name: str,
+    health_check: HealthCheck,
+    default: float,
+    threads: dict[str, threading.Thread],
 ) -> dict[str, Any]:
     seconds = health_check.timeout if health_check.timeout is not None else default
     start = time.perf_counter()

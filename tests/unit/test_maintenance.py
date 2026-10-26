@@ -29,8 +29,8 @@ from fastapi_alcazaba.types import Backend
 KEY = "app!maintenance:state"
 
 
-@pytest.fixture(params=["memory", "redis"])
-def cache(request: pytest.FixtureRequest) -> Cache:
+@pytest.fixture(name="cache", params=["memory", "redis"])
+def fixture_cache(request: pytest.FixtureRequest) -> Cache:
     backend: Backend = (
         InMemoryBackend()
         if request.param == "memory"
@@ -160,6 +160,26 @@ class TestSwitch:
         maintenance = FastAPIMaintenance()
         await maintenance.enable()
         assert (await FastAPIMaintenance().status()).enabled
+
+    async def test_a_new_fastapi_cache_drops_the_copy(self) -> None:
+        """As each test's lifespan sets FastAPICache up again: the last app's state isn't served."""
+        maintenance = FastAPIMaintenance(refresh=60)
+        FastAPICache.init(InMemoryBackend())
+        await maintenance.enable()
+        assert (await maintenance.current()).enabled
+        FastAPICache.reset()
+        FastAPICache.init(InMemoryBackend())
+        assert not (await maintenance.current()).enabled
+
+    async def test_forget_drops_the_copy(self) -> None:
+        backend = Counting()
+        maintenance = FastAPIMaintenance(Cache(backend), refresh=60)
+        await maintenance.current()
+        await maintenance.current()
+        assert backend.gets == 1
+        maintenance.forget()
+        await maintenance.current()
+        assert backend.gets == 2
 
 
 class TestMiddleware:
@@ -315,7 +335,9 @@ class TestStoredState:
         ],
     )
     async def test_malformed_states_are_ignored(
-        self, payload: bytes, caplog: pytest.LogCaptureFixture
+        self,
+        payload: bytes,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         backend = InMemoryBackend()
         await backend.set(KEY, payload)

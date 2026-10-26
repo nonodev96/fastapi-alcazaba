@@ -8,8 +8,8 @@ import pytest
 SCRIPT = Path(__file__).parents[2] / "scripts" / "bench_gate.py"
 
 
-@pytest.fixture(scope="module")
-def gate() -> ModuleType:
+@pytest.fixture(name="gate", scope="module")
+def fixture_gate() -> ModuleType:
     spec = importlib.util.spec_from_file_location("bench_gate", SCRIPT)
     assert spec is not None
     assert spec.loader is not None
@@ -31,7 +31,9 @@ def write_runs(tmp_path: Path, previous: dict[str, float], current: dict[str, fl
 
 
 def test_a_slower_machine_is_not_a_regression(
-    gate: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    gate: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Every benchmark at roughly half the speed: the runner, not the code.
     previous = {"hit": 11708.0, "miss": 16164.0, "encode": 215326.0, "sign": 101343.0}
@@ -41,7 +43,9 @@ def test_a_slower_machine_is_not_a_regression(
 
 
 def test_one_benchmark_slower_than_the_rest_fails(
-    gate: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    gate: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     previous = {"hit": 10000.0, "miss": 10000.0, "encode": 10000.0, "sign": 10000.0}
     current = {"hit": 4000.0, "miss": 10000.0, "encode": 9500.0, "sign": 10500.0}
@@ -55,7 +59,9 @@ def test_new_and_removed_benchmarks_are_ignored(gate: ModuleType) -> None:
 
 
 def test_without_a_previous_run_it_passes(
-    gate: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    gate: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     (tmp_path / "benchmarks.json").write_text(json.dumps({"benchmarks": []}))
     missing = tmp_path / "benchmark-history" / "data.json"

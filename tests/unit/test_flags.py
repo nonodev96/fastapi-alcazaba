@@ -1,5 +1,7 @@
 """FastAPIFeatureFlags: flags in the backend, sticky percentage rollouts, local copies."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import json
 import logging
@@ -24,8 +26,8 @@ from fastapi_alcazaba.types import Backend
 DIGEST = "0" * 64
 
 
-@pytest.fixture(params=["memory", "redis"])
-def cache(request: pytest.FixtureRequest) -> Cache:
+@pytest.fixture(name="cache", params=["memory", "redis"])
+def fixture_cache(request: pytest.FixtureRequest) -> Cache:
     backend: Backend = (
         InMemoryBackend()
         if request.param == "memory"
@@ -87,6 +89,18 @@ class TestEvaluation:
         await flags.set("beta", enabled=True, deny=["carol"])
         assert await flags.enabled("beta", "dave")
         assert not await flags.enabled("beta", "carol")
+
+    async def test_an_allow_list_without_a_percentage_is_only_for_it(self, cache: Cache) -> None:
+        flags = FastAPIFeatureFlags(cache)
+        flag = await flags.set("beta", enabled=True, allow=["alice"])
+        assert (flag.percentage, flag.share) == (None, 0.0)
+        assert await flags.enabled("beta", subject="alice")
+        assert not await flags.enabled("beta", subject="bob")
+        assert not await flags.enabled("beta")  # nobody in particular
+        everybody = await flags.set("beta", enabled=True, deny=["bob"])
+        assert everybody.share == 100.0
+        assert await flags.enabled("beta", subject="carol")
+        assert not await flags.enabled("beta", subject="bob")
 
     async def test_partial_rollouts_need_a_subject(self, cache: Cache) -> None:
         flags = FastAPIFeatureFlags(cache)
@@ -208,6 +222,26 @@ class TestLocalCopies:
         await asyncio.sleep(0.12)
         assert await elsewhere.enabled("beta", default=True)
 
+    async def test_a_new_fastapi_cache_drops_the_copies(self) -> None:
+        """As each test's lifespan sets FastAPICache up again: the last app's flags aren't used."""
+        flags = FastAPIFeatureFlags(refresh=60)
+        FastAPICache.init(InMemoryBackend())
+        await flags.set("beta", enabled=True)
+        assert await flags.enabled("beta")
+        FastAPICache.reset()
+        FastAPICache.init(InMemoryBackend())
+        assert not await flags.enabled("beta")
+
+    async def test_forget_drops_the_copies(self) -> None:
+        backend = Counting()
+        flags = FastAPIFeatureFlags(Cache(backend), refresh=60)
+        await flags.enabled("beta")
+        await flags.enabled("beta")
+        assert backend.gets == 1
+        flags.forget()
+        await flags.enabled("beta")
+        assert backend.gets == 2
+
     async def test_bounded(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(flags_module, "MAX_KNOWN_FLAGS", 2)
         flags = FastAPIFeatureFlags(Cache(InMemoryBackend()))
@@ -315,7 +349,9 @@ class TestStoredDefinitions:
         ],
     )
     async def test_malformed_definitions_are_ignored(
-        self, definition: Any, caplog: pytest.LogCaptureFixture
+        self,
+        definition: Any,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         backend = InMemoryBackend()
         payload = definition if isinstance(definition, str) else json.dumps(definition)

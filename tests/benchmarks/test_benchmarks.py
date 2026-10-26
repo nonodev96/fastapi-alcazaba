@@ -29,8 +29,8 @@ class Item(BaseModel):
 ITEMS = [Item(name=f"item {i}", price=i * 1.5, tags=["a", "b"]) for i in range(100)]
 
 
-@pytest.fixture
-def loop() -> Iterator[asyncio.AbstractEventLoop]:
+@pytest.fixture(name="loop")
+def fixture_loop() -> Iterator[asyncio.AbstractEventLoop]:
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
@@ -40,7 +40,9 @@ def loop() -> Iterator[asyncio.AbstractEventLoop]:
     "protection", ["plain", "signed", "encrypted", "zstd", "zlib", "encrypted+zstd"]
 )
 def test_cache_hit(
-    benchmark: BenchmarkFixture, loop: asyncio.AbstractEventLoop, protection: str
+    benchmark: BenchmarkFixture,
+    loop: asyncio.AbstractEventLoop,
+    protection: str,
 ) -> None:
     key = "k" * 32
     codec = protection.rpartition("+")[2]
@@ -80,6 +82,7 @@ def test_json_decode_as_type(benchmark: BenchmarkFixture) -> None:
 
 
 def test_default_key_builder(benchmark: BenchmarkFixture) -> None:
+    # pylint: disable-next=unused-argument  # FastAPI's query parameters, which the key is built from
     def endpoint(page: int, size: int, query: str) -> None: ...
 
     benchmark(

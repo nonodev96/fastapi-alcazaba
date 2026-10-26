@@ -5,13 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "fastapi-alcazaba"
 dynamic = ["version"]
-description = "Secure, maintained tools for FastAPI: response cache, rate limiter and more (started as a fork of fastapi-cache2)"
+description = "Secure, maintained tools for FastAPI: response cache, rate limits, sessions, CSRF, webhooks, a task queue and more"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
-authors = [{ name = "long2ice and the fastapi-cache contributors" }]
-maintainers = [{ name = "Antonio Mudarra Machuca", email = "nonodev96@gmail.com" }]
+authors = [{ name = "Antonio Mudarra Machuca", email = "nonodev96@gmail.com" }]
 keywords = ["fastapi", "toolkit", "cache", "caching", "rate-limiting", "pagination", "scheduler", "cron", "circuit-breaker", "redis", "valkey", "security"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -51,38 +50,51 @@ Documentation = "https://nonodev96.github.io/fastapi-alcazaba/"
 Repository = "https://github.com/nonodev96/fastapi-alcazaba"
 Issues = "https://github.com/nonodev96/fastapi-alcazaba/issues"
 Changelog = "https://github.com/nonodev96/fastapi-alcazaba/blob/main/CHANGELOG.md"
-"Upstream project" = "https://github.com/long2ice/fastapi-cache"
 
+# Install with pip 26.2 or later: pip install -e ".[all]" --group dev (`make deps` does it).
 [dependency-groups]
 dev = [
+    "actionlint-py>=1.7.12",
     "coverage[toml]>=7.6",
     "cyclonedx-python-lib[json-validation]>=11.12",
     "fakeredis[lua]>=2.26",
     "hypothesis>=6.100",
     "httpx2>=2.0",
     "jinja2>=3.1",
-    "mypy>=1.13",
     "mutmut>=3.7",
+    "mypy>=1.13",
     "opentelemetry-sdk>=1.27",
+    "pip-audit>=2.10",
+    "pre-commit>=4.0",
+    "pylint>=4",
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "pytest-benchmark>=5.1",
     "pytest-randomly>=4.1",
+    "python-multipart>=0.0.20",
     "ruff>=0.8",
+    "shellcheck-py>=0.11",
     "types-aiobotocore[dynamodb]>=2.13",
     "uvicorn>=0.30",
+    "zizmor>=1.31",
 ]
 
+# The documentation site. MkDocs 2.0 drops plugins and themes, so neither Material nor
+# mkdocstrings would work with it: it stays on 1.x. Material stays on 9.7.1, the last release
+# that doesn't print a notice about MkDocs 2.0 on every build; its search suggestions have an XSS
+# (GHSA-xvg9-69gf-fjrf, fixed in 9.7.7), so mkdocs.yml leaves them off.
 docs = [
     "mkdocs>=1.6,<2",
-    "mkdocs-material>=9.6",
+    "mkdocs-material==9.7.1",
     "mkdocstrings-python>=1.16",
 ]
 
-[tool.uv]
-# Don't resolve releases younger than three days: compromised versions are usually pulled sooner,
-# and the PyPI CDN of the CI may not serve them yet.
-exclude-newer = "3 days"
+# Building and checking the distributions (CI and releases).
+package = [
+    "build>=1.2",
+    "check-wheel-contents>=0.6",
+    "twine>=7.0",
+]
 
 # The version comes from the Git tag (vX.Y.Z); between tags it's a .devN version.
 [tool.hatch.version]
@@ -95,7 +107,7 @@ local_scheme = "no-local-version"
 packages = ["fastapi_alcazaba"]
 
 [tool.hatch.build.targets.sdist]
-include = ["fastapi_alcazaba", "tests", "examples", "README.md", "CHANGELOG.md", "SECURITY.md", "UPSTREAM.md", "LICENSE", "NOTICE"]
+include = ["fastapi_alcazaba", "tests", "examples", "README.md", "CHANGELOG.md", "SECURITY.md", "LICENSE", "NOTICE"]
 
 [tool.ruff]
 line-length = 100
@@ -116,6 +128,56 @@ select = [
 [tool.ruff.lint.isort]
 known-first-party = ["examples", "fastapi_alcazaba"]
 
+[tool.pylint.main]
+py-version = "3.11"
+jobs = 0
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pylint.variables]
+# Arguments a caller passes whatever the function needs: ASGI's scope, receive and send, request
+# and exc to Starlette's exception handlers and httpx's mock handlers, app to a lifespan.
+ignored-argument-names = "_.*|^ignored_|^unused_|^(scope|receive|send|request|response|exc|app)$"
+
+[tool.pylint.exceptions]
+# Exception is caught on purpose where the app must go on whatever fails (a backend: the cache
+# fails open; a task, a check, a scheduled job), and logged there. BaseException never is.
+overgeneral-exceptions = ["builtins.BaseException"]
+
+[tool.pylint."messages control"]
+disable = [
+    # Docstrings go where they tell something, not on every test, fake and helper.
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    # ruff sorts and groups the imports.
+    "wrong-import-order",
+    "ungrouped-imports",
+    "wrong-import-position",
+    # Imported where it's needed: optional dependencies stay optional, and cycles are broken.
+    "import-outside-toplevel",
+    "cyclic-import",
+    # Sizes: the API takes keyword options, and models, fakes and handlers have few methods.
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-positional-arguments",
+    "too-many-instance-attributes",
+    "too-many-locals",
+    "too-many-branches",
+    "too-many-return-statements",
+    "too-many-public-methods",
+    "too-many-lines",
+    "too-many-boolean-expressions",
+    "too-many-ancestors",
+    # Each test and example sets itself up, to read on its own.
+    "duplicate-code",
+    # Exact type checks on purpose: JSON's true and false must not pass for integers.
+    "unidiomatic-typecheck",
+    # Tests compare with [] and {}: a failure shows what was there, and of which type.
+    "use-implicit-booleaness-not-comparison",
+]
+
 [tool.mypy]
 files = ["fastapi_alcazaba", "tests", "scripts"]
 python_version = "3.11"
@@ -132,6 +194,8 @@ asyncio_default_fixture_loop_scope = "function"
 # Suites: tests/unit (default), tests/integration and tests/e2e (need servers, skipped
 # otherwise), tests/benchmarks (only with --benchmark-only) and tests/typing (checked by mypy).
 addopts = "--benchmark-skip"
+# A test still running after this many seconds prints the stack of every thread: where it hangs.
+faulthandler_timeout = 120
 markers = [
     "integration: needs real servers (REDIS_URL, VALKEY_URL, CLUSTER_URL, MEMCACHED_URL, DYNAMODB_URL)",
     "e2e: runs the example app in uvicorn processes against a real Valkey (VALKEY_URL)",

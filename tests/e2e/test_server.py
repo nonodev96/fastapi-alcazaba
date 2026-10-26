@@ -43,6 +43,7 @@ class Server:
             "ALCAZABA_E2E_PREFIX": self.prefix,
             "ALCAZABA_E2E_ENCRYPTION_KEY": self.encryption_key,
         }
+        # pylint: disable-next=consider-using-with  # it outlives __init__: stop() ends it
         self.process = subprocess.Popen(  # noqa: S603  # our own interpreter and arguments
             [
                 sys.executable,
@@ -79,16 +80,16 @@ class Server:
             self.process.kill()
 
 
-@pytest.fixture(scope="module")
-def valkey_url() -> str:
+@pytest.fixture(name="valkey_url", scope="module")
+def fixture_valkey_url() -> str:
     url = os.environ.get("VALKEY_URL")
     if not url:
         pytest.skip("VALKEY_URL not set")
     return url
 
 
-@pytest.fixture(scope="module")
-def server(valkey_url: str) -> Iterator[Server]:
+@pytest.fixture(name="server", scope="module")
+def fixture_server(valkey_url: str) -> Iterator[Server]:
     running = Server(valkey_url)
     try:
         running.wait_ready()
@@ -107,7 +108,8 @@ def computed(valkey_url: str, server: Server, name: str) -> int:
 
 
 async def test_processes_share_the_value_and_compute_it_once(
-    valkey_url: str, server: Server
+    valkey_url: str,
+    server: Server,
 ) -> None:
     """20 concurrent requests spread over two processes: the distributed lock makes one of them
     compute the value while the others wait for it."""
@@ -153,8 +155,8 @@ async def test_invalidating_a_tag_reaches_every_process(valkey_url: str, server:
         ):
 
             async def computation(client: httpx2.AsyncClient) -> int:
-                computed: int = (await client.get("/products/7")).json()["computation"]
-                return computed
+                value: int = (await client.get("/products/7")).json()["computation"]
+                return value
 
             before = [await computation(one), await computation(other)]
             await asyncio.sleep(0.3)  # the second subscribed to the channel on its first request

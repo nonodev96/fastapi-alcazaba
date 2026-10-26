@@ -1,0 +1,45 @@
+/* Alcazaba's colours: night-blue walls, terracotta stone, a teal bolt. */
+:root {
+  --md-primary-fg-color: #1b2e42;
+  --md-primary-fg-color--light: #2a4157;
+  --md-primary-fg-color--dark: #0b141d;
+  --md-accent-fg-color: #0e9e8e;
+  --md-accent-fg-color--transparent: rgb(14 158 142 / 10%);
+}
+
+:root > * {
+  --md-typeset-a-color: #b04528;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 210;
+  --md-primary-fg-color: #0f1b27;
+  --md-accent-fg-color: #45e0ca;
+  --md-accent-fg-color--transparent: rgb(69 224 202 / 10%);
+}
+
+[data-md-color-scheme="slate"] > * {
+  --md-typeset-a-color: #ec8e63;
+}
+
+/* The tabs under the header, in the header's colour. */
+.md-tabs {
+  background-color: var(--md-primary-fg-color);
+}
+
+/* The icons of the example cards, in terracotta. */
+.md-typeset .grid.cards .twemoji {
+  color: #c2552f;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards .twemoji {
+  color: #ec8e63;
+}
+
+/* The home page's title, under the logo. */
+.md-typeset h1[align="center"] {
+  margin-bottom: 0.4em;
+  color: var(--md-default-fg-color);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}

@@ -244,7 +244,10 @@ class FastAPIAPIKeys(Generic[R]):
         return with_scopes
 
     def generate(
-        self, *, scopes: Iterable[str] = (), expires_at: datetime | None = None
+        self,
+        *,
+        scopes: Iterable[str] = (),
+        expires_at: datetime | None = None,
     ) -> NewAPIKey:
         """A new key, to show its owner once, and its record, to store. `scopes` are free-form
         names ("orders:read"); `expires_at` a datetime with its time zone."""

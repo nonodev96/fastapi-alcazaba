@@ -9,8 +9,8 @@ from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.decorator import cache
 
 
-@pytest.fixture
-def reader() -> InMemoryMetricReader:
+@pytest.fixture(name="reader")
+def fixture_reader() -> InMemoryMetricReader:
     return InMemoryMetricReader()
 
 

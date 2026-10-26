@@ -10,12 +10,16 @@ import re
 from collections.abc import Mapping
 
 from starlette.exceptions import HTTPException
+from starlette.requests import Request
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 # Literal codes: the name of 413 in starlette.status changed with its RFC 9110 title.
 _BAD_REQUEST = 400
 _CONTENT_TOO_LARGE = 413
 _TOKEN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+")
+# Where in the request's state the rate limiters leave their headers, for the error responses
+# that FastAPIProblemDetails builds (FastAPI doesn't give them the dependencies' headers).
+_RATE_LIMIT_HEADERS = "fastapi_alcazaba_rate_limit_headers"
 _FORBIDDEN_IN_VALUES = re.compile(r"[\r\n\0]")
 
 #: The OWASP REST Security Cheat Sheet's headers for API responses.
@@ -98,7 +102,9 @@ class SecurityHeadersMiddleware:
         await self.app(scope, receive, send_with_headers)
 
     def _complete(
-        self, headers: list[tuple[bytes, bytes]], https: bool
+        self,
+        headers: list[tuple[bytes, bytes]],
+        https: bool,
     ) -> list[tuple[bytes, bytes]]:
         present = {name.lower() for name, _ in headers}
         content_type = next((v for n, v in headers if n.lower() == b"content-type"), b"")
@@ -132,11 +138,36 @@ def _route_path(scope: Scope) -> str:
     return path
 
 
-async def _respond(send: Send, status: int, detail: str) -> None:
+async def _respond(
+    scope: Scope,
+    send: Send,
+    status: int,
+    detail: str,
+    headers: Mapping[str, str] | None = None,
+) -> None:
+    """A middleware's own answer: a problem when the app has FastAPIProblemDetails installed (so
+    that every error of the app looks the same), else FastAPI's `{"detail": ...}`."""
+    problems = getattr(getattr(scope.get("app"), "state", None), "fastapi_alcazaba_problems", None)
+    if problems is not None:
+        from fastapi_alcazaba.problems import Problem
+
+        # A Problem: its detail is sent, also with a 5xx, as it's written for the client.
+        response = problems.response(Request(scope), Problem(status, detail, headers=headers))
+        await response(scope, _disconnected, send)
+        return
     body = json.dumps({"detail": detail}, separators=(",", ":")).encode()
-    headers = [(b"content-type", b"application/json"), (b"content-length", b"%d" % len(body))]
-    await send({"type": "http.response.start", "status": status, "headers": headers})
+    raw = [(b"content-type", b"application/json"), (b"content-length", b"%d" % len(body))]
+    raw += [
+        (name.lower().encode("latin-1"), value.encode("latin-1"))
+        for name, value in (headers or {}).items()
+    ]
+    await send({"type": "http.response.start", "status": status, "headers": raw})
     await send({"type": "http.response.body", "body": body})
+
+
+async def _disconnected() -> Message:
+    """The receive of an answer that reads nothing."""
+    return {"type": "http.disconnect"}
 
 
 class BodySizeLimitMiddleware:
@@ -193,12 +224,12 @@ class BodySizeLimitMiddleware:
             # Digits only: int() would also take "+5", " 5" or "1_0". Several different values
             # make it ambiguous which one the body follows (request smuggling).
             if len(lengths) > 1 or not (length := lengths.pop()).isdigit():
-                await _respond(send, _BAD_REQUEST, "Invalid Content-Length")
+                await _respond(scope, send, _BAD_REQUEST, "Invalid Content-Length")
                 return
             # int() refuses more than 4300 digits; a length with more than the limit is over it.
             digits = length.lstrip(b"0")
             if len(digits) > len(str(limit)) or int(digits or b"0") > limit:
-                await _respond(send, _CONTENT_TOO_LARGE, "Request body too large")
+                await _respond(scope, send, _CONTENT_TOO_LARGE, "Request body too large")
                 return
         received = 0
         started = False
@@ -223,4 +254,4 @@ class BodySizeLimitMiddleware:
         except _BodyTooLarge:
             if started:
                 raise  # too late to answer: the server closes the connection
-            await _respond(send, _CONTENT_TOO_LARGE, "Request body too large")
+            await _respond(scope, send, _CONTENT_TOO_LARGE, "Request body too large")

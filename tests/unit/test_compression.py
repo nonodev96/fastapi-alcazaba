@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import os
 import sys
 import zlib

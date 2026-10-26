@@ -185,9 +185,11 @@ class FastAPIWebhooks:
         @app.post("/webhooks")
         async def receive(message: Annotated[WebhookMessage, Depends(webhooks)]) -> None: ...
 
-    It reads the raw body (up to `max_body_size` bytes, a 413 beyond) and leaves it in the request:
-    the endpoint can still take a pydantic model, `await request.json()` or `message.json()`. It
-    can't read a body the endpoint takes as a form, which consumes it first: webhooks are JSON.
+    It reads the raw body (up to `max_body_size` bytes, a 413 beyond) and leaves it in the request,
+    for `message.json()` or `await request.json()`. Validate it there, not with a pydantic body
+    parameter: FastAPI reads and validates those before any dependency, without the size limit and
+    before the signature is checked. It can't read a body the endpoint takes as a form, which
+    consumes it first: webhooks are JSON.
 
     Missing or malformed headers get a 400; a wrong signature, a timestamp more than `tolerance`
     seconds away from the server's clock (either way) and a delivery accepted before all get the

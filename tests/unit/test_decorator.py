@@ -152,7 +152,7 @@ def test_client_cache_control_is_ignored_by_default() -> None:
 
 @pytest.mark.cache_options(respect_cache_control=True)
 def test_cache_control_directives_are_parsed() -> None:
-    """fastapi-cache2 only recognised the exact header value "no-cache"."""
+    """Not only the exact header value "no-cache": its directives."""
     with TestClient(app) as client:
         first = client.get("/cached_put").json()["value"]
         response = client.get("/cached_put", headers={"Cache-Control": "max-age=0, No-Cache"})

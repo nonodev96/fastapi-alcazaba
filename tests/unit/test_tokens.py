@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import logging
 import time
@@ -29,20 +31,20 @@ class Clock:
         monkeypatch.setattr(time, "monotonic", lambda: self.now)
 
 
-@pytest.fixture
-def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
+@pytest.fixture(name="clock")
+def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     return Clock(monkeypatch)
 
 
-@pytest.fixture(params=["inmemory", "redis"])
-def backend(request: pytest.FixtureRequest) -> Backend:
+@pytest.fixture(name="backend", params=["inmemory", "redis"])
+def fixture_backend(request: pytest.FixtureRequest) -> Backend:
     if request.param == "inmemory":
         return InMemoryBackend()
     return RedisBackend(fakeredis.FakeAsyncRedis())
 
 
-@pytest.fixture
-def global_cache() -> Iterator[InMemoryBackend]:
+@pytest.fixture(name="global_cache")
+def fixture_global_cache() -> Iterator[InMemoryBackend]:
     backend = InMemoryBackend()
     FastAPICache.init(backend)
     yield backend
@@ -95,7 +97,8 @@ class TestRevokedTokens:
         assert await blocklist.is_revoked("by-ttl")
 
     async def test_tokens_that_cant_be_accepted_anymore_arent_stored(
-        self, backend: Backend
+        self,
+        backend: Backend,
     ) -> None:
         blocklist = TokenBlocklist(Cache(backend), leeway=60)
         await blocklist.revoke("long-gone", expires_at=NOW - 61)
@@ -179,7 +182,10 @@ class TestBlocklistStorage:
 
     @pytest.mark.parametrize(("fail_open", "revoked"), [(False, True), (True, False)])
     async def test_a_failing_backend(
-        self, fail_open: bool, revoked: bool, caplog: pytest.LogCaptureFixture
+        self,
+        fail_open: bool,
+        revoked: bool,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         blocklist = TokenBlocklist(Cache(Down()), fail_open=fail_open)
         with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.tokens"):

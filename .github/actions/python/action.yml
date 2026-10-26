@@ -1,0 +1,43 @@
+name: Python and the project
+description: >-
+  Python (the version in .python-version unless told), pip 26.2 or later, and the project in
+  editable mode with every extra and the given dependency groups of pyproject.toml.
+
+inputs:
+  python-version:
+    description: The Python version; empty for the one in .python-version.
+    default: ""
+  groups:
+    description: Dependency groups to install, separated by spaces.
+    default: dev
+  install:
+    description: '"false" for Python and pip only, without the project.'
+    default: "true"
+  cache:
+    description: '"pip" to cache the downloads, "" for no cache (releases).'
+    default: pip
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+        python-version-file: .python-version
+        cache: ${{ inputs.cache }}
+        cache-dependency-path: pyproject.toml
+    - name: pip and the project
+      shell: bash
+      env:
+        GROUPS: ${{ inputs.groups }}
+        INSTALL: ${{ inputs.install }}
+        # No release younger than three days: compromised versions are usually pulled sooner.
+        PIP_UPLOADED_PRIOR_TO: P3D
+        PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      run: |
+        python -m pip install --quiet --upgrade "pip>=26.2"
+        if [ "$INSTALL" = true ]; then
+          args=()
+          for group in $GROUPS; do args+=(--group "$group"); done
+          python -m pip install --quiet -e ".[all]" "${args[@]}"
+        fi

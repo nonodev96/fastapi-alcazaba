@@ -35,7 +35,7 @@ class MemcachedBackend(Backend):
 
     async def get_with_ttl(self, key: str) -> tuple[int, bytes | None]:
         value = await self.get(key)
-        # memcached can't tell the remaining time to live (fastapi-cache2 always said 3600).
+        # memcached can't tell the remaining time to live.
         return (0, None) if value is None else (-1, value)
 
     async def get(self, key: str) -> bytes | None:
@@ -73,7 +73,7 @@ class MemcachedBackend(Backend):
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
         if namespace:
-            # flush_all (upstream PR #477) would also wipe every other application's data.
+            # flush_all would also wipe every other application's data.
             raise NotImplementedError(
                 "memcached can't list the keys of a namespace; delete them one by one with `key`"
             )

@@ -171,7 +171,10 @@ class FastAPIConcurrencyLimiter:
 
     @asynccontextmanager
     async def slot(
-        self, key: str = "", *, connection: HTTPConnection | None = None
+        self,
+        key: str = "",
+        *,
+        connection: HTTPConnection | None = None,
     ) -> AsyncIterator[None]:
         """Hold a slot around a block, outside a dependency:
 

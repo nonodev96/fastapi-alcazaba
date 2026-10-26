@@ -1,5 +1,7 @@
 """FastAPITaskQueue: tasks on Redis streams, run at least once by the processes sharing them."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import contextlib
 import hashlib
@@ -95,8 +97,18 @@ class World:
         return [fields for _, fields in await self.raw.xrange(queue._dead)]
 
 
-@pytest.fixture
-def world() -> World:
+# redis-py marks the commands that a client may lack as abstract: fakeredis lacks a few.
+class Swallowing(fakeredis.FakeAsyncRedis):  # pylint: disable=abstract-method
+    """Its commands take a while and swallow cancellation, as fakeredis does on Python 3.11."""
+
+    async def execute_command(self, *args: Any, **options: Any) -> Any:
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.sleep(0.2)
+        return await super().execute_command(*args, **options)  # type: ignore[no-untyped-call]
+
+
+@pytest.fixture(name="world")
+def fixture_world() -> World:
     return World()
 
 
@@ -180,6 +192,32 @@ class TestConfiguration:
         async with queue:
             await asyncio.wait_for(done.wait(), 3)
 
+    def test_each_lifespan_gets_the_cache_it_sets_up(self) -> None:
+        """As in an app's tests: each TestClient runs the lifespan in an event loop of its own,
+        and the lifespan sets FastAPICache up again."""
+        queue = FastAPITaskQueue(poll_interval=0.02)
+        ran: list[int] = []
+
+        @queue.task(name="job")
+        async def job(n: int) -> None:
+            ran.append(n)
+
+        async def lifespan(n: int) -> None:
+            world = World()
+            FastAPICache.init(world.backend(), prefix="app", signing_key=SIGNING_KEY)
+            try:
+                async with queue:
+                    await asyncio.sleep(0.05)  # the workers wait for tasks
+                    await queue.enqueue(job, n)
+                    await eventually(lambda: n in ran)
+                    assert await world.raw.exists(queue._stream)  # in this lifespan's Redis
+            finally:
+                FastAPICache.reset()
+
+        for n in (1, 2):
+            asyncio.run(lifespan(n))
+        assert ran == [1, 2]
+
     async def test_keys_are_state_keys_in_one_hash_slot(self, world: World) -> None:
         cache = world.cache()
         queue, other = world.queue(cache), world.queue(cache, name="emails")
@@ -204,7 +242,9 @@ class TestConfiguration:
         assert await other.pending() == 0
 
     async def test_a_warning_when_tasks_arent_signed(
-        self, world: World, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         async with world.queue(world.cache(signing_key=None)):
             pass
@@ -258,6 +298,7 @@ class TestRegistration:
         queue = world.queue(max_payload_size=100)
 
         @queue.task("job")
+        # pylint: disable-next=unused-argument  # the task's signature, which enqueue() checks
         async def job(value: Any, *, flag: bool = False) -> None: ...
 
         with pytest.raises(TypeError, match="job: missing a required argument"):
@@ -432,7 +473,9 @@ class TestRetries:
         assert attempts[2] - attempts[1] >= 0.2
 
     async def test_after_the_last_retry_the_dead_letters(
-        self, world: World, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         queue = world.queue()
         runs = [0]
@@ -444,7 +487,7 @@ class TestRetries:
 
         async with queue:
             task_id = await queue.enqueue(charge, "4111-1111-1111-1111")
-            await eventually(lambda: queue.dead_letters())
+            await eventually(queue.dead_letters)
         assert runs == [2]
         (dead,) = await queue.dead_letters()
         assert (dead.reason, dead.task, dead.task_id, dead.attempts) == (
@@ -475,7 +518,7 @@ class TestRetries:
 
         async with queue:
             await queue.enqueue(job)
-            await eventually(lambda: queue.dead_letters())
+            await eventually(queue.dead_letters)
         assert runs == [1]
         assert [dead.error for dead in await queue.dead_letters()] == ["ValueError"]
 
@@ -494,7 +537,7 @@ class TestRetries:
 
 
 class TestRefusedTasks:
-    async def run(self, queue: FastAPITaskQueue, world: World) -> None:
+    async def run(self, queue: FastAPITaskQueue) -> None:
         async with queue:
             await eventually(lambda: settled(queue))
             await eventually(lambda: not queue._running)
@@ -502,7 +545,7 @@ class TestRefusedTasks:
     async def test_an_unknown_task(self, world: World, caplog: pytest.LogCaptureFixture) -> None:
         queue = world.queue()
         await world.plant(queue, {"p": sealed(queue, body("os.system", "rm -rf /"))})
-        await self.run(queue, world)
+        await self.run(queue)
         (dead,) = await queue.dead_letters()
         assert (dead.reason, dead.task, dead.error) == ("unknown_task", "os.system", None)
         assert "Refused a task ('os.system')" in caplog.text
@@ -518,7 +561,7 @@ class TestRefusedTasks:
             ran.append(1)
 
         await world.plant(queue, {"p": payload})
-        await self.run(queue, world)
+        await self.run(queue)
         assert not ran
         (dead,) = await queue.dead_letters()
         assert (dead.reason, dead.task) == ("tampered", None)
@@ -534,7 +577,7 @@ class TestRefusedTasks:
         good = sealed(queue, body("job", 10))
         altered = good.replace(b"10", b"99")
         await world.plant(queue, {"p": altered})
-        await self.run(queue, world)
+        await self.run(queue)
         assert not ran
         assert [dead.reason for dead in await queue.dead_letters()] == ["tampered"]
 
@@ -548,7 +591,7 @@ class TestRefusedTasks:
             ran.append(1)
 
         await world.plant(queue, {"p": sealed(other, body("job"))})
-        await self.run(queue, world)
+        await self.run(queue)
         assert not ran
         assert [dead.reason for dead in await queue.dead_letters()] == ["tampered"]
 
@@ -586,7 +629,7 @@ class TestRefusedTasks:
         async def job() -> None: ...
 
         await world.plant(queue, fields)
-        await self.run(queue, world)
+        await self.run(queue)
         assert [dead.reason for dead in await queue.dead_letters()] == ["malformed"]
 
     async def test_unsigned_tasks_in_an_unsigned_queue_run(self, world: World) -> None:
@@ -598,13 +641,13 @@ class TestRefusedTasks:
             ran.append(number)
 
         await world.plant(queue, {"p": json.dumps(body("job", 5)).encode()})
-        await self.run(queue, world)
+        await self.run(queue)
         assert ran == [5]
 
     async def test_tasks_that_are_too_large(self, world: World) -> None:
         queue = world.queue(world.cache(signing_key=None), max_payload_size=100)
         await world.plant(queue, {"p": json.dumps(body("job", "x" * 300)).encode()})
-        await self.run(queue, world)
+        await self.run(queue)
         assert [dead.reason for dead in await queue.dead_letters()] == ["too_large"]
         (fields,) = await world.dead_fields(queue)
         assert fields[b"p"] == b""  # not copied
@@ -618,7 +661,7 @@ class TestRefusedTasks:
             ran.append(number)
 
         await world.plant(queue, {"p": sealed(queue, body("job", 1, 2, attempt=1))})
-        await self.run(queue, world)
+        await self.run(queue)
         assert not ran
         (dead,) = await queue.dead_letters()
         assert (dead.reason, dead.task, dead.attempts) == ("invalid_arguments", "job", 1)
@@ -626,7 +669,9 @@ class TestRefusedTasks:
 
 class TestWorkersThatDie:
     async def test_their_tasks_are_taken_over(
-        self, world: World, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         caplog.set_level(logging.INFO, logger="fastapi_alcazaba.tasks")
         queue = world.queue(visibility_timeout=0.2)
@@ -672,7 +717,7 @@ class TestWorkersThatDie:
         await queue.enqueue(crash)
         await world.dead_worker_takes(queue)
         async with queue:
-            await eventually(lambda: queue.dead_letters())
+            await eventually(queue.dead_letters)
         assert not ran
         (dead,) = await queue.dead_letters()
         assert (dead.reason, dead.task) == ("abandoned", "crash")
@@ -705,7 +750,8 @@ class TestWorkersThatDie:
         assert (await world.raw.xpending(queue._stream, GROUP))["pending"] == 0
 
     async def test_a_task_taken_over_while_it_runs_here_doesnt_start_twice(
-        self, world: World
+        self,
+        world: World,
     ) -> None:
         queue = world.queue()
         started, release, runs = asyncio.Event(), asyncio.Event(), [0]
@@ -728,6 +774,14 @@ class TestWorkersThatDie:
 
 
 class TestShutdown:
+    async def test_stop_when_the_client_swallows_the_cancellation(self, world: World) -> None:
+        backend = RedisBackend(Swallowing(server=world.server))
+        queue = world.queue(Cache(backend, prefix="app", signing_key=SIGNING_KEY))
+        await queue.start()
+        await asyncio.sleep(0.1)
+        await asyncio.wait_for(queue.stop(), 3)  # the worker was cancelled in a command
+        assert not queue._started
+
     async def test_stop_waits_for_the_running_tasks(self, world: World) -> None:
         queue = world.queue(grace=2)
         started, done = asyncio.Event(), asyncio.Event()
@@ -746,7 +800,9 @@ class TestShutdown:
         assert await queue.pending() == 0
 
     async def test_tasks_still_running_after_the_grace_go_back_to_the_queue(
-        self, world: World, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         first = world.queue(grace=0.1, visibility_timeout=30)
         second = world.queue(visibility_timeout=30)
@@ -771,20 +827,22 @@ class TestShutdown:
             await eventually(lambda: finished == [7])
 
     async def test_stop_doesnt_wait_for_a_stuck_backend_beyond_the_grace(
-        self, world: World, monkeypatch: pytest.MonkeyPatch
+        self,
+        world: World,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         queue = world.queue(world.cache(backend_timeout=None), grace=0.2)
         queue._ready()
         reading = asyncio.Event()
         original = queue._client.eval
 
-        async def eval(script: str, *args: Any) -> Any:
+        async def stand_in(script: str, *args: Any) -> Any:
             if script == READ_SCRIPT:
                 reading.set()
                 await asyncio.sleep(30)
             return await original(script, *args)
 
-        monkeypatch.setattr(queue._client, "eval", eval)
+        monkeypatch.setattr(queue._client, "eval", stand_in)
         await queue.start()
         await asyncio.wait_for(reading.wait(), 3)
         start = time.monotonic()
@@ -792,38 +850,43 @@ class TestShutdown:
         assert time.monotonic() - start < 2
 
     async def test_stop_when_the_backend_is_down(
-        self, world: World, monkeypatch: pytest.MonkeyPatch
+        self,
+        world: World,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         queue = world.queue()
         await queue.start()
         original = queue._client.eval
 
-        async def eval(script: str, *args: Any) -> Any:
+        async def stand_in(script: str, *args: Any) -> Any:
             if script == LEAVE_SCRIPT:
                 raise ConnectionError("down")
             return await original(script, *args)
 
-        monkeypatch.setattr(queue._client, "eval", eval)
+        monkeypatch.setattr(queue._client, "eval", stand_in)
         await queue.stop()
         assert not queue._started
 
 
 class TestBackendFailures:
     async def test_the_workers_recover(
-        self, world: World, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         queue = world.queue(world.cache(circuit_breaker_failures=None))
         queue._ready()
         failures = [3]
         original = queue._client.eval
 
-        async def eval(script: str, *args: Any) -> Any:
+        async def stand_in(script: str, *args: Any) -> Any:
             if script == READ_SCRIPT and failures[0] > 0:
                 failures[0] -= 1
                 raise ConnectionError("down")
             return await original(script, *args)
 
-        monkeypatch.setattr(queue._client, "eval", eval)
+        monkeypatch.setattr(queue._client, "eval", stand_in)
         done = asyncio.Event()
 
         @queue.task("job")
@@ -852,7 +915,9 @@ class TestBackendFailures:
             await eventually(lambda: ran == [1, 2])
 
     async def test_a_key_of_another_type_in_the_way(
-        self, world: World, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         queue = world.queue()
         queue._ready()
@@ -870,20 +935,23 @@ class TestBackendFailures:
             await asyncio.wait_for(done.wait(), 3)
 
     async def test_a_task_that_couldnt_be_settled_runs_again(
-        self, world: World, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         queue = world.queue(visibility_timeout=0.2)
         queue._ready()
         failures = [1]
         original = queue._client.eval
 
-        async def eval(script: str, *args: Any) -> Any:
+        async def stand_in(script: str, *args: Any) -> Any:
             if script == ACK_SCRIPT and failures[0] > 0:
                 failures[0] -= 1
                 raise ConnectionError("down")
             return await original(script, *args)
 
-        monkeypatch.setattr(queue._client, "eval", eval)
+        monkeypatch.setattr(queue._client, "eval", stand_in)
         runs = [0]
 
         @queue.task("job")
@@ -897,7 +965,9 @@ class TestBackendFailures:
         assert "Couldn't settle a task" in caplog.text
 
     async def test_enqueue_when_the_backend_is_down(
-        self, world: World, monkeypatch: pytest.MonkeyPatch
+        self,
+        world: World,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         queue = world.queue()
 
@@ -906,10 +976,10 @@ class TestBackendFailures:
 
         queue._ready()
 
-        async def eval(*args: Any) -> Any:
+        async def stand_in(*args: Any) -> Any:
             raise ConnectionError("down")
 
-        monkeypatch.setattr(queue._client, "eval", eval)
+        monkeypatch.setattr(queue._client, "eval", stand_in)
         with pytest.raises(BackendUnavailable):
             await queue.enqueue(job)
 
@@ -964,7 +1034,7 @@ class TestQueueFull:
 
 
 class TestDeadLetters:
-    async def bury(self, queue: FastAPITaskQueue, world: World, count: int) -> None:
+    async def bury(self, queue: FastAPITaskQueue, count: int) -> None:
         """`count` tasks of `job` that failed for good."""
         for number in range(count):
             await queue.enqueue("job", number)
@@ -980,7 +1050,7 @@ class TestDeadLetters:
             await asyncio.sleep(number / 50)
             raise ValueError("no")
 
-        await self.bury(queue, world, 3)
+        await self.bury(queue, 3)
         letters = await queue.dead_letters()
         assert len(letters) == 3
         assert [letter.failed_at for letter in letters] == sorted(
@@ -998,7 +1068,7 @@ class TestDeadLetters:
                 raise ValueError("no")
             ran.append(number)
 
-        await self.bury(queue, world, 2)
+        await self.bury(queue, 2)
         assert len(await queue.dead_letters()) == 2
         broken[0] = False
         async with queue:
@@ -1011,14 +1081,15 @@ class TestDeadLetters:
         runs = [0]
 
         @queue.task("job", retries=1, backoff=0.01)
+        # pylint: disable-next=unused-argument  # the task's signature
         async def job(number: int) -> None:
             runs[0] += 1
             raise ValueError("no")
 
-        await self.bury(queue, world, 1)
+        await self.bury(queue, 1)
         assert runs == [2]
         assert await queue.requeue_dead_letters() == 1
-        await self.bury(queue, world, 0)
+        await self.bury(queue, 0)
         assert runs == [4]
         assert [dead.attempts for dead in await queue.dead_letters()] == [2]
 
@@ -1029,7 +1100,7 @@ class TestDeadLetters:
         async def job(number: int) -> None:
             raise ValueError("no")
 
-        await self.bury(queue, world, 2)
+        await self.bury(queue, 2)
         first, second = await queue.dead_letters()
         assert await queue.requeue_dead_letters([first.id, "1-0"]) == 1
         assert await queue.requeue_dead_letters([first.id]) == 0  # gone
@@ -1039,12 +1110,14 @@ class TestDeadLetters:
             await queue.requeue_dead_letters(["$"])
 
     async def test_those_that_cant_run_stay(
-        self, world: World, caplog: pytest.LogCaptureFixture
+        self,
+        world: World,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         queue = world.queue()
         await world.plant(queue, {"p": b"planted"})
         await world.plant(queue, {"p": sealed(queue, body("later", 1))})
-        await self.bury(queue, world, 0)
+        await self.bury(queue, 0)
         assert sorted(dead.reason for dead in await queue.dead_letters()) == [
             "tampered",
             "unknown_task",
@@ -1062,7 +1135,7 @@ class TestDeadLetters:
             ran.append(number)
 
         assert await queue.requeue_dead_letters() == 1
-        await self.bury(queue, world, 0)
+        await self.bury(queue, 0)
         assert ran == [1]
         assert [dead.reason for dead in await queue.dead_letters()] == ["tampered"]
 
@@ -1073,7 +1146,7 @@ class TestDeadLetters:
         async def job(number: int) -> None:
             raise ValueError("no")
 
-        await self.bury(queue, world, 1)
+        await self.bury(queue, 1)
         await queue.enqueue(job, 2, delay=60)
         with pytest.raises(QueueFull):
             await queue.requeue_dead_letters()
@@ -1083,6 +1156,7 @@ class TestDeadLetters:
         queue = world.queue()
 
         @queue.task("job")
+        # pylint: disable-next=unused-argument  # the task's signature
         async def job(number: int) -> None: ...
 
         queue._ready()
@@ -1100,7 +1174,7 @@ class TestDeadLetters:
         async def job(number: int) -> None:
             raise ValueError("no")
 
-        await self.bury(queue, world, 2)
+        await self.bury(queue, 2)
         first, second = await queue.dead_letters()
         assert await queue.discard_dead_letters([]) == 0
         assert await queue.discard_dead_letters([first.id, "1-0"]) == 1

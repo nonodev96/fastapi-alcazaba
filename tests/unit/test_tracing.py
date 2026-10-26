@@ -8,8 +8,8 @@ from fastapi_alcazaba import Cache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 
 
-@pytest.fixture
-def exporter() -> InMemorySpanExporter:
+@pytest.fixture(name="exporter")
+def fixture_exporter() -> InMemorySpanExporter:
     return InMemorySpanExporter()
 
 

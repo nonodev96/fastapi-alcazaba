@@ -92,6 +92,7 @@ def test_pagination_types() -> None:
 
 
 async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checked
+    # pylint: disable=no-member  # wrong on purpose: mypy must refuse each of these calls
     await async_function("1")  # type: ignore[arg-type]
     await async_function(1, unknown=True)  # type: ignore[call-arg]
     sync_function(1).upper()  # type: ignore[attr-defined]

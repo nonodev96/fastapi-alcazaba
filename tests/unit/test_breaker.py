@@ -97,6 +97,30 @@ class TestStates:
         await trial
         assert breaker.state == "closed"
 
+    async def test_reset_closes_it_and_forgets_the_failures(
+        self,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        reader = InMemoryMetricReader()
+        metrics = Metrics(meter_provider=MeterProvider([reader]))
+        breaker = FastAPIBreaker("db", failure_threshold=2, reset_timeout=60, metrics=metrics)
+        assert (breaker.failure_threshold, breaker.reset_timeout) == (2, 60)
+        dependency = Dependency()
+        dependency.down = True
+        await fail(breaker, dependency, 2)
+        assert breaker.state == "open"
+        with caplog.at_level(logging.INFO, "fastapi_alcazaba.breaker"):
+            breaker.reset()
+            breaker.reset()  # closed already: nothing to tell
+        assert (breaker.state, breaker.retry_after) == ("closed", 0.0)
+        assert caplog.text.count("Circuit breaker 'db' closed by reset()") == 1
+        assert [state for state, _ in points(reader, TRANSITIONS)] == [
+            {"fastapi_alcazaba.state": "open", "fastapi_alcazaba.breaker": "db"},
+            {"fastapi_alcazaba.state": "closed", "fastapi_alcazaba.breaker": "db"},
+        ]
+        await fail(breaker, dependency, 1)  # counting from 0 again: one failure doesn't open it
+        assert breaker.state == "closed"
+
 
 class TestWhatCounts:
     async def test_excluded_exceptions_are_successes(self) -> None:
@@ -198,18 +222,18 @@ class TestUsage:
         breaker = FastAPIBreaker("sdk", failure_threshold=2)
 
         @breaker
-        def call(fail: bool) -> str:
+        def call(failing: bool) -> str:
             """Docs."""
-            if fail:
+            if failing:
                 raise ConnectionError
             return "ok"
 
-        assert (call(fail=False), call.__name__, call.__doc__) == ("ok", "call", "Docs.")
+        assert (call(failing=False), call.__name__, call.__doc__) == ("ok", "call", "Docs.")
         for _ in range(2):
             with pytest.raises(ConnectionError):
-                call(fail=True)
+                call(failing=True)
         with pytest.raises(BreakerOpen):
-            call(fail=False)
+            call(failing=False)
 
     def test_threads(self) -> None:
         """FastAPI runs sync endpoints in a thread pool."""

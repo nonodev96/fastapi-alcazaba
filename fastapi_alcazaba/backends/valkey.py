@@ -5,7 +5,7 @@ from fastapi_alcazaba.backends._redis_common import RedisLikeBackend
 
 
 class ValkeyBackend(RedisLikeBackend):
-    """Valkey through its own client, valkey-py (upstream PR #445). A redis-py client pointed at
+    """Valkey through its own client, valkey-py. A redis-py client pointed at
     Valkey works too, with RedisBackend.
 
     Create the client without `decode_responses=True`: cached values are bytes.

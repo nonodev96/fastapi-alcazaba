@@ -1,5 +1,7 @@
 """Standard Webhooks: signing, verifying, replays and the body left for the endpoint."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import base64
 import logging
@@ -33,8 +35,8 @@ class Clock:
         return self.now
 
 
-@pytest.fixture
-def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
+@pytest.fixture(name="clock")
+def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     clock = Clock()
     monkeypatch.setattr("fastapi_alcazaba.webhooks.time", clock)
     return clock
@@ -65,26 +67,29 @@ def app_with(webhooks: FastAPIWebhooks) -> TestClient:
 
     @app.post("/model")
     async def with_a_model(
-        payment: Payment, message: Annotated[WebhookMessage, Depends(webhooks)]
+        payment: Payment,
+        message: Annotated[WebhookMessage, Depends(webhooks)],
     ) -> dict[str, Any]:
         return {"amount": payment.amount, "id": message.id, "parsed": message.json()}
 
     @app.post("/raw")
     async def raw(
-        request: Request, message: Annotated[WebhookMessage, Depends(webhooks)]
+        request: Request,
+        message: Annotated[WebhookMessage, Depends(webhooks)],
     ) -> dict[str, Any]:
         return {"json": await request.json(), "same": await request.body() == message.body}
 
     return TestClient(app)
 
 
-@pytest.fixture
-def backend() -> InMemoryBackend:
+@pytest.fixture(name="backend")
+def fixture_backend() -> InMemoryBackend:
     return InMemoryBackend()
 
 
-@pytest.fixture
-def client(clock: Clock, backend: InMemoryBackend) -> TestClient:
+@pytest.fixture(name="client")
+# pylint: disable-next=unused-argument  # requested for its effect: a frozen clock
+def fixture_client(clock: Clock, backend: InMemoryBackend) -> TestClient:
     return app_with(FastAPIWebhooks(SECRET, cache=Cache(backend)))
 
 
@@ -105,7 +110,8 @@ class TestSigner:
         assert len(base64.b64decode(secret.removeprefix("whsec_"))) == 32
         assert secret != WebhookSigner.generate_secret()
 
-    def test_defaults(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_defaults(self) -> None:
         headers = WebhookSigner(SECRET).sign("text body")
         assert headers["webhook-timestamp"] == str(NOW)
         assert headers["webhook-id"].startswith("msg_")
@@ -160,13 +166,15 @@ class TestSigner:
 
 
 class TestVerify:
-    def test_a_valid_webhook(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_a_valid_webhook(self) -> None:
         message = FastAPIWebhooks(SECRET).verify(signed(), BODY)
         assert message == WebhookMessage("msg_1", datetime.fromtimestamp(NOW, UTC), BODY)
         assert message.json() == {"event": "paid", "amount": 42}
 
     @pytest.mark.parametrize("header", ["webhook-id", "webhook-timestamp", "webhook-signature"])
-    def test_missing_headers(self, clock: Clock, header: str) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_missing_headers(self, header: str) -> None:
         headers = signed()
         del headers[header]
         with pytest.raises(HTTPException) as error:
@@ -186,7 +194,8 @@ class TestVerify:
             ("webhook-timestamp", ""),
         ],
     )
-    def test_malformed_headers(self, clock: Clock, header: str, value: str) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_malformed_headers(self, header: str, value: str) -> None:
         headers = {**signed(), header: value}
         with pytest.raises(HTTPException) as error:
             FastAPIWebhooks(SECRET).verify(headers, BODY)
@@ -219,7 +228,8 @@ class TestVerify:
             {"secret": OLD_SECRET},
         ],
     )
-    def test_anything_changed_gets_the_same_401(self, clock: Clock, change: dict[str, Any]) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_anything_changed_gets_the_same_401(self, change: dict[str, Any]) -> None:
         body = change.pop("body", BODY)
         headers = {**signed(secret=change.pop("secret", SECRET)), **change}
         with pytest.raises(HTTPException) as error:
@@ -237,27 +247,31 @@ class TestVerify:
             "v1," + base64.b64encode(b"x" * 32).decode(),
         ],
     )
-    def test_signatures_that_dont_count(self, clock: Clock, signatures: str) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_signatures_that_dont_count(self, signatures: str) -> None:
         good = signed()["webhook-signature"].removeprefix("v1,")
         headers = {**signed(), "webhook-signature": signatures.format(good=good)}
         with pytest.raises(HTTPException) as error:
             FastAPIWebhooks(SECRET).verify(headers, BODY)
         assert error.value.status_code == 401
 
-    def test_one_valid_signature_among_others(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_one_valid_signature_among_others(self) -> None:
         good = signed()["webhook-signature"]
         noise = "v1a,abc v1,!!! " + signed(secret=OLD_SECRET)["webhook-signature"]
         headers = {**signed(), "webhook-signature": f"{noise}  {good}"}
         assert FastAPIWebhooks(SECRET).verify(headers, BODY).id == "msg_1"
 
-    def test_a_signature_header_too_long(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_a_signature_header_too_long(self) -> None:
         good = signed()["webhook-signature"]
         headers = {**signed(), "webhook-signature": "v1,x " * 1_000 + good}
         with pytest.raises(HTTPException) as error:
             FastAPIWebhooks(SECRET).verify(headers, BODY)
         assert error.value.status_code == 401
 
-    def test_rotation_accepts_both_secrets(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_rotation_accepts_both_secrets(self) -> None:
         webhooks = FastAPIWebhooks([SECRET, OLD_SECRET])
         assert webhooks.verify(signed(secret=OLD_SECRET), BODY).id == "msg_1"
         assert webhooks.verify(signed(), BODY).id == "msg_1"
@@ -305,7 +319,9 @@ class TestDependency:
         assert client.post("/raw", content=BODY, headers=retry).status_code == 200
 
     def test_replay_marks_are_hashed_and_outlive_the_window(
-        self, client: TestClient, backend: InMemoryBackend
+        self,
+        client: TestClient,
+        backend: InMemoryBackend,
     ) -> None:
         assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
         [key] = [key for key in backend._state if key.startswith("!webhook:")]
@@ -319,7 +335,8 @@ class TestDependency:
         assert client.post("/raw", content=BODY, headers=forged).status_code == 401
         assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
 
-    def test_bodies_too_large(self, clock: Clock, backend: InMemoryBackend) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_bodies_too_large(self, backend: InMemoryBackend) -> None:
         client = app_with(FastAPIWebhooks(SECRET, cache=Cache(backend), max_body_size=10))
         declared = client.post("/raw", content=BODY, headers=signed())
         chunked = client.post("/raw", content=iter([BODY[:8], BODY[8:]]), headers=signed())
@@ -335,17 +352,18 @@ class TestDependency:
             await FastAPIWebhooks(SECRET)._read_body(Request(scope, receive))
         assert error.value.status_code == 413
 
-    def test_the_backend_down_refuses_with_a_503(
-        self, clock: Clock, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_the_backend_down_refuses_with_a_503(self, caplog: pytest.LogCaptureFixture) -> None:
         client = app_with(FastAPIWebhooks(SECRET, cache=Cache(Down())))
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.webhooks"):
             response = client.post("/raw", content=BODY, headers=signed())
         assert (response.status_code, response.headers["retry-after"]) == (503, "5")
         assert "refused" in caplog.text
 
+    @pytest.mark.usefixtures("clock")
     def test_fail_open_accepts_without_the_replay_check(
-        self, clock: Clock, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         client = app_with(FastAPIWebhooks(SECRET, cache=Cache(Down()), fail_open=True))
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.webhooks"):
@@ -353,19 +371,22 @@ class TestDependency:
             assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
         assert "accepted" in caplog.text
 
-    def test_a_backend_without_counters(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_a_backend_without_counters(self) -> None:
         client = app_with(FastAPIWebhooks(SECRET, cache=Cache(NoCounters())))
         with pytest.raises(NotImplementedError, match="counters"):
             client.post("/raw", content=BODY, headers=signed())
 
-    def test_the_installed_cache_by_default(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_the_installed_cache_by_default(self) -> None:
         backend = InMemoryBackend()
         client = app_with(FastAPIWebhooks(SECRET))
         Cache(backend).install(client.app)
         assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
         assert any(key.startswith("!webhook:") for key in backend._state)
 
-    def test_fastapi_cache_otherwise(self, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_fastapi_cache_otherwise(self) -> None:
         backend = InMemoryBackend()
         FastAPICache.init(backend, prefix="app")
         client = app_with(FastAPIWebhooks(SECRET, namespace="hooks"))

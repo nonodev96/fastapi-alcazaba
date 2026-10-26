@@ -202,7 +202,11 @@ class FastAPIScheduler:
     """
 
     def __init__(
-        self, cache: Cache | None = None, *, fail_open: bool = False, grace: float = 10.0
+        self,
+        cache: Cache | None = None,
+        *,
+        fail_open: bool = False,
+        grace: float = 10.0,
     ) -> None:
         if grace < 0:
             raise ValueError("grace can't be negative")
@@ -253,7 +257,10 @@ class FastAPIScheduler:
         return self._register(_Cron(expression, zone), name, exclusive)
 
     def _register(
-        self, trigger: _Cron | _Every, name: str | None, exclusive: bool
+        self,
+        trigger: _Cron | _Every,
+        name: str | None,
+        exclusive: bool,
     ) -> Callable[[F], F]:
         def register(func: F) -> F:
             job_name = name if name is not None else f"{func.__module__}.{func.__qualname__}"
@@ -350,8 +357,10 @@ class FastAPIScheduler:
             return self._resolved.tracer
         from fastapi_alcazaba import FastAPICache
 
-        instance = FastAPICache._instance
-        return instance.tracer if instance is not None else _TRACER
+        try:
+            return FastAPICache.instance().tracer
+        except RuntimeError:  # FastAPICache.init() hasn't been called
+            return _TRACER
 
     async def _loop(self, job: _Job) -> None:
         while not self._stopping:

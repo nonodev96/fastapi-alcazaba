@@ -11,7 +11,8 @@
     @app.get("/beta/report", dependencies=[Depends(flags.require("beta-report"))])
 
 A flag is on for a subject when it's enabled, the subject isn't in `deny`, and the subject is in
-`allow` or falls within `percentage` (no percentage: everybody). Rollouts are sticky: a subject's
+`allow` or falls within `percentage` (none: everybody, or only `allow` when it has subjects).
+Rollouts are sticky: a subject's
 place comes from a hash of the flag's name and the subject, so its answer stays while the
 percentage does, and raising the percentage only adds subjects.
 
@@ -93,20 +94,29 @@ class FeatureFlag:
     allow: frozenset[str] = frozenset()
     deny: frozenset[str] = frozenset()
 
+    @property
+    def share(self) -> float:
+        """The percentage of the subjects that get it: without one, everybody, or nobody but
+        `allow` when there's an allow list (a flag for a few never goes to everyone by mistake)."""
+        if self.percentage is not None:
+            return self.percentage
+        return 0.0 if self.allow else 100.0
+
     def is_on(self, subject: str | None = None) -> bool:
         """Whether the flag is on for `subject`. Without a subject, a partial rollout is off."""
         if not self.enabled:
             return False
+        share = self.share
         if subject is None:
-            return self.percentage is None or self.percentage >= 100
+            return share >= 100
         digest = _digest(self.name, subject)
         if digest in self.deny:
             return False
-        if digest in self.allow or self.percentage is None:
+        if digest in self.allow or share >= 100:
             return True
         place = hashlib.sha256(json.dumps(["rollout", self.name, subject]).encode()).digest()
         # Compared as integers: a float of the place could round up to 100.
-        return int.from_bytes(place[:8], "big") * 100 < self.percentage * 2**64
+        return int.from_bytes(place[:8], "big") * 100 < share * 2**64
 
 
 def _subject_digests(value: Any) -> frozenset[str] | None:
@@ -144,7 +154,11 @@ class FastAPIFeatureFlags:
     """
 
     def __init__(
-        self, cache: Cache | None = None, refresh: float = 5.0, *, namespace: str = "flags"
+        self,
+        cache: Cache | None = None,
+        refresh: float = 5.0,
+        *,
+        namespace: str = "flags",
     ) -> None:
         if not (math.isfinite(refresh) and refresh > 0):
             raise ValueError("refresh must be a positive number of seconds")
@@ -155,9 +169,25 @@ class FastAPIFeatureFlags:
         self._known: OrderedDict[str, tuple[float, FeatureFlag | None]] = OrderedDict()
         # Moves on with every change made here: a read that started before one is stale.
         self._epoch = 0
+        self._source: Cache | None = None  # the cache the copies come from
 
     def _key(self, cache: Cache, name: str) -> str:
         return cache.state_key(self.namespace, name)
+
+    def forget(self) -> None:
+        """Drop this process's copies of the definitions: the next evaluations read them from the
+        backend."""
+        self._known.clear()
+        self._epoch += 1
+
+    def _cache(self) -> Cache:
+        """The cache; copies read from another one (the app's set up again, as each test's
+        lifespan does) are dropped."""
+        cache = _resolve(self.cache)
+        if cache is not self._source:
+            self._source = cache
+            self.forget()
+        return cache
 
     async def set(
         self,
@@ -170,7 +200,8 @@ class FastAPIFeatureFlags:
     ) -> FeatureFlag:
         """Define the flag `name` (replacing its definition) for every process, within `refresh`
         seconds. `percentage` (0 to 100) of the subjects get it, those in `allow` always do and
-        those in `deny` never. Raises BackendUnavailable when the backend fails."""
+        those in `deny` never. Without a percentage everybody does, or only `allow` when given.
+        Raises BackendUnavailable when the backend fails."""
         _check_name(name)
         if not isinstance(enabled, bool):  # a string such as "false" would be true
             raise TypeError("enabled must be True or False")
@@ -191,7 +222,7 @@ class FastAPIFeatureFlags:
                 "deny": sorted(flag.deny),
             }
         ).encode()
-        cache = _resolve(self.cache)
+        cache = self._cache()
         key = self._key(cache, name)
         protector = cache.options.protector
         value = protector.seal(key, payload) if protector is not None else payload
@@ -205,7 +236,7 @@ class FastAPIFeatureFlags:
         """Remove the flag `name`: `enabled` gives the default again. Raises BackendUnavailable
         when the backend fails."""
         _check_name(name)
-        cache = _resolve(self.cache)
+        cache = self._cache()
         key, backend = self._key(cache, name), _shared(cache.backend)
         await cache.guard.run("delete", lambda: backend.clear(key=key))
         self._epoch += 1
@@ -215,7 +246,7 @@ class FastAPIFeatureFlags:
         """The definition of `name` in the backend now, None if it has none; this process's copy
         is updated with it. Raises BackendUnavailable when the backend fails."""
         _check_name(name)
-        cache = _resolve(self.cache)
+        cache = self._cache()
         epoch = self._epoch
         flag = await self._read(cache, name)
         if epoch == self._epoch:
@@ -233,7 +264,11 @@ class FastAPIFeatureFlags:
         return result
 
     def require(
-        self, name: str, subject: Subject | None = None, *, default: bool = False
+        self,
+        name: str,
+        subject: Subject | None = None,
+        *,
+        default: bool = False,
     ) -> Callable[[HTTPConnection], Awaitable[None]]:
         """A FastAPI dependency that answers 404 (FastAPI's own "Not Found", so the flag isn't
         revealed) when the flag `name` is off for the request's `subject`, and closes WebSockets
@@ -254,6 +289,7 @@ class FastAPIFeatureFlags:
         return require_flag
 
     async def _definition(self, name: str) -> FeatureFlag | None:
+        self._cache()  # copies from another cache are dropped first
         known = self._known.get(name)
         now = time.monotonic()
         if known is not None:

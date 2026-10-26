@@ -115,6 +115,11 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "{task}",
         "Tasks taken over from workers that stopped answering, by queue",
     ),
+    "audit": ("{event}", "Audit events, by action and outcome: success, failure, denied"),
+    "audit.undelivered": (
+        "{event}",
+        "Audit events a sink didn't write, by sink and reason: error, timeout",
+    ),
 }
 #: Histograms recorded with `Metrics.record()`: name -> unit, description.
 HISTOGRAMS: dict[str, tuple[str, str]] = {

@@ -13,9 +13,9 @@ from pydantic import BaseModel, PydanticUserError, TypeAdapter
 from starlette.responses import JSONResponse, Response
 
 # Values JSON can't represent natively are stored as {TYPE_KEY: <name>, VALUE_KEY: <text>}. The
-# keys are namespaced so that ordinary data with a "_spec_type" key (the marker of fastapi-cache2)
-# is not mistaken for one, and an unknown name is left alone instead of raising: with the old
-# marker, storing {"_spec_type": "x"} in a cached response made every hit of it fail.
+# keys are namespaced so that ordinary data with a key such as "_spec_type" is not mistaken for
+# one, and an unknown name is left alone instead of raising: otherwise storing {"_spec_type": "x"}
+# in a cached response would make every hit of it fail.
 TYPE_KEY = "__fastapi_alcazaba_type__"
 VALUE_KEY = "__fastapi_alcazaba_value__"
 _TYPE_KEY_BYTES = TYPE_KEY.encode()
@@ -130,8 +130,8 @@ class Coder:
 
 class JsonCoder(Coder):
     """JSON. Values without dates or Decimals outside Pydantic models (the usual case) go through
-    pydantic-core, in Rust: some 14 times faster than fastapi-cache2's jsonable_encoder() for a
-    list of models, and hits with a return annotation are validated straight from the bytes."""
+    pydantic-core, in Rust: some 14 times faster than jsonable_encoder() for a list of models,
+    and hits with a return annotation are validated straight from the bytes."""
 
     @classmethod
     def encode(cls, value: Any) -> bytes:

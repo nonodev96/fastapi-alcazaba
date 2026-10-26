@@ -1,38 +1,86 @@
 site_name: Alcazaba
-site_description: Secure, maintained tools for FastAPI - response cache, rate limiter and more
+site_description: >-
+  Secure, maintained tools for FastAPI: response cache, rate limits, sessions, CSRF, webhooks,
+  a task queue and more
 # Set by the docs workflow from the repository it runs in.
 site_url: !ENV [SITE_URL, "https://nonodev96.github.io/fastapi-alcazaba/"]
 repo_url: !ENV [REPO_URL, "https://github.com/nonodev96/fastapi-alcazaba"]
 edit_uri: ""
-copyright: Apache License 2.0 · a fork of fastapi-cache by long2ice and its contributors
+copyright: Copyright © 2026 Antonio Mudarra Machuca · Apache License 2.0
 strict: true
 
 theme:
   name: material
+  custom_dir: overrides
+  logo: assets/logo.svg
+  favicon: assets/favicon.png
+  icon:
+    repo: fontawesome/brands/github
   features:
     - content.code.copy
+    - navigation.footer
+    - navigation.indexes
     - navigation.sections
-    - search.suggest
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    # No search.suggest: Material 9.7.1's has an XSS (GHSA-xvg9-69gf-fjrf).
+    - toc.follow
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: custom
+      accent: custom
       toggle: {icon: material/weather-night, name: Dark mode}
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: custom
+      accent: custom
       toggle: {icon: material/weather-sunny, name: Light mode}
+
+extra_css:
+  - stylesheets/brand.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nonodev96/fastapi-alcazaba
+      name: Alcazaba on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/fastapi-alcazaba/
+      name: fastapi-alcazaba on PyPI
 
 nav:
   - Home: index.md
-  - Deployment and releases: releasing.md
-  - Verifying releases: verifying.md
-  - Security policy: security.md
+  - Examples:
+    - examples/index.md
+    - Response cache: examples/cache.md
+    - Pagination: examples/pagination.md
+    - Rate and concurrency limits: examples/limits.md
+    - Idempotency keys: examples/idempotency.md
+    - API keys, tokens and codes: examples/auth.md
+    - A browser app: examples/browser_app.md
+    - Audit trail: examples/audit.md
+    - Checking uploads: examples/uploads.md
+    - Webhooks in and out: examples/webhooks.md
+    - Errors and observability: examples/observability.md
+    - Background work: examples/background.md
+    - Operations: examples/operations.md
   - API reference: reference.md
-  - Upstream pull requests: upstream.md
-  - Changelog: changelog.md
+  - Project:
+    - Security policy: security.md
+    - Deployment and releases: releasing.md
+    - Verifying releases: verifying.md
+    - Changelog: changelog.md
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - tables
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc: {permalink: true}
   - pymdownx.highlight
   - pymdownx.superfences

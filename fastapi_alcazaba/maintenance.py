@@ -31,7 +31,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from fastapi_alcazaba.cache import Cache
 from fastapi_alcazaba.errors import BackendUnavailable, CircuitOpen
-from fastapi_alcazaba.middleware import _route_path
+from fastapi_alcazaba.middleware import _respond, _route_path
 from fastapi_alcazaba.tokens import _metrics, _resolve, _shared
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -93,7 +93,11 @@ class FastAPIMaintenance:
     """
 
     def __init__(
-        self, cache: Cache | None = None, *, refresh: float = 1.0, namespace: str = "maintenance"
+        self,
+        cache: Cache | None = None,
+        *,
+        refresh: float = 1.0,
+        namespace: str = "maintenance",
     ) -> None:
         if not (math.isfinite(refresh) and refresh > 0):
             raise ValueError("refresh must be a positive number of seconds")
@@ -104,18 +108,35 @@ class FastAPIMaintenance:
         self._checked_at = -math.inf  # monotonic
         # Moves on with every change made here: a read that started before one is stale.
         self._epoch = 0
+        self._source: Cache | None = None  # the cache the copy comes from
 
     def _key(self, cache: Cache) -> str:
         return cache.state_key(self.namespace, "state")
 
+    def forget(self) -> None:
+        """Drop this process's copy of the state: the next request reads it from the backend."""
+        self._state, self._checked_at = _OFF, -math.inf
+        self._epoch += 1
+
+    def _cache(self) -> Cache:
+        """The cache; a copy read from another one (the app's set up again, as each test's
+        lifespan does) is dropped."""
+        cache = _resolve(self.cache)
+        if cache is not self._source:
+            self._source = cache
+            self.forget()
+        return cache
+
     async def enable(
-        self, message: str | None = None, retry_after: int | None = None
+        self,
+        message: str | None = None,
+        retry_after: int | None = None,
     ) -> MaintenanceStatus:
         """Turn maintenance on in every process (within `refresh` seconds), with the `message`
         (the `detail` of the 503s) and `retry_after` seconds to send. Raises BackendUnavailable
         when the backend fails: nothing changes then."""
         _check(message, retry_after)
-        cache = _resolve(self.cache)
+        cache = self._cache()
         state = MaintenanceStatus(True, message, retry_after, time.time())
         payload = json.dumps(
             {"message": message, "retry_after": retry_after, "since": state.since}
@@ -132,7 +153,7 @@ class FastAPIMaintenance:
     async def disable(self) -> None:
         """Turn maintenance off in every process (within `refresh` seconds). Raises
         BackendUnavailable when the backend fails."""
-        cache = _resolve(self.cache)
+        cache = self._cache()
         key, backend = self._key(cache), _shared(cache.backend)
         await cache.guard.run("delete", lambda: backend.clear(key=key))
         self._remember(_OFF)
@@ -141,7 +162,9 @@ class FastAPIMaintenance:
     async def status(self) -> MaintenanceStatus:
         """The state in the backend now; this process's copy is updated with it. Raises
         BackendUnavailable when the backend fails."""
-        cache = _resolve(self.cache)
+        return await self._status(self._cache())
+
+    async def _status(self, cache: Cache) -> MaintenanceStatus:
         epoch = self._epoch
         state = await self._read(cache)
         if epoch == self._epoch:
@@ -152,12 +175,12 @@ class FastAPIMaintenance:
         """This process's copy of the state, refreshed when it's older than `refresh` seconds;
         what the middleware checks on every request. Never raises: when the backend fails, the
         last state read (off if none)."""
-        now = time.monotonic()
+        cache, now = self._cache(), time.monotonic()
         if now - self._checked_at < self.refresh:
             return self._state
         self._checked_at = now  # the other requests use the copy while this one asks
         try:
-            return await self.status()
+            return await self._status(cache)
         except BackendUnavailable as exc:
             if isinstance(exc, CircuitOpen):
                 logger.debug("Maintenance state not refreshed: %s", exc)
@@ -238,17 +261,11 @@ class MaintenanceMiddleware:
             await receive()  # websocket.connect
             await send({"type": "websocket.close", "code": WS_1013_TRY_AGAIN_LATER, "reason": ""})
             return
-        body = json.dumps({"detail": state.message or "Service Unavailable"}).encode()
-        headers = [
-            (b"content-type", b"application/json"),
-            (b"content-length", b"%d" % len(body)),
-            (b"cache-control", b"no-store"),
-        ]
+        headers = {"Cache-Control": "no-store"}
         if state.retry_after is not None:
-            headers.append((b"retry-after", b"%d" % state.retry_after))
-        start = {"type": "http.response.start", "status": HTTP_503_SERVICE_UNAVAILABLE}
-        await send({**start, "headers": headers})
-        await send({"type": "http.response.body", "body": body})
+            headers["Retry-After"] = str(state.retry_after)
+        message = state.message or "Service Unavailable"
+        await _respond(scope, send, HTTP_503_SERVICE_UNAVAILABLE, message, headers)
 
     async def _allowed(self, scope: Scope) -> bool:
         if self.allow is None:

@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import datetime
 import json
 import sys
@@ -84,7 +86,7 @@ def test_json_coder_validation_error() -> None:
 @pytest.mark.parametrize(
     "data",
     [
-        {"_spec_type": "evil", "val": "x"},  # the marker of fastapi-cache2
+        {"_spec_type": "evil", "val": "x"},  # a marker some coders use
         {"__fastapi_alcazaba_type__": "unknown", "__fastapi_alcazaba_value__": "x"},
         {
             "__fastapi_alcazaba_type__": "date",

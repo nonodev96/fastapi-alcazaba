@@ -1,5 +1,7 @@
 """ServerSessionMiddleware: the session lives in the backend, the cookie only carries its id."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import hashlib
 import json
 import logging
@@ -187,8 +189,8 @@ def issued(response: Any) -> str:
     return match.group(1)
 
 
-@pytest.fixture
-def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
+@pytest.fixture(name="clock")
+def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     clock = Clock()
     monkeypatch.setattr("fastapi_alcazaba.sessions.time", clock)
     return clock
@@ -232,7 +234,7 @@ class TestSessions:
         reads: list[Callable[[ServerSession], object]] = [
             lambda s: "a" in s,
             lambda s: s["a"],
-            lambda s: list(s),
+            list,
             len,
             lambda s: s.get("a"),
             lambda s: s.items(),
@@ -269,6 +271,12 @@ class TestSessions:
         client.post("/cart?item=olive")
         client.post("/cart?item=oil")
         assert client.get("/session").json() == {"cart": ["olive", "oil"]}
+
+    def test_keys_keep_their_order(self) -> None:
+        client = App().client()
+        for key in ("zeta", "alpha", "mu"):
+            client.post(f"/set?key={key}&value=1")
+        assert list(client.get("/session").json()) == ["zeta", "alpha", "mu"]
 
     def test_the_apps_cache_control_and_vary_are_kept(self) -> None:
         response = App().client().post("/private")
@@ -508,7 +516,8 @@ class TestFailures:
 
 class TestIntegrity:
     def test_unsigned_sessions_are_warned_about_once(
-        self, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         client = App().client()
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.sessions"):

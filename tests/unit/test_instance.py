@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 from typing import Annotated
 
 import pytest
@@ -130,9 +132,9 @@ class TestDependency:
             return Product(id=product_id, name="oil")
 
         @app.post("/products/{product_id}")
-        async def update(product_id: int, cache: Annotated[Cache, Depends(get_cache)]) -> int:
-            assert cache is app_cache
-            return await cache.invalidate_tags(f"product:{product_id}")
+        async def update(product_id: int, injected: Annotated[Cache, Depends(get_cache)]) -> int:
+            assert injected is app_cache
+            return await injected.invalidate_tags(f"product:{product_id}")
 
         with TestClient(app) as client:
             client.get("/products/1")
@@ -146,8 +148,8 @@ class TestDependency:
         app = FastAPI()
 
         @app.get("/which")
-        async def which(cache: Annotated[Cache, Depends(get_cache)]) -> bool:
-            return cache is FastAPICache.instance()
+        async def which(injected: Annotated[Cache, Depends(get_cache)]) -> bool:
+            return injected is FastAPICache.instance()
 
         with TestClient(app) as client:
             assert client.get("/which").json() is True
@@ -166,8 +168,8 @@ async def test_close_closes_the_backend() -> None:
     await Cache(InMemoryBackend()).close()  # nothing to close
 
 
-async def test_the_fastapi_cache2_api_still_works() -> None:
-    """Code written for fastapi-cache2 reads the configuration through these class methods."""
+async def test_the_configuration_through_class_methods() -> None:
+    """FastAPICache's class methods read the configuration of the global cache."""
     backend = InMemoryBackend()
     assert FastAPICache.get_enable() is True  # before init: defaults
     assert FastAPICache.get_expire() is None

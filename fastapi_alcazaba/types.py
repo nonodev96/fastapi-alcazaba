@@ -34,6 +34,12 @@ class KeyBuilder(Protocol):
     ) -> Awaitable[str] | str: ...
 
 
+def _unsupported(backend: "Backend", what: str) -> NotImplementedError:
+    """The error of what a backend can't do: its `supports_*` says so, and it doesn't override the
+    method (not an abstract one: every backend needn't have every capability)."""
+    return NotImplementedError(f"{type(backend).__name__} can't {what}")
+
+
 class Backend(abc.ABC):
     #: Can hold a lock shared by every process (see `distributed_lock`).
     supports_locks: bool = False
@@ -64,24 +70,24 @@ class Backend(abc.ABC):
 
     async def acquire_lock(self, key: str, token: str, ttl: float) -> bool:
         """Take the lock `key` for `ttl` seconds unless someone holds it; True if taken."""
-        raise NotImplementedError
+        raise _unsupported(self, "hold locks")
 
     async def release_lock(self, key: str, token: str) -> None:
         """Release the lock `key` if it's still held with `token` (it may have expired)."""
-        raise NotImplementedError
+        raise _unsupported(self, "hold locks")
 
     async def extend_lock(self, key: str, token: str, ttl: float) -> bool:
         """Make the lock `key` expire `ttl` seconds from now if it's still held with `token`;
         False when it isn't (it expired, maybe taken by someone else)."""
-        raise NotImplementedError
+        raise _unsupported(self, "hold locks")
 
     async def add_tags(self, key: str, tags: Sequence[str], expire: int | None) -> None:
         """Record that the entry `key` belongs to each of `tags` (already namespaced keys)."""
-        raise NotImplementedError
+        raise _unsupported(self, "keep tags")
 
     async def invalidate_tags(self, tags: Sequence[str]) -> int:
         """Delete every entry recorded under `tags`; returns how many were deleted."""
-        raise NotImplementedError
+        raise _unsupported(self, "keep tags")
 
     async def invalidate_tags_with_keys(self, tags: Sequence[str]) -> tuple[int, list[str] | None]:
         """`invalidate_tags`, also returning the keys of the entries recorded under `tags`, or
@@ -92,7 +98,7 @@ class Backend(abc.ABC):
     async def incr(self, key: str, amount: int = 1, expire: int | None = None) -> int:
         """Add `amount` to the counter `key` atomically and return its new value. A missing counter
         starts at 0 and, with `expire`, is deleted that many seconds after it's created."""
-        raise NotImplementedError
+        raise _unsupported(self, "keep counters")
 
     async def get_counter(self, key: str) -> int:
         """The value of the counter `key`; 0 when there is none."""
@@ -100,7 +106,14 @@ class Backend(abc.ABC):
         return int(value) if value else 0
 
     async def incr_window(
-        self, key: str, previous_key: str, *, amount: int, limit: int, weight: float, expire: int
+        self,
+        key: str,
+        previous_key: str,
+        *,
+        amount: int,
+        limit: int,
+        weight: float,
+        expire: int,
     ) -> tuple[bool, int, int]:
         """The rate limiter's sliding window: add `amount` to the counter `key` only if
         `previous * weight + current + amount <= limit`, where `current` is that counter and

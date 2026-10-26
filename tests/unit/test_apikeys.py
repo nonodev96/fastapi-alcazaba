@@ -47,13 +47,13 @@ class Clock:
         return self.now
 
 
-@pytest.fixture
-def store() -> Store:
+@pytest.fixture(name="store")
+def fixture_store() -> Store:
     return Store()
 
 
-@pytest.fixture
-def keys(store: Store) -> FastAPIAPIKeys[APIKeyRecord]:
+@pytest.fixture(name="keys")
+def fixture_keys(store: Store) -> FastAPIAPIKeys[APIKeyRecord]:
     return FastAPIAPIKeys(store.lookup)
 
 
@@ -89,7 +89,10 @@ class TestGenerate:
         ],
     )
     def test_invalid_options(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], options: dict[str, Any], message: str
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        options: dict[str, Any],
+        message: str,
     ) -> None:
         with pytest.raises(ValueError, match=message):
             keys.generate(**options)
@@ -140,7 +143,8 @@ class TestAuthenticate:
         assert await keys.authenticate(store.add(keys.generate()))
 
     async def test_a_sync_lookup_that_returns_an_awaitable(self, store: Store) -> None:
-        keys = FastAPIAPIKeys(lambda key_id: store.lookup(key_id))
+        # A sync function returning a coroutine, not the coroutine function itself.
+        keys = FastAPIAPIKeys(lambda key_id: store.lookup(key_id))  # pylint: disable=unnecessary-lambda
         assert await keys.authenticate(store.add(keys.generate()))
 
     async def test_its_own_record_type(self) -> None:
@@ -179,7 +183,10 @@ class TestAuthenticate:
         ],
     )
     async def test_every_bad_key_gets_the_same_401(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], store: Store, mangle: Any
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        store: Store,
+        mangle: Any,
     ) -> None:
         key = store.add(keys.generate())
         error = await refused(keys, mangle(key))
@@ -187,7 +194,9 @@ class TestAuthenticate:
         assert error.headers == {"WWW-Authenticate": "APIKey"}
 
     async def test_malformed_keys_arent_looked_up(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], store: Store
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        store: Store,
     ) -> None:
         await refused(keys, "ak_short_key")
         assert store.lookups == []
@@ -200,14 +209,19 @@ class TestAuthenticate:
         ],
     )
     async def test_expired_keys(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], store: Store, expires_at: datetime
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        store: Store,
+        expires_at: datetime,
     ) -> None:
         new = keys.generate()
         store.add(new._replace(record=replace(new.record, expires_at=expires_at)))
         assert (await refused(keys, new.key)).status_code == 401
 
     async def test_keys_not_expired_yet(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], store: Store
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        store: Store,
     ) -> None:
         later = datetime.now(UTC).replace(tzinfo=None) + timedelta(hours=1)
         new = keys.generate()
@@ -215,7 +229,9 @@ class TestAuthenticate:
         assert await keys.authenticate(new.key)
 
     async def test_a_digest_works_only_for_its_id(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], store: Store
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        store: Store,
     ) -> None:
         mine, theirs = keys.generate(), keys.generate()
         store.add(mine)
@@ -225,7 +241,10 @@ class TestAuthenticate:
         assert (await refused(keys, forged)).status_code == 401
 
     async def test_keys_and_secrets_are_never_logged(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], store: Store, caplog: pytest.LogCaptureFixture
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        store: Store,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         good = keys.generate()
         expired = keys.generate()
@@ -280,14 +299,16 @@ class TestCache:
         assert (await refused(keys, key)).status_code == 401
         assert len(store.lookups) == 2
 
-    async def test_unknown_ids_arent_kept(self, store: Store, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    async def test_unknown_ids_arent_kept(self, store: Store) -> None:
         keys = FastAPIAPIKeys(store.lookup, cache_ttl=30)
         new = keys.generate()
         await refused(keys, new.key)
         store.add(new)
         assert await keys.authenticate(new.key)
 
-    async def test_the_cache_is_bounded(self, store: Store, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    async def test_the_cache_is_bounded(self, store: Store) -> None:
         keys = FastAPIAPIKeys(store.lookup, cache_ttl=30, cache_size=2)
         first, second, third = (store.add(keys.generate()) for _ in range(3))
         for key in (first, second, first, third):  # first was used after second: second goes
@@ -297,7 +318,8 @@ class TestCache:
             await keys.authenticate(key)
         assert store.lookups == [second.split("_")[1]]
 
-    async def test_forget(self, store: Store, clock: Clock) -> None:
+    @pytest.mark.usefixtures("clock")
+    async def test_forget(self, store: Store) -> None:
         keys = FastAPIAPIKeys(store.lookup, cache_ttl=30)
         first, second = store.add(keys.generate()), store.add(keys.generate())
         for key in (first, second):
@@ -312,7 +334,9 @@ class TestCache:
         assert len(store.lookups) == 4
 
     async def test_no_cache_by_default(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], store: Store
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        store: Store,
     ) -> None:
         key = store.add(keys.generate())
         await keys.authenticate(key)
@@ -359,8 +383,8 @@ class TestDependency:
         assert app_with(plain).get("/me", headers=authorization).status_code == 401
         client = app_with(bearer)
         assert client.get("/me", headers=authorization).status_code == 200
-        refused = client.get("/me", headers={"Authorization": "Basic abc"})
-        assert (refused.status_code, refused.headers["www-authenticate"]) == (401, "Bearer")
+        basic = client.get("/me", headers={"Authorization": "Basic abc"})
+        assert (basic.status_code, basic.headers["www-authenticate"]) == (401, "Bearer")
 
     def test_the_header_comes_first(self, store: Store) -> None:
         keys = FastAPIAPIKeys(store.lookup, bearer=True)
@@ -397,7 +421,9 @@ class TestDependency:
 
     @pytest.mark.parametrize("scopes", [(), ("has space",), ("",)])
     def test_invalid_required_scopes(
-        self, keys: FastAPIAPIKeys[APIKeyRecord], scopes: tuple[str, ...]
+        self,
+        keys: FastAPIAPIKeys[APIKeyRecord],
+        scopes: tuple[str, ...],
     ) -> None:
         with pytest.raises(ValueError, match="scopes"):
             keys.require(*scopes)

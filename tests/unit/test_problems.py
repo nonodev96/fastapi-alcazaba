@@ -13,7 +13,11 @@ from pydantic import BaseModel, Field
 from starlette.testclient import WebSocketDenialResponse
 from starlette.types import Message
 
+from fastapi_alcazaba import Cache
+from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.breaker import BreakerOpen
+from fastapi_alcazaba.maintenance import FastAPIMaintenance, MaintenanceMiddleware
+from fastapi_alcazaba.middleware import BodySizeLimitMiddleware
 from fastapi_alcazaba.problems import MEDIA_TYPE, FastAPIProblemDetails, Problem
 from fastapi_alcazaba.request_id import RequestIDMiddleware
 
@@ -28,7 +32,9 @@ class OutOfStock(Exception):
 
 
 def make_app(
-    problems: FastAPIProblemDetails | None = None, *, request_ids: bool = False
+    problems: FastAPIProblemDetails | None = None,
+    *,
+    request_ids: bool = False,
 ) -> FastAPI:
     app = FastAPI()
     problems = problems or FastAPIProblemDetails()
@@ -69,6 +75,7 @@ def make_app(
         raise Problem(503, "Back at 14:00", headers={"Retry-After": "600"})
 
     @app.post("/login")
+    # pylint: disable-next=unused-argument  # the body FastAPI validates
     async def login(body: Login) -> None:
         pass  # pragma: no cover
 
@@ -108,8 +115,8 @@ def make_app(
     return app
 
 
-@pytest.fixture
-def client() -> TestClient:
+@pytest.fixture(name="client")
+def fixture_client() -> TestClient:
     return TestClient(make_app(), raise_server_exceptions=False)
 
 
@@ -144,7 +151,9 @@ class TestHTTPExceptions:
         assert "errors" not in client.get("/structured").json()
 
     def test_a_5xx_never_shows_its_detail(
-        self, client: TestClient, caplog: pytest.LogCaptureFixture
+        self,
+        client: TestClient,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.problems"):
             response = client.get("/raise/500", params={"detail": "db down at 10.0.0.7"})
@@ -207,7 +216,10 @@ class TestHTTPExceptions:
         ],
     )
     def test_the_instance_is_a_uri_reference(
-        self, client: TestClient, path: str, instance: str
+        self,
+        client: TestClient,
+        path: str,
+        instance: str,
     ) -> None:
         assert client.get(path).json()["instance"] == instance
 
@@ -290,28 +302,28 @@ class TestProblem:
     @pytest.mark.parametrize("status", [200, 302, 399, 600, 99])
     def test_only_error_codes(self, status: int) -> None:
         with pytest.raises(ValueError, match="4xx or 5xx"):
-            Problem(status)
+            _ = Problem(status)
 
     @pytest.mark.parametrize("type_", ["", "has space", "https://x/\nInjected", "a\tb"])
     def test_the_type_is_a_uri(self, type_: str) -> None:
         with pytest.raises(ValueError, match="URI"):
-            Problem(400, type=type_)
+            _ = Problem(400, type=type_)
 
     @pytest.mark.parametrize("name", ["ab", "1abc", "a-b", "with space", "_abc", "ñandú"])
     def test_extension_names(self, name: str) -> None:
         with pytest.raises(ValueError, match="invalid extension member name"):
-            Problem(400, extensions={name: 1})
+            _ = Problem(400, extensions={name: 1})
 
     @pytest.mark.parametrize(
         "name", ["type", "title", "status", "detail", "instance", "request_id"]
     )
     def test_extensions_cant_replace_standard_members(self, name: str) -> None:
         with pytest.raises(ValueError, match="standard member"):
-            Problem(400, extensions={name: 1})
+            _ = Problem(400, extensions={name: 1})
 
     def test_extension_values_are_checked_when_raised(self) -> None:
         with pytest.raises(ValueError):  # noqa: PT011 - FastAPI's message, not ours
-            Problem(400, extensions={"what": object()})
+            _ = Problem(400, extensions={"what": object()})
 
 
 class TestValidationErrors:
@@ -469,3 +481,58 @@ def test_problems_on_starlette_apps() -> None:
     assert response.headers["www-authenticate"] == "Bearer"
     body: dict[str, Any] = response.json()
     assert (body["status"], body["detail"]) == (401, "Log in first")
+
+
+class TestMiddlewareAnswers:
+    """Alcazaba's middlewares answer with problems too when the app has them installed."""
+
+    @staticmethod
+    def app(maintenance: FastAPIMaintenance, *, problems: bool) -> FastAPI:
+        app = FastAPI()
+
+        @app.post("/echo")
+        async def echo(request: Request) -> int:
+            return len(await request.body())
+
+        if problems:
+            FastAPIProblemDetails().install(app)
+        app.add_middleware(BodySizeLimitMiddleware, max_size=4)
+        app.add_middleware(MaintenanceMiddleware, maintenance=maintenance)
+        app.add_middleware(RequestIDMiddleware)
+        return app
+
+    def test_a_body_too_large(self) -> None:
+        app = self.app(FastAPIMaintenance(Cache(InMemoryBackend())), problems=True)
+        response = TestClient(app).post("/echo", content=b"12345")
+        assert response.headers["content-type"] == MEDIA_TYPE
+        assert response.json() == {
+            "type": "about:blank",
+            "title": "Content Too Large",
+            "status": 413,
+            "detail": "Request body too large",
+            "instance": "/echo",
+            "request_id": response.headers["x-request-id"],
+        }
+
+    async def test_maintenance_keeps_its_headers(self) -> None:
+        maintenance = FastAPIMaintenance(Cache(InMemoryBackend()))
+        await maintenance.enable("Back at 10:30", retry_after=900)
+        response = TestClient(self.app(maintenance, problems=True)).post("/echo", content=b"1")
+        assert response.status_code == 503
+        assert (response.headers["retry-after"], response.headers["cache-control"]) == (
+            "900",
+            "no-store",
+        )
+        assert response.json()["detail"] == "Back at 10:30"
+        assert response.headers["content-type"] == MEDIA_TYPE
+
+    async def test_without_problems_fastapis_answer(self) -> None:
+        maintenance = FastAPIMaintenance(Cache(InMemoryBackend()))
+        client = TestClient(self.app(maintenance, problems=False))
+        response = client.post("/echo", content=b"12345")
+        assert response.headers["content-type"] == "application/json"
+        assert response.json() == {"detail": "Request body too large"}
+        await maintenance.enable(retry_after=60)
+        response = client.post("/echo", content=b"1")
+        assert (response.status_code, response.json()) == (503, {"detail": "Service Unavailable"})
+        assert response.headers["retry-after"] == "60"

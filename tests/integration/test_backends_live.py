@@ -8,6 +8,8 @@ Every key carries a random prefix and only those keys are deleted, so it's safe 
 database (DynamoDB gets a table of its own, dropped afterwards).
 """
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import os
 import uuid
@@ -159,8 +161,8 @@ async def _make(kind: str, url: str) -> tuple[Backend, Any]:
     return await _dynamodb(url)
 
 
-@pytest.fixture(params=KINDS)
-async def backend(request: pytest.FixtureRequest) -> AsyncIterator[Backend]:
+@pytest.fixture(name="backend", params=KINDS)
+async def fixture_backend(request: pytest.FixtureRequest) -> AsyncIterator[Backend]:
     url = os.environ.get(ENV[request.param])
     if not url:
         pytest.skip(f"{ENV[request.param]} not set")
@@ -169,8 +171,8 @@ async def backend(request: pytest.FixtureRequest) -> AsyncIterator[Backend]:
     await close()
 
 
-@pytest.fixture
-def prefix() -> str:
+@pytest.fixture(name="prefix")
+def fixture_prefix() -> str:
     return f"fastapi-alcazaba-test-{uuid.uuid4().hex}"
 
 
@@ -232,15 +234,23 @@ async def test_cache_lock(backend: Backend, prefix: str) -> None:
     """Renewed while held: it outlives its ttl, and only one of many contenders gets it."""
     if not backend.supports_locks:
         pytest.skip("no locks")
-    cache = Cache(backend, prefix=prefix)
-    async with cache.lock("job", ttl=1) as lock:
+    app_cache = Cache(backend, prefix=prefix)
+    async with app_cache.lock("job", ttl=1) as lock:
         await asyncio.sleep(1.5)
         assert lock.held
-        assert not await cache.lock("job").acquire()
-    contenders = [cache.lock("race") for _ in range(10)]
+        assert not await app_cache.lock("job").acquire()
+    contenders = [app_cache.lock("race") for _ in range(10)]
     assert sum(await asyncio.gather(*(c.acquire() for c in contenders))) == 1
     for contender in contenders:
         await contender.release()
+
+
+async def test_concurrent_deletes_of_one_entry(backend: Backend, prefix: str) -> None:
+    """Exactly one of them is told the entry was there: what makes a one-time code work once."""
+    key = f"{prefix}:once"
+    for _ in range(300):  # a race: it doesn't show every time
+        await backend.set(key, b"v")
+        assert sum(await asyncio.gather(*(backend.clear(key=key) for _ in range(5)))) == 1
 
 
 async def test_one_time_codes(backend: Backend, prefix: str) -> None:
@@ -362,7 +372,10 @@ async def test_rate_limiter(backend: Backend, prefix: str) -> None:
     ("protection", "compression"), [("signing_key", None), ("encryption_key", "zstd")]
 )
 async def test_through_the_decorator(
-    backend: Backend, prefix: str, protection: str, compression: Codec | None
+    backend: Backend,
+    prefix: str,
+    protection: str,
+    compression: Codec | None,
 ) -> None:
     key = "s" * 32
     FastAPICache.init(

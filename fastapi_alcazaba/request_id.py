@@ -71,7 +71,11 @@ class RequestIDMiddleware:
     """
 
     def __init__(
-        self, app: ASGIApp, *, header: str = "X-Request-ID", trust_incoming: bool = True
+        self,
+        app: ASGIApp,
+        *,
+        header: str = "X-Request-ID",
+        trust_incoming: bool = True,
     ) -> None:
         if not _TOKEN.fullmatch(header):
             raise ValueError(f"invalid header name: {header!r}")

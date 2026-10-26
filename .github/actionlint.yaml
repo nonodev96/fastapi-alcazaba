@@ -1,0 +1,6 @@
+# actionlint 1.7.12 doesn't know GitHub's self-repository syntax yet (`uses: $/...`, July 2026),
+# which zizmor asks for: the action of this repository at the commit that runs.
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - 'specifying action "\$/[^"]+" in invalid format because ref is missing'

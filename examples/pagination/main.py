@@ -91,10 +91,10 @@ class Catalog:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     # Redis or Valkey in production, so that every process shares the entries.
     FastAPICache.init(InMemoryBackend(), prefix="catalog", vary_headers=())  # public data
-    app.state.catalog = Catalog()
+    application.state.catalog = Catalog()
     yield
 
 
@@ -132,21 +132,22 @@ async def category_products(
     category: Category,
     params: Annotated[PageParams, Depends(pages)],
     catalog: CatalogDep,
-    cache: Annotated[Cache, Depends(get_cache)],
+    app_cache: Annotated[Cache, Depends(get_cache)],
 ) -> Page[Product]:
     """One entry for the whole category: every page is sliced from it."""
 
     async def load() -> list[Product]:  # annotated: the entry comes back as products
         return catalog.find(category)
 
-    found = await cache.get_or_set(f"category:{category}", load, expire=300, tags=["products"])
+    found = await app_cache.get_or_set(f"category:{category}", load, expire=300, tags=["products"])
     return pages.paginate(found, params)
 
 
 @app.get("/products/newest")
 @cache(expire=300, tags=["products"], exclude_params=["catalog"])
 async def newest_products(
-    params: Annotated[CursorParams, Depends(cursors)], catalog: CatalogDep
+    params: Annotated[CursorParams, Depends(cursors)],
+    catalog: CatalogDep,
 ) -> CursorPage[Product]:
     """By cursor, newest first: each next_cursor gives the products right after the last one seen,
     however many were added since."""

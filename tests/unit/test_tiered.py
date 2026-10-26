@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import contextlib
 import time
@@ -22,13 +24,13 @@ async def eventually(condition: Callable[[], bool], timeout: float = 2.0) -> Non
         await asyncio.sleep(0.01)
 
 
-@pytest.fixture
-def redis() -> Any:
+@pytest.fixture(name="redis")
+def fixture_redis() -> Any:
     return fakeredis.FakeAsyncRedis()
 
 
-@pytest.fixture
-async def processes(redis: Any) -> AsyncIterator[tuple[TieredBackend, TieredBackend]]:
+@pytest.fixture(name="processes")
+async def fixture_processes(redis: Any) -> AsyncIterator[tuple[TieredBackend, TieredBackend]]:
     """Two processes: each with its own local level, sharing Redis and the channel."""
     first, second = TieredBackend(RedisBackend(redis)), TieredBackend(RedisBackend(redis))
     for process in (first, second):
@@ -41,7 +43,9 @@ async def processes(redis: Any) -> AsyncIterator[tuple[TieredBackend, TieredBack
 
 class TestLocalLevel:
     async def test_hits_skip_the_shared_backend(
-        self, processes: tuple[TieredBackend, TieredBackend], redis: Any
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
+        redis: Any,
     ) -> None:
         first, _ = processes
         await redis.set("k", b"v", ex=100)
@@ -53,7 +57,8 @@ class TestLocalLevel:
         assert first.local_hits == 1
 
     async def test_own_writes_stay_local(
-        self, processes: tuple[TieredBackend, TieredBackend]
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
     ) -> None:
         first, _ = processes
         await first.set("k", b"v", expire=60)
@@ -70,7 +75,8 @@ class TestLocalLevel:
         assert await tiered._from_local("k") is None
 
     async def test_without_pub_sub_copies_last_local_ttl(
-        self, monkeypatch: pytest.MonkeyPatch
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         shared = InMemoryBackend()
         first = TieredBackend(shared, local_ttl=5)
@@ -106,7 +112,8 @@ class TestLocalLevel:
 
 class TestInvalidationChannel:
     async def test_writes_drop_the_other_processes_copies(
-        self, processes: tuple[TieredBackend, TieredBackend]
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
     ) -> None:
         first, second = processes
         await first.set("k", b"old", expire=60)
@@ -116,7 +123,8 @@ class TestInvalidationChannel:
         assert await second.get("k") == b"new"
 
     async def test_clears_reach_every_process(
-        self, processes: tuple[TieredBackend, TieredBackend]
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
     ) -> None:
         first, second = processes
         await copies_in(second, first, "ns:1", "ns:2", "other:1")
@@ -126,7 +134,8 @@ class TestInvalidationChannel:
         await eventually(lambda: not second.local._store)
 
     async def test_tag_invalidations_reach_every_process(
-        self, processes: tuple[TieredBackend, TieredBackend]
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
     ) -> None:
         """Also the copies of a process that read the entry, and so never saw its tags."""
         first, second = processes
@@ -137,7 +146,8 @@ class TestInvalidationChannel:
         assert await second.get("product:1") is None
 
     async def test_own_tag_invalidations_drop_copies_read_from_the_shared_backend(
-        self, processes: tuple[TieredBackend, TieredBackend]
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
     ) -> None:
         first, second = processes
         await copies_in(second, first, "product:1")
@@ -146,7 +156,9 @@ class TestInvalidationChannel:
         assert "product:1" not in second.local._store  # right away
 
     async def test_large_tag_invalidations_drop_every_copy(
-        self, processes: tuple[TieredBackend, TieredBackend], monkeypatch: pytest.MonkeyPatch
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr("fastapi_alcazaba.backends.tiered._MAX_ANNOUNCED_KEYS", 1)
         first, second = processes
@@ -158,7 +170,9 @@ class TestInvalidationChannel:
         await eventually(lambda: not second.local._store)
 
     async def test_tag_invalidations_from_version_0_1_drop_every_copy(
-        self, processes: tuple[TieredBackend, TieredBackend], redis: Any
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
+        redis: Any,
     ) -> None:
         """They named the tags only: a rolling deploy runs both versions for a while."""
         first, second = processes
@@ -167,7 +181,9 @@ class TestInvalidationChannel:
         await eventually(lambda: not second.local._store)
 
     async def test_a_value_read_while_an_invalidation_arrives_is_not_kept(
-        self, processes: tuple[TieredBackend, TieredBackend], monkeypatch: pytest.MonkeyPatch
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         first, second = processes
         await first.set("k", b"old", expire=60)
@@ -187,7 +203,9 @@ class TestInvalidationChannel:
         assert await second.get("k") == b"new"
 
     async def test_a_write_overtaken_by_another_is_not_kept(
-        self, processes: tuple[TieredBackend, TieredBackend], monkeypatch: pytest.MonkeyPatch
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         first, second = processes
         write = second.remote.set
@@ -204,7 +222,9 @@ class TestInvalidationChannel:
         assert await second.get("k") == b"theirs"
 
     async def test_closing_drops_the_local_level(
-        self, processes: tuple[TieredBackend, TieredBackend], redis: Any
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
+        redis: Any,
     ) -> None:
         first, _ = processes
         await first.set("k", b"v", expire=60)
@@ -214,7 +234,8 @@ class TestInvalidationChannel:
         assert await first.get("k") == b"changed"
 
     async def test_a_lost_subscription_drops_the_local_level_until_it_is_back(
-        self, processes: tuple[TieredBackend, TieredBackend]
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
     ) -> None:
         first, _ = processes
         await first.set("k", b"v", expire=60)
@@ -227,7 +248,9 @@ class TestInvalidationChannel:
         await eventually(lambda: first._subscribed)  # reconnects by itself
 
     async def test_garbage_on_the_channel_is_ignored(
-        self, processes: tuple[TieredBackend, TieredBackend], redis: Any
+        self,
+        processes: tuple[TieredBackend, TieredBackend],
+        redis: Any,
     ) -> None:
         first, second = processes
         for garbage in (b"not json", b"[1, 2]", b'{"tags": "x"}', b'{"key": 1}'):
@@ -280,7 +303,7 @@ async def test_close_does_not_hang_when_the_cancellation_gets_lost() -> None:
         async def subscribe(self, channel: str) -> None:
             pass
 
-        async def get_message(self, timeout: float) -> dict[str, Any] | None:
+        async def get_message(self, **_: Any) -> dict[str, Any] | None:
             if not self.confirmed:
                 self.confirmed = True
                 return {"type": "subscribe"}
@@ -313,7 +336,8 @@ async def test_close_does_not_hang_when_the_cancellation_gets_lost() -> None:
 
 
 async def test_counters_are_shared_not_kept_locally(
-    processes: tuple[TieredBackend, TieredBackend], redis: Any
+    processes: tuple[TieredBackend, TieredBackend],
+    redis: Any,
 ) -> None:
     first, second = processes
     assert first.supports_counters
@@ -354,7 +378,7 @@ class QueuePubSub:
         self.messages: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self.pings = 0
 
-    async def subscribe(self, channel: str) -> None:
+    async def subscribe(self, _channel: str) -> None:
         await self.messages.put({"type": "subscribe"})
 
     async def get_message(self, timeout: float) -> dict[str, Any] | None:

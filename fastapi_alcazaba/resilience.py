@@ -68,6 +68,12 @@ class CircuitBreaker:
         if self._opened_at is not None or self._failures >= self.failure_threshold:
             self._opened_at = time.monotonic()
 
+    def reset(self) -> None:
+        """Close it, whatever its state: the failures counted so far are forgotten."""
+        self._failures = 0
+        self._opened_at = None
+        self._trial_running = False
+
     def abandon_trial(self) -> None:
         """The trial call ended without a verdict (cancelled): let the next call try. Only for the
         call `allow()` let through "half-open": another one would let a second trial through."""

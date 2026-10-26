@@ -194,7 +194,7 @@ class CSRFMiddleware:
         if refusal is not None:
             logger.info("Refused a cross-site %s request: %s", scope["method"], refusal[1])
             _record(scope, "http", refusal[0])
-            await _respond(send, _FORBIDDEN, detail)
+            await _respond(scope, send, _FORBIDDEN, detail)
             return
         await self.app(scope, receive, send)
 
@@ -223,7 +223,11 @@ class CSRFMiddleware:
         return found
 
     def _refusal(
-        self, scope: Scope, found: dict[bytes, list[bytes]], credentials: bool, websocket: bool
+        self,
+        scope: Scope,
+        found: dict[bytes, list[bytes]],
+        credentials: bool,
+        websocket: bool,
     ) -> tuple[str, str] | None:
         """Why the request must be refused (for the metrics, and in words); None when it may go
         through."""
@@ -253,7 +257,10 @@ class CSRFMiddleware:
         return "origin", f"origin {_shown(origin)}"
 
     def _token_ok(
-        self, cookie: CookieSettings, scope: Scope, found: dict[bytes, list[bytes]]
+        self,
+        cookie: CookieSettings,
+        scope: Scope,
+        found: dict[bytes, list[bytes]],
     ) -> bool:
         tokens = cookie_values(scope, cookie.name)
         header = _one(found, self._header)

@@ -45,7 +45,8 @@ class TestCircuitBreaker:
         assert breaker.state == "open"
 
     def test_allow_says_whether_the_call_is_the_trial(
-        self, monkeypatch: pytest.MonkeyPatch
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         breaker = CircuitBreaker(failure_threshold=1, reset_timeout=10)
         assert breaker.allow() == "closed"

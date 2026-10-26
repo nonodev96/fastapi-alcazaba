@@ -1,9 +1,8 @@
 """Rate limiting on the cache's backend: how many requests each client may make to a route.
 
-A port of fastapi-limiter (by long2ice, the author of fastapi-cache) to Alcazaba's backends,
-without its weaknesses: it took the client's address from `X-Forwarded-For`, which any client can
-set to get a fresh budget on every request; it counted each URL apart, so `/items/1`, `/items/2`...
-had a budget each; and its 429s didn't say when to retry.
+The client's address is the one the ASGI server reports, never `X-Forwarded-For`, which any
+client can set to get a fresh budget on every request; a route has one budget whatever its path
+parameters, not one per URL (`/items/1`, `/items/2`...); and every 429 says when to retry.
 """
 
 import hashlib
@@ -30,6 +29,7 @@ from starlette.status import (
 
 from fastapi_alcazaba.cache import Cache, get_cache
 from fastapi_alcazaba.errors import BackendUnavailable, CircuitOpen
+from fastapi_alcazaba.middleware import _RATE_LIMIT_HEADERS
 from fastapi_alcazaba.tracing import add_event
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -88,7 +88,9 @@ def _record(cache: Cache, outcome: str, limiter: str) -> None:
 
 
 def too_many_requests(
-    connection: HTTPConnection, retry_after: float, headers: Mapping[str, str] | None = None
+    connection: HTTPConnection,
+    retry_after: float,
+    headers: Mapping[str, str] | None = None,
 ) -> NoReturn:
     """The default reaction to a request over the limit: a 429 with `Retry-After` (and `headers`),
     or closing a WebSocket with 1008 (policy violation)."""
@@ -114,7 +116,12 @@ def _route_scope(connection: HTTPConnection) -> str:
 
 
 def _wait(
-    times: int, window: float, elapsed: float, previous: int, current: int, cost: int = 1
+    times: int,
+    window: float,
+    elapsed: float,
+    previous: int,
+    current: int,
+    cost: int = 1,
 ) -> float:
     """Time until `cost` more fits, if nothing else comes; `previous` and `current` are the counts
     of the previous and the current window without it."""
@@ -222,6 +229,13 @@ class FastAPIRateLimiter:
         self._expire = math.ceil(2 * window / 1000) + 1
         # Counter key -> until when nothing fits (ms), and the window's index and counts then.
         self._blocked: OrderedDict[str, tuple[float, int, int, int]] = OrderedDict()
+        self._source: Cache | None = None  # the cache whose counters _blocked comes from
+
+    def forget(self) -> None:
+        """Forget the clients this process refuses without asking the backend (those with nothing
+        left): their next requests ask it again. The counters in the backend stay. It's done by
+        itself when the cache changes, as each test's lifespan sets one up."""
+        self._blocked.clear()
 
     def _check_cost(self, cost: int) -> int:
         if not 1 <= cost <= self.times:
@@ -234,14 +248,16 @@ class FastAPIRateLimiter:
             return
         headers = self._headers(outcome) if self.headers else {}
         if outcome.retry_after is not None:
-            if self.callback is too_many_requests:
+            if self.callback is too_many_requests:  # the default, with the RateLimit headers
                 too_many_requests(connection, outcome.retry_after, headers)
-            reaction = self.callback(connection, outcome.retry_after)
-            if isawaitable(reaction):
+            elif isawaitable(reaction := self.callback(connection, outcome.retry_after)):
                 await reaction
         for header, value in headers.items():
             # Appended: each limiter of the route adds its policy to the list.
             response.headers.append(header, value)
+        if headers:  # not for a refusal: its 429 carries them already
+            state = connection.scope.setdefault("state", {})
+            state.setdefault(_RATE_LIMIT_HEADERS, []).extend(headers.items())
 
     def _wait_since(self, now: float, index: int, previous: int, current: int, cost: int) -> float:
         """`_wait` for `cost`, from the counts of window `index` seen by an earlier request."""
@@ -259,7 +275,10 @@ class FastAPIRateLimiter:
         }
 
     async def hit(
-        self, connection: HTTPConnection, key: str = "", cost: int | None = None
+        self,
+        connection: HTTPConnection,
+        key: str = "",
+        cost: int | None = None,
     ) -> float | None:
         """Count a request: None if it's within the limit, else the seconds until it would be
         (and it isn't counted). Call it yourself to limit something else than whole requests:
@@ -272,6 +291,9 @@ class FastAPIRateLimiter:
     async def _take(self, connection: HTTPConnection, key: str, cost: int) -> _Outcome | None:
         """Count `cost`; None when the backend failed and requests go through unchecked."""
         cache = self.cache if self.cache is not None else get_cache(connection)
+        if cache is not self._source:
+            self._source = cache
+            self.forget()
         backend = cache.backend
         if not backend.supports_counters:
             raise NotImplementedError(

@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import contextlib
 import time
 from typing import Annotated, Any
@@ -16,6 +18,7 @@ from fastapi_alcazaba import Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.limiter import FastAPIRateLimiter, _wait, client_ip, client_network
+from fastapi_alcazaba.problems import FastAPIProblemDetails
 from fastapi_alcazaba.types import Backend
 from tests.unit.test_metrics import points
 
@@ -31,8 +34,8 @@ class Clock:
         return self.now
 
 
-@pytest.fixture
-def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
+@pytest.fixture(name="clock")
+def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     clock = Clock()
     monkeypatch.setattr(time, "time", clock)
     return clock
@@ -54,8 +57,10 @@ class Counting(InMemoryBackend):
         return await super().incr_window(*args, **kwargs)
 
 
-@pytest.fixture(params=[InMemoryBackend, AddAndTakeBack], ids=["atomic", "add-and-take-back"])
-def backend(request: pytest.FixtureRequest) -> InMemoryBackend:
+@pytest.fixture(
+    name="backend", params=[InMemoryBackend, AddAndTakeBack], ids=["atomic", "add-and-take-back"]
+)
+def fixture_backend(request: pytest.FixtureRequest) -> InMemoryBackend:
     backend: InMemoryBackend = request.param()
     FastAPICache.init(backend)
     return backend
@@ -95,9 +100,8 @@ class TestLimit:
         clock.now += 1
         assert statuses(client) == [200]
 
-    def test_requests_over_the_limit_dont_count(
-        self, clock: Clock, backend: InMemoryBackend
-    ) -> None:
+    @pytest.mark.usefixtures("clock")
+    def test_requests_over_the_limit_dont_count(self, backend: InMemoryBackend) -> None:
         client = limited_app(FastAPIRateLimiter(times=2, minutes=1))
         assert statuses(client, n=7) == [200, 200, 429, 429, 429, 429, 429]
         assert counters(backend) == [2]
@@ -275,7 +279,8 @@ class TestBackend:
         assert await limiter.hit(other) is None
 
 
-def test_metrics(clock: Clock) -> None:
+@pytest.mark.usefixtures("clock")
+def test_metrics() -> None:
     reader = InMemoryMetricReader()
     FastAPICache.init(InMemoryBackend(), meter_provider=MeterProvider([reader]))
     client = limited_app(FastAPIRateLimiter(times=2, minutes=1, name="search"))
@@ -410,6 +415,24 @@ class TestHeaders:
             assert refused.headers["ratelimit"] == '"1/10s";r=0;t=20'
             assert refused.headers["ratelimit-policy"] == '"1/10s";q=1;w=10'
 
+    @pytest.mark.parametrize("problems", [True, False])
+    def test_error_responses(self, problems: bool) -> None:
+        """A 422 or an HTTPException after the limiter: FastAPI builds those from the exception,
+        without the dependencies' headers; FastAPIProblemDetails adds the limiter's back."""
+        app = FastAPI()
+
+        @app.get("/items/{item_id}", dependencies=[Depends(FastAPIRateLimiter(times=5, minutes=1))])
+        async def item(item_id: int) -> int:
+            raise HTTPException(503, "Busy")
+
+        if problems:
+            FastAPIProblemDetails().install(app)
+        client = TestClient(app)
+        for path, status in (("/items/not-a-number", 422), ("/items/1", 503)):
+            response = client.get(path)
+            assert response.status_code == status
+            assert ("ratelimit" in response.headers) is problems
+
     def test_named_policies_and_windows_of_milliseconds(self) -> None:
         client = limited_app(FastAPIRateLimiter(3, milliseconds=1500, name='search "beta"'))
         assert client.get("/").headers["ratelimit-policy"] == r'"search \"beta\"";q=3'
@@ -482,7 +505,8 @@ class TestCost:
 @pytest.mark.usefixtures("clock")
 class TestFloods:
     def test_clients_with_nothing_left_are_refused_without_asking_the_backend(
-        self, clock: Clock
+        self,
+        clock: Clock,
     ) -> None:
         backend = Counting()
         client = limited_app(FastAPIRateLimiter(times=2, minutes=1, cache=Cache(backend)))
@@ -538,6 +562,25 @@ class TestFloods:
         clock.now -= 60  # further: the block would last longer than two windows
         assert await limiter.hit(request_from(), cost=5) is None
 
+    async def test_forget_asks_the_backend_again(self) -> None:
+        backend = Counting()
+        limiter = FastAPIRateLimiter(times=1, minutes=1, cache=Cache(backend))
+        assert await limiter.hit(request_from()) is None
+        assert await limiter.hit(request_from()) is not None  # from the backend
+        assert await limiter.hit(request_from()) is not None  # without it
+        assert backend.calls == 2
+        limiter.forget()
+        assert await limiter.hit(request_from()) is not None  # still none left in the backend
+        assert backend.calls == 3
+
+    def test_a_new_fastapi_cache_forgets_the_last_ones_refusals(self) -> None:
+        """As each test's lifespan sets FastAPICache up again: a fresh backend, a fresh budget."""
+        limiter = FastAPIRateLimiter(times=1, minutes=1)
+        for _ in range(2):
+            FastAPICache.reset()
+            FastAPICache.init(InMemoryBackend())
+            assert statuses(limited_app(limiter), n=2) == [200, 429]
+
     async def test_a_bounded_number_of_clients(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr("fastapi_alcazaba.limiter._MAX_BLOCKED", 2)
         limiter = FastAPIRateLimiter(times=1, minutes=1, cache=Cache(InMemoryBackend()))
@@ -571,7 +614,13 @@ class TestValidation:
 class TestRetryAfter:
     @staticmethod
     def allowed(
-        times: int, window: float, elapsed: float, previous: int, current: int, t: float, cost: int
+        times: int,
+        window: float,
+        elapsed: float,
+        previous: int,
+        current: int,
+        t: float,
+        cost: int,
     ) -> bool:
         """Whether `cost` more fits `t` from now, with no other requests meanwhile."""
         at = elapsed + t
@@ -592,7 +641,13 @@ class TestRetryAfter:
         cost=st.integers(1, 100),
     )
     def test_waiting_that_long_is_enough_and_not_more(
-        self, times: int, window: int, part: float, previous: int, current: int, cost: int
+        self,
+        times: int,
+        window: int,
+        part: float,
+        previous: int,
+        current: int,
+        cost: int,
     ) -> None:
         cost = min(cost, times)
         elapsed = part * window

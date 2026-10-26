@@ -1,6 +1,9 @@
 """FastAPILeader: one leader among the processes, on a renewed lock."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
+import contextlib
 import logging
 from collections.abc import Callable
 
@@ -16,8 +19,8 @@ from fastapi_alcazaba.leader import FastAPILeader
 from fastapi_alcazaba.types import Backend
 
 
-@pytest.fixture(params=["memory", "redis"])
-def cache(request: pytest.FixtureRequest) -> Cache:
+@pytest.fixture(name="cache", params=["memory", "redis"])
+def fixture_cache(request: pytest.FixtureRequest) -> Cache:
     backend: Backend = (
         InMemoryBackend()
         if request.param == "memory"
@@ -32,6 +35,15 @@ class Flaky(InMemoryBackend):
     async def acquire_lock(self, key: str, token: str, ttl: float) -> bool:
         if self.failing:
             raise ConnectionError("down")
+        return await super().acquire_lock(key, token, ttl)
+
+
+class Swallowing(InMemoryBackend):
+    """Its lock requests take a while and swallow cancellation, as fakeredis does on Python 3.11."""
+
+    async def acquire_lock(self, key: str, token: str, ttl: float) -> bool:
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.sleep(0.5)
         return await super().acquire_lock(key, token, ttl)
 
 
@@ -92,7 +104,9 @@ class TestElection:
             await until(lambda: a.is_leader and b.is_leader)
 
     async def test_a_dead_leader_is_replaced(
-        self, cache: Cache, monkeypatch: pytest.MonkeyPatch
+        self,
+        cache: Cache,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         dead = FastAPILeader("outbox", ttl=0.2, cache=cache)
         await dead.start()
@@ -117,7 +131,8 @@ class TestElection:
             await until(lambda: successor.is_leader)
 
     async def test_losing_the_lock_cancels_and_campaigns_again(
-        self, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         backend = InMemoryBackend()
         leader, worker = leader_with_worker("outbox", Cache(backend))
@@ -131,7 +146,9 @@ class TestElection:
         assert "Lost the leadership of 'outbox'" in caplog.text
 
     async def test_failing_functions_are_logged(
-        self, cache: Cache, caplog: pytest.LogCaptureFixture
+        self,
+        cache: Cache,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         leader = FastAPILeader("outbox", ttl=0.3, cache=cache)
         ran: list[str] = []
@@ -217,6 +234,17 @@ class TestLifecycle:
             with pytest.raises(RuntimeError, match="already running"):
                 await leader.start()
 
+    async def test_stopping_when_the_backend_swallows_the_cancellation(self) -> None:
+        cache = Cache(Swallowing(), prefix="app")
+        leader, _ = leader_with_worker("outbox", cache, ttl=3)  # longer than a lock request
+        await leader.start()
+        await asyncio.sleep(0.1)  # asking for the lock
+        await asyncio.wait_for(leader.stop(), 1)
+        assert not leader.is_leader
+        other, worker = leader_with_worker("outbox", cache, ttl=3)
+        async with other:  # the lock was given back
+            await until(lambda: worker.started == 1)
+
     async def test_stopping_what_isnt_running(self, cache: Cache) -> None:
         await FastAPILeader("outbox", cache=cache).stop()
 
@@ -245,6 +273,7 @@ class TestValidation:
         def sync() -> None:
             pass  # pragma: no cover
 
+        # pylint: disable-next=unused-argument  # a function with arguments, which the leader refuses
         async def with_arguments(x: int) -> None:
             pass  # pragma: no cover
 

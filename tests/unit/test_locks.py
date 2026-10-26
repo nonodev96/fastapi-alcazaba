@@ -1,5 +1,7 @@
 """Locks shared by every process: Cache.lock and the backends' lock operations."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import logging
 import time
@@ -15,8 +17,8 @@ from fastapi_alcazaba.locks import Lock, LockNotAcquired
 from fastapi_alcazaba.types import Backend
 
 
-@pytest.fixture(params=["memory", "redis"])
-def cache(request: pytest.FixtureRequest) -> Cache:
+@pytest.fixture(name="cache", params=["memory", "redis"])
+def fixture_cache(request: pytest.FixtureRequest) -> Cache:
     backend: Backend = (
         InMemoryBackend() if request.param == "memory" else RedisBackend(fakeredis.FakeAsyncRedis())
     )

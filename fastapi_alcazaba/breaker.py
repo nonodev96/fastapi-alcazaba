@@ -106,9 +106,31 @@ class FastAPIBreaker:
         """Seconds until a trial call may go through; 0 unless it's open."""
         return self._breaker.retry_after
 
+    @property
+    def failure_threshold(self) -> int:
+        """Consecutive failures that open it."""
+        return self._breaker.failure_threshold
+
+    @property
+    def reset_timeout(self) -> float:
+        """Seconds it stays open before a trial call may go through."""
+        return self._breaker.reset_timeout
+
+    def reset(self) -> None:
+        """Close it now, and forget the failures counted: when you know the dependency is back (an
+        admin says so), or between tests. Only this process's breaker: each process has its own."""
+        with self._lock:
+            was_closed = self._breaker.state == "closed"
+            self._breaker.reset()
+        if not was_closed:
+            logger.info("Circuit breaker %r closed by reset()", self.name)
+            self._metrics_now().breaker_transition("closed", self.name)
+            add_event("fastapi_alcazaba.breaker.closed", breaker=self.name)
+
     @overload
     def __call__(
-        self, func: Callable[P, Coroutine[Any, Any, T]]
+        self,
+        func: Callable[P, Coroutine[Any, Any, T]],
     ) -> Callable[P, Coroutine[Any, Any, T]]: ...
 
     @overload

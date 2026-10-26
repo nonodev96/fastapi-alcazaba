@@ -415,6 +415,7 @@ class FastAPITaskQueue:
         self._stream = self._delayed = self._dead = self._seal_key = ""
         self._started = False
         self._stopping = False
+        self._exiting = False  # the worker's own loop ends: stop() is done waiting for tasks
         self._consumer = ""
         self._workers = concurrency
         self._running: dict[str, asyncio.Task[None]] = {}
@@ -554,15 +555,12 @@ class FastAPITaskQueue:
     # region Backend
 
     def _ready(self) -> Cache:
-        """The cache, checked once: its backend must hold Redis streams."""
-        if self._resolved is not None:
+        """The cache, checked when it changes: its backend must hold Redis streams. A running
+        queue keeps the one it started with; a stopped one follows FastAPICache, which the app's
+        next lifespan (a test's) sets up again."""
+        if self._resolved is not None and (self._started or self._resolved is self._resolve()):
             return self._resolved
-        if self.cache is not None:
-            cache = self.cache
-        else:
-            from fastapi_alcazaba import FastAPICache
-
-            cache = FastAPICache.instance()
+        cache = self._resolve()
         backend = cache.backend
         if isinstance(backend, TieredBackend):
             backend = backend.remote
@@ -580,9 +578,16 @@ class FastAPITaskQueue:
         )
         # What signatures bind tasks to: a task sealed for one queue doesn't open in another.
         self._seal_key = f"{base}:task"
-        self._client = backend._client
+        self._client = backend.client
         self._resolved = cache
         return cache
+
+    def _resolve(self) -> Cache:
+        if self.cache is not None:
+            return self.cache
+        from fastapi_alcazaba import FastAPICache
+
+        return FastAPICache.instance()
 
     async def _eval(self, operation: str, script: str, keys: list[str], *args: str | bytes) -> Any:
         assert self._resolved is not None  # noqa: S101  # resolved by _ready()
@@ -617,9 +622,10 @@ class FastAPITaskQueue:
             )
         self._workers = workers
         self._consumer = f"{socket.gethostname()}-{os.getpid()}-{secrets.token_hex(4)}"
-        self._started, self._stopping = True, False
-        self._drained = asyncio.Event()
-        self._wakeup.clear()
+        self._started, self._stopping, self._exiting = True, False, False
+        # New ones each time: an Event belongs to the event loop that first waits on it, and the
+        # next start may be in another (a test's).
+        self._drained, self._wakeup = asyncio.Event(), asyncio.Event()
         loop = asyncio.get_running_loop()
         self._worker = loop.create_task(self._work(), name=f"task queue {self.name}")
 
@@ -651,6 +657,10 @@ class FastAPITaskQueue:
                 for handler in late:
                     handler.cancel()
             await asyncio.gather(*handlers, return_exceptions=True)
+        # Told as well as cancelled: a client that swallows the cancellation (fakeredis does on
+        # Python 3.11) would otherwise keep the worker going, and stop() waiting for it.
+        self._exiting = True
+        self._wakeup.set()
         self._worker.cancel()
         await asyncio.gather(self._worker, return_exceptions=True)
         self._worker = None
@@ -686,7 +696,7 @@ class FastAPITaskQueue:
         now = loop.time()
         next_heartbeat, next_promotion, next_reclaim = now + self.visibility_timeout / 3, now, now
         group_ready, failures = False, 0
-        while True:
+        while not self._exiting:
             if self._stopping:
                 self._drained.set()  # nothing more is read: the running tasks are all there is
             now = loop.time()
@@ -899,7 +909,11 @@ class FastAPITaskQueue:
         await self._eval("task_retry", RETRY_SCRIPT, keys, _GROUP, entry.id, due, payload)
 
     async def _refuse(
-        self, entry: _Entry, reason: str, payload: bytes, body: dict[str, Any] | None = None
+        self,
+        entry: _Entry,
+        reason: str,
+        payload: bytes,
+        body: dict[str, Any] | None = None,
     ) -> None:
         # The name is %r: without a key, it's whatever someone wrote to the backend.
         logger.warning(
@@ -1007,7 +1021,8 @@ class FastAPITaskQueue:
         return result
 
     async def _dead_entries(
-        self, ids: list[str] | None
+        self,
+        ids: list[str] | None,
     ) -> AsyncGenerator[tuple[str, dict[bytes, bytes]], None]:
         if ids is not None:
             for dead_id in ids:

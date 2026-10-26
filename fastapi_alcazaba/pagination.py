@@ -20,7 +20,7 @@ fast as the first.
 
 The page parameters are an argument of the endpoint, so the cache keeps each page under a key of
 its own. fastapi-pagination's `add_pagination` keeps them out of the arguments, in a context
-variable, and fastapi-cache2 served page 1 from the cache for every page.
+variable: a cache that only sees the arguments would serve page 1 for every page.
 """
 
 import base64
@@ -204,7 +204,11 @@ class FastAPIPagination:
         return PageParams(page=page, size=size)
 
     def paginate(
-        self, items: Sequence[T], params: PageParams, *, total: int | None = None
+        self,
+        items: Sequence[T],
+        params: PageParams,
+        *,
+        total: int | None = None,
     ) -> Page[T]:
         """The page of `items` that `params` asks for. Without `total`, `items` is the whole
         list and the page is sliced from it; with `total`, `items` is that page already (queried
@@ -246,7 +250,11 @@ class FastAPIPaginationLimitOffset:
         return LimitOffsetParams(limit=limit, offset=offset)
 
     def paginate(
-        self, items: Sequence[T], params: LimitOffsetParams, *, total: int | None = None
+        self,
+        items: Sequence[T],
+        params: LimitOffsetParams,
+        *,
+        total: int | None = None,
     ) -> LimitOffsetPage[T]:
         """The page of `items` that `params` asks for, as `FastAPIPagination.paginate`."""
         page, total = _window(items, params.offset, params.limit, total)
@@ -327,7 +335,11 @@ class FastAPIPaginationCursor:
     """
 
     def __init__(
-        self, secret: Secrets | None = None, *, default_size: int = 50, max_size: int = 100
+        self,
+        secret: Secrets | None = None,
+        *,
+        default_size: int = 50,
+        max_size: int = 100,
     ) -> None:
         _limits(default_size, max_size, "size")
         self.default_size = default_size

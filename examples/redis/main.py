@@ -8,6 +8,7 @@ The signing key comes from the environment (or a secret manager), never from the
 """
 
 import datetime
+import itertools
 import os
 import time
 from collections.abc import AsyncIterator
@@ -42,14 +43,12 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory=Path(__file__).parent)
-ret = 0
+calls = itertools.count(1)  # how many times get_ret() really ran
 
 
 @cache(namespace="test", expire=1)
 async def get_ret() -> int:
-    global ret
-    ret = ret + 1
-    return ret
+    return next(calls)
 
 
 @app.get("/")
@@ -77,7 +76,7 @@ async def me(user: str = Depends(current_user)) -> dict[str, str]:
 
 @app.get("/date")
 @cache(namespace="test", expire=10)
-async def get_data(request: Request, response: Response) -> datetime.date:
+async def get_data(_request: Request, _response: Response) -> datetime.date:
     return datetime.date.today()
 
 
@@ -92,7 +91,7 @@ def blocking() -> dict[str, int]:
 
 @app.get("/datetime")
 @cache(namespace="test", expire=2)
-async def get_datetime(request: Request, response: Response) -> datetime.datetime:
+async def get_datetime(_request: Request, _response: Response) -> datetime.datetime:
     return datetime.datetime.now().astimezone()
 
 

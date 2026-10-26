@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+env:
+  # pip takes no release younger than three days: compromised versions are usually pulled sooner.
+  PIP_UPLOADED_PRIOR_TO: P3D
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -20,18 +25,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          enable-cache: true
-      - run: uv sync --locked --all-extras
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      - uses: $/.github/actions/python
+      - run: ruff check .
+      - run: python scripts/check_signatures.py fastapi_alcazaba examples tests scripts
+      - run: ruff format --check .
       # Includes tests/typing: the decorator must keep the signatures.
-      - run: uv run mypy
+      - run: mypy
+      - run: pylint fastapi_alcazaba examples tests scripts
 
   test:
     name: Unit and integration tests (${{ matrix.python }})
     runs-on: ubuntu-latest
+    # A run takes about 3 minutes: a test that hangs fails the job instead of holding it for 6 h.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -70,13 +76,11 @@ jobs:
             docker exec valkey-cluster valkey-cli -p 16382 cluster info | grep -q cluster_state:ok && break
             sleep 1
           done
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: $/.github/actions/python
         with:
-          enable-cache: true
           python-version: ${{ matrix.python }}
-      - run: uv sync --locked --all-extras
-      - run: uv run coverage run -m pytest tests/unit tests/integration tests/typing
-      - run: uv run coverage report --fail-under=90
+      - run: coverage run -m pytest tests/unit tests/integration tests/typing
+      - run: coverage report --fail-under=90
 
   e2e:
     name: End-to-end
@@ -91,11 +95,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          enable-cache: true
-      - run: uv sync --locked --all-extras
-      - run: uv run pytest tests/e2e
+      - uses: $/.github/actions/python
+      - run: pytest tests/e2e
 
   package:
     name: Package
@@ -105,20 +106,20 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0 # the version comes from the Git history
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: $/.github/actions/python
         with:
-          enable-cache: true
-      - run: uv build
-      - run: uvx twine@7.0.0 check --strict dist/*
-      - run: uvx check-wheel-contents@0.6.3 dist/*.whl
+          groups: dev package
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - run: check-wheel-contents dist/*.whl
       - name: Smoke test of the installed wheel
-        run: uv run --isolated --no-project --with dist/*.whl python -I scripts/smoke_test.py
-      - name: SBOM
         run: |
-          version=$(basename dist/*.whl | cut -d- -f2)
-          # The components come from `uv export --no-dev`; the environment only provides licences.
-          uv sync --frozen --all-extras
-          uv run --no-sync python scripts/sbom.py --version "$version" -o sbom/fastapi-alcazaba.cdx.json
+          # In an environment of its own, with nothing but the wheel and what it requires.
+          python -m venv "$RUNNER_TEMP/smoke"
+          "$RUNNER_TEMP/smoke/bin/python" -m pip install --quiet dist/*.whl
+          "$RUNNER_TEMP/smoke/bin/python" -I scripts/smoke_test.py
+      - name: SBOM
+        run: python scripts/sbom.py dist/*.whl -o sbom/fastapi-alcazaba.cdx.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: package
@@ -133,11 +134,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          enable-cache: true
-      - run: uv export --frozen --all-extras --no-hashes --no-emit-project --format requirements-txt -o requirements.txt
-      - run: uvx pip-audit@2.10.1 --strict -r requirements.txt
+      - uses: $/.github/actions/python
+      - name: The runtime dependencies, every extra
+        run: |
+          python -m venv "$RUNNER_TEMP/runtime"
+          "$RUNNER_TEMP/runtime/bin/python" -m pip install --quiet ".[all]"
+          "$RUNNER_TEMP/runtime/bin/python" -m pip freeze --exclude fastapi-alcazaba > requirements.txt
+      - run: pip-audit --strict -r requirements.txt
 
   docs:
     name: Docs
@@ -146,10 +149,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: $/.github/actions/python
         with:
-          enable-cache: true
-      - run: uv run --locked --group docs mkdocs build --strict
+          groups: docs
+      - run: mkdocs build --strict
 
   benchmarks:
     name: Benchmarks
@@ -158,11 +161,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
-        with:
-          enable-cache: true
-      - run: uv sync --locked --all-extras
-      - run: uv run pytest tests/benchmarks --benchmark-only --benchmark-json=benchmarks.json
+      - uses: $/.github/actions/python
+      - run: pytest tests/benchmarks --benchmark-only --benchmark-json=benchmarks.json
       # The last results of main, saved in the Actions cache (pull requests can read the base
       # branch's caches). No write permission needed.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -172,7 +172,7 @@ jobs:
           restore-keys: benchmarks-
       # A benchmark more than 50 % slower than the others fails the job. The runner's speed
       # changes between runs, so absolute numbers only go to the summary below.
-      - run: uv run python scripts/bench_gate.py benchmarks.json benchmark-history/data.json
+      - run: python scripts/bench_gate.py benchmarks.json benchmark-history/data.json
       - if: ${{ !cancelled() }}
         uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
         with:

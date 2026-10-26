@@ -1,20 +1,43 @@
-.PHONY: deps lint format test test-integration mutation services-up services-down build clean
+.PHONY: deps lint format test test-integration mutation services-up services-down docs docs-serve \
+	build clean
 
-deps:
-	uv sync --all-extras
+# Python's own tools: a virtual environment in .venv, and pip (26.2 or later, for --group and
+# --uploaded-prior-to). pip takes no release younger than three days: compromised versions are
+# usually pulled sooner.
+PYTHON ?= python3
+VENV ?= .venv
+BIN := $(VENV)/bin
+export PIP_UPLOADED_PRIOR_TO := P3D
+export PIP_DISABLE_PIP_VERSION_CHECK := 1
 
+$(BIN)/python:
+	$(PYTHON) -m venv $(VENV)
+
+# The package in editable mode with every extra, and the development tools.
+deps: $(BIN)/python
+	$(BIN)/python -m pip --version > /dev/null 2>&1 || $(BIN)/python -m ensurepip --upgrade
+	$(BIN)/python -m pip install --quiet --upgrade "pip>=26.2"
+	$(BIN)/python -m pip install --quiet -e ".[all]" --group dev
+
+SOURCES = fastapi_alcazaba examples tests scripts
+
+# Multi-line signatures: one parameter per line, the last one with a comma. ruff format only
+# guarantees it once the comma is there; scripts/check_signatures.py checks it (--fix adds it).
 lint: deps
-	uv run ruff check .
-	uv run ruff format --check .
-	uv run mypy
+	$(BIN)/ruff check .
+	$(BIN)/python scripts/check_signatures.py $(SOURCES)
+	$(BIN)/ruff format --check .
+	$(BIN)/mypy
+	$(BIN)/pylint $(SOURCES)
 
 format: deps
-	uv run ruff check --fix .
-	uv run ruff format .
+	$(BIN)/ruff check --fix .
+	$(BIN)/python scripts/check_signatures.py --fix $(SOURCES)
+	$(BIN)/ruff format .
 
 test: deps
-	uv run coverage run -m pytest
-	uv run coverage report
+	$(BIN)/coverage run -m pytest
+	$(BIN)/coverage report
 
 INTEGRATION_ENV = REDIS_URL=redis://127.0.0.1:16379/15 VALKEY_URL=valkey://127.0.0.1:16380/15 \
 	CLUSTER_URL=redis://127.0.0.1:16382 MEMCACHED_URL=127.0.0.1:21211 DYNAMODB_URL=http://127.0.0.1:18000
@@ -34,16 +57,28 @@ services-down:
 		fastapi-alcazaba-test-memcached fastapi-alcazaba-test-dynamodb
 
 test-integration: deps
-	$(INTEGRATION_ENV) uv run pytest -m integration
+	$(INTEGRATION_ENV) $(BIN)/pytest -m integration
 
 # Mutation testing of the unit suite (slow: every mutant runs the tests). Results: mutmut results.
 mutation: deps
-	uv run mutmut run --max-children $$(nproc)
-	uv run mutmut export-cicd-stats
+	$(BIN)/mutmut run --max-children $$(nproc)
+	$(BIN)/mutmut export-cicd-stats
 	cat mutants/mutmut-cicd-stats.json
 
-build: clean
-	uv build
+# The documentation as CI builds it (into site/), and a preview that reloads on every change
+# (http://127.0.0.1:8000).
+docs: deps
+	$(BIN)/python -m pip install --quiet --group docs
+	$(BIN)/mkdocs build --strict
+
+docs-serve: deps
+	$(BIN)/python -m pip install --quiet --group docs
+	$(BIN)/mkdocs serve
+
+# The sdist and the wheel, in dist/.
+build: clean deps
+	$(BIN)/python -m pip install --quiet --group package
+	$(BIN)/python -m build
 
 clean:
-	rm -rf dist
+	rm -rf dist site

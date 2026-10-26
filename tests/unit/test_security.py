@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import warnings
 from typing import Any
@@ -147,7 +149,7 @@ class TestSignedEntries:
         with TestClient(app) as client:
             client.get("/me", headers={"Authorization": "alice"})
             client.get("/me", headers={"Authorization": "bob"})
-            (alice_key, alice_value), (bob_key, _) = backend._store.items()
+            (_, alice_value), (bob_key, _) = backend._store.items()
             backend._store[bob_key].data = alice_value.data
             response = client.get("/me", headers={"Authorization": "bob"})
         assert response.json() == {"user": "bob"}

@@ -1,3 +1,5 @@
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import random
 import warnings
@@ -44,6 +46,7 @@ class TestUnstableKeys:
 
         @app.get("/products")
         @cache(expire=60)
+        # pylint: disable-next=unused-argument  # an argument whose repr changes on every call
         def products(session: Annotated[Session, Depends(get_session)], page: int = 1) -> list[int]:
             return [page]
 
@@ -58,6 +61,7 @@ class TestUnstableKeys:
 
         @app.get("/products")
         @cache(expire=60, exclude_params=["session"])
+        # pylint: disable-next=unused-argument  # an argument whose repr changes on every call
         def products(session: Annotated[Session, Depends(get_session)], page: int = 1) -> list[int]:
             return [page]
 
@@ -70,6 +74,7 @@ class TestUnstableKeys:
         FastAPICache.init(InMemoryBackend())
 
         @cache(expire=60)
+        # pylint: disable-next=unused-argument  # an argument whose repr changes on every call
         async def run(callback: Any) -> int:
             return 1
 
@@ -77,12 +82,14 @@ class TestUnstableKeys:
             await run(lambda: None)  # type: ignore[no-untyped-call]
 
     async def test_custom_key_builders_are_trusted(self) -> None:
+        # pylint: disable-next=unused-argument  # a key builder's signature
         def key_builder(func: Any, namespace: str = "", **kwargs: Any) -> str:
             return f"{namespace}:fixed"
 
         FastAPICache.init(InMemoryBackend(), key_builder=key_builder)
 
         @cache(expire=60)
+        # pylint: disable-next=unused-argument  # an argument whose repr changes on every call
         async def run(session: Session) -> int:
             return 1
 
@@ -160,7 +167,8 @@ class TestEarlyRefresh:
         assert await value() == 1
 
     async def test_a_failed_refresh_serves_the_cached_value(
-        self, monkeypatch: pytest.MonkeyPatch
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         backend = InMemoryBackend()
         FastAPICache.init(backend, early_refresh=0.5)
@@ -213,6 +221,7 @@ class TestDistributedLock:
         # Someone else holds the lock and never stores the value.
         original = backend.acquire_lock
 
+        # pylint: disable-next=unused-argument  # a lock taker's signature
         async def taken(key: str, token: str, ttl: float) -> bool:
             await original(key, "someone-else", ttl)
             return False
@@ -340,10 +349,10 @@ class TestTags:
 
     async def test_backends_without_tags(self) -> None:
         class FakeMemcache:
-            async def get(self, key: bytes) -> bytes | None:
+            async def get(self, *_: object) -> bytes | None:
                 return None
 
-            async def set(self, key: bytes, value: bytes, exptime: int = 0) -> bool:
+            async def set(self, *_: object, **__: object) -> bool:
                 return True
 
         FastAPICache.init(MemcachedBackend(FakeMemcache()))  # type: ignore[arg-type]
@@ -398,17 +407,17 @@ async def test_clearing_the_cache_keeps_locks_limits_and_revocations(backend_kin
     backend: Backend = (
         InMemoryBackend() if backend_kind == "memory" else RedisBackend(fakeredis.FakeAsyncRedis())
     )
-    cache = Cache(backend, prefix="app")
-    blocklist = TokenBlocklist(cache)
-    limiter = FastAPIRateLimiter(times=1, minutes=1, cache=cache, name="login")
+    app_cache = Cache(backend, prefix="app")
+    blocklist = TokenBlocklist(app_cache)
+    limiter = FastAPIRateLimiter(times=1, minutes=1, cache=app_cache, name="login")
     request = Request({"type": "http", "headers": [], "client": ("203.0.113.9", 1)})
-    lock = cache.lock("job")
+    lock = app_cache.lock("job")
     assert await lock.acquire()
     await blocklist.revoke("jti", ttl=60)
     assert await limiter.hit(request) is None
-    await cache.get_or_set("k", _one, expire=60)
-    assert await cache.clear() == 1  # the cached value
-    assert not await cache.lock("job").acquire()
+    await app_cache.get_or_set("k", _one, expire=60)
+    assert await app_cache.clear() == 1  # the cached value
+    assert not await app_cache.lock("job").acquire()
     assert await blocklist.is_revoked("jti")
     assert await limiter.hit(request) is not None  # the counter is still there
     await lock.release()

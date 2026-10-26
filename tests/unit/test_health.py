@@ -171,7 +171,8 @@ class TestTimeouts:
         assert elapsed < 2
 
     def test_a_hanging_sync_check_doesnt_pile_up_threads(
-        self, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """While its thread hangs, later probes don't start another one."""
         released, calls = threading.Event(), []
@@ -215,7 +216,8 @@ class TestTimeouts:
         assert not threads[0].is_alive()
 
     async def test_a_check_that_fails_after_its_timeout(
-        self, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Its failure, which nobody waits for any more, isn't reported again by asyncio."""
         released, threads = threading.Event(), []
@@ -259,7 +261,8 @@ class TestTimeouts:
         assert len(runs) == 2
 
     def test_a_check_raising_its_own_timeout_is_a_failure(
-        self, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         async def check() -> None:
             raise TimeoutError("the database's own timeout")

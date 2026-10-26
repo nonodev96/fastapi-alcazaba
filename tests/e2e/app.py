@@ -8,7 +8,6 @@ import asyncio
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
 
 import valkey.asyncio
 from fastapi import Depends, FastAPI, Request
@@ -20,13 +19,11 @@ from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.limiter import FastAPIRateLimiter
 
 PREFIX = os.environ.get("ALCAZABA_E2E_PREFIX", "fastapi-alcazaba-e2e")
-client: Any = None
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    global client
-    client = valkey.asyncio.from_url(  # type: ignore[no-untyped-call]
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    application.state.valkey = client = valkey.asyncio.from_url(  # type: ignore[no-untyped-call]
         os.environ["ALCAZABA_E2E_VALKEY_URL"], socket_connect_timeout=0.2, socket_timeout=0.5
     )
     # Copies in each worker's memory for 30 s: only pub/sub invalidation keeps the workers in step.
@@ -48,7 +45,7 @@ app = FastAPI(lifespan=lifespan)
 async def computed(name: str) -> int:
     """Counts a computation of `name`; returns how many there have been."""
     try:
-        return int(await client.incr(f"{PREFIX}:computed:{name}"))
+        return int(await app.state.valkey.incr(f"{PREFIX}:computed:{name}"))
     except Exception:  # the fail-open test runs without a reachable Valkey
         return 0
 

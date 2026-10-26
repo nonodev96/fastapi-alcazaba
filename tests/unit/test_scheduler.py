@@ -1,5 +1,7 @@
 """FastAPIScheduler: jobs every N seconds or by cron, each tick once across the processes."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import logging
 import threading
@@ -141,8 +143,8 @@ class TestEvery:
         assert every.next_after(utc("2026-10-26 10:10")) == utc("2026-10-26 10:15")
 
 
-@pytest.fixture(params=["memory", "redis"])
-def shared(request: pytest.FixtureRequest) -> Backend:
+@pytest.fixture(name="shared", params=["memory", "redis"])
+def fixture_shared(request: pytest.FixtureRequest) -> Backend:
     """The backend that several processes share."""
     if request.param == "memory":
         return InMemoryBackend()
@@ -230,7 +232,8 @@ class TestScheduling:
         assert calls
 
     async def test_a_failing_job_is_logged_and_keeps_its_schedule(
-        self, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         calls: list[int] = []
         scheduler = FastAPIScheduler()

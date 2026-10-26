@@ -1,6 +1,8 @@
 """TieredBackend over real Redis and Valkey: invalidations travel on real pub/sub between two
 clients, as between two processes."""
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import os
 import time
@@ -23,8 +25,10 @@ async def eventually(condition: Callable[[], bool], timeout: float = 5.0) -> Non
         await asyncio.sleep(0.02)
 
 
-@pytest.fixture(params=["redis", "valkey"])
-async def processes(request: pytest.FixtureRequest) -> AsyncIterator[tuple[TieredBackend, ...]]:
+@pytest.fixture(name="processes", params=["redis", "valkey"])
+async def fixture_processes(
+    request: pytest.FixtureRequest,
+) -> AsyncIterator[tuple[TieredBackend, ...]]:
     """Two processes, whose clients time out reads after 0.3 s, as production ones should."""
     url = os.environ.get("REDIS_URL" if request.param == "redis" else "VALKEY_URL")
     if not url:

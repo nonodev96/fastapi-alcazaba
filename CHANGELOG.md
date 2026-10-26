@@ -127,7 +127,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   backend: `set(name, enabled=..., percentage=..., allow=..., deny=...)`, `delete`, `get`,
   `enabled(name, subject, default)` and `require(name, subject=...)`, a FastAPI dependency that
   answers 404 while the flag is off, without revealing it. Percentage rollouts are sticky (a hash
-  of the flag and the subject) and only grow with the percentage. Each process keeps definitions
+  of the flag and the subject) and only grow with the percentage. Without a percentage a flag is
+  for everybody, or only for its allow list when it has one. Each process keeps definitions
   for `refresh` seconds and falls back on the last one read, or the default, when the backend
   fails. Subjects are stored as salted SHA-256 digests, never in clear, and definitions are
   sealed with the cache's signing or encryption key when it has one.
@@ -222,12 +223,51 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   lock, resets a limit or takes a revocation back, and `InMemoryBackend` gives them a store of
   their own that caching responses never evicts.
 - `Backend.invalidate_tags_with_keys`: an invalidation that also tells which keys it deleted.
+- Examples for the tools (`examples/`): small, complete apps for the response cache, pagination,
+  rate and concurrency limits, idempotency keys, API keys and one-time codes, a browser app with
+  sessions and CSRF protection, uploads, webhooks, errors and observability, background work and
+  operations. Each is tested with the library and has a page in the documentation's new Examples
+  section, with how to run it and what it answers.
+- A logo and a social card, and the documentation's theme in the project's colours.
+- `RedisBackend.client` and `ValkeyBackend.client`: the client the backend talks through.
+- pylint, configured in `pyproject.toml`, runs with ruff and mypy in `make lint`, pre-commit and CI.
+- `FastAPIBreaker.reset()` closes a breaker by hand (the dependency is back, or between tests);
+  `failure_threshold` and `reset_timeout` can be read back.
+- `forget()` on `FastAPIMaintenance`, `FastAPIFeatureFlags` and `FastAPIRateLimiter` drops what
+  each process keeps (its copies of the state, the clients it refuses without asking the
+  backend). A new cache drops it by itself, as each test's lifespan sets one up.
+- `SSRFGuardTransport.check(url)`: checks a URL as a request to it would be, without sending
+  anything, to refuse a webhook's endpoint when it's registered.
+- With `FastAPIProblemDetails` installed, Alcazaba's middlewares answer with problems too (the 504
+  of a timeout, the 413 of a body too large, the 503 of maintenance, the 403 of CSRF...), and the
+  error responses keep the rate limiters' `RateLimit` headers.
+- `scripts/check_signatures.py`, in `make lint`, `make format`, pre-commit and CI: a signature
+  that doesn't fit on one line has one parameter per line, the last one with a comma.
+- An audit trail (`FastAPIAudit`, `fastapi_alcazaba.audit`): who did what to which resource,
+  whether it worked, and the request it came from. `audit.action()` is a dependency that writes
+  the event when the endpoint ends (`success`, `denied` for a 401 or a 403, `failure` with the
+  exception's type and status, never its message), the refusals of the authentication included;
+  `audit.log()` and `audit.record()` work outside endpoints. Events carry the request ID, the
+  trace, the route template (never the path) and the client's address; their details keep no
+  secrets (values under keys such as `password` or `token`, and credentials, are redacted) and
+  are bounded. They go to the `fastapi_alcazaba.audit.events` logger as JSON lines, which warns
+  when it outputs nothing, or to sinks of your own. With a `signing_key` they're signed and
+  chained, and `verify_audit_trail()` finds the ones altered, forged or removed. A sink that fails
+  is logged with the event and counted, and an event is written even if its request is cancelled.
+  The `fastapi_alcazaba.audit` and `fastapi_alcazaba.audit.undelivered` metrics, and an example.
 
 ### Changed
 
 - `CircuitBreaker.allow()` returns the state the call goes through in (`"closed"`, or
   `"half-open"` for the single trial) or None when it's refused, instead of a bool; truthiness is
   the same.
+- Development, CI and releases use Python's own `venv` and pip (26.2 or later) instead of uv.
+  `make deps` sets up `.venv`; the dependency groups of `pyproject.toml` install with pip's
+  `--group`; pip's `--uploaded-prior-to P3D` keeps releases younger than three days out; the SBOM
+  comes from pip's installation report, with the hashes of the files. There's no lock file: CI
+  installs the latest releases that are at least three days old.
+- A backend asked for something it can't do (locks, tags, counters) raises a NotImplementedError
+  that says so, e.g. `MemcachedBackend can't hold locks`, instead of one without a message.
 
 ### Fixed
 
@@ -243,17 +283,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   logging a warning each time. The channel is now read with its own timeout and pinged when quiet;
   a connection that died silently is given up within 10 seconds, and a reconnection made by the
   client itself empties the local level (messages may have been missed).
+- `DynamoBackend.clear(key=...)`: of several deletes of one entry at the same time, more than one
+  could be told that it was there. The delete is now conditional, so exactly one is, and a
+  one-time code works only once on DynamoDB too.
 
 ## [0.1.0] - 2026-10-24
 
-First release of Alcazaba, forked from fastapi-cache2 0.2.2. The "Migrating from fastapi-cache2"
-section of the README lists the behaviour changes; UPSTREAM.md, what happened to every upstream
-pull request.
+First release of Alcazaba.
 
 ### Security
 
 - Per-user cache entries for requests with `Authorization` or `Cookie` (`vary_headers`), sent as
-  `Cache-Control: private` with `Vary`. fastapi-cache2 could serve one user's response to another.
+  `Cache-Control: private` with `Vary`: one user's response is never served to another.
 - `RedisBackend.clear(namespace=...)` no longer builds a Lua script from the namespace (command
   injection) nor runs `KEYS` (blocks the server): `SCAN` + `UNLINK`, with glob characters escaped.
 - Optional HMAC-SHA256 signing of entries, bound to their key (`signing_key`, with rotation).
@@ -299,9 +340,9 @@ pull request.
 
 ### Fixed
 
-- Cache hits return the annotated return type again (Pydantic models, dataclasses).
+- Cache hits return the annotated return type (Pydantic models, dataclasses).
 - Deterministic, quoted ETags; `If-None-Match` lists, weak tags and `*`.
-- The response model appears in OpenAPI again.
+- The response model appears in OpenAPI.
 - No `Cache-Control: max-age=None`; headers also reach `Response`s returned by the endpoint.
 - `FastAPICache.clear(key=...)` with a prefix no longer clears the whole prefix.
 - Entries that can't be decoded are recomputed instead of failing.
@@ -313,74 +354,4 @@ pull request.
 
 - Distribution `fastapi-alcazaba`, import package `fastapi_alcazaba`. Python 3.11+ (3.10 reached its end
   of life in October 2026), Pydantic v2.
-- `redis` is optional again; `uvicorn` and `pendulum` are no longer dependencies.
-
-## fastapi-cache2 0.2
-
-### 0.2.1
-- Fix picklecoder
-- Fix connection failure transparency and add logging
-- Add Cache-Control and ETag on first response
-- Support Async RedisCluster client from redis-py
-
-### 0.2.0
-
-- Make `request` and `response` optional.
-- Add typing info to the `cache` decorator.
-- Support cache jinja2 template response.
-- Support cache `JSONResponse`
-- Add `py.typed` file and type hints
-- Add TestCase
-- Fix cache decorate sync function
-- Transparently handle backend connection failures.
-
-## fastapi-cache2 0.1
-
-### 0.1.10
-
-- Add `Cache-Control:no-cache` support.
-
-### 0.1.9
-
-- Replace `aioredis` with `redis-py`.
-
-### 0.1.8
-
-- Support `dynamodb` backend.
-
-### 0.1.7
-
-- Fix default json coder for datetime.
-- Add `enable` param to `init`.
-
-### 0.1.6
-
-- Fix redis cache.
-- Encode key builder.
-
-### 0.1.5
-
-- Fix setting expire for redis (#24)
-- Update expire key
-
-### 0.1.4
-
-- Fix default expire for memcached. (#13)
-- Update default key builder. (#12)
-
-### 0.1.3
-
-- Fix cache key builder.
-
-### 0.1.2
-
-- Add default config when init.
-- Update JsonEncoder.
-
-### 0.1.1
-
-- Add in-memory support.
-
-### 0.1.0
-
-- First version release.
+- `redis` is optional; `uvicorn` and `pendulum` are no longer dependencies.

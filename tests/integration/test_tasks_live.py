@@ -8,6 +8,8 @@ of their own as between processes. Every queue has a random name and prefix, and
 are deleted, so it's safe on a shared database.
 """
 
+# pylint: disable=protected-access  # tests look at the internals they check
+
 import asyncio
 import json
 import os
@@ -120,8 +122,8 @@ class Processes:
             await client.aclose()
 
 
-@pytest.fixture(params=KINDS)
-async def processes(request: pytest.FixtureRequest) -> AsyncIterator[Processes]:
+@pytest.fixture(name="processes", params=KINDS)
+async def fixture_processes(request: pytest.FixtureRequest) -> AsyncIterator[Processes]:
     url = os.environ.get(ENV[request.param])
     if not url:
         pytest.skip(f"{ENV[request.param]} not set")
@@ -180,7 +182,7 @@ async def test_retries_dead_letters_and_requeue(processes: Processes) -> None:
 
     async with queue:
         task_id = await queue.enqueue(job)
-        await eventually(lambda: queue.dead_letters())
+        await eventually(queue.dead_letters)
         (dead,) = await queue.dead_letters()
         assert (dead.reason, dead.task_id, dead.error, dead.attempts) == (
             "failed",
@@ -240,7 +242,7 @@ async def test_planted_tasks_are_refused(processes: Processes) -> None:
     planted = {"v": 1, "id": "x", "task": "job", "args": [], "kwargs": {}, "attempt": 0}
     await processes.raw.xadd(queue._stream, {"p": json.dumps(planted)})
     async with queue:
-        await eventually(lambda: queue.dead_letters())
+        await eventually(queue.dead_letters)
         await eventually(lambda: settled(queue))
     assert not ran
     assert [dead.reason for dead in await queue.dead_letters()] == ["tampered"]

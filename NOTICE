@@ -1,8 +1,8 @@
 fastapi-alcazaba
 Copyright 2026 Antonio Mudarra Machuca
 
-This product is a fork of fastapi-cache (https://github.com/long2ice/fastapi-cache),
-published on PyPI as fastapi-cache2. Copyright 2020-2025 long2ice and the
-fastapi-cache contributors. Licensed under the Apache License, Version 2.0.
-
-Files from fastapi-cache have been modified: see CHANGELOG.md and UPSTREAM.md.
+This product includes software derived from fastapi-cache
+(https://github.com/long2ice/fastapi-cache), Copyright 2020-2025 long2ice and the fastapi-cache
+contributors, and from fastapi-limiter (https://github.com/long2ice/fastapi-limiter), Copyright
+2020 long2ice, both licensed under the Apache License, Version 2.0. Those files have been
+modified.

@@ -116,6 +116,24 @@
 
 ::: fastapi_alcazaba.request_id.RequestIDLogFilter
 
+## Audit trail
+
+::: fastapi_alcazaba.audit.FastAPIAudit
+
+::: fastapi_alcazaba.audit.AuditEntry
+
+::: fastapi_alcazaba.audit.AuditEvent
+
+::: fastapi_alcazaba.audit.AuditSink
+
+::: fastapi_alcazaba.audit.LoggingAuditSink
+
+::: fastapi_alcazaba.audit.MemoryAuditSink
+
+::: fastapi_alcazaba.audit.verify_audit_trail
+
+::: fastapi_alcazaba.audit.SENSITIVE_WORDS
+
 ## Request timeouts
 
 ::: fastapi_alcazaba.timeouts.RequestTimeoutMiddleware

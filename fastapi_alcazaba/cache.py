@@ -46,7 +46,7 @@ def warn_unsigned(coder: type[Coder]) -> None:
 
 @dataclass(frozen=True)
 class CacheOptions:
-    """Settings of a cache besides the original fastapi-cache2 ones."""
+    """How a cache protects, varies, locks, refreshes and compresses its entries."""
 
     #: Signs or encrypts the entries (signing_key / encryption_key); None stores them as they are.
     protector: EntryProtector | None = None
@@ -272,7 +272,12 @@ class Cache:
         return await self.backend.invalidate_tags([self.tag_key(tag) for tag in tags])
 
     def lock(
-        self, name: str, *, ttl: float = 30.0, wait: float | None = 0.0, renew: bool = True
+        self,
+        name: str,
+        *,
+        ttl: float = 30.0,
+        wait: float | None = 0.0,
+        renew: bool = True,
     ) -> "Lock":
         """A lock shared by every process using this backend (see `fastapi_alcazaba.locks`):
 
@@ -288,8 +293,7 @@ class Cache:
         whole prefix when neither is given. Cached responses only: locks, counters, revoked tokens
         and the like are kept apart (`state_key`)."""
         if key is not None and namespace is None:
-            # Upstream PR #529: the prefix used to be passed as the namespace too, so clearing
-            # one key with a prefix configured cleared the whole prefix instead.
+            # Not with the prefix as the namespace: that would clear the whole prefix.
             return await self.backend.clear(key=key)
         full_namespace = self.prefix + (":" + namespace if namespace else "")
         return await self.backend.clear(full_namespace, key)

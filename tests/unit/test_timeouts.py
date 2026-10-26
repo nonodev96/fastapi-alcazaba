@@ -39,20 +39,20 @@ async def answer(send: Send, body: bytes = b"ok") -> None:
     await send({"type": "http.response.body", "body": body})
 
 
-@pytest.fixture
-def events() -> list[str]:
+@pytest.fixture(name="events")
+def fixture_events() -> list[str]:
     return []
 
 
-@pytest.fixture
-def release() -> Iterator[threading.Event]:
+@pytest.fixture(name="release")
+def fixture_release() -> Iterator[threading.Event]:
     event = threading.Event()
     yield event
     event.set()  # lets an abandoned sync endpoint finish
 
 
-@pytest.fixture
-def app(events: list[str], release: threading.Event) -> FastAPI:
+@pytest.fixture(name="app")
+def fixture_app(events: list[str], release: threading.Event) -> FastAPI:
     app = FastAPI()
 
     async def resource() -> AsyncIterator[None]:
@@ -104,7 +104,10 @@ def app(events: list[str], release: threading.Event) -> FastAPI:
 
 class TestRequestTimeout:
     def test_a_slow_request_gets_a_504(
-        self, app: FastAPI, events: list[str], caplog: pytest.LogCaptureFixture
+        self,
+        app: FastAPI,
+        events: list[str],
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.timeouts"):
             response = TestClient(app).get("/slow")
@@ -120,7 +123,10 @@ class TestRequestTimeout:
         assert TestClient(app).get("/reports/monthly").json() == {"ok": True}
 
     def test_sync_endpoints_get_their_504_on_time(
-        self, app: FastAPI, events: list[str], release: threading.Event
+        self,
+        app: FastAPI,
+        events: list[str],
+        release: threading.Event,
     ) -> None:
         start = time.monotonic()
         response = TestClient(app).get("/sync")
@@ -130,7 +136,9 @@ class TestRequestTimeout:
         release.set()
 
     def test_a_started_response_is_cut(
-        self, app: FastAPI, caplog: pytest.LogCaptureFixture
+        self,
+        app: FastAPI,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         with (
             caplog.at_level(logging.WARNING, "fastapi_alcazaba.timeouts"),
@@ -251,7 +259,10 @@ class TestRequestTimeoutInASGI:
         ],
     )
     async def test_paths_without_the_root_path(
-        self, path: str, root_path: str, status: int
+        self,
+        path: str,
+        root_path: str,
+        status: int,
     ) -> None:
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             await asyncio.sleep(0.03)
@@ -263,7 +274,8 @@ class TestRequestTimeoutInASGI:
         assert messages[0]["status"] == status
 
     async def test_logs_quote_paths_that_match_no_route(
-        self, caplog: pytest.LogCaptureFixture
+        self,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             await asyncio.sleep(10)

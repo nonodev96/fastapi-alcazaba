@@ -2,6 +2,7 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from fastapi_alcazaba.apikeys import FastAPIAPIKeys
+from fastapi_alcazaba.audit import FastAPIAudit
 from fastapi_alcazaba.breaker import BreakerOpen, FastAPIBreaker
 from fastapi_alcazaba.cache import (
     DEFAULT_VARY_HEADERS,
@@ -54,6 +55,7 @@ __all__ = [
     "CacheOptions",
     "Coder",
     "FastAPIAPIKeys",
+    "FastAPIAudit",
     "FastAPIBreaker",
     "FastAPICache",
     "FastAPIConcurrencyLimiter",
@@ -82,8 +84,8 @@ __all__ = [
 
 
 class FastAPICache:
-    """The global cache that `@cache` uses: a Cache configured once with `init()`. The API of
-    fastapi-cache2; for several caches, or one per app, create Cache instances instead."""
+    """The global cache that `@cache` uses: a Cache configured once with `init()`. For several
+    caches, or one per app, create Cache instances instead."""
 
     _instance: ClassVar[Cache | None] = None
 
@@ -157,7 +159,12 @@ class FastAPICache:
 
     @classmethod
     def lock(
-        cls, name: str, *, ttl: float = 30.0, wait: float | None = 0.0, renew: bool = True
+        cls,
+        name: str,
+        *,
+        ttl: float = 30.0,
+        wait: float | None = 0.0,
+        renew: bool = True,
     ) -> "Lock":
         """A lock shared by every process (see `Cache.lock`)."""
         return cls.instance().lock(name, ttl=ttl, wait=wait, renew=renew)
