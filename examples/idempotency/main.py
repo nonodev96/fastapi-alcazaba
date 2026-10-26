@@ -18,7 +18,6 @@ whichever process it reaches.
 """
 
 import asyncio
-import os
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -27,7 +26,8 @@ from typing import Annotated, Literal
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.requests import HTTPConnection
 
 from fastapi_alcazaba import Cache
@@ -37,11 +37,26 @@ from fastapi_alcazaba.idempotency import IdempotencyMiddleware, require_idempote
 # Stands in for your customers and their access tokens (a database, or a JWT check).
 TOKENS = {"alice-token": "alice", "bob-token": "bob"}
 
-# Signs the stored responses, so that whoever can write to Redis can't plant one for a retry.
-# Every process needs the same key, or a retry that reaches another process runs again: set
-# CACHE_SIGNING_KEY (secrets.token_urlsafe(32)). The random one is only for trying this out.
-# With personal data in the responses, pass encryption_key= instead: they're encrypted too.
-SIGNING_KEY = os.environ.get("CACHE_SIGNING_KEY") or secrets.token_urlsafe(32)
+
+def throwaway_secret() -> SecretStr:
+    """A random secret, for trying the example: it changes at every start and differs between
+    processes."""
+    return SecretStr(secrets.token_urlsafe(32))
+
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # Signs the stored responses, so that whoever can write to Redis can't plant one for a
+    # retry. Every process needs the same key, or a retry that reaches another process runs
+    # again: set CACHE_SIGNING_KEY (secrets.token_urlsafe(32)). With personal data in the
+    # responses, pass encryption_key= instead: they're encrypted too.
+    cache_signing_key: SecretStr = Field(default_factory=throwaway_secret)
+
+
+settings = Settings()
 
 
 class NewPayment(BaseModel):
@@ -58,9 +73,11 @@ class Payment(NewPayment):
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    # Production: RedisBackend(redis.asyncio.from_url(os.environ["REDIS_URL"])), shared by every
-    # process. Payments are a list in memory here, a table in your database.
-    Cache(InMemoryBackend(), prefix="payments", signing_key=SIGNING_KEY).install(application)
+    # Production: RedisBackend(redis.asyncio.from_url(...)), with the URL in the settings, shared
+    # by every process. Payments are a list in memory here, a table in your database.
+    Cache(InMemoryBackend(), prefix="payments", signing_key=settings.cache_signing_key).install(
+        application
+    )
     application.state.payments = []
     yield
 

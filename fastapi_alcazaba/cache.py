@@ -2,7 +2,7 @@
 
 import hashlib
 import warnings
-from collections.abc import Awaitable, Callable, Iterable, Sequence
+from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -11,7 +11,7 @@ from starlette.requests import HTTPConnection
 from fastapi_alcazaba.coder import Coder, JsonCoder
 from fastapi_alcazaba.compression import MAX_DECOMPRESSED_SIZE, Codec, Compressor
 from fastapi_alcazaba.errors import UnsignedEntriesWarning
-from fastapi_alcazaba.integrity import EntryProtector, Signer
+from fastapi_alcazaba.integrity import EntryProtector, Secrets, Signer
 from fastapi_alcazaba.key_builder import default_key_builder
 from fastapi_alcazaba.metrics import Metrics
 from fastapi_alcazaba.resilience import BackendGuard, CircuitBreaker
@@ -88,8 +88,9 @@ class Cache:
     :param key_builder: builds keys from the function and its arguments.
     :param cache_status_header: response header saying HIT or MISS; "" to leave it out.
     :param enable: False turns the cache off.
-    :param signing_key: secret (at least 32 bytes) used to sign every entry with HMAC-SHA256;
-        entries without a valid signature are ignored. Strongly recommended when the backend is
+    :param signing_key: secret (at least 32 bytes; text, bytes, or pydantic's SecretStr or
+        SecretBytes) used to sign every entry with HMAC-SHA256; entries without a valid signature
+        are ignored. Strongly recommended when the backend is
         shared or reachable by others, and needed for PickleCoder. A list of keys rotates them:
         the first one signs, all of them are accepted.
     :param encryption_key: like `signing_key`, but the entries are also encrypted (AES-256-GCM):
@@ -135,8 +136,8 @@ class Cache:
         cache_status_header: str = "X-FastAPI-Cache",
         enable: bool = True,
         *,
-        signing_key: str | bytes | Sequence[str | bytes] | None = None,
-        encryption_key: str | bytes | Sequence[str | bytes] | None = None,
+        signing_key: Secrets | None = None,
+        encryption_key: Secrets | None = None,
         vary_headers: Iterable[str] = DEFAULT_VARY_HEADERS,
         respect_cache_control: bool = False,
         single_flight: bool = True,

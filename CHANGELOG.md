@@ -257,6 +257,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   chained, and `verify_audit_trail()` finds the ones altered, forged or removed. A sink that fails
   is logged with the event and counted, and an event is written even if its request is cancelled.
   The `fastapi_alcazaba.audit` and `fastapi_alcazaba.audit.undelivered` metrics, and an example.
+- Every parameter that takes a key or a secret (`signing_key`, `encryption_key`, `pepper`, the
+  secrets of one-time codes, cursors and webhooks...) also takes pydantic's `SecretStr` or
+  `SecretBytes`, as pydantic-settings loads them, so the value stays out of the settings' repr
+  until it's used. The examples read their configuration with pydantic-settings, from the
+  environment or a `.env` file.
 
 ### Changed
 

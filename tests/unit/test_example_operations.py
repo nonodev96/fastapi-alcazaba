@@ -10,11 +10,12 @@ from typing import Any, TypeVar
 import pytest
 from fastapi.testclient import TestClient
 
-from examples.operations.main import ADMIN_TOKEN, ShippingService, app, flags, maintenance
+from examples.operations.main import ShippingService, app, flags, maintenance, settings
 from fastapi_alcazaba import FastAPIBreaker, FastAPICache, FastAPIFeatureFlags, FastAPIMaintenance
 
 T = TypeVar("T")
 
+ADMIN_TOKEN = settings.admin_token.get_secret_value()
 ADMIN = {"Authorization": f"Bearer {ADMIN_TOKEN}"}
 NOT_FOUND = {"detail": "Not Found"}
 

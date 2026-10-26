@@ -14,7 +14,6 @@ Three ways to cache paginated lists:
 They're tagged "products", so a write drops every page at once without knowing their keys.
 """
 
-import os
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -23,7 +22,8 @@ from typing import Annotated
 
 import uvicorn
 from fastapi import Depends, FastAPI, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fastapi_alcazaba import (
     Cache,
@@ -107,12 +107,27 @@ def get_catalog(request: Request) -> Catalog:
 
 
 CatalogDep = Annotated[Catalog, Depends(get_catalog)]
+
+
+def throwaway_secret() -> SecretStr:
+    """A random secret, for trying the example: it changes at every start and differs between
+    processes."""
+    return SecretStr(secrets.token_urlsafe(32))
+
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    cursor_secret: SecretStr = Field(default_factory=throwaway_secret)
+
+
+settings = Settings()
 pages = FastAPIPagination(default_size=20, max_size=100)
 # Signed: clients can't make cursors up. Every process must have the same secret, or a cursor
 # made by one is refused by the others: set CURSOR_SECRET (secrets.token_urlsafe(32)).
-cursors = FastAPIPaginationCursor(
-    secret=os.environ.get("CURSOR_SECRET") or secrets.token_urlsafe(32), default_size=20
-)
+cursors = FastAPIPaginationCursor(secret=settings.cursor_secret, default_size=20)
 
 
 @app.get("/products")

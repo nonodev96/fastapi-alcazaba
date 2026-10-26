@@ -1,6 +1,6 @@
 """API keys for machine clients: generated here, stored in your database, checked by a dependency.
 
-    keys = FastAPIAPIKeys(load_key, pepper=os.environ["API_KEY_PEPPER"])
+    keys = FastAPIAPIKeys(load_key, pepper=settings.api_key_pepper)
 
     # Issuing one: show `new.key` once, store `new.record` (never the key).
     new = keys.generate(scopes=["orders:read"], expires_at=in_90_days)
@@ -114,7 +114,7 @@ def _is_async(function: object) -> bool:
 class FastAPIAPIKeys(Generic[R]):
     """FastAPI dependency that authenticates a request by its API key and returns its record.
 
-        keys = FastAPIAPIKeys(load_key, pepper=os.environ["API_KEY_PEPPER"])
+        keys = FastAPIAPIKeys(load_key, pepper=settings.api_key_pepper)
 
         @app.get("/me")
         async def me(key: Annotated[StoredKey, Depends(keys)]) -> ...

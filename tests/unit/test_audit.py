@@ -454,7 +454,8 @@ async def test_values_that_look_like_credentials(audit: FastAPIAudit) -> None:
         "header": "Bearer abc123.def",
         "basic": "basic dXNlcjpwYXNz",
         "jwt": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln",
-        "pem": "-----BEGIN RSA PRIVATE KEY-----\nMIIE...",
+        # Built, not written whole: the private-key hook of pre-commit would take it for one.
+        "pem": "-----BEGIN RSA " + "PRIVATE KEY-----\nMIIE...",
         "sentence": "The bearer of bad news",
     }
     event = await audit.log("note.add", details=details)

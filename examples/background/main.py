@@ -18,12 +18,12 @@ Here the database is a stand-in in each process's memory, so try it with one.
   broker; if it stops, another one takes over.
 
 The e-mail provider is a stand-in too: `PUT /admin/simulate/mailer?down=true` makes it fail, to
-watch retries and dead letters. The admin routes take `Authorization: Bearer $ADMIN_TOKEN`.
+watch retries and dead letters. The admin routes take `Authorization: Bearer $ADMIN_TOKEN`. The
+variables above can go in a .env file instead.
 """
 
 import asyncio
 import logging
-import os
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -34,7 +34,8 @@ from typing import Annotated, Any
 import uvicorn
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from redis.asyncio import Redis
 
 from fastapi_alcazaba import FastAPICache, FastAPILeader, FastAPIScheduler, FastAPITaskQueue
@@ -43,19 +44,35 @@ from fastapi_alcazaba.tasks import DeadLetter
 
 logger = logging.getLogger("signup")
 
-# Every process needs the same key, or the tasks one seals are refused by the others. The random
-# fallback only suits a single process that you try out locally.
-SIGNING_KEY = os.environ.get("CACHE_SIGNING_KEY") or secrets.token_urlsafe(32)
-# Unset: a random token nobody knows, so the admin endpoints stay closed.
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN") or secrets.token_urlsafe(32)
+
+def throwaway_secret() -> SecretStr:
+    """A random secret, for trying the example: it changes at every start and differs between
+    processes."""
+    return SecretStr(secrets.token_urlsafe(32))
+
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    redis_url: str = "redis://127.0.0.1:6379/0"  # rediss://, with a password, in production
+    # Every process needs the same key, or the tasks one seals are refused by the others. The
+    # random default only suits a single process that you try out locally.
+    cache_signing_key: SecretStr = Field(default_factory=throwaway_secret)
+    # Unset: a random token nobody knows, so the admin endpoints stay closed.
+    admin_token: SecretStr = Field(default_factory=throwaway_secret)
+
+
+settings = Settings()
 REPORT_TO = "team@example.com"
 TRIAL = timedelta(days=14)
 RELAY_INTERVAL = 1.0  # seconds between looks at the outbox
 
 
 def redis_client() -> Redis:
-    """The connection to Redis or Valkey (rediss://, with a password, in production)."""
-    return Redis.from_url(os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0"))
+    """The connection to Redis or Valkey."""
+    return Redis.from_url(settings.redis_url)
 
 
 class MailerUnavailable(Exception):
@@ -160,7 +177,7 @@ async def relay_outbox() -> None:
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     redis = redis_client()
     # Signed: a task planted or altered in Redis is refused and never runs.
-    FastAPICache.init(RedisBackend(redis), prefix="signup", signing_key=SIGNING_KEY)
+    FastAPICache.init(RedisBackend(redis), prefix="signup", signing_key=settings.cache_signing_key)
     # Stopped in the reverse order: the jobs first, the queue last, giving its running tasks 10 s.
     async with queue, leader, scheduler:
         yield
@@ -194,7 +211,9 @@ async def get_user(user_id: int) -> User:
 def require_admin(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())],
 ) -> None:
-    if not secrets.compare_digest(credentials.credentials.encode(), ADMIN_TOKEN.encode()):
+    if not secrets.compare_digest(
+        credentials.credentials.encode(), settings.admin_token.get_secret_value().encode()
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
 

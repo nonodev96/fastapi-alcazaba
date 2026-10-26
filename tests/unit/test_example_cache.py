@@ -23,7 +23,7 @@ def fixture_client(
 ) -> Iterator[TestClient]:
     # The example's memory backend, empty for each test: with the REDIS_URL of the integration
     # tests, the entries one test leaves in Redis would answer the next one's requests.
-    monkeypatch.delenv("REDIS_URL", raising=False)
+    monkeypatch.setattr(main, "settings", main.Settings(redis_url=None))
     with TestClient(main.app) as client:
         yield client
     FastAPICache.reset()

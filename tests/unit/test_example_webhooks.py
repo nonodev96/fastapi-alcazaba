@@ -12,12 +12,12 @@ import httpx2 as httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from examples.webhooks.main import PAYMENTS_SECRET, Shop, create_app
+from examples.webhooks.main import Shop, create_app, settings
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookMessage, WebhookSigner
 
 PUBLIC = "93.184.215.14"
-provider = WebhookSigner(PAYMENTS_SECRET)
+provider = WebhookSigner(settings.payments_webhook_secret)
 
 
 class DNS:

@@ -208,7 +208,7 @@ class OneTimeCodes:
     """Codes of `digits` digits, sent by e-mail or SMS, that prove who someone is: each lasts
     `ttl` seconds, works once and is lost after `max_attempts` wrong guesses.
 
-        codes = OneTimeCodes(secret=os.environ["OTP_SECRET"])
+        codes = OneTimeCodes(secret=settings.otp_secret)
 
         code = await codes.issue(user.email, purpose="login")  # send it to the user
         ...

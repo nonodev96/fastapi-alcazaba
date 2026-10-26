@@ -104,12 +104,12 @@ Python 3.11+, FastAPI 0.115+ and Pydantic v2.
 ## Quick start
 
 ```python
-import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from redis import asyncio as aioredis
 
 from fastapi_alcazaba import FastAPICache
@@ -117,14 +117,22 @@ from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.decorator import cache
 
 
+class Settings(BaseSettings):
+    """From environment variables (REDIS_URL...) or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    redis_url: str
+    cache_signing_key: SecretStr  # secrets.token_urlsafe(32)
+
+
+settings = Settings()
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    redis = aioredis.from_url(os.environ["REDIS_URL"])
-    FastAPICache.init(
-        RedisBackend(redis),
-        prefix="myapp",
-        signing_key=os.environ["CACHE_SIGNING_KEY"],  # secrets.token_urlsafe(32)
-    )
+    redis = aioredis.from_url(settings.redis_url)
+    FastAPICache.init(RedisBackend(redis), prefix="myapp", signing_key=settings.cache_signing_key)
     yield
     await redis.aclose()
 
@@ -155,6 +163,12 @@ async def me(user: str = Depends(current_user)) -> dict[str, str]:
 
 `@cache` goes between the route decorator and the function. It also caches plain functions,
 sync or async (sync ones run in the thread pool, like FastAPI does).
+
+The configuration comes from
+[pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) (`pip install
+pydantic-settings`). Every parameter that takes a key or a secret also takes pydantic's
+`SecretStr` (or `SecretBytes`) as it is, so the value stays out of the settings' repr and of
+tracebacks until Alcazaba uses it. The other snippets read theirs from the same `settings`.
 
 ## Configuration
 
@@ -230,7 +244,7 @@ from fastapi_alcazaba import Cache, get_cache
 
 public_cache = Cache(RedisBackend(redis), prefix="public", vary_headers=())
 private_cache = Cache(
-    RedisBackend(redis), prefix="private", encryption_key=os.environ["CACHE_ENCRYPTION_KEY"]
+    RedisBackend(redis), prefix="private", encryption_key=settings.cache_encryption_key
 )
 private_cache.install(app)  # what get_cache returns
 
@@ -486,7 +500,7 @@ async def change_password(user: Annotated[str, Depends(current_user)]) -> Token:
 `OneTimeCodes` are the codes you send by e-mail or SMS:
 
 ```python
-codes = OneTimeCodes(secret=os.environ["OTP_SECRET"])  # secrets.token_urlsafe(32)
+codes = OneTimeCodes(secret=settings.otp_secret)  # secrets.token_urlsafe(32)
 
 
 @app.post("/login/code", dependencies=[Depends(FastAPIRateLimiter(times=3, minutes=15))])
@@ -534,7 +548,7 @@ async def load_key(key_id: str) -> ApiKeyRow | None:  # any object with digest, 
     return await db.get(ApiKeyRow, key_id)
 
 
-keys = FastAPIAPIKeys(load_key, pepper=os.environ["API_KEY_PEPPER"], bearer=True)
+keys = FastAPIAPIKeys(load_key, pepper=settings.api_key_pepper, bearer=True)
 
 
 @app.post("/api-keys")
@@ -588,7 +602,7 @@ Resend, OpenAI and others: `webhook-id`, `webhook-timestamp` and
 ```python
 from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookMessage, WebhookSigner
 
-webhooks = FastAPIWebhooks(os.environ["WEBHOOK_SECRET"])  # "whsec_..."
+webhooks = FastAPIWebhooks(settings.webhook_secret)  # "whsec_..."
 
 
 @app.post("/webhooks/payments")
@@ -598,7 +612,7 @@ async def payment_event(message: Annotated[WebhookMessage, Depends(webhooks)]) -
 
 
 # Sending them: sign the exact bytes you send.
-signer = WebhookSigner(os.environ["WEBHOOK_SECRET"])  # WebhookSigner.generate_secret() makes one
+signer = WebhookSigner(settings.webhook_secret)  # WebhookSigner.generate_secret() makes one
 body = json.dumps(event).encode()
 await client.post(url, content=body, headers=signer.sign(body))
 ```
@@ -1051,7 +1065,6 @@ error lines carry the ID.
 and the request it came from. As a dependency, it writes the event when the endpoint ends:
 
 ```python
-import os
 from typing import Annotated
 
 from fastapi import Depends
@@ -1059,7 +1072,7 @@ from fastapi import Depends
 from fastapi_alcazaba import FastAPIAudit
 from fastapi_alcazaba.audit import AuditEntry
 
-audit = FastAPIAudit(signing_key=os.environ["AUDIT_SIGNING_KEY"])
+audit = FastAPIAudit(signing_key=settings.audit_signing_key)
 deleting = audit.action("invoice.delete", resource="invoice:{invoice_id}")
 
 
@@ -1116,7 +1129,7 @@ from fastapi_alcazaba.audit import verify_audit_trail
 
 with open("audit.log") as lines:
     events = [json.loads(line) for line in lines]
-problems = verify_audit_trail(events, os.environ["AUDIT_SIGNING_KEY"])
+problems = verify_audit_trail(events, settings.audit_signing_key)
 ```
 
 ## Request timeouts
@@ -1682,7 +1695,7 @@ everything:
 from fastapi_alcazaba import FastAPIPaginationCursor
 from fastapi_alcazaba.pagination import CursorPage, CursorParams
 
-cursors = FastAPIPaginationCursor(secret=os.environ["CURSOR_SECRET"])  # secrets.token_urlsafe(32)
+cursors = FastAPIPaginationCursor(secret=settings.cursor_secret)  # secrets.token_urlsafe(32)
 
 
 @app.get("/events")
@@ -1747,7 +1760,7 @@ Report vulnerabilities as described in [SECURITY.md](https://github.com/nonodev9
 FastAPICache.init(
     RedisBackend(redis),
     prefix="myapp",
-    encryption_key=os.environ["CACHE_ENCRYPTION_KEY"],  # secrets.token_urlsafe(32)
+    encryption_key=settings.cache_encryption_key,  # secrets.token_urlsafe(32)
 )
 ```
 
@@ -1920,9 +1933,7 @@ import valkey.asyncio
 from fastapi_alcazaba.backends.valkey import ValkeyBackend
 
 client = valkey.asyncio.from_url("valkey://localhost:6379/0")
-FastAPICache.init(
-    ValkeyBackend(client), prefix="myapp", signing_key=os.environ["CACHE_SIGNING_KEY"]
-)
+FastAPICache.init(ValkeyBackend(client), prefix="myapp", signing_key=settings.cache_signing_key)
 ```
 
 ## Development

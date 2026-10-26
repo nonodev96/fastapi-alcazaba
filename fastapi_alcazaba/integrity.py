@@ -6,11 +6,21 @@ import hmac
 from collections.abc import Sequence
 from typing import Protocol
 
+from pydantic import SecretBytes, SecretStr
+
 _MAGIC = b"fastapi_alcazaba/s1"
 _TAG_SIZE = hashlib.sha256().digest_size
 MIN_KEY_SIZE = 32
 
-Secrets = str | bytes | Sequence[str | bytes]
+#: A secret: text, bytes, or pydantic's SecretStr or SecretBytes, as pydantic-settings loads it.
+Secret = str | bytes | SecretStr | SecretBytes
+#: A secret, or several to rotate it: the first is used, the others still accepted.
+Secrets = Secret | Sequence[Secret]
+
+
+def reveal(secret: Secret) -> str | bytes:
+    """The value of a secret, taken out of SecretStr or SecretBytes."""
+    return secret.get_secret_value() if isinstance(secret, SecretStr | SecretBytes) else secret
 
 
 class EntryProtector(Protocol):
@@ -25,11 +35,12 @@ class EntryProtector(Protocol):
 
 def secret_list(keys: Secrets) -> list[bytes]:
     """The secrets as bytes, newest first; each at least MIN_KEY_SIZE bytes long."""
-    if isinstance(keys, str | bytes):
+    if isinstance(keys, str | bytes | SecretStr | SecretBytes):
         keys = [keys]
     if not keys:
         raise ValueError("at least one key is needed")
-    secrets = [key.encode() if isinstance(key, str) else key for key in keys]
+    values = [reveal(key) for key in keys]
+    secrets = [value.encode() if isinstance(value, str) else value for value in values]
     if any(len(secret) < MIN_KEY_SIZE for secret in secrets):
         raise ValueError(
             f"keys must be at least {MIN_KEY_SIZE} bytes long; "

@@ -14,14 +14,14 @@ them; without it, in this process's memory. Either way they're signed: set CACHE
 - `exchange_rate`: a plain function cached like an endpoint.
 """
 
-import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 import uvicorn
 from fastapi import Depends, FastAPI, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fastapi_alcazaba import Cache, FastAPICache, get_cache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
@@ -60,17 +60,29 @@ class Shop:
 shop = Shop()
 
 
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    redis_url: str | None = None  # e.g. redis://localhost:6379/0; without it, in memory
+    # Throwaway key for trying it out: a real one comes from the environment or a secret
+    # manager, and is the same in every process.
+    cache_signing_key: SecretStr = SecretStr("development-only-signing-key-0123456")
+
+
+settings = Settings()
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    url = os.environ.get("REDIS_URL")
+    url = settings.redis_url
     client = aioredis.from_url(url) if url else None
     backend: Backend = RedisBackend(client) if client is not None else InMemoryBackend()
     FastAPICache.init(
         backend,
         prefix="shop",
-        # Throwaway key for trying it out: a real one comes from the environment or a secret
-        # manager, and is the same in every process.
-        signing_key=os.environ.get("CACHE_SIGNING_KEY", "development-only-signing-key-0123456"),
+        signing_key=settings.cache_signing_key,
     )
     yield
     if client is not None:

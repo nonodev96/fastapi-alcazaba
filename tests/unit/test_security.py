@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretBytes, SecretStr
 from starlette.testclient import TestClient
 
 from fastapi_alcazaba import FastAPICache, UnsignedEntriesWarning
@@ -170,6 +170,16 @@ class TestSignedEntries:
     def test_short_keys_are_rejected(self) -> None:
         with pytest.raises(ValueError, match="at least 32 bytes"):
             FastAPICache.init(InMemoryBackend(), signing_key="short")
+        with pytest.raises(ValueError, match="at least 32 bytes"):
+            Signer(SecretStr("short"))
+
+    def test_keys_from_pydantic_settings(self) -> None:
+        signed = Signer(KEY).sign("key", b"payload")
+        assert Signer(SecretStr(KEY)).sign("key", b"payload") == signed
+        rotated = Signer([SecretBytes(OTHER_KEY.encode()), SecretStr(KEY)])
+        assert rotated.unsign("key", signed) == b"payload"
+        FastAPICache.init(InMemoryBackend(), signing_key=SecretStr(KEY))
+        assert FastAPICache.get_options().protector is not None
 
     def test_signer(self) -> None:
         signer = Signer(KEY)

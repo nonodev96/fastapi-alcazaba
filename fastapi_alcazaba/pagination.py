@@ -315,7 +315,7 @@ def _no_constants(name: str) -> Any:
 class FastAPIPaginationCursor:
     """Pagination by cursor: `?size=20`, then `?size=20&cursor=<next_cursor>`.
 
-        cursors = FastAPIPaginationCursor(secret=os.environ["CURSOR_SECRET"])
+        cursors = FastAPIPaginationCursor(secret=settings.cursor_secret)
 
         @app.get("/events")
         @cache(expire=60)

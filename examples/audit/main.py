@@ -18,7 +18,6 @@ memory too, for `/audit/events` and `/audit/verify`.
 
 import hmac
 import logging
-import os
 import secrets
 import sys
 from collections.abc import AsyncIterator
@@ -27,7 +26,8 @@ from typing import Annotated, Any, Literal
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.requests import HTTPConnection
 
 from fastapi_alcazaba import FastAPIAudit
@@ -39,10 +39,24 @@ from fastapi_alcazaba.audit import (
 )
 from fastapi_alcazaba.request_id import RequestIDMiddleware
 
-# Signs the events: set AUDIT_SIGNING_KEY (secrets.token_urlsafe(32)), the same in every process,
-# and keep it from the people whose actions are recorded: with it, they could rewrite the trail.
-# The random one is only for trying this out.
-SIGNING_KEY = os.environ.get("AUDIT_SIGNING_KEY") or secrets.token_urlsafe(32)
+
+def throwaway_secret() -> SecretStr:
+    """A random secret, for trying the example: it changes at every start and differs between
+    processes."""
+    return SecretStr(secrets.token_urlsafe(32))
+
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # Signs the events: AUDIT_SIGNING_KEY (secrets.token_urlsafe(32)), the same in every process,
+    # kept from the people whose actions are recorded: with it, they could rewrite the trail.
+    audit_signing_key: SecretStr = Field(default_factory=throwaway_secret)
+
+
+settings = Settings()
 
 # The trail: one line of JSON per event on standard output, without the app's log format.
 trail_log = logging.getLogger("fastapi_alcazaba.audit.events")
@@ -51,7 +65,7 @@ trail_log.setLevel(logging.INFO)
 trail_log.propagate = False
 
 recent = MemoryAuditSink(maxlen=1000)
-audit = FastAPIAudit([LoggingAuditSink(trail_log), recent], signing_key=SIGNING_KEY)
+audit = FastAPIAudit([LoggingAuditSink(trail_log), recent], signing_key=settings.audit_signing_key)
 
 Role = Literal["admin", "support", "viewer"]
 
@@ -197,7 +211,10 @@ async def audit_verify(
 ) -> dict[str, Any]:
     require_admin(entry, me)
     events = list(recent.events)
-    return {"events": len(events), "problems": verify_audit_trail(events, SIGNING_KEY)}
+    return {
+        "events": len(events),
+        "problems": verify_audit_trail(events, settings.audit_signing_key),
+    }
 
 
 if __name__ == "__main__":

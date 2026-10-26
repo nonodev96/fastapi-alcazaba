@@ -43,7 +43,7 @@ def stand_ins(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main, "broker", main.Broker())
 
 
-ADMIN = {"Authorization": f"Bearer {main.ADMIN_TOKEN}"}
+ADMIN = {"Authorization": f"Bearer {main.settings.admin_token.get_secret_value()}"}
 
 
 def eventually(check: Callable[[], Any], timeout: float = 3.0) -> Any:

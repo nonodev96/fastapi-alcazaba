@@ -3,7 +3,7 @@ format of Svix, Supabase, Clerk, Resend, OpenAI and others.
 
 Receiving them:
 
-    webhooks = FastAPIWebhooks(os.environ["WEBHOOK_SECRET"])  # "whsec_..."
+    webhooks = FastAPIWebhooks(settings.webhook_secret)  # "whsec_..."
 
     @app.post("/webhooks/payments")
     async def payment_event(message: Annotated[WebhookMessage, Depends(webhooks)]) -> None:
@@ -38,18 +38,20 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException
+from pydantic import SecretBytes, SecretStr
 from starlette.requests import Request
 
 from fastapi_alcazaba.cache import Cache, get_cache, metrics_of
 from fastapi_alcazaba.errors import BackendUnavailable
+from fastapi_alcazaba.integrity import Secret, reveal
 from fastapi_alcazaba.tokens import _shared
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-#: Secrets of Standard Webhooks: `whsec_<base64>` strings (or the base64 alone) or raw bytes. A
-#: list rotates them.
-WebhookSecrets = str | bytes | Sequence[str | bytes]
+#: Secrets of Standard Webhooks: `whsec_<base64>` strings (or the base64 alone) or raw bytes,
+#: also as pydantic's SecretStr or SecretBytes. A list rotates them.
+WebhookSecrets = Secret | Sequence[Secret]
 
 PREFIX = "whsec_"
 #: The shortest secret the specification allows (192 bits).
@@ -62,12 +64,13 @@ _INVALID = "Invalid webhook"
 _CLOCK_MARGIN = 60
 
 
-def _secret_bytes(secret: str | bytes) -> bytes:
-    if isinstance(secret, bytes):
-        raw = secret
+def _secret_bytes(secret: Secret) -> bytes:
+    value = reveal(secret)
+    if isinstance(value, bytes):
+        raw = value
     else:
         try:
-            raw = base64.b64decode(secret.removeprefix(PREFIX), validate=True)
+            raw = base64.b64decode(value.removeprefix(PREFIX), validate=True)
         except (binascii.Error, ValueError):
             raise ValueError(
                 "a webhook secret is 'whsec_' followed by base64 (or raw bytes); "
@@ -79,7 +82,7 @@ def _secret_bytes(secret: str | bytes) -> bytes:
 
 
 def _secret_list(secret: WebhookSecrets) -> list[bytes]:
-    if isinstance(secret, str | bytes):
+    if isinstance(secret, str | bytes | SecretStr | SecretBytes):
         secret = [secret]
     if not secret:
         raise ValueError("at least one secret is needed")
@@ -119,7 +122,7 @@ class WebhookMessage:
 class WebhookSigner:
     """Signs outgoing webhooks the Standard Webhooks way.
 
-        signer = WebhookSigner(os.environ["WEBHOOK_SECRET"])
+        signer = WebhookSigner(settings.webhook_secret)
         body = json.dumps(event).encode()
         await client.post(url, content=body, headers=signer.sign(body))
 
@@ -180,7 +183,7 @@ class WebhookSigner:
 class FastAPIWebhooks:
     """FastAPI dependency that accepts only webhooks signed with `secret`, and each delivery once.
 
-        webhooks = FastAPIWebhooks(os.environ["WEBHOOK_SECRET"])
+        webhooks = FastAPIWebhooks(settings.webhook_secret)
 
         @app.post("/webhooks")
         async def receive(message: Annotated[WebhookMessage, Depends(webhooks)]) -> None: ...

@@ -1,7 +1,7 @@
 """An audit trail of the sensitive actions: who did what to which resource, whether it worked, and
 the request it came from.
 
-    audit = FastAPIAudit(signing_key=os.environ["AUDIT_SIGNING_KEY"])
+    audit = FastAPIAudit(signing_key=settings.audit_signing_key)
 
     @app.delete("/invoices/{invoice_id}")
     async def delete_invoice(

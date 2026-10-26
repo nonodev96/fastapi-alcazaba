@@ -16,12 +16,12 @@ The cookies are Secure; browsers accept them from http://localhost, which they t
   lets the pages run the app's own script; `BodySizeLimitMiddleware` refuses large bodies.
 
 The sessions live in memory here; in production, in Redis or Valkey, so that every process sees
-them, and a sign-out at once. Set SESSION_SIGNING_KEY (secrets.token_urlsafe(32)).
+them, and a sign-out at once. Set SESSION_SIGNING_KEY (secrets.token_urlsafe(32)), in the
+environment or a .env file.
 """
 
 import hashlib
 import hmac
-import os
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -32,6 +32,8 @@ from typing import Annotated
 import uvicorn
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.concurrency import run_in_threadpool
 
 from fastapi_alcazaba import FastAPICache, FastAPIRateLimiter
@@ -90,12 +92,28 @@ class Users:
 users = Users()
 
 
+def throwaway_secret() -> SecretStr:
+    """A random secret, for trying the example: it changes at every start and differs between
+    processes."""
+    return SecretStr(secrets.token_urlsafe(32))
+
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    session_signing_key: SecretStr = Field(default_factory=throwaway_secret)
+
+
+settings = Settings()
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # Redis or Valkey in production. Signed: whoever can write to the backend can't forge a
     # session (encryption_key instead, with the crypto extra, if they hold personal data).
-    key = os.environ.get("SESSION_SIGNING_KEY") or secrets.token_urlsafe(32)  # throwaway
-    FastAPICache.init(InMemoryBackend(), prefix="shop", signing_key=key)
+    FastAPICache.init(InMemoryBackend(), prefix="shop", signing_key=settings.session_signing_key)
     yield
 
 

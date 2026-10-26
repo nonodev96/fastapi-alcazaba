@@ -10,13 +10,12 @@ the key in `X-API-Key`.
 Revoked tokens, codes and rate-limit counters live in the cache's backend: in memory here, Redis
 or Valkey in production, so that every process sees them at once. Set CACHE_SIGNING_KEY,
 OTP_SECRET, API_KEY_PEPPER and TOKEN_SECRET (secrets.token_urlsafe(32) each), the same in every
-process.
+process, in the environment or a .env file.
 """
 
 import base64
 import dataclasses
 import hmac
-import os
 import secrets
 import time
 from collections.abc import AsyncIterator
@@ -28,7 +27,8 @@ from typing import Annotated
 import uvicorn
 from fastapi import BackgroundTasks, Body, Depends, FastAPI, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fastapi_alcazaba import FastAPIAPIKeys, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
@@ -38,10 +38,25 @@ from fastapi_alcazaba.tokens import OneTimeCodes, TokenBlocklist
 TOKEN_LIFETIME = 15 * 60  # seconds
 
 
-def secret(name: str) -> str:
-    """The secret in the environment variable `name`. The random fallback is a throwaway for
-    trying the example: it changes at every start and differs between processes."""
-    return os.environ.get(name) or secrets.token_urlsafe(32)
+def throwaway_secret() -> SecretStr:
+    """A random secret, for trying the example: it changes at every start and differs between
+    processes."""
+    return SecretStr(secrets.token_urlsafe(32))
+
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file: secrets.token_urlsafe(32)
+    each, the same in every process."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    cache_signing_key: SecretStr = Field(default_factory=throwaway_secret)
+    otp_secret: SecretStr = Field(default_factory=throwaway_secret)
+    api_key_pepper: SecretStr = Field(default_factory=throwaway_secret)
+    token_secret: SecretStr = Field(default_factory=throwaway_secret)
+
+
+settings = Settings()
 
 
 class Scope(StrEnum):
@@ -94,8 +109,8 @@ class AccessTokens:
     with HMAC-SHA256. A real app issues and decodes its JWTs with PyJWT or joserfc, and gives the
     blocklist their `jti`, `sub`, `iat` and `exp` just like here."""
 
-    def __init__(self, key: str) -> None:
-        self.key = key.encode()
+    def __init__(self, key: SecretStr) -> None:
+        self.key = key.get_secret_value().encode()
 
     def sign(self, payload: bytes) -> bytes:
         return hmac.digest(self.key, payload, "sha256").hex().encode()
@@ -118,9 +133,9 @@ class AccessTokens:
 
 db = Database()
 outbox: list[tuple[str, str]] = []
-access_tokens = AccessTokens(secret("TOKEN_SECRET"))
+access_tokens = AccessTokens(settings.token_secret)
 blocklist = TokenBlocklist()  # in FastAPICache's backend
-codes = OneTimeCodes(secret=secret("OTP_SECRET"))  # 6 digits, 5 minutes, 5 guesses
+codes = OneTimeCodes(secret=settings.otp_secret)  # 6 digits, 5 minutes, 5 guesses
 # Per address, wherever the requests come from. Each code replaces the previous one and its
 # guesses, so this is what bounds the guesses at an account: 3 codes x 5 guesses per 15 minutes.
 code_requests = FastAPIRateLimiter(times=3, minutes=15, identifier=lambda _: "")
@@ -132,14 +147,14 @@ async def load_key(key_id: str) -> APIKeyRow | None:
 
 # A distinctive prefix, for secret scanners to spot leaked keys. Each process keeps the records
 # it looked up for 30 s: a revocation takes up to that long to reach the other processes.
-keys = FastAPIAPIKeys(load_key, pepper=secret("API_KEY_PEPPER"), prefix="acme", cache_ttl=30)
+keys = FastAPIAPIKeys(load_key, pepper=settings.api_key_pepper, prefix="acme", cache_ttl=30)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # Redis or Valkey in production, so that every process shares the state. Signed: revocations
     # planted in the backend are ignored.
-    FastAPICache.init(InMemoryBackend(), prefix="auth", signing_key=secret("CACHE_SIGNING_KEY"))
+    FastAPICache.init(InMemoryBackend(), prefix="auth", signing_key=settings.cache_signing_key)
     yield
 
 

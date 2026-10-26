@@ -19,7 +19,6 @@ production, so that every process refuses them.
 
 import asyncio
 import json
-import os
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -29,7 +28,8 @@ from typing import Annotated, Any
 import httpx2 as httpx
 import uvicorn
 from fastapi import APIRouter, BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
-from pydantic import BaseModel, HttpUrl, ValidationError
+from pydantic import BaseModel, Field, HttpUrl, SecretStr, ValidationError
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
@@ -41,10 +41,21 @@ from fastapi_alcazaba.outbound import (
 )
 from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookMessage, WebhookSigner
 
-# The provider gives it when the endpoint is set up. Without it, a throwaway one for local
-# development, which nobody else can sign with.
-PAYMENTS_SECRET = os.environ.get("PAYMENTS_WEBHOOK_SECRET") or WebhookSigner.generate_secret()
-payment_webhooks = FastAPIWebhooks(PAYMENTS_SECRET)
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # The provider gives it when the endpoint is set up. Without it, a throwaway one for local
+    # development, which nobody else can sign with.
+    payments_webhook_secret: SecretStr = Field(
+        default_factory=lambda: SecretStr(WebhookSigner.generate_secret())
+    )
+
+
+settings = Settings()
+payment_webhooks = FastAPIWebhooks(settings.payments_webhook_secret)
 
 
 class Payment(BaseModel):

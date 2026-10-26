@@ -4,12 +4,12 @@
     export ALCAZABA_SIGNING_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
     uvicorn examples.redis.main:app
 
-The signing key comes from the environment (or a secret manager), never from the code.
+The signing key comes from the environment, a .env file or a secret manager, never from the
+code.
 """
 
 import datetime
 import itertools
-import os
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -20,6 +20,8 @@ import uvicorn
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -29,13 +31,23 @@ from fastapi_alcazaba.coder import PickleCoder
 from fastapi_alcazaba.decorator import cache
 
 
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    redis_url: str = "redis://localhost:6379/0"
+    alcazaba_signing_key: SecretStr  # required: no key, no start
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    client = redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
+    settings = Settings()
+    client = redis.from_url(settings.redis_url)
     FastAPICache.init(
         RedisBackend(client),
         prefix="fastapi-alcazaba-example",
-        signing_key=os.environ["ALCAZABA_SIGNING_KEY"],
+        signing_key=settings.alcazaba_signing_key,
     )
     yield
     await client.aclose()

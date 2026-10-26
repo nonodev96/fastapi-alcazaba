@@ -15,7 +15,6 @@ gets a 415. Files are stored under names of the app's own. `BodySizeLimitMiddlew
 route a limit, so that the multipart parser doesn't store a huge body before the checks run.
 """
 
-import os
 import shutil
 import tempfile
 from collections.abc import AsyncIterator
@@ -28,6 +27,7 @@ import uvicorn
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.concurrency import run_in_threadpool
 
 from fastapi_alcazaba.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
@@ -86,12 +86,20 @@ class Storage:
             shutil.copyfileobj(source, target)
 
 
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    upload_dir: Path | None = None
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     with ExitStack() as stack:
         # UPLOAD_DIR in production: a volume that every process shares. For local development, a
         # throwaway directory, deleted at shutdown.
-        directory = os.environ.get("UPLOAD_DIR") or stack.enter_context(
+        directory = Settings().upload_dir or stack.enter_context(
             tempfile.TemporaryDirectory(prefix="uploads-")
         )
         application.state.storage = Storage(Path(directory))

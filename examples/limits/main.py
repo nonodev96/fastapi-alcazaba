@@ -67,8 +67,9 @@ CATALOG = [
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     # InMemoryBackend counts in this process only. Production uses Redis or Valkey
-    # (RedisBackend(redis.asyncio.from_url(os.environ["REDIS_URL"]))): with several processes,
-    # each would otherwise allow its own 10 searches a minute and its own 2 reports at a time.
+    # (RedisBackend(redis.asyncio.from_url(...)), with the URL in the app's settings): with
+    # several processes, each would otherwise allow its own 10 searches a minute and its own 2
+    # reports at a time.
     Cache(InMemoryBackend(), prefix="limits").install(application)
     yield
 

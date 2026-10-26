@@ -30,7 +30,8 @@ import uvicorn
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.requests import HTTPConnection
 
 from fastapi_alcazaba import (
@@ -50,12 +51,26 @@ from fastapi_alcazaba.maintenance import (
 
 logger = logging.getLogger(__name__)
 
-# Set both in production, the same in every process (secrets.token_urlsafe(32)). The fallbacks
-# are throwaways for a local run, made up at each start.
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN") or secrets.token_urlsafe(32)
-# Seals the switch and the flags in the backend: a state planted there by someone else is ignored,
-# and so is what a process with another key writes.
-CACHE_SIGNING_KEY = os.environ.get("CACHE_SIGNING_KEY") or secrets.token_urlsafe(32)
+
+def throwaway_secret() -> SecretStr:
+    """A random secret, for trying the example: it changes at every start and differs between
+    processes."""
+    return SecretStr(secrets.token_urlsafe(32))
+
+
+class Settings(BaseSettings):
+    """The configuration, from environment variables or a .env file. Set both in production, the
+    same in every process (secrets.token_urlsafe(32))."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    admin_token: SecretStr = Field(default_factory=throwaway_secret)
+    # Seals the switch and the flags in the backend: a state planted there by someone else is
+    # ignored, and so is what a process with another key writes.
+    cache_signing_key: SecretStr = Field(default_factory=throwaway_secret)
+
+
+settings = Settings()
 
 
 class Flag(StrEnum):
@@ -90,15 +105,16 @@ class ShippingService:
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     # Redis or Valkey in production, so that every process shares the switch and the flags:
     # InMemoryBackend keeps them in this process.
-    FastAPICache.init(InMemoryBackend(), prefix="ops", signing_key=CACHE_SIGNING_KEY)
+    FastAPICache.init(InMemoryBackend(), prefix="ops", signing_key=settings.cache_signing_key)
     application.state.shipping = ShippingService()
     # Only what says the service is down counts, not a bug of ours; a call that hangs is cancelled
     # after 5 s and counts too.
     application.state.shipping_breaker = FastAPIBreaker(
         "shipping", failure_threshold=3, reset_timeout=30, timeout=5, failures=(ConnectionError,)
     )
-    if not os.environ.get("ADMIN_TOKEN"):
-        logger.warning("ADMIN_TOKEN isn't set: the admin token of this run is %s", ADMIN_TOKEN)
+    if "admin_token" not in settings.model_fields_set:
+        token = settings.admin_token.get_secret_value()
+        logger.warning("ADMIN_TOKEN isn't set: the admin token of this run is %s", token)
     yield
 
 
@@ -168,7 +184,7 @@ def require_admin(
     """Compared in constant time, and as bytes: compare_digest refuses strings with non-ASCII
     characters, which a client can send."""
     token = credentials.credentials if credentials is not None else ""
-    if not secrets.compare_digest(token.encode(), ADMIN_TOKEN.encode()):
+    if not secrets.compare_digest(token.encode(), settings.admin_token.get_secret_value().encode()):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, headers={"WWW-Authenticate": "Bearer"})
 
 

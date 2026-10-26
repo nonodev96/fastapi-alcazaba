@@ -9,7 +9,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from examples.audit.main import SIGNING_KEY, app, recent, trail_log
+from examples.audit.main import app, recent, settings, trail_log
 from fastapi_alcazaba.audit import AuditEvent, verify_audit_trail
 
 ADA = {"Authorization": "Bearer ada-token"}  # admin
@@ -126,4 +126,4 @@ def test_the_trail_is_a_line_of_json_per_event(client: TestClient) -> None:
 
     (line,) = output.getvalue().splitlines()
     assert json.loads(line) == events()[0].to_dict()
-    assert verify_audit_trail([json.loads(line)], SIGNING_KEY) == []
+    assert verify_audit_trail([json.loads(line)], settings.audit_signing_key) == []

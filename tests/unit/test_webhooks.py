@@ -11,7 +11,7 @@ from typing import Annotated, Any
 import pytest
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretBytes, SecretStr
 
 from fastapi_alcazaba import Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
@@ -121,6 +121,13 @@ class TestSigner:
     def test_aware_datetimes(self) -> None:
         moment = datetime.fromtimestamp(NOW, timezone(timedelta(hours=2)))
         assert signed(timestamp=moment) == signed()
+
+    def test_secrets_from_pydantic_settings(self) -> None:
+        assert signed(secret=SecretStr(SECRET)) == signed()
+        assert signed(secret=SecretBytes(b"s" * 32)) == signed()
+        assert signed(secret=[SecretStr(SECRET), OLD_SECRET]) == signed(secret=[SECRET, OLD_SECRET])
+        with pytest.raises(ValueError, match="at least 24 bytes"):
+            WebhookSigner(SecretBytes(b"s" * 23))
 
     def test_every_secret_signs_while_rotating(self) -> None:
         signatures = signed(secret=[SECRET, OLD_SECRET])["webhook-signature"].split(" ")
