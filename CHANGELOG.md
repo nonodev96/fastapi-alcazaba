@@ -288,6 +288,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `DynamoBackend.clear(key=...)`: of several deletes of one entry at the same time, more than one
   could be told that it was there. The delete is now conditional, so exactly one is, and a
   one-time code works only once on DynamoDB too.
+- `Lock.release()` (and leaving `async with cache.lock(...)`) could wait forever when the
+  client swallowed the cancellation of a renewal under way (fakeredis does on Python 3.11): the
+  renewals now stop as soon as the lock is released.
 
 ## [0.1.0] - 2026-10-24
 

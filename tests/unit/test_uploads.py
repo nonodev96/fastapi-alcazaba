@@ -159,6 +159,7 @@ class TestSniff:
             ("<!DOCTYPE html><p>hi", "text/html"),
             ("  \n<html lang='en'>", "text/html"),
             ("<div><script>alert(1)</script></div>", "text/html"),
+            ("<DIV><SCRIPT>alert(1)</SCRIPT></DIV>", "text/html"),
             ('<svg xmlns="http://www.w3.org/2000/svg"><script>x()</script></svg>', "text/html"),
             ('<?xml version="1.0"?>\n<svg xmlns="http://www.w3.org/2000/svg"/>', "image/svg+xml"),
             ("\ufeff<SVG/>", "image/svg+xml"),

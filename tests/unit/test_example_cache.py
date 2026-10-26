@@ -17,8 +17,13 @@ def fixture_shop(monkeypatch: pytest.MonkeyPatch) -> main.Shop:
 
 
 @pytest.fixture(name="client")
-# pylint: disable-next=unused-argument  # requested for its effect: a fresh shop
-def fixture_client(shop: main.Shop) -> Iterator[TestClient]:
+def fixture_client(
+    shop: main.Shop,  # pylint: disable=unused-argument  # requested for its effect: a fresh shop
+    monkeypatch: pytest.MonkeyPatch,
+) -> Iterator[TestClient]:
+    # The example's memory backend, empty for each test: with the REDIS_URL of the integration
+    # tests, the entries one test leaves in Redis would answer the next one's requests.
+    monkeypatch.delenv("REDIS_URL", raising=False)
     with TestClient(main.app) as client:
         yield client
     FastAPICache.reset()

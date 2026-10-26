@@ -100,7 +100,10 @@ _MP4_BRANDS = {
 }
 # Control characters, C1 ones included, but tab, line feed, form feed and carriage return.
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0e-\x1f\x7f-\x9f]")
-_HTML_TAGS = re.compile(r"<!doctype\s+html|<(?:html|head|body|script|iframe|object|embed)[\s/>]")
+_HTML_TAGS = re.compile(
+    r"<!doctype\s+html|<(?:html|head|body|script|iframe|object|embed)[\s/>]",
+    re.IGNORECASE,  # <SCRIPT> runs too
+)
 _SOF = frozenset(range(0xC0, 0xD0)) - {0xC4, 0xC8, 0xCC}  # JPEG start-of-frame markers
 _STANDALONE = frozenset({0x01, *range(0xD0, 0xD8)})  # JPEG markers without a length
 _MAX_JPEG_STEPS = 1024

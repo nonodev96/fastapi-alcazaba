@@ -148,7 +148,10 @@ class Lock:
     async def _keep(self, token: str) -> None:
         """Renew the lock every ttl / 3 until it's released or lost."""
         loop = asyncio.get_running_loop()
-        while True:
+        # release() cancels this task and clears the token: a client that swallows the
+        # cancellation (fakeredis does on Python 3.11) still ends the renewals, instead of keeping
+        # them going while release() waits for them.
+        while self._token == token:
             await asyncio.sleep(self.ttl / 3)
             started = loop.time()
             try:
@@ -160,6 +163,8 @@ class Lock:
                 if loop.time() < self._expires_at:
                     continue  # it may come back before the lock expires
                 renewed = False
+            if self._token != token:
+                return  # released meanwhile
             if not renewed:
                 logger.warning("Lost the lock %r: it expired before it could be renewed", self.name)
                 self.cache.metrics.count("lock.lost")

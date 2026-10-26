@@ -163,13 +163,20 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/python
       - run: pytest tests/benchmarks --benchmark-only --benchmark-json=benchmarks.json
+      # Results are compared within one Python build: another one (a new release, another
+      # compiler) speeds some benchmarks up more than others, which the gate would blame on the
+      # code. A new build starts a history of its own.
+      - id: python
+        run: |
+          build=$(python -c 'import platform; print(platform.python_version(), platform.python_compiler())')
+          echo "build=${build//[^A-Za-z0-9.]/-}" >> "$GITHUB_OUTPUT"
       # The last results of main, saved in the Actions cache (pull requests can read the base
       # branch's caches). No write permission needed.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: benchmark-history
-          key: benchmarks-${{ github.sha }}
-          restore-keys: benchmarks-
+          key: benchmarks-${{ steps.python.outputs.build }}-${{ github.sha }}
+          restore-keys: benchmarks-${{ steps.python.outputs.build }}-
       # A benchmark more than 50 % slower than the others fails the job. The runner's speed
       # changes between runs, so absolute numbers only go to the summary below.
       - run: python scripts/bench_gate.py benchmarks.json benchmark-history/data.json
@@ -186,7 +193,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: benchmark-history
-          key: benchmarks-${{ github.sha }}
+          key: benchmarks-${{ steps.python.outputs.build }}-${{ github.sha }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: benchmarks

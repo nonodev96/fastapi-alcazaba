@@ -3,6 +3,7 @@
 # pylint: disable=protected-access  # tests look at the internals they check
 
 import asyncio
+import contextlib
 import logging
 import time
 
@@ -194,6 +195,15 @@ class TestErrors:
             await releasing
         assert await cache.lock("report").acquire()  # released all the same
 
+    async def test_releasing_when_the_backend_swallows_the_cancellation(self) -> None:
+        backend = SwallowingRenewals()
+        lock = Cache(backend, prefix="app").lock("report", ttl=0.3)  # renewed every 0.1 s
+        await lock.acquire()
+        await asyncio.wait_for(backend.renewing.wait(), 1)
+        await asyncio.wait_for(lock.release(), 1)  # not renewing forever meanwhile
+        assert not lock.held
+        assert await Cache(backend, prefix="app").lock("report").acquire()
+
 
 class TestInMemoryLocks:
     async def test_held_locks_survive_the_eviction_of_entries(self) -> None:
@@ -235,6 +245,20 @@ class TestRedisLocks:
 def held(lock: Lock) -> bool:
     """`lock.held`, which mypy would take as unchanged since the last assert."""
     return lock.held
+
+
+class SwallowingRenewals(InMemoryBackend):
+    """Its renewals take a while and swallow cancellation, as fakeredis does on Python 3.11."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.renewing = asyncio.Event()
+
+    async def extend_lock(self, key: str, token: str, ttl: float) -> bool:
+        self.renewing.set()
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.sleep(0.05)
+        return await super().extend_lock(key, token, ttl)
 
 
 class Flaky(InMemoryBackend):
