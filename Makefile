@@ -1,5 +1,5 @@
 .PHONY: deps lint format test test-integration mutation services-up services-down docs docs-serve \
-	build clean
+	build clean fuzz-requirements
 
 # Python's own tools: a virtual environment in .venv, and pip (26.2 or later, for --group and
 # --uploaded-prior-to). pip takes no release younger than three days: compromised versions are
@@ -82,3 +82,9 @@ build: clean deps
 
 clean:
 	rm -rf dist site
+
+# The requirements of the fuzzing build, pinned by hash (.clusterfuzzlite/requirements.txt). pip
+# resolves them with Python 3.11, the one in OSS-Fuzz's image: it evaluates markers for its own.
+FUZZ_PYTHON ?= python3.11
+fuzz-requirements:
+	$(FUZZ_PYTHON) scripts/fuzz_requirements.py

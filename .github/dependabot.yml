@@ -41,6 +41,17 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+  # The requirements of the fuzzing build, pinned by hash for the image's Python. A release that
+  # brings a new requirement fails that build: `make fuzz-requirements` writes the file again.
+  - package-ecosystem: pip
+    directory: "/.clusterfuzzlite"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      fuzzing:
+        patterns: ["*"]
   # The image ClusterFuzzLite builds the fuzzers in, pinned by digest. It's rebuilt every day:
   # monthly is enough.
   - package-ecosystem: docker

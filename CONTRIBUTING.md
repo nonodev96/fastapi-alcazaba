@@ -38,7 +38,9 @@ runs them on random inputs with the other unit tests; ClusterFuzzLite runs them 
 guided by coverage, on pull requests that touch the package and every week
 (`.github/workflows/fuzzing.yml`). An input that breaks a target goes in that test's known cases
 along with the fix. Locally, on Linux, `pip install atheris` and `python fuzz/uploads_fuzzer.py`
-fuzz one until you stop it.
+fuzz one until you stop it. The fuzzing build installs the package's requirements pinned by hash,
+from `.clusterfuzzlite/requirements.txt`; when they change, `make fuzz-requirements` (with Python
+3.11, the one in OSS-Fuzz's image) writes it again.
 
 ## Guidelines
 

@@ -27,8 +27,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A folder per tool, each exporting its public names (`from fastapi_alcazaba.pagination import
   Page`); the main class of each tool is still importable from `fastapi_alcazaba`. The modules
   moved, with nothing left at their old paths:
-    - `response_cache`: `decorator` (`cache`), `cache` (`Cache`, `FastAPICache`, `get_cache`),
-      `coder`, `key_builder` (and `KeyBuilder`, from `types`), `compression`;
+    - `response_cache`: `decorator` (`cache`), `caches` (was `cache`: `Cache`, `FastAPICache`,
+      `get_cache`), `coder`, `key_builder` (and `KeyBuilder`, from `types`), `compression`;
     - `backends`: `Backend`, from `types`;
     - `rate_limit`: `limiter`, `concurrency`;
     - `auth`: `apikeys`, `tokens`;
