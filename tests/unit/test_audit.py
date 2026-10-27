@@ -5,6 +5,8 @@
 import asyncio
 import dataclasses
 import enum
+import hashlib
+import hmac
 import json
 import logging
 import uuid
@@ -37,6 +39,7 @@ from fastapi_alcazaba.audit import (
     MemoryAuditSink,
     verify_audit_trail,
 )
+from fastapi_alcazaba.canonical import canonical_json
 from fastapi_alcazaba.metrics import Metrics
 from fastapi_alcazaba.request_id import RequestIDMiddleware
 
@@ -664,6 +667,56 @@ async def test_signed_events_form_a_chain(audit: FastAPIAudit) -> None:
     assert verify_audit_trail([third, first, second], KEY) == []
     lines = [json.loads(event.to_json()) for event in (first, second, third)]  # read back from logs
     assert verify_audit_trail(lines, KEY) == []
+
+
+async def test_signatures_any_language_can_check(audit: FastAPIAudit) -> None:
+    event = await audit.log("user.update", actor="ana", details={"amount": 12.5, "note": "é"})
+    data = event.to_dict()
+    del data["signature"]
+
+    # HMAC-SHA256 of "fastapi_alcazaba/audit2", a NUL byte and the event's RFC 8785 JSON.
+    signed = b"fastapi_alcazaba/audit2\0" + canonical_json(data)
+    assert event.signature == hmac.new(KEY.encode(), signed, hashlib.sha256).hexdigest()
+
+
+async def test_what_json_parsers_would_read_otherwise(audit: FastAPIAudit) -> None:
+    lone = chr(0xD800)  # text decoded with errors="surrogateescape": no UTF-8 for it
+    event = await audit.log(
+        "user.update",
+        actor="ana" + lone,
+        details={"big": 2**60, "small": -5, "text": "x" + lone, "key" + lone: 1},
+    )
+
+    replaced = chr(0xFFFD)
+    assert event.actor == "ana" + replaced
+    assert event.details == {
+        "big": str(2**60),  # beyond 2**53, parsers round integers: kept exact, as text
+        "small": -5,
+        "text": "x" + replaced,
+        "key" + replaced: 1,
+    }
+    assert verify_audit_trail([event], KEY) == []
+
+
+async def test_lines_that_aren_t_i_json_are_reported_as_altered(audit: FastAPIAudit) -> None:
+    (event,) = await write(audit, 1)
+    deep: list[Any] = []
+    for _ in range(10_000):
+        deep = [deep]
+    altered = [
+        {**event.to_dict(), "details": details}
+        for details in ({"n": 2**80}, {"x": float("nan")}, {"x": deep})
+    ]
+
+    problems = verify_audit_trail(altered, KEY)
+
+    assert (
+        problems
+        == [
+            f"event {event.id!r} doesn't match its signature: altered, or not written with this key"
+        ]
+        * 3
+    )
 
 
 async def test_without_a_key_events_are_numbered_but_not_signed(trail: MemoryAuditSink) -> None:

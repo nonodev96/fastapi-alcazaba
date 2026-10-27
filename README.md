@@ -1114,7 +1114,12 @@ async def delete_invoice(
   list to rotate it, the first signs), each event is signed with HMAC-SHA256 and carries the
   signature of the previous one of its stream (one per process), numbered.
   `verify_audit_trail(events, key)` lists the events altered, forged, missing or out of their
-  chain, from `AuditEvent`s or the JSON lines read back. It can't tell that the newest events were
+  chain, from `AuditEvent`s or the JSON lines read back. The signature covers
+  `fastapi_alcazaba/audit2`, a NUL byte and the event's
+  [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785) canonical JSON without its `signature`
+  (`fastapi_alcazaba.canonical.canonical_json`): any language with a JCS library checks it the
+  same way, a SIEM or an auditor's script included. For that, details keep to I-JSON: integers
+  beyond 2⁵³ are recorded as text, lone surrogates as U+FFFD. It can't tell that the newest events were
   removed, and whoever has the key can rewrite the trail: keep it from the people whose actions
   are recorded.
 - **Delivery:** a sink that fails or takes longer than `timeout` (5 s) is logged at ERROR with the

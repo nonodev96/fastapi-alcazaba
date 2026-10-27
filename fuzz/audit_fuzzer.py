@@ -1,5 +1,6 @@
-"""Audit details: whatever an app passes, what's recorded is JSON (no NaN, nothing that isn't),
-bounded, and without the values of keys that name a secret."""
+"""Audit details: whatever an app passes, what's recorded is I-JSON (no NaN, no integer parsers
+would round, no lone surrogate: its RFC 8785 form always exists), bounded, and without the values
+of keys that name a secret."""
 
 import json
 import math
@@ -24,6 +25,7 @@ with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nu
         _Cleaner,
         _words,
     )
+    from fastapi_alcazaba.canonical import canonical_json
 
 _CLEANER = _Cleaner(SENSITIVE_WORDS)
 _LONGEST = MAX_STRING + len("…[] more") + 20  # a string cut, with how much was left out
@@ -57,6 +59,7 @@ def fuzz_one_input(data: bytes) -> None:
     details = value if isinstance(value, dict) else {"value": value}
     cleaned = _CLEANER.details(details)
     json.dumps(cleaned, allow_nan=False)  # JSON all the way down
+    canonical_json(cleaned)  # and I-JSON: what the signature covers
     _check(details, cleaned, 0)
 
 

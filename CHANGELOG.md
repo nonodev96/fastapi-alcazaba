@@ -14,8 +14,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   audit details, each checking the properties it must keep. ClusterFuzzLite runs them with
   atheris on pull requests and every week; the unit tests run them on random inputs.
 
+- `fastapi_alcazaba.canonical.canonical_json`: the JSON Canonicalization Scheme (RFC 8785), the
+  one serialization of a JSON value that every language implementing it writes the same.
+
 ### Changed
 
+- The audit trail's signatures cover the event's RFC 8785 canonical JSON, after the context
+  `fastapi_alcazaba/audit2` and a NUL byte, so that any language can check them; events signed
+  by 0.2.0 no longer verify. Details keep to I-JSON for it: integers beyond 2⁵³ are recorded as
+  text, and lone surrogates in any text of an event as U+FFFD.
 - The API reference has a page per tool (cache, backends, limits, audit...) with an index of
   them, instead of one long page; each object is set apart, with its kind and its signature.
 

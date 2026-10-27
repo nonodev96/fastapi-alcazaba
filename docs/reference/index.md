@@ -88,6 +88,7 @@ them in complete apps.
 
     ---
 
-    What signs and encrypts entries, the backends' circuit breaker, and the exceptions.
+    What signs and encrypts entries, RFC 8785 canonical JSON, the backends' circuit breaker, and
+    the exceptions.
 
 </div>

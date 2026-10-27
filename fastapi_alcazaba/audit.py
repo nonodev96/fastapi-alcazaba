@@ -33,10 +33,11 @@ What goes in, and what doesn't:
   authorization, cookie, session...) and the strings that look like credentials (`Bearer ...`,
   JWTs, private keys) become "[redacted]". Values that aren't JSON (objects, bytes) are recorded
   by their type, strings are cut at 500 characters, and containers at 50 items and 4 levels.
-- Integrity: with a `signing_key`, each event is signed (HMAC-SHA256) and chained to the previous
-  one of its stream (one per process), and `verify_audit_trail()` finds the events altered,
-  forged, removed or reordered. It can't tell that the newest events were removed, and whoever has
-  the key can rewrite the trail: keep it from those whose actions are recorded.
+- Integrity: with a `signing_key`, each event is signed (HMAC-SHA256 of its RFC 8785 canonical
+  JSON, which any language can compute again) and chained to the previous one of its stream (one
+  per process), and `verify_audit_trail()` finds the events altered, forged, removed or reordered.
+  It can't tell that the newest events were removed, and whoever has the key can rewrite the
+  trail: keep it from those whose actions are recorded.
 - Delivery: a sink that fails, or takes longer than `timeout`, is logged with the event (so that
   it isn't lost) and counted, and the other sinks still get it. The action isn't undone or refused
   for it: when an action mustn't happen unrecorded, write the record in its database transaction.
@@ -68,6 +69,7 @@ from starlette.exceptions import HTTPException, WebSocketException
 from starlette.requests import HTTPConnection
 from starlette.status import WS_1008_POLICY_VIOLATION
 
+from fastapi_alcazaba.canonical import MAX_SAFE_INTEGER, canonical_json
 from fastapi_alcazaba.integrity import Secrets, secret_list
 from fastapi_alcazaba.metrics import Metrics
 from fastapi_alcazaba.request_id import request_id
@@ -127,7 +129,10 @@ _CREDENTIAL = re.compile(
     r"|-----BEGIN [A-Z ]*PRIVATE KEY-----",
     re.IGNORECASE,
 )
-_CONTEXT = b"fastapi_alcazaba/audit1\0"
+# What the signatures cover starts with this, then comes the event's RFC 8785 JSON.
+_CONTEXT = b"fastapi_alcazaba/audit2\0"
+# Lone surrogates (text decoded with errors="surrogateescape") have no UTF-8.
+_SURROGATES = re.compile(f"[{chr(0xD800)}-{chr(0xDFFF)}]")
 
 
 def _check_action(name: str) -> None:
@@ -144,6 +149,7 @@ def _check_outcome(outcome: str | None) -> None:
 
 
 def _cut(text: str) -> str:
+    text = _SURROGATES.sub("\ufffd", text)
     if len(text) <= MAX_STRING:
         return text
     return f"{text[:MAX_STRING]}…[{len(text) - MAX_STRING} more]"
@@ -184,8 +190,12 @@ class _Cleaner:
         return self._mapping(details, 0)
 
     def value(self, value: Any, depth: int) -> Any:
-        if value is None or isinstance(value, bool | int):
-            return int(value) if isinstance(value, enum.Enum) else value
+        if value is None or isinstance(value, bool):
+            return value
+        if isinstance(value, int):
+            number = int(value)  # an IntEnum's value
+            # Beyond 2**53 JSON parsers round integers: kept exact, as text.
+            return str(number) if abs(number) > MAX_SAFE_INTEGER else number
         if isinstance(value, float):
             return value if math.isfinite(value) else str(value)
         if isinstance(value, str):
@@ -245,7 +255,9 @@ class AuditEvent:
     :param stream: the writer's stream: one per process and FastAPIAudit.
     :param sequence: its number in the stream, from 1.
     :param previous: the signature of the stream's previous event (with a `signing_key`).
-    :param signature: HMAC-SHA256 of the rest, in hex (with a `signing_key`).
+    :param signature: with a `signing_key`, HMAC-SHA256 in hex of `fastapi_alcazaba/audit2`, a
+        NUL byte, and the RFC 8785 canonical JSON of `to_dict()` without `signature`: a verifier
+        in any language computes the same.
     """
 
     id: str
@@ -279,8 +291,17 @@ class AuditEvent:
 
 
 def _mac(key: bytes, data: Mapping[str, Any]) -> str:
-    payload = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
-    return hmac.new(key, _CONTEXT + payload, hashlib.sha256).hexdigest()
+    return hmac.new(key, _CONTEXT + canonical_json(data), hashlib.sha256).hexdigest()
+
+
+def _signed_by(key: bytes, data: Mapping[str, Any], signature: bytes) -> bool:
+    """Whether `signature` is `key`'s for `data`. As bytes: compare_digest refuses strings with
+    non-ASCII characters, which a line tampered with may have."""
+    try:
+        expected = _mac(key, data).encode()
+    except (ValueError, TypeError, RecursionError):  # nothing an event of ours holds
+        return False
+    return hmac.compare_digest(signature, expected)
 
 
 class AuditEntry:
@@ -675,10 +696,7 @@ def verify_audit_trail(
         if not isinstance(signature, str):
             problems.append(f"event {data.get('id')!r} isn't signed")
             continue
-        # As bytes: compare_digest refuses strings with non-ASCII characters, which a line
-        # tampered with may have.
-        given = signature.encode()
-        if not any(hmac.compare_digest(given, _mac(key, data).encode()) for key in keys):
+        if not any(_signed_by(key, data, signature.encode()) for key in keys):
             problems.append(
                 f"event {data.get('id')!r} doesn't match its signature: altered, or not "
                 "written with this key"
