@@ -129,8 +129,8 @@ class FastAPICache:
         return cls.instance().key_builder
 
     @classmethod
-    def get_cache_status_header(cls) -> str:
-        return cls.instance().cache_status_header
+    def get_cache_status(cls) -> str | None:
+        return cls.instance().cache_status
 
     @classmethod
     def get_enable(cls) -> bool:

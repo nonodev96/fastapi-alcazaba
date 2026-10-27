@@ -22,6 +22,7 @@ from fastapi_alcazaba.key_builder import default_key_builder
 from fastapi_alcazaba.limiter import FastAPIRateLimiter
 from fastapi_alcazaba.tokens import TokenBlocklist
 from fastapi_alcazaba.types import Backend
+from tests.cache_status import served
 
 
 class Session:
@@ -53,7 +54,7 @@ class TestUnstableKeys:
         with TestClient(app) as client:
             with pytest.warns(UnstableCacheKeyWarning, match="session"):
                 client.get("/products")
-            assert client.get("/products").headers["X-FastAPI-Cache"] == "MISS"
+            assert served(client.get("/products").headers) == "miss"
 
     def test_exclude_params_fixes_it(self) -> None:
         FastAPICache.init(InMemoryBackend())
@@ -68,7 +69,7 @@ class TestUnstableKeys:
         with TestClient(app) as client, warnings.catch_warnings():
             warnings.simplefilter("error")
             client.get("/products")
-            assert client.get("/products").headers["X-FastAPI-Cache"] == "HIT"
+            assert served(client.get("/products").headers) == "hit"
 
     async def test_functions_and_methods_count_too(self) -> None:
         FastAPICache.init(InMemoryBackend())

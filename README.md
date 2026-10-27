@@ -87,7 +87,9 @@ The response cache is safe by default:
 
 And more: early refresh of popular entries, Valkey through valkey-py or Valkey GLIDE, cache
 hits that return the annotated type (Pydantic models, not dicts), deterministic `ETag`s, the
-response model in OpenAPI, `exclude_params` and `stale-while-revalidate`.
+[`Cache-Status`](https://www.rfc-editor.org/rfc/rfc9211) header (`Alcazaba; hit; ttl=42`,
+`Alcazaba; fwd=miss; stored`), the response model in OpenAPI, `exclude_params` and
+`stale-while-revalidate`.
 
 ## Install
 
@@ -183,7 +185,7 @@ Call it once, at startup (in the `lifespan`).
 | `expire` | `None` | default time to live, in seconds |
 | `coder` | `JsonCoder` | how values are stored |
 | `key_builder` | `default_key_builder` | builds keys from the function and its arguments |
-| `cache_status_header` | `"X-FastAPI-Cache"` | header saying `HIT` or `MISS`; `""` to leave it out |
+| `cache_status` | `"Alcazaba"` | this cache's name in the `Cache-Status` header (RFC 9211); `None` to leave it out |
 | `enable` | `True` | `False` turns the cache off |
 | `signing_key` | `None` | secret of 32+ bytes to sign entries; a list rotates keys (the first signs) |
 | `encryption_key` | `None` | secret of 32+ bytes to sign *and encrypt* entries (`crypto` extra); instead of `signing_key` |

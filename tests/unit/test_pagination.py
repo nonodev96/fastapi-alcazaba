@@ -30,6 +30,7 @@ from fastapi_alcazaba.pagination import (
     PageParams,
     Position,
 )
+from tests.cache_status import served
 
 
 class Item(BaseModel):
@@ -339,9 +340,9 @@ class TestWithTheCache:
     def test_each_page_has_its_entry(self, client: TestClient, calls: list[str]) -> None:
         assert ids(client.get("/items?size=5").json()) == [0, 1, 2, 3, 4]
         second = client.get("/items?page=2&size=5")
-        assert (second.headers["x-fastapi-cache"], ids(second.json())) == ("MISS", [5, 6, 7, 8, 9])
+        assert (served(second.headers), ids(second.json())) == ("miss", [5, 6, 7, 8, 9])
         again = client.get("/items?page=2&size=5")
-        assert (again.headers["x-fastapi-cache"], ids(again.json())) == ("HIT", [5, 6, 7, 8, 9])
+        assert (served(again.headers), ids(again.json())) == ("hit", [5, 6, 7, 8, 9])
         assert ids(client.get("/items?page=2&size=6").json()) == [6, 7, 8, 9, 10, 11]
         assert len(calls) == 3
 
@@ -362,7 +363,7 @@ class TestWithTheCache:
         assert [e["id"] for e in first["items"]] == [1, 2, 3, 4]
         path = f"/events?cursor={first['next_cursor']}"
         assert [e["id"] for e in client.get(path).json()["items"]] == [5, 6, 7, 8]
-        assert client.get(path).headers["x-fastapi-cache"] == "HIT"
+        assert served(client.get(path).headers) == "hit"
         assert len(calls) == 2
 
     @pytest.mark.parametrize(

@@ -20,6 +20,7 @@ from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.limiter import FastAPIRateLimiter, _wait, client_ip, client_network
 from fastapi_alcazaba.problems import FastAPIProblemDetails
 from fastapi_alcazaba.types import Backend
+from tests.cache_status import served
 from tests.unit.test_metrics import points
 
 # Unix time (in seconds) at which every window of these tests starts: a whole number of hours.
@@ -456,8 +457,8 @@ class TestHeaders:
         client = TestClient(app)
         client.get("/")
         hit = client.get("/")
-        assert (hit.headers["x-fastapi-cache"], hit.headers["ratelimit"]) == (
-            "HIT",
+        assert (served(hit.headers), hit.headers["ratelimit"]) == (
+            "hit",
             '"5/60s";r=3;t=60',
         )
 

@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from examples.pagination.main import Catalog, app
 from fastapi_alcazaba import FastAPICache
+from tests.cache_status import served
 
 
 @pytest.fixture(name="client")
@@ -30,7 +31,7 @@ class TestOneEntryPerPage:
         assert ids(client.get("/products?size=5").json()) == [1, 2, 3, 4, 5]
         assert ids(client.get("/products?page=2&size=5").json()) == [6, 7, 8, 9, 10]
         hit = client.get("/products?page=2&size=5")
-        assert (hit.headers["x-fastapi-cache"], ids(hit.json())) == ("HIT", [6, 7, 8, 9, 10])
+        assert (served(hit.headers), ids(hit.json())) == ("hit", [6, 7, 8, 9, 10])
         assert hit.headers["cache-control"] == "max-age=300"  # public: no Vary, not private
         assert queries() == 2
 
@@ -103,7 +104,7 @@ class TestWrites:
         added = client.post("/products", json={"name": "Picual", "category": "oil", "price": 4.5})
         assert (added.status_code, added.json()["id"]) == (201, 61)
         page = client.get("/products?page=2&size=20&category=oil")
-        assert (page.headers["x-fastapi-cache"], page.json()["total"]) == ("MISS", 21)
+        assert (served(page.headers), page.json()["total"]) == ("miss", 21)
         assert ids(page.json()) == [61]
         assert client.get("/categories/oil/products").json()["total"] == 21
         assert queries() == 4

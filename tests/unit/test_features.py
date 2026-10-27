@@ -13,6 +13,7 @@ from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.decorator import _compute_etag, _etag_matches, cache
 from fastapi_alcazaba.key_builder import default_key_builder
+from tests.cache_status import served
 
 
 class Item(BaseModel):
@@ -65,12 +66,12 @@ class TestETag:
             etag = client.get("/item").headers["ETag"]
             hit = client.get("/item", headers={"If-None-Match": etag})
             assert hit.status_code == 304
-            assert hit.headers["X-FastAPI-Cache"] == "HIT"
+            assert served(hit.headers) == "hit"
             FastAPICache.reset()
             FastAPICache.init(InMemoryBackend())
             miss = client.get("/item", headers={"If-None-Match": etag})
             assert miss.status_code == 304
-            assert miss.headers["X-FastAPI-Cache"] == "MISS"
+            assert served(miss.headers) == "miss"
 
 
 def test_hits_return_the_model_and_headers() -> None:
@@ -79,7 +80,7 @@ def test_hits_return_the_model_and_headers() -> None:
         miss = client.get("/item")
         hit = client.get("/item")
     assert miss.json() == hit.json() == {"name": "thing", "price": 1.5}
-    assert hit.headers["X-FastAPI-Cache"] == "HIT"
+    assert served(hit.headers) == "hit"
     assert hit.headers["ETag"] == miss.headers["ETag"]
     assert hit.headers["Cache-Control"].startswith("max-age=")
     assert hit.headers["Cache-Control"].endswith(", stale-while-revalidate=30")
@@ -91,18 +92,32 @@ def test_returned_responses_get_the_headers_too() -> None:
     with TestClient(make_app()) as client:
         miss = client.get("/json-response")
         hit = client.get("/json-response")
-    assert miss.headers["X-FastAPI-Cache"] == "MISS"
+    assert served(miss.headers) == "miss"
     assert miss.headers["ETag"]
-    assert hit.headers["X-FastAPI-Cache"] == "HIT"
+    assert served(hit.headers) == "hit"
     assert hit.json() == {"a": 1}
 
 
 def test_status_header_can_be_turned_off() -> None:
-    FastAPICache.init(InMemoryBackend(), cache_status_header="")
+    FastAPICache.init(InMemoryBackend(), cache_status=None)
     with TestClient(make_app()) as client:
         response = client.get("/item")
-    assert "X-FastAPI-Cache" not in response.headers
+    assert "Cache-Status" not in response.headers
     assert response.headers["ETag"]
+
+
+def test_the_cache_s_name_in_cache_status() -> None:
+    FastAPICache.init(InMemoryBackend(), cache_status="Shop-API")
+    with TestClient(make_app()) as client:
+        miss, hit = client.get("/item"), client.get("/item")
+    assert miss.headers["Cache-Status"] == "Shop-API; fwd=miss; stored"
+    assert hit.headers["Cache-Status"].startswith("Shop-API; hit; ttl=")
+
+
+@pytest.mark.parametrize("name", ["", "two words", "1st", 'say"what', "caché"])
+def test_the_cache_s_name_is_a_token(name: str) -> None:
+    with pytest.raises(ValueError, match="cache_status is a token"):
+        FastAPICache.init(InMemoryBackend(), cache_status=name)
 
 
 def test_openapi_keeps_the_response_model() -> None:

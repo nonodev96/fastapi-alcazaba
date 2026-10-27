@@ -25,13 +25,13 @@ A page, computed once and then served from the cache:
 ```console
 $ curl -i "http://127.0.0.1:8000/products?page=2&size=3"
 HTTP/1.1 200 OK
-x-fastapi-cache: MISS
+cache-status: Alcazaba; fwd=miss; stored
 cache-control: max-age=300
 
 {"items":[{"name":"Product 4","category":"vegetables","price":1.4,"id":4},{"name":"Product 5","category":"oil","price":1.5,"id":5},{"name":"Product 6","category":"fruit","price":1.6,"id":6}],"total":60,"page":2,"size":3,"pages":20}
 
-$ curl -si "http://127.0.0.1:8000/products?page=2&size=3" | grep x-fastapi-cache
-x-fastapi-cache: HIT
+$ curl -si "http://127.0.0.1:8000/products?page=2&size=3" | grep cache-status
+cache-status: Alcazaba; hit; ttl=300
 ```
 
 Pages have a maximum size, checked before anything is queried:
@@ -64,8 +64,8 @@ $ curl -X POST http://127.0.0.1:8000/products -H "Content-Type: application/json
     -d '{"name": "Capers", "category": "vegetables", "price": 2.5}'
 {"name":"Capers","category":"vegetables","price":2.5,"id":61}
 
-$ curl -si "http://127.0.0.1:8000/products?page=2&size=3" | grep x-fastapi-cache
-x-fastapi-cache: MISS
+$ curl -si "http://127.0.0.1:8000/products?page=2&size=3" | grep cache-status
+cache-status: Alcazaba; fwd=miss; stored
 ```
 
 ## What to look at

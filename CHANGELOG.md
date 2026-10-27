@@ -19,6 +19,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Cached responses report the result in the `Cache-Status` header of RFC 9211 instead of
+  `X-FastAPI-Cache`: `Alcazaba; hit; ttl=42` with the seconds the entry has left, or why the
+  request reached the endpoint (`fwd=miss`, `stale` for an early refresh, `request` for a client's
+  `no-cache`, `method`, `bypass` with the cache off), `stored` when its response was kept and
+  `collapsed` when it waited for another request's. Responses that weren't cached get the header
+  too. `FastAPICache.init(cache_status_header=...)` is now `cache_status=`, the cache's name
+  (`None` leaves the header out), and `get_cache_status_header()` is `get_cache_status()`.
 - The audit trail's signatures cover the event's RFC 8785 canonical JSON, after the context
   `fastapi_alcazaba/audit2` and a NUL byte, so that any language can check them; events signed
   by 0.2.0 no longer verify. Details keep to I-JSON for it: integers beyond 2⁵³ are recorded as

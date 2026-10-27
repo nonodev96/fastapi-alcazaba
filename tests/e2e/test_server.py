@@ -18,6 +18,8 @@ import httpx2
 import pytest
 import valkey
 
+from tests.cache_status import served
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -118,7 +120,7 @@ async def test_processes_share_the_value_and_compute_it_once(
     assert {response.status_code for response in responses} == {200}
     assert len({response.json()["pid"] for response in responses}) == 1  # one computation
     assert computed(valkey_url, server, "slow:1") == 1
-    assert {response.headers["X-FastAPI-Cache"] for response in responses} <= {"HIT", "MISS"}
+    assert {served(response.headers) for response in responses} <= {"hit", "miss"}
 
 
 async def test_users_get_their_own_responses(valkey_url: str, server: Server) -> None:
@@ -128,7 +130,7 @@ async def test_users_get_their_own_responses(valkey_url: str, server: Server) ->
         again = await client.get("/me", headers={"Authorization": "Bearer alice"})
     assert alice.json() == {"user": "Bearer alice"}
     assert bob.json() == {"user": "Bearer bob"}
-    assert again.headers["X-FastAPI-Cache"] == "HIT"
+    assert served(again.headers) == "hit"
     assert again.headers["Cache-Control"].startswith("private, max-age=")
     assert computed(valkey_url, server, "me") == 2
 
@@ -197,5 +199,5 @@ async def test_an_unreachable_valkey_does_not_break_the_app() -> None:
     finally:
         down.stop()
     assert {response.status_code for response in responses} == {200}
-    assert {response.headers.get("X-FastAPI-Cache") for response in responses} <= {None, "MISS"}
+    assert {served(response.headers) for response in responses} <= {None, "miss"}
     assert elapsed < 5  # 0.3 s of work each, no waiting for the backend once the breaker opens

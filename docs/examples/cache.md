@@ -27,13 +27,15 @@ uvicorn examples.cache.main:app --workers 4
 
 ## Try it
 
-The first request computes the page, the next ones get it from the cache:
+The first request computes the page and stores it, the next ones get it from the cache, as the
+[`Cache-Status`](https://www.rfc-editor.org/rfc/rfc9211) header says, with the seconds the entry
+has left:
 
 ```console
 $ curl -i http://127.0.0.1:8000/products/1
 HTTP/1.1 200 OK
 etag: W/"8a7a39cf30d133a472a8c4f0beca023d"
-x-fastapi-cache: MISS
+cache-status: Alcazaba; fwd=miss; stored
 cache-control: max-age=600
 
 {"id":1,"name":"Olive oil","price":9.5}
@@ -41,7 +43,7 @@ cache-control: max-age=600
 $ curl -i http://127.0.0.1:8000/products/1
 HTTP/1.1 200 OK
 etag: W/"8a7a39cf30d133a472a8c4f0beca023d"
-x-fastapi-cache: HIT
+cache-status: Alcazaba; hit; ttl=600
 cache-control: max-age=600
 
 {"id":1,"name":"Olive oil","price":9.5}
@@ -53,7 +55,7 @@ nor a shared cache in between gets it:
 ```console
 $ curl -i http://127.0.0.1:8000/me -H "Authorization: Bearer alice"
 HTTP/1.1 200 OK
-x-fastapi-cache: MISS
+cache-status: Alcazaba; fwd=miss; stored
 cache-control: private, max-age=30
 vary: Authorization, Cookie
 
@@ -67,7 +69,7 @@ $ curl -X PUT http://127.0.0.1:8000/products/1 -H "Content-Type: application/jso
     -d '{"id": 1, "name": "Olive oil", "price": 10}'
 $ curl -i http://127.0.0.1:8000/products/1
 HTTP/1.1 200 OK
-x-fastapi-cache: MISS
+cache-status: Alcazaba; fwd=miss; stored
 
 {"id":1,"name":"Olive oil","price":10.0}
 ```

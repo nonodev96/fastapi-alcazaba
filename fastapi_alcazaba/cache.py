@@ -1,6 +1,7 @@
 """The cache itself: configuration, backend and helpers. FastAPICache is a global instance of it."""
 
 import hashlib
+import re
 import warnings
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
@@ -27,6 +28,9 @@ T = TypeVar("T")
 #: Request headers that make each user's response different: by default each value gets its own
 #: cache entry, and the response says `Cache-Control: private` so shared proxies don't keep it.
 DEFAULT_VARY_HEADERS: tuple[str, ...] = ("authorization", "cookie")
+
+# A token of Structured Field Values (RFC 9651): what names a cache in Cache-Status.
+_TOKEN = re.compile(r"[A-Za-z*][!#$%&'*+\-.^_`|~0-9A-Za-z:/]*")
 
 
 def normalise_headers(headers: Iterable[str]) -> tuple[str, ...]:
@@ -86,7 +90,10 @@ class Cache:
     :param expire: default time to live, in seconds.
     :param coder: how values are stored (JsonCoder by default).
     :param key_builder: builds keys from the function and its arguments.
-    :param cache_status_header: response header saying HIT or MISS; "" to leave it out.
+    :param cache_status: this cache's name in the responses' `Cache-Status` header (RFC 9211):
+        `Alcazaba; hit; ttl=42` for a hit, else why the request reached the endpoint (`fwd=miss`,
+        `stale`, `request`, `method`, `bypass`) and whether the result was `stored`. A token
+        (letters, digits and `!#$%&'*+-.^_`|~:/`, starting with a letter); None for no header.
     :param enable: False turns the cache off.
     :param signing_key: secret (at least 32 bytes; text, bytes, or pydantic's SecretStr or
         SecretBytes) used to sign every entry with HMAC-SHA256; entries without a valid signature
@@ -133,7 +140,7 @@ class Cache:
         expire: int | None = None,
         coder: type[Coder] = JsonCoder,
         key_builder: KeyBuilder = default_key_builder,
-        cache_status_header: str = "X-FastAPI-Cache",
+        cache_status: str | None = "Alcazaba",
         enable: bool = True,
         *,
         signing_key: Secrets | None = None,
@@ -159,6 +166,8 @@ class Cache:
     ) -> None:
         from fastapi_alcazaba import __version__
 
+        if cache_status is not None and not _TOKEN.fullmatch(cache_status):
+            raise ValueError(f"cache_status is a token such as 'Alcazaba', not {cache_status!r}")
         protector: EntryProtector | None = None
         if signing_key is not None and encryption_key is not None:
             raise ValueError("encryption_key already authenticates the entries: pass only one key")
@@ -204,7 +213,7 @@ class Cache:
         self.expire = expire
         self.coder = coder
         self.key_builder = key_builder
-        self.cache_status_header = cache_status_header
+        self.cache_status = cache_status
         self.enable = enable
 
     def cached(

@@ -198,9 +198,25 @@ def _is_cacheable(result: object, response: Response | None) -> bool:
     return status_code in (None, HTTP_200_OK) and not _forbids_storing(response)
 
 
+def _add_cache_status(target: Response, name: str | None, status: str) -> None:
+    """This cache's member of the Cache-Status header (RFC 9211): `name; hit; ttl=60`, or why
+    the request was forwarded, `name; fwd=miss; stored`. The list goes from the origin to the
+    client: after the members the endpoint added (caches of its own), before those of the caches
+    the response goes through on its way (a CDN)."""
+    if not name:
+        return
+    member = f"{name}; {status}"
+    existing = target.headers.get("cache-status")
+    target.headers["Cache-Status"] = f"{existing}, {member}" if existing else member
+
+
+def _hit(ttl: int | None) -> str:
+    return f"hit; ttl={ttl}" if ttl is not None and ttl > 0 else "hit"
+
+
 @dataclass(frozen=True)
 class _HeaderPolicy:
-    status_header: str
+    status_name: str | None
     vary: tuple[str, ...]
     private: bool
     stale_while_revalidate: int | None
@@ -223,8 +239,7 @@ class _HeaderPolicy:
         cache_control = self.cache_control(max_age)
         for target in targets:
             target.headers["ETag"] = etag
-            if self.status_header:
-                target.headers[self.status_header] = status
+            _add_cache_status(target, self.status_name, status)
             if cache_control:
                 target.headers["Cache-Control"] = cache_control
             if self.vary:
@@ -315,6 +330,9 @@ class _CachedCall:
         self.metrics = self.config.metrics
         self.payload: bytes | None = None  # what this call stored, for single flight
         self.span: Any = None
+        # For Cache-Status: why the request reached the endpoint, and whether its result was kept.
+        self.forward = "miss"
+        self.stored = False
 
     async def execute(self) -> Any:
         function = getattr(self.endpoint.func, "__qualname__", repr(self.endpoint.func))
@@ -329,14 +347,17 @@ class _CachedCall:
 
     async def _execute(self) -> Any:
         endpoint, options = self.endpoint, self.options
-        if not self.config.enable or (self.request is not None and self.request.method != "GET"):
+        if not self.config.enable:
             self._lookup("bypass")
-            return await self.run()
+            return self._report(await self.run(), "fwd=bypass")
+        if self.request is not None and self.request.method != "GET":
+            self._lookup("bypass")
+            return self._report(await self.run(), "fwd=method")
         respect = _pick(endpoint.respect_cache_control, options.respect_cache_control)
         directives = _cache_control_directives(self.request) if respect else frozenset()
         if "no-store" in directives:
             self._lookup("bypass")
-            return await self.run()
+            return self._report(await self.run(), "fwd=request")
 
         self.coder = endpoint.coder or self.config.coder
         self.expire = endpoint.expire or self.config.expire
@@ -348,11 +369,16 @@ class _CachedCall:
         await self._build_key()
 
         stale: bytes | None = None
-        if "no-cache" not in directives and (entry := await self._read()) is not None:
+        if "no-cache" in directives:
+            self.forward = "request"  # the client's Cache-Control didn't let us use an entry
+        elif (entry := await self._read()) is not None:
             ttl, payload = entry
             if self._refresh_early(ttl):
                 stale = payload
-            elif (served := self._serve(payload, "HIT", ttl if ttl > 0 else None)) is not _UNUSABLE:
+                self.forward = "stale"
+            elif (served := self._serve(payload, _hit(ttl), ttl if ttl > 0 else None)) is not (
+                _UNUSABLE
+            ):
                 self._lookup("hit")
                 return served
         self._lookup("refresh" if stale is not None else "miss")
@@ -367,7 +393,7 @@ class _CachedCall:
                 self.cache_key,
                 exc_info=True,
             )
-            served = self._serve(stale, "HIT", None)
+            served = self._serve(stale, "hit", None)
             if served is _UNUSABLE:
                 raise
             return served
@@ -404,7 +430,7 @@ class _CachedCall:
             cache_key = f"{cache_key}:vary:{vary_digest}"
         self.cache_key = cache_key
         self.policy = _HeaderPolicy(
-            status_header=self.config.cache_status_header,
+            status_name=self.config.cache_status,
             vary=vary,
             private=vary_digest is not None,
             stale_while_revalidate=endpoint.stale_while_revalidate,
@@ -530,6 +556,7 @@ class _CachedCall:
             len(payload) if outcome == "stored" and payload else None,
         )
         self.payload = payload
+        self.stored = outcome == "stored"
         return self._finish(result, payload)
 
     async def _miss(self) -> Any:
@@ -542,7 +569,8 @@ class _CachedCall:
             payload = await asyncio.shield(leader)
             if (
                 payload is not None
-                and (served := self._serve(payload, "HIT", self.expire)) is not _UNUSABLE
+                and (served := self._serve(payload, f"fwd={self.forward}; collapsed", self.expire))
+                is not _UNUSABLE
             ):
                 return served
             return await self._produce()
@@ -606,7 +634,7 @@ class _CachedCall:
         """Serve an entry another process stored. The calls waiting for this one in the same
         process (single flight) reuse it instead of computing it again."""
         ttl, payload = entry
-        served = self._serve(payload, "HIT", ttl if ttl > 0 else None)
+        served = self._serve(payload, _hit(ttl), ttl if ttl > 0 else None)
         if served is not _UNUSABLE:
             self.payload = payload
         return served
@@ -639,12 +667,19 @@ class _CachedCall:
         return result
 
     def _finish(self, result: Any, payload: bytes | None) -> Any:
-        if payload is None:
-            return result
+        status = f"fwd={self.forward}; stored" if self.stored else f"fwd={self.forward}"
+        if payload is None:  # not cacheable: no ETag nor Cache-Control for it
+            return self._report(result, status)
         etag = _compute_etag(payload)
-        if (unchanged := self._not_modified(etag, "MISS", self.expire)) is not None:
+        if (unchanged := self._not_modified(etag, status, self.expire)) is not None:
             return unchanged
-        self.policy.apply(_targets(self.response, result), "MISS", etag, self.expire)
+        self.policy.apply(_targets(self.response, result), status, etag, self.expire)
+        return result
+
+    def _report(self, result: Any, status: str) -> Any:
+        """The result, with this cache's Cache-Status on the response."""
+        for target in _targets(self.response, result):
+            _add_cache_status(target, self.config.cache_status, status)
         return result
 
     # endregion

@@ -11,6 +11,7 @@ from fastapi_alcazaba import Cache, FastAPICache, get_cache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.key_builder import default_key_builder
+from tests.cache_status import served
 
 
 class Product(BaseModel):
@@ -74,7 +75,7 @@ class TestSeveralCaches:
         with TestClient(app) as client:
             client.get("/catalog", headers={"Authorization": "a"})
             response = client.get("/catalog", headers={"Authorization": "b"})
-        assert response.headers["X-FastAPI-Cache"] == "HIT"
+        assert served(response.headers) == "hit"
         assert response.headers["Cache-Control"].endswith("stale-while-revalidate=30")
 
 
@@ -175,14 +176,14 @@ async def test_the_configuration_through_class_methods() -> None:
     assert FastAPICache.get_expire() is None
     assert FastAPICache.get_options().vary_headers == ("authorization", "cookie")
     assert not FastAPICache.get_metrics().enabled
-    FastAPICache.init(backend, prefix="app", expire=30, cache_status_header="X-Cache")
+    FastAPICache.init(backend, prefix="app", expire=30, cache_status="Shop-API")
     FastAPICache.init(InMemoryBackend(), prefix="ignored")  # later calls are ignored
     assert FastAPICache.get_backend() is backend
     assert FastAPICache.get_prefix() == "app"
     assert FastAPICache.get_expire() == 30
     assert FastAPICache.get_coder().__name__ == "JsonCoder"
     assert FastAPICache.get_key_builder() is default_key_builder
-    assert FastAPICache.get_cache_status_header() == "X-Cache"
+    assert FastAPICache.get_cache_status() == "Shop-API"
     assert FastAPICache.get_enable() is True
     assert FastAPICache.get_guard().timeout == 1.0
     assert FastAPICache.tag_key("t").startswith("app:tag:{")

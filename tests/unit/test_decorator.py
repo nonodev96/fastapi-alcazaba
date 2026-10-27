@@ -9,6 +9,7 @@ from starlette.testclient import TestClient
 from examples.in_memory.main import app
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
+from tests.cache_status import cache_status, served
 
 
 @pytest.fixture(autouse=True)
@@ -22,14 +23,14 @@ def _init_cache(request: pytest.FixtureRequest) -> Generator[Any, Any, None]:  #
 def test_datetime() -> None:
     with TestClient(app) as client:
         response = client.get("/datetime")
-        assert response.headers.get("X-FastAPI-Cache") == "MISS"
+        assert cache_status(response.headers) == "fwd=miss; stored"
         first = datetime.datetime.fromisoformat(response.json()["now"])
         response = client.get("/datetime")
-        assert response.headers.get("X-FastAPI-Cache") == "HIT"
+        assert cache_status(response.headers) in ("hit; ttl=2", "hit; ttl=1")
         assert datetime.datetime.fromisoformat(response.json()["now"]) == first
         time.sleep(3)
         response = client.get("/datetime")
-        assert response.headers.get("X-FastAPI-Cache") == "MISS"
+        assert served(response.headers) == "miss"
         assert datetime.datetime.fromisoformat(response.json()["now"]) > first
 
 
@@ -37,18 +38,18 @@ def test_date() -> None:
     """Test path function without request or response arguments."""
     with TestClient(app) as client:
         response = client.get("/date")
-        assert response.headers.get("X-FastAPI-Cache") == "MISS"
+        assert served(response.headers) == "miss"
         assert datetime.date.fromisoformat(response.json()) == datetime.date.today()
 
         # do it again to test cache
         response = client.get("/date")
-        assert response.headers.get("X-FastAPI-Cache") == "HIT"
+        assert served(response.headers) == "hit"
         assert datetime.date.fromisoformat(response.json()) == datetime.date.today()
 
         # now test with cache disabled, as that's a separate code path
         FastAPICache.instance().enable = False
         response = client.get("/date")
-        assert "X-FastAPI-Cache" not in response.headers
+        assert cache_status(response.headers) == "fwd=bypass"
         assert datetime.date.fromisoformat(response.json()) == datetime.date.today()
         FastAPICache.instance().enable = True
 
@@ -74,7 +75,7 @@ def test_kwargs() -> None:
     with TestClient(app) as client:
         name = "Jon"
         response = client.get("/kwargs", params={"name": name})
-        assert "X-FastAPI-Cache" not in response.headers
+        assert "Cache-Status" not in response.headers  # the endpoint isn't the cached function
         assert response.json() == {"name": name}
 
 
@@ -87,26 +88,26 @@ def test_method() -> None:
 def test_pydantic_model() -> None:
     with TestClient(app) as client:
         r1 = client.get("/pydantic_instance")
-        assert r1.headers.get("X-FastAPI-Cache") == "MISS"
+        assert served(r1.headers) == "miss"
         r2 = client.get("/pydantic_instance")
-        assert r2.headers.get("X-FastAPI-Cache") == "HIT"
+        assert served(r2.headers) == "hit"
         assert r1.json() == r2.json()
 
 
 def test_non_get() -> None:
     with TestClient(app) as client:
         response = client.put("/uncached_put")
-        assert "X-FastAPI-Cache" not in response.headers
+        assert cache_status(response.headers) == "fwd=method"
         first = response.json()["value"]
         response = client.put("/uncached_put")
-        assert "X-FastAPI-Cache" not in response.headers
+        assert cache_status(response.headers) == "fwd=method"
         assert response.json() == {"value": first + 1}
 
 
 def test_alternate_injected_namespace() -> None:
     with TestClient(app) as client:
         response = client.get("/namespaced_injection")
-        assert response.headers.get("X-FastAPI-Cache") == "MISS"
+        assert served(response.headers) == "miss"
         assert response.json() == {
             "__fastapi_alcazaba_request": 42,
             "__fastapi_alcazaba_response": 17,
@@ -127,6 +128,7 @@ def test_cache_control() -> None:
         # no-cache
         response = client.get("/cached_put", headers={"Cache-Control": "no-cache"})
         assert response.json() == {"value": first + 1}
+        assert cache_status(response.headers) == "fwd=request; stored"
 
         response = client.get("/cached_put")
         assert response.json() == {"value": first + 1}
@@ -134,6 +136,7 @@ def test_cache_control() -> None:
         # no-store
         response = client.get("/cached_put", headers={"Cache-Control": "no-store"})
         assert response.json() == {"value": first + 2}
+        assert cache_status(response.headers) == "fwd=request"
 
         response = client.get("/cached_put")
         assert response.json() == {"value": first + 1}
@@ -145,7 +148,7 @@ def test_client_cache_control_is_ignored_by_default() -> None:
         first = client.get("/cached_put").json()
         response = client.get("/cached_put", headers={"Cache-Control": "no-cache"})
         assert response.json() == first
-        assert response.headers["X-FastAPI-Cache"] == "HIT"
+        assert served(response.headers) == "hit"
         response = client.get("/cached_put", headers={"Cache-Control": "no-store"})
         assert response.json() == first
 

@@ -15,6 +15,7 @@ from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.coder import PickleCoder
 from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.integrity import Signer
+from tests.cache_status import cache_status, served
 
 KEY = "k" * 32
 OTHER_KEY = "o" * 32
@@ -52,8 +53,8 @@ class TestPerUserEntries:
             again = client.get("/me", headers={"Authorization": "Bearer alice"})
         assert alice.json() == {"user": "Bearer alice"}
         assert bob.json() == {"user": "Bearer bob"}
-        assert bob.headers["X-FastAPI-Cache"] == "MISS"
-        assert again.headers["X-FastAPI-Cache"] == "HIT"
+        assert served(bob.headers) == "miss"
+        assert served(again.headers) == "hit"
         assert calls == ["Bearer alice", "Bearer bob"]
 
     def test_cookies_get_their_own_entries(self) -> None:
@@ -62,7 +63,7 @@ class TestPerUserEntries:
         with TestClient(app) as client:
             client.get("/me", headers={"Cookie": "session=1"})
             response = client.get("/me", headers={"Cookie": "session=2"})
-        assert response.headers["X-FastAPI-Cache"] == "MISS"
+        assert served(response.headers) == "miss"
         assert len(calls) == 2
 
     def test_per_user_responses_are_private(self) -> None:
@@ -79,7 +80,7 @@ class TestPerUserEntries:
         with TestClient(app) as client:
             client.get("/me")
             response = client.get("/me")
-        assert response.headers["X-FastAPI-Cache"] == "HIT"
+        assert served(response.headers) == "hit"
         assert response.headers["Cache-Control"] == "max-age=60"
         assert response.headers["Vary"] == "Authorization, Cookie"
         assert calls == ["anonymous"]
@@ -117,7 +118,7 @@ class TestSignedEntries:
         with TestClient(app) as client:
             client.get("/me")
             response = client.get("/me")
-        assert response.headers["X-FastAPI-Cache"] == "HIT"
+        assert served(response.headers) == "hit"
         assert len(calls) == 1
         stored = next(iter(backend._store.values())).data
         assert stored.startswith(b"fastapi_alcazaba/s1")
@@ -130,7 +131,7 @@ class TestSignedEntries:
                 value.data = value.data.replace(b"anonymous", b"evil-data")
             response = client.get("/me")
         assert response.json() == {"user": "anonymous"}
-        assert response.headers["X-FastAPI-Cache"] == "MISS"
+        assert served(response.headers) == "miss"
         assert len(calls) == 2
 
     def test_unsigned_entries_planted_in_the_backend_are_ignored(self) -> None:
@@ -164,7 +165,7 @@ class TestSignedEntries:
             FastAPICache.reset()
             FastAPICache.init(backend, signing_key=[KEY, OTHER_KEY])
             response = client.get("/me")
-        assert response.headers["X-FastAPI-Cache"] == "HIT"
+        assert served(response.headers) == "hit"
         assert len(calls) == 1
 
     def test_short_keys_are_rejected(self) -> None:
@@ -247,7 +248,8 @@ class TestOnlySuccessfulResponsesAreCached:
             first = client.get(path)
             second = client.get(path)
         assert first.status_code == second.status_code
-        assert "X-FastAPI-Cache" not in second.headers
+        assert cache_status(second.headers) == "fwd=miss"  # not stored
+        assert "ETag" not in second.headers
         assert len(calls) == 2
 
 
@@ -281,7 +283,7 @@ class TestBadEntriesAreRecomputed:
             response = client.get("/item")
         assert response.status_code == 200
         assert response.json() == {"name": "thing"}
-        assert response.headers["X-FastAPI-Cache"] == "MISS"
+        assert served(response.headers) == "miss"
         assert len(calls) == 2
 
 

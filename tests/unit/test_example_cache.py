@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from examples.cache import main
 from fastapi_alcazaba import FastAPICache
+from tests.cache_status import served
 
 
 @pytest.fixture(name="shop")
@@ -37,9 +38,9 @@ class TestPublicEntries:
     def test_one_entry_for_everybody(self, client: TestClient, shop: main.Shop) -> None:
         first = client.get("/products/1")
         second = client.get("/products/1", headers=bearer("alice"))
-        assert (first.headers["x-fastapi-cache"], second.headers["x-fastapi-cache"]) == (
-            "MISS",
-            "HIT",
+        assert (served(first.headers), served(second.headers)) == (
+            "miss",
+            "hit",
         )
         assert second.headers["cache-control"] == "max-age=600"
         assert second.json() == {"id": 1, "name": "Olive oil", "price": 9.5}
@@ -50,7 +51,7 @@ class TestPublicEntries:
         update = {"id": 1, "name": "Olive oil", "price": 10.0}
         assert client.put("/products/1", json=update).status_code == 200
         refreshed = client.get("/products/1")
-        assert refreshed.headers["x-fastapi-cache"] == "MISS"
+        assert served(refreshed.headers) == "miss"
         assert refreshed.json()["price"] == 10.0
 
     def test_errors_arent_cached(self, client: TestClient, shop: main.Shop) -> None:
@@ -64,10 +65,10 @@ class TestPersonalEntries:
         alice = client.get("/me", headers=bearer("alice"))
         again = client.get("/me", headers=bearer("alice"))
         bob = client.get("/me", headers=bearer("bob"))
-        assert [r.headers["x-fastapi-cache"] for r in (alice, again, bob)] == [
-            "MISS",
-            "HIT",
-            "MISS",
+        assert [served(r.headers) for r in (alice, again, bob)] == [
+            "miss",
+            "hit",
+            "miss",
         ]
         assert bob.json() == {"user": "bob"}
         assert bob.headers["cache-control"] == "private, max-age=30"
