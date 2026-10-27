@@ -4,17 +4,26 @@ bounded, and without the values of keys that name a secret."""
 import json
 import math
 import sys
+from contextlib import nullcontext
 from typing import Any
 
-from fastapi_alcazaba.audit import (
-    MAX_DEPTH,
-    MAX_ITEMS,
-    MAX_STRING,
-    REDACTED,
-    SENSITIVE_WORDS,
-    _Cleaner,
-    _words,
-)
+try:
+    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
+except ImportError:  # the unit tests run the target without it
+    atheris = None
+
+# Only Alcazaba's code is instrumented: its coverage is what guides the fuzzer, and instrumenting
+# every library imported takes longer than a short run lasts.
+with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nullcontext():
+    from fastapi_alcazaba.audit import (
+        MAX_DEPTH,
+        MAX_ITEMS,
+        MAX_STRING,
+        REDACTED,
+        SENSITIVE_WORDS,
+        _Cleaner,
+        _words,
+    )
 
 _CLEANER = _Cleaner(SENSITIVE_WORDS)
 _LONGEST = MAX_STRING + len("…[] more") + 20  # a string cut, with how much was left out
@@ -52,9 +61,6 @@ def fuzz_one_input(data: bytes) -> None:
 
 
 def main() -> None:
-    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
-
-    atheris.instrument_all()
     atheris.Setup(sys.argv, fuzz_one_input)
     atheris.Fuzz()
 

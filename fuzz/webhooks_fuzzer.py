@@ -3,10 +3,19 @@ they were signed with the secret; and what the secret signs is always accepted."
 
 import base64
 import sys
+from contextlib import nullcontext
 
 from fastapi import HTTPException
 
-from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookSigner
+try:
+    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
+except ImportError:  # the unit tests run the target without it
+    atheris = None
+
+# Only Alcazaba's code is instrumented: its coverage is what guides the fuzzer, and instrumenting
+# every library imported takes longer than a short run lasts.
+with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nullcontext():
+    from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookSigner
 
 _SECRET = "whsec_" + base64.b64encode(b"fuzz-only-webhook-secret-32bytes").decode()
 _WEBHOOKS = FastAPIWebhooks(_SECRET)
@@ -30,9 +39,6 @@ def fuzz_one_input(data: bytes) -> None:
 
 
 def main() -> None:
-    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
-
-    atheris.instrument_all()
     atheris.Setup(sys.argv, fuzz_one_input)
     atheris.Fuzz()
 

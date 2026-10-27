@@ -2,10 +2,19 @@
 position read from a cursor makes a cursor that reads back the same."""
 
 import sys
+from contextlib import nullcontext
 
 from fastapi import HTTPException
 
-from fastapi_alcazaba.pagination import FastAPIPaginationCursor
+try:
+    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
+except ImportError:  # the unit tests run the target without it
+    atheris = None
+
+# Only Alcazaba's code is instrumented: its coverage is what guides the fuzzer, and instrumenting
+# every library imported takes longer than a short run lasts.
+with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nullcontext():
+    from fastapi_alcazaba.pagination import FastAPIPaginationCursor
 
 _SIGNED = FastAPIPaginationCursor(secret="fuzz-only-secret-of-32-bytes-0123")  # noqa: S106
 _UNSIGNED = FastAPIPaginationCursor()
@@ -23,9 +32,6 @@ def fuzz_one_input(data: bytes) -> None:
 
 
 def main() -> None:
-    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
-
-    atheris.instrument_all()
     atheris.Setup(sys.argv, fuzz_one_input)
     atheris.Fuzz()
 

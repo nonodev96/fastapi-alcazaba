@@ -3,8 +3,17 @@ it gives the bytes as they are, None, or no more than the limit; and what Alcaza
 reads back the same."""
 
 import sys
+from contextlib import nullcontext
 
-from fastapi_alcazaba.compression import Compressor, decompress
+try:
+    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
+except ImportError:  # the unit tests run the target without it
+    atheris = None
+
+# Only Alcazaba's code is instrumented: its coverage is what guides the fuzzer, and instrumenting
+# every library imported takes longer than a short run lasts.
+with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nullcontext():
+    from fastapi_alcazaba.compression import Compressor, decompress
 
 LIMIT = 4096
 _MAGIC = b"\xffZ"  # compressed entries start with it, then a codec byte (1: zstd, 2: zlib)
@@ -25,9 +34,6 @@ def fuzz_one_input(data: bytes) -> None:
 
 
 def main() -> None:
-    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
-
-    atheris.instrument_all()
     atheris.Setup(sys.argv, fuzz_one_input)
     atheris.Fuzz()
 

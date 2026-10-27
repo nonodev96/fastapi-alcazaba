@@ -3,14 +3,23 @@ integers or None, and a client's file name always comes out safe and within its 
 
 import sys
 import unicodedata
+from contextlib import nullcontext
 
-from fastapi_alcazaba.uploads import (
-    _WINDOWS_RESERVED,
-    KNOWN_TYPES,
-    image_size,
-    safe_filename,
-    sniff,
-)
+try:
+    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
+except ImportError:  # the unit tests run the target without it
+    atheris = None
+
+# Only Alcazaba's code is instrumented: its coverage is what guides the fuzzer, and instrumenting
+# every library imported (FastAPI, pydantic...) takes longer than a short run lasts.
+with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nullcontext():
+    from fastapi_alcazaba.uploads import (
+        _WINDOWS_RESERVED,
+        KNOWN_TYPES,
+        image_size,
+        safe_filename,
+        sniff,
+    )
 
 _FORBIDDEN = frozenset('/\\<>:"|?*')
 
@@ -35,9 +44,6 @@ def fuzz_one_input(data: bytes) -> None:
 
 
 def main() -> None:
-    import atheris  # pylint: disable=import-error  # in ClusterFuzzLite's image
-
-    atheris.instrument_all()
     atheris.Setup(sys.argv, fuzz_one_input)
     atheris.Fuzz()
 
