@@ -2,13 +2,13 @@
 
 An app where users upload an avatar and documents, then download them again. Every file is
 judged by its bytes, not by its name or the `Content-Type` the client sent:
-[`FastAPIUploads`](../index.md#checking-uploads) checks avatars (PNG, JPEG, GIF or WebP, at most
+[`FastAPIUploads`](../guide/uploads.md) checks avatars (PNG, JPEG, GIF or WebP, at most
 2 MiB and 16 million pixels) as a dependency, and documents (PDF, Word, Excel and PowerPoint,
 up to five at a time) with `check()`. Files are stored under names of the app's own and served
 back with the type found in them.
 
-[`BodySizeLimitMiddleware`](../index.md#security-headers-and-body-size) gives each route a body
-limit, and [`SecurityHeadersMiddleware`](../index.md#security-headers-and-body-size) adds
+[`BodySizeLimitMiddleware`](../guide/browser.md#security-headers-and-body-size) gives each route a body
+limit, and [`SecurityHeadersMiddleware`](../guide/browser.md#security-headers-and-body-size) adds
 `X-Content-Type-Options: nosniff` to every response, so browsers don't second-guess the type.
 
 ## Run it

@@ -1,10 +1,10 @@
 # API keys, revoked tokens and one-time codes
 
 An orders API for machine clients. Their owners sign in with a code sent by e-mail
-([`OneTimeCodes`](../index.md#revoked-tokens-and-one-time-codes)), rate-limited per address with
-a [`FastAPIRateLimiter`](../index.md#rate-limiting), and get an access token that logging out
-revokes ([`TokenBlocklist`](../index.md#revoked-tokens-and-one-time-codes)). With it they create
-API keys for their programs ([`FastAPIAPIKeys`](../index.md#api-keys)): shown once, stored only
+([`OneTimeCodes`](../guide/auth.md#revoked-tokens-and-one-time-codes)), rate-limited per address with
+a [`FastAPIRateLimiter`](../guide/limits.md#rate-limiting), and get an access token that logging out
+revokes ([`TokenBlocklist`](../guide/auth.md#revoked-tokens-and-one-time-codes)). With it they create
+API keys for their programs ([`FastAPIAPIKeys`](../guide/auth.md#api-keys)): shown once, stored only
 as digests, with scopes and an expiry date.
 
 No JWT library is involved: a small stand-in signs the same claims (`sub`, `jti`, `iat`, `exp`)

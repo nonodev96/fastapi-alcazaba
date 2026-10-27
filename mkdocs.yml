@@ -52,6 +52,22 @@ extra:
 
 nav:
   - Home: index.md
+  - Guide:
+    - guide/index.md
+    - Response cache: guide/cache.md
+    - Backends: guide/backends.md
+    - Pagination: guide/pagination.md
+    - Rate and concurrency limits: guide/limits.md
+    - Idempotency keys: guide/idempotency.md
+    - API keys, tokens and codes: guide/auth.md
+    - Sessions, CSRF and security headers: guide/browser.md
+    - Audit trail: guide/audit.md
+    - Checking uploads: guide/uploads.md
+    - Webhooks and outbound calls: guide/webhooks.md
+    - Errors and observability: guide/observability.md
+    - Background work: guide/background.md
+    - Operations: guide/operations.md
+    - Security model and resilience: guide/security-model.md
   - Examples:
     - examples/index.md
     - Response cache: examples/cache.md
@@ -86,6 +102,7 @@ nav:
     - Security policy: security.md
     - Deployment and releases: releasing.md
     - Verifying releases: verifying.md
+    - Development: development.md
     - Changelog: changelog.md
 
 markdown_extensions:
@@ -125,4 +142,6 @@ plugins:
 validation:
   links:
     not_found: warn
+    # A link to a heading that isn't there: the guide's sections move between pages.
+    anchors: warn
     unrecognized_links: ignore

@@ -1,11 +1,11 @@
 # Operations
 
 An app operated at runtime, without a deploy, through a small admin API that takes a bearer token.
-It closes and reopens the app with [`FastAPIMaintenance`](../index.md#maintenance-mode), whose
+It closes and reopens the app with [`FastAPIMaintenance`](../guide/operations.md#maintenance-mode), whose
 middleware answers 503 with `Retry-After` to everything but the health check and the admin routes.
-It defines [`FastAPIFeatureFlags`](../index.md#feature-flags): a new checkout rolled out to a
+It defines [`FastAPIFeatureFlags`](../guide/operations.md#feature-flags): a new checkout rolled out to a
 percentage of the users, and a beta page that only the users on an allow list can see (a 404 for
-everybody else). And a [`FastAPIBreaker`](../index.md#circuit-breakers) turns the failures of a
+everybody else). And a [`FastAPIBreaker`](../guide/operations.md#circuit-breakers) turns the failures of a
 flaky shipping service into a fast 503 while it's down.
 
 The maintenance switch and the flags live in the backend, so a change made through one process

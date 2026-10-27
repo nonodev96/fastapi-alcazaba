@@ -1,7 +1,7 @@
 # Pagination
 
-A product catalogue paginated with [`FastAPIPagination`](../index.md#pagination) and
-[`FastAPIPaginationCursor`](../index.md#by-cursor), and cached three ways: one entry per page,
+A product catalogue paginated with [`FastAPIPagination`](../guide/pagination.md) and
+[`FastAPIPaginationCursor`](../guide/pagination.md#by-cursor), and cached three ways: one entry per page,
 one entry for a whole short list sliced into pages, and one entry per cursor. Every list is
 tagged, so adding a product drops every page at once.
 

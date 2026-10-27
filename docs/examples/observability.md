@@ -1,18 +1,18 @@
 # Errors and observability
 
 An orders API that is easy to operate. Its errors are RFC 9457 problem details, from
-[`FastAPIProblemDetails`](../index.md#problem-details): a validation error says where and what
-without echoing what was sent, running out of stock is a [`Problem`](../index.md#problem-details)
+[`FastAPIProblemDetails`](../guide/observability.md#problem-details): a validation error says where and what
+without echoing what was sent, running out of stock is a [`Problem`](../guide/observability.md#problem-details)
 with an `available` member, and a bug is a bare 500 that tells the client nothing about it.
-[`RequestIDMiddleware`](../index.md#request-ids) gives every request an ID, which `RequestIDLogFilter`
+[`RequestIDMiddleware`](../guide/observability.md#request-ids) gives every request an ID, which `RequestIDLogFilter`
 puts in every log line, uvicorn's included, and which comes back in a header and in every problem.
 
-[`RequestTimeoutMiddleware`](../index.md#request-timeouts) gives every request a deadline: the slow
+[`RequestTimeoutMiddleware`](../guide/observability.md#request-timeouts) gives every request a deadline: the slow
 sales report gets a 504 and its database connection back, while the CSV export streams for as long
-as it takes. [`health_router`](../index.md#health-checks) adds the probes of the load balancer,
+as it takes. [`health_router`](../guide/observability.md#health-checks) adds the probes of the load balancer,
 with the database as a critical check and the cache as a non-critical one. OpenTelemetry needs no
 code: under its zero-code instrumentation, Alcazaba's metrics and spans go out with the app's
-([Metrics and traces](../index.md#metrics-and-traces)).
+([Metrics and traces](../guide/observability.md#metrics-and-traces)).
 
 ## Run it
 

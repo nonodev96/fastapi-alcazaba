@@ -57,6 +57,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text, and lone surrogates in any text of an event as U+FFFD.
 - The API reference has a page per tool (cache, backends, limits, audit...) with an index of
   them, instead of one long page; each object is set apart, with its kind and its signature.
+- So does the guide: a Guide tab starts with getting started and has a page per tool, and the
+  documentation's home page introduces the tools instead of holding the whole README.
 
 ### Fixed
 

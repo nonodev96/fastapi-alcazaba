@@ -3,7 +3,7 @@
 The type of a file from its bytes, its size and pixels, and safe file names.
 In `fastapi_alcazaba.uploads`.
 
-In the guide: [Checking uploads](../index.md#checking-uploads). In an app: [the example](../examples/uploads.md).
+In the guide: [Checking uploads](../guide/uploads.md). In an app: [the example](../examples/uploads.md).
 
 ::: fastapi_alcazaba.uploads.FastAPIUploads
 

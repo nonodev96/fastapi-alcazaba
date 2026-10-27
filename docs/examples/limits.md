@@ -3,8 +3,8 @@
 An API with a public search limited per client address, routes for signed-in users that share
 one budget per user (a report takes ten times as much of it as a list of orders), and a slow
 report endpoint that renders at most two reports at a time across every process.
-[`FastAPIRateLimiter`](../index.md#rate-limiting) counts the requests per minute, and
-[`FastAPIConcurrencyLimiter`](../index.md#concurrency-limits) the ones in flight.
+[`FastAPIRateLimiter`](../guide/limits.md#rate-limiting) counts the requests per minute, and
+[`FastAPIConcurrencyLimiter`](../guide/limits.md#concurrency-limits) the ones in flight.
 
 ## Run it
 

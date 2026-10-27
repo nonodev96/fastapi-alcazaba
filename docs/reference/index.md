@@ -1,7 +1,7 @@
 # API reference
 
-Every public class and function, by tool, with its parameters and what it raises. The guide on
-the [home page](../index.md) tells how to use them, and the [examples](../examples/index.md) show
+Every public class and function, by tool, with its parameters and what it raises. The
+[guide](../guide/index.md) tells how to use them, and the [examples](../examples/index.md) show
 them in complete apps.
 
 <div class="grid cards" markdown>

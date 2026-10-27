@@ -4,7 +4,7 @@ What signs and encrypts entries, RFC 8785 canonical JSON, the backends' circuit 
 the exceptions.
 In `fastapi_alcazaba.core`.
 
-In the guide: [Security model](../index.md#security-model) · [Encrypted entries](../index.md#encrypted-entries) · [Resilience](../index.md#resilience).
+In the guide: [Security model](../guide/security-model.md#security-model) · [Encrypted entries](../guide/cache.md#encrypted-entries) · [Resilience](../guide/security-model.md#resilience).
 
 ::: fastapi_alcazaba.core.Signer
 

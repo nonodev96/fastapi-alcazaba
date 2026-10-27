@@ -1,12 +1,12 @@
 # Webhooks in and out
 
 A shop that takes webhooks from its payment provider and sends webhooks of its own to the URLs
-its users register. [`FastAPIWebhooks`](../index.md#signed-webhooks) accepts only the provider's
+its users register. [`FastAPIWebhooks`](../guide/webhooks.md#signed-webhooks) accepts only the provider's
 events signed with its secret, and each delivery once. When an order is paid, the shop signs an
-`order.paid` event with each user's secret ([`WebhookSigner`](../index.md#signed-webhooks)) and
-sends it through [`ResilientTransport`](../index.md#outbound-calls), for a deadline and a
+`order.paid` event with each user's secret ([`WebhookSigner`](../guide/webhooks.md#signed-webhooks)) and
+sends it through [`ResilientTransport`](../guide/webhooks.md#outbound-calls), for a deadline and a
 circuit breaker per endpoint, around
-[`SSRFGuardTransport`](../index.md#urls-your-users-give-ssrf), so that a user can't point the
+[`SSRFGuardTransport`](../guide/webhooks.md#urls-your-users-give-ssrf), so that a user can't point the
 shop at its own network.
 
 ## Run it

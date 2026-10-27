@@ -2,10 +2,10 @@
 
 A payments API where a client that retries after a timeout or a dropped connection gets the first
 response again, instead of charging the card twice.
-[`IdempotencyMiddleware`](../index.md#idempotency-keys) keeps each response under the client's
+[`IdempotencyMiddleware`](../guide/idempotency.md) keeps each response under the client's
 `Idempotency-Key`, and `require_idempotency_key` makes `POST /payments` refuse requests without
 one. The responses are kept in the cache installed on the app, signed with its
-[`signing_key`](../index.md#security-model).
+[`signing_key`](../guide/security-model.md#security-model).
 
 ## Run it
 

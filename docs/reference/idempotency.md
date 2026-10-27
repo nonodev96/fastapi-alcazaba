@@ -3,7 +3,7 @@
 The middleware that replays the first response to a retried request.
 In `fastapi_alcazaba.idempotency`.
 
-In the guide: [Idempotency keys](../index.md#idempotency-keys). In an app: [the example](../examples/idempotency.md).
+In the guide: [Idempotency keys](../guide/idempotency.md). In an app: [the example](../examples/idempotency.md).
 
 ::: fastapi_alcazaba.idempotency.IdempotencyMiddleware
 

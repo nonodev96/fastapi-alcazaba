@@ -1,12 +1,12 @@
 # Background work
 
 A sign-up service whose work goes on after the response. `POST /users` saves the user and hands
-the welcome e-mail to [`FastAPITaskQueue`](../index.md#task-queue), which runs it in the background,
+the welcome e-mail to [`FastAPITaskQueue`](../guide/background.md#task-queue), which runs it in the background,
 in whichever process takes it, and retries it while the e-mail provider is down. Out of retries, it
 becomes a dead letter, which an admin endpoint lists and puts back in the queue once the provider
-is back. [`FastAPIScheduler`](../index.md#scheduled-jobs) ends the trials on the hour and sends the
+is back. [`FastAPIScheduler`](../guide/background.md#scheduled-jobs) ends the trials on the hour and sends the
 team a sign-up report on weekdays at 8:00 in Madrid, each run in one process only. And
-[`FastAPILeader`](../index.md#leader-election) has one process relay the outbox, the events saved
+[`FastAPILeader`](../guide/background.md#leader-election) has one process relay the outbox, the events saved
 with the users, to the message broker; if that process stops, another one takes over.
 
 Unlike the other examples, it needs Redis or Valkey: the tasks live in Redis streams that every

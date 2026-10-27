@@ -3,7 +3,7 @@
 Pages, limit and offset, and signed cursors, with their parameters and responses.
 In `fastapi_alcazaba.pagination`.
 
-In the guide: [Pagination](../index.md#pagination). In an app: [the example](../examples/pagination.md).
+In the guide: [Pagination](../guide/pagination.md). In an app: [the example](../examples/pagination.md).
 
 ::: fastapi_alcazaba.pagination.FastAPIPagination
 

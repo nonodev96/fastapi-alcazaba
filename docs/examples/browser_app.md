@@ -2,13 +2,13 @@
 
 A small shop rendered on the server, with plain HTML and a few lines of JavaScript. Who signed in
 and the cart live in a server-side session
-([`ServerSessionMiddleware`](../index.md#server-side-sessions)): the cookie only carries a random
+([`ServerSessionMiddleware`](../guide/browser.md#server-side-sessions)): the cookie only carries a random
 id, which signing in replaces and signing out deletes, and 30 minutes without requests end it.
-[`CSRFMiddleware`](../index.md#csrf-protection) refuses what pages on other sites make the
+[`CSRFMiddleware`](../guide/browser.md#csrf-protection) refuses what pages on other sites make the
 browser send, and with `require_token=True` also wants the page's token in a header.
-[`SecurityHeadersMiddleware` and `BodySizeLimitMiddleware`](../index.md#security-headers-and-body-size)
+[`SecurityHeadersMiddleware` and `BodySizeLimitMiddleware`](../guide/browser.md#security-headers-and-body-size)
 add the security headers, with a Content-Security-Policy for the pages, and refuse large bodies. A
-[`FastAPIRateLimiter`](../index.md#rate-limiting) slows down password guessing.
+[`FastAPIRateLimiter`](../guide/limits.md#rate-limiting) slows down password guessing.
 
 ## Run it
 

@@ -1,3 +1,4 @@
+<!-- --8<-- [start:header] -->
 <p align="center">
   <img src="https://raw.githubusercontent.com/nonodev96/fastapi-alcazaba/main/docs/assets/logo.png" alt="Alcazaba's logo: a fortress wall whose horseshoe-arch gate opens on a bolt" width="150">
 </p>
@@ -9,6 +10,8 @@
   Response cache, rate limits, sessions, CSRF, webhooks, a task queue and more, in one package.
 </p>
 
+<!-- --8<-- [end:header] -->
+
 <p align="center">
   <a href="https://nonodev96.github.io/fastapi-alcazaba/"><strong>Documentation</strong></a> ·
   <a href="https://nonodev96.github.io/fastapi-alcazaba/examples/">Examples</a> ·
@@ -17,6 +20,7 @@
   <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/SECURITY.md">Security policy</a>
 </p>
 
+<!-- --8<-- [start:badges] -->
 <p align="center">
   <a href="https://github.com/nonodev96/fastapi-alcazaba/actions/workflows/ci.yml"><img src="https://github.com/nonodev96/fastapi-alcazaba/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://pypi.org/project/fastapi-alcazaba/"><img src="https://img.shields.io/pypi/v/fastapi-alcazaba?label=PyPI&color=c2552f" alt="PyPI version"></a>
@@ -24,6 +28,8 @@
   <a href="https://scorecard.dev/viewer/?uri=github.com/nonodev96/fastapi-alcazaba"><img src="https://api.scorecard.dev/projects/github.com/nonodev96/fastapi-alcazaba/badge" alt="OpenSSF Scorecard"></a>
   <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-0e9e8e" alt="License: Apache 2.0"></a>
 </p>
+
+<!-- --8<-- [end:badges] -->
 
 ---
 
@@ -62,6 +68,7 @@ built with security in mind and tested against real servers (the
 | [Two-level cache](#two-level-cache) | `backends` | a copy in each process in front of Redis, kept in sync by pub/sub |
 | [Metrics and traces](#metrics-and-traces) | `telemetry` | OpenTelemetry for all of the above |
 
+<!-- --8<-- [start:safe-by-default] -->
 The response cache is safe by default:
 
 - **Users never get each other's responses.** Requests carrying `Authorization` or `Cookie` get
@@ -91,7 +98,10 @@ hits that return the annotated type (Pydantic models, not dicts), deterministic 
 `Alcazaba; fwd=miss; stored`), the response model in OpenAPI, `exclude_params` and
 `stale-while-revalidate`.
 
+<!-- --8<-- [end:safe-by-default] -->
+
 ## Install
+<!-- --8<-- [start:install] -->
 
 ```shell
 pip install fastapi-alcazaba            # in-memory backend only
@@ -103,7 +113,10 @@ pip install "fastapi-alcazaba[zstd]"    # zstd compression before Python 3.14
 
 Python 3.11+, FastAPI 0.115+ and Pydantic v2.
 
+<!-- --8<-- [end:install] -->
+
 ## Quick start
+<!-- --8<-- [start:quick-start] -->
 
 ```python
 from collections.abc import AsyncIterator
@@ -172,7 +185,10 @@ pydantic-settings`). Every parameter that takes a key or a secret also takes pyd
 `SecretStr` (or `SecretBytes`) as it is, so the value stays out of the settings' repr and of
 tracebacks until Alcazaba uses it. The other snippets read theirs from the same `settings`.
 
+<!-- --8<-- [end:quick-start] -->
+
 ## Configuration
+<!-- --8<-- [start:configuration] -->
 
 ### `FastAPICache.init()`
 
@@ -235,7 +251,10 @@ counters, revoked tokens, one-time codes and idempotency records are kept apart,
 revocation back; `InMemoryBackend` keeps them apart too, so caching many responses never evicts
 them.
 
+<!-- --8<-- [end:configuration] -->
+
 ## Several caches, dependency injection and `get_or_set`
+<!-- --8<-- [start:several-caches-dependency-injection-and-get_or_set] -->
 
 `FastAPICache` is one global cache. For one cache per app, or several with different settings,
 create `Cache` instances (same arguments as `FastAPICache.init()`) and decorate with their
@@ -268,7 +287,10 @@ async def orders(
 compression, single flight, locks, tags). Close the backend at shutdown with `await
 cache.close()`.
 
+<!-- --8<-- [end:several-caches-dependency-injection-and-get_or_set] -->
+
 ## Invalidating by tag
+<!-- --8<-- [start:invalidating-by-tag] -->
 
 Tag entries when they're cached and delete them all when the data changes, without knowing their
 keys:
@@ -290,7 +312,10 @@ The function receives the same arguments as the endpoint. Tags work with the in-
 Valkey and GLIDE backends; in Redis-like servers each tag is a set that lives as long as its
 longest-lived entry.
 
+<!-- --8<-- [end:invalidating-by-tag] -->
+
 ## Rate limiting
+<!-- --8<-- [start:rate-limiting] -->
 
 `FastAPIRateLimiter` is a FastAPI dependency that lets each client make `times` requests per
 window to a route; the next ones get a `429 Too Many Requests` with `Retry-After`. Its counters
@@ -392,7 +417,10 @@ async def login(request: Request, form: Annotated[LoginForm, Form()]) -> Token:
 | `@skip_limiter` | Put the limiter only on the routes or routers that need it |
 | No headers for clients | `RateLimit` and `RateLimit-Policy` on the responses |
 
+<!-- --8<-- [end:rate-limiting] -->
+
 ## Locks
+<!-- --8<-- [start:locks] -->
 
 A lock shared by every process and container, for work that only one of them must do at a time:
 
@@ -423,7 +451,10 @@ async def nightly_report() -> None:  # every instance runs it; one builds the re
   the lock while it still runs. `lock.held` turns False when the renewals couldn't keep up: check it
   between the steps of long jobs, and make work that must never overlap idempotent too.
 
+<!-- --8<-- [end:locks] -->
+
 ## Idempotency keys
+<!-- --8<-- [start:idempotency-keys] -->
 
 A client that retries a POST after a timeout or a dropped connection gets the first response
 again, instead of creating a second order or paying twice
@@ -469,7 +500,10 @@ The client sends a fresh key with each new request, and the same one when it ret
 - Requests without the header go through untouched. It applies to POST and PATCH (`methods=`),
   and needs a backend with locks.
 
+<!-- --8<-- [end:idempotency-keys] -->
+
 ## Revoked tokens and one-time codes
+<!-- --8<-- [start:revoked-tokens-and-one-time-codes] -->
 
 A JWT can't be taken back once issued. `TokenBlocklist` keeps the revoked ones in the cache's
 backend, shared by every process, until they would have expired anyway:
@@ -537,7 +571,10 @@ async def login(email: str, code: str) -> Token:
   With a `signing_key` or `encryption_key`, revocations are sealed and planted ones are ignored.
   Whoever can delete keys in the backend can still un-revoke tokens.
 
+<!-- --8<-- [end:revoked-tokens-and-one-time-codes] -->
+
 ## API keys
+<!-- --8<-- [start:api-keys] -->
 
 `FastAPIAPIKeys` authenticates machine clients by an API key. It generates the keys and checks
 them; your database keeps a record of each, never the key itself:
@@ -593,7 +630,10 @@ async def orders(key: Annotated[ApiKeyRow, Depends(keys.require("orders:read"))]
 - **Without a dependency:** `await keys.authenticate(key)` for keys that come some other way (a
   WebSocket message).
 
+<!-- --8<-- [end:api-keys] -->
+
 ## Signed webhooks
+<!-- --8<-- [start:signed-webhooks] -->
 
 `FastAPIWebhooks` accepts only webhooks signed with your secret, and each delivery once.
 `WebhookSigner` signs the ones you send. Both follow
@@ -648,7 +688,10 @@ await client.post(url, content=body, headers=signer.sign(body))
 - **Without a dependency:** `webhooks.verify(headers, body)` checks the signature and the
   timestamp (not replays), for queues and scripts.
 
+<!-- --8<-- [end:signed-webhooks] -->
+
 ## Outbound calls
+<!-- --8<-- [start:outbound-calls] -->
 
 `ResilientTransport` is an httpx transport for the calls your app makes to other services: a
 deadline for each call and a circuit breaker for each origin. It needs httpx2 (or httpx):
@@ -764,7 +807,10 @@ except BlockedDestinationError:
   the `HTTP_PROXY` variables when it's given a transport.) An egress proxy that filters
   destinations itself, such as Smokescreen, is the alternative.
 
+<!-- --8<-- [end:outbound-calls] -->
+
 ## Security headers and body size
+<!-- --8<-- [start:security-headers-and-body-size] -->
 
 Two ASGI middlewares for what FastAPI leaves to the deployment:
 
@@ -801,7 +847,10 @@ app.add_middleware(SecurityHeadersMiddleware)  # last: the outermost
 - Both are plain ASGI middlewares, not `BaseHTTPMiddleware`: streaming responses still stream,
   and WebSockets go through untouched.
 
+<!-- --8<-- [end:security-headers-and-body-size] -->
+
 ## CSRF protection
+<!-- --8<-- [start:csrf-protection] -->
 
 A page on another site can make the user's browser send a form, or a `fetch`, to your app, and
 the browser adds the user's cookies by itself. `CSRFMiddleware` refuses those requests with a 403,
@@ -852,7 +901,10 @@ app.add_middleware(
   counted in `fastapi_alcazaba.csrf.refused`. A plain ASGI middleware: streaming responses still
   stream.
 
+<!-- --8<-- [end:csrf-protection] -->
+
 ## Server-side sessions
+<!-- --8<-- [start:server-side-sessions] -->
 
 Starlette's `SessionMiddleware` keeps the whole session in a signed cookie: the client can read
 it (it's only base64), it can't be revoked (a copied cookie keeps working after logout, until it
@@ -908,7 +960,10 @@ async def logout(request: Request) -> RedirectResponse:
 - WebSockets get `websocket.session` too, read-only (`rotate_session` and `clear_session` raise
   there). A plain ASGI middleware: streaming responses still stream.
 
+<!-- --8<-- [end:server-side-sessions] -->
+
 ## Checking uploads
+<!-- --8<-- [start:checking-uploads] -->
 
 The name and the `Content-Type` of an upload are whatever the client chose: an HTML page sent as
 `cat.png` would be served back as HTML. `FastAPIUploads` checks the file itself, with nothing but
@@ -958,7 +1013,10 @@ the `content_type` found in its bytes, its `size`, its `width` and `height` (ima
   macros, archives may expand to far more than their size, and the frames of a GIF aren't counted.
   Allow HTML, SVG or XML only to serve them as attachments from another domain.
 
+<!-- --8<-- [end:checking-uploads] -->
+
 ## Problem details
+<!-- --8<-- [start:problem-details] -->
 
 `FastAPIProblemDetails` answers errors with RFC 9457 problem details
 (`application/problem+json`) instead of FastAPI's `{"detail": ...}`, and without telling clients
@@ -1017,7 +1075,10 @@ async def order(item: Item) -> Order:
 - Handlers you register for a status code or an exception subclass still win; install it before
   the app starts.
 
+<!-- --8<-- [end:problem-details] -->
+
 ## Request IDs
+<!-- --8<-- [start:request-ids] -->
 
 `RequestIDMiddleware` gives every request an ID, to find all the log lines of one request and to
 let a client quote it when it reports an error:
@@ -1061,7 +1122,10 @@ error lines carry the ID.
 - Add it last, the outermost, so that the answers of the other middlewares (a 413, a 504) carry
   the ID too.
 
+<!-- --8<-- [end:request-ids] -->
+
 ## Audit trail
+<!-- --8<-- [start:audit-trail] -->
 
 `FastAPIAudit` records the sensitive actions: who did what to which resource, whether it worked,
 and the request it came from. As a dependency, it writes the event when the endpoint ends:
@@ -1139,7 +1203,10 @@ with open("audit.log") as lines:
 problems = verify_audit_trail(events, settings.audit_signing_key)
 ```
 
+<!-- --8<-- [end:audit-trail] -->
+
 ## Request timeouts
+<!-- --8<-- [start:request-timeouts] -->
 
 `RequestTimeoutMiddleware` gives every request a deadline, so that a hung dependency or a client
 that trickles its body doesn't hold a request (and its database connection, its memory…)
@@ -1176,7 +1243,10 @@ app.add_middleware(
 - Both cases are logged as warnings with the method and the route template. A plain ASGI
   middleware: streaming responses still stream.
 
+<!-- --8<-- [end:request-timeouts] -->
+
 ## Health checks
+<!-- --8<-- [start:health-checks] -->
 
 `health_router()` adds the two endpoints that load balancers and orchestrators probe:
 
@@ -1218,7 +1288,10 @@ health check, e.g. the target group of an ECS service) at `/health/ready`.
 - The endpoints are left out of the OpenAPI schema unless `include_in_schema=True`; responses
   carry `Cache-Control: no-store`.
 
+<!-- --8<-- [end:health-checks] -->
+
 ## Scheduled jobs
+<!-- --8<-- [start:scheduled-jobs] -->
 
 `FastAPIScheduler` runs jobs every N seconds or by a cron expression, in every process of the
 app, and each tick once across them all:
@@ -1268,7 +1341,10 @@ app = FastAPI(lifespan=scheduler.lifespan)  # or `async with scheduler:` in your
   job runs next. A job is named after its module and function (`name=` for another), the name
   that its ticks have in the backend.
 
+<!-- --8<-- [end:scheduled-jobs] -->
+
 ## Task queue
+<!-- --8<-- [start:task-queue] -->
 
 `FastAPITaskQueue` hands work over from an endpoint to run in the background, in this process or
 in any other that shares the cache's Redis or Valkey:
@@ -1328,7 +1404,10 @@ async def create_user(user: NewUser) -> None:
 - **Small on purpose:** no results, priorities or workflows. Each run is the root of a trace of its
   own, linked to the span of the request that enqueued it.
 
+<!-- --8<-- [end:task-queue] -->
+
 ## Circuit breakers
+<!-- --8<-- [start:circuit-breakers] -->
 
 `FastAPIBreaker` stops calling a dependency that keeps failing (a database, an SDK, a service
 reached without httpx), so that requests fail at once instead of waiting for it, and it gets room
@@ -1370,7 +1449,10 @@ async def refund(order: Order) -> None:
   `"closed"`, `"open"` or `"half-open"`, handy in a health check:
   `HealthCheck(lambda: payments.state != "open", critical=False)`.
 
+<!-- --8<-- [end:circuit-breakers] -->
+
 ## Concurrency limits
+<!-- --8<-- [start:concurrency-limits] -->
 
 `FastAPIConcurrencyLimiter` limits how many requests run *at the same time*, across every process
 and container, for endpoints whose cost is how long they run (AI, OCR, PDF rendering). The rate
@@ -1420,7 +1502,10 @@ async def scan_pending() -> None:  # outside requests: a job, a queue consumer
   loses its slot while it still runs, and someone else may take it. Taking a slot when most are
   busy costs a round trip per busy slot tried.
 
+<!-- --8<-- [end:concurrency-limits] -->
+
 ## Leader election
+<!-- --8<-- [start:leader-election] -->
 
 `FastAPILeader` elects one process among all those sharing the backend, for work that must run in
 exactly one of them all the time (a queue consumer, an outbox relay, a watcher) rather than at
@@ -1462,7 +1547,10 @@ if leader.is_leader:  # anywhere, sync code included
   overlap the next one for a moment. Check `is_leader` between the steps of long work, and keep
   that work idempotent.
 
+<!-- --8<-- [end:leader-election] -->
+
 ## Maintenance mode
+<!-- --8<-- [start:maintenance-mode] -->
 
 `FastAPIMaintenance` is a switch shared by every process; while it's on, `MaintenanceMiddleware`
 answers 503 with `Retry-After` to every request but the allowed ones:
@@ -1505,7 +1593,10 @@ await maintenance.disable()
   state planted in the backend by someone else is ignored; the message is capped at 1000
   characters.
 
+<!-- --8<-- [end:maintenance-mode] -->
+
 ## Feature flags
+<!-- --8<-- [start:feature-flags] -->
 
 `FastAPIFeatureFlags` keeps flags in the backend: turn features on and off for everybody, for some
 users or tenants, or for a percentage of them, from any process and without a deploy:
@@ -1552,7 +1643,10 @@ async def beta_report() -> Report: ...  # 404 while the flag is off for the user
   definitions planted by someone else are ignored. Names are up to 100 letters, digits, `.`, `_`
   and `-`.
 
+<!-- --8<-- [end:feature-flags] -->
+
 ## Resilience
+<!-- --8<-- [start:resilience] -->
 
 The cache never makes a request fail. Every backend call has a timeout (`backend_timeout`, 1 s by
 default): if it runs out, or the backend fails, the request goes on without cache. After
@@ -1567,7 +1661,10 @@ callers refresh an entry, with growing probability, during the last 10 % of its 
 entries are renewed before they expire, instead of every caller missing at once. If that refresh
 fails, the cached value is served.
 
+<!-- --8<-- [end:resilience] -->
+
 ## Metrics and traces
+<!-- --8<-- [start:metrics-and-traces] -->
 
 Alcazaba logs under `fastapi_alcazaba.*` with a `NullHandler`, as libraries do: its warnings (a
 breaker that opens, maintenance turned on, a backend that fails) show once the app configures
@@ -1648,13 +1745,19 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.audit` | `fastapi_alcazaba.action`, `fastapi_alcazaba.outcome` (success, failure, denied): a burst of denied is someone probing |
 | `fastapi_alcazaba.audit.undelivered` | `fastapi_alcazaba.sink`, `fastapi_alcazaba.reason` (error, timeout): events a sink didn't write |
 
+<!-- --8<-- [end:metrics-and-traces] -->
+
 ## Responses in several languages
+<!-- --8<-- [start:responses-in-several-languages] -->
 
 If an endpoint translates its response according to a request header, such as
 `Accept-Language`, add that header to `vary_headers` (`@cache(vary_headers=["accept-language"])`),
 or a user would get the cached response in another user's language.
 
+<!-- --8<-- [end:responses-in-several-languages] -->
+
 ## Pagination
+<!-- --8<-- [start:pagination] -->
 
 Three tools, with nothing but FastAPI and pydantic: `FastAPIPagination` (`?page=2&size=20`),
 `FastAPIPaginationLimitOffset` (`?limit=20&offset=40`) and `FastAPIPaginationCursor`
@@ -1744,7 +1847,10 @@ from it keeps a single entry. The
 [pagination example](https://github.com/nonodev96/fastapi-alcazaba/blob/main/examples/pagination/main.py)
 does all three, with the database session left out of the key (`exclude_params`).
 
+<!-- --8<-- [end:pagination] -->
+
 ## Security model
+<!-- --8<-- [start:security-model] -->
 
 - **What gets cached:** `GET` requests (any call for plain functions) whose response is a 200 and
   doesn't say `Cache-Control: no-store`.
@@ -1767,7 +1873,10 @@ does all three, with the database session left out of the key (`exclude_params`)
 
 Report vulnerabilities as described in [SECURITY.md](https://github.com/nonodev96/fastapi-alcazaba/blob/main/SECURITY.md).
 
+<!-- --8<-- [end:security-model] -->
+
 ## Encrypted entries
+<!-- --8<-- [start:encrypted-entries] -->
 
 ```python
 FastAPICache.init(
@@ -1783,7 +1892,10 @@ any change to it is detected. A list of secrets rotates them: the first encrypts
 decrypt. Encryption also authenticates the entries, so it replaces `signing_key` rather than
 adding to it. It costs a few microseconds per entry.
 
+<!-- --8<-- [end:encrypted-entries] -->
+
 ## Two-level cache
+<!-- --8<-- [start:two-level-cache] -->
 
 ```python
 from fastapi_alcazaba.backends.tiered import TieredBackend
@@ -1808,7 +1920,10 @@ connection that died silently is given up within 10. With the other backends (me
 DynamoDB, GLIDE, a valkey-py cluster) staleness is bounded by `local_ttl`. If the shared backend
 goes down, the local copies keep being served until they expire.
 
+<!-- --8<-- [end:two-level-cache] -->
+
 ## Compression
+<!-- --8<-- [start:compression] -->
 
 ```python
 FastAPICache.init(RedisBackend(redis), compression="zstd")  # or "zlib", no dependencies
@@ -1826,7 +1941,10 @@ says how compressible it was: if an attacker can both read the backend and put c
 response next to a secret, that can leak information about the secret (the CRIME/BREACH family).
 Leave compression off for such responses.
 
+<!-- --8<-- [end:compression] -->
+
 ## Coders
+<!-- --8<-- [start:coders] -->
 
 `JsonCoder` (the default) stores anything FastAPI can turn into JSON, through pydantic-core
 (Rust) when it can: about 8 times faster than `jsonable_encoder()` for a list of models. Annotate the
@@ -1861,7 +1979,10 @@ class ORJsonCoder(Coder):
         return orjson.loads(value)
 ```
 
+<!-- --8<-- [end:coders] -->
+
 ## Key builders
+<!-- --8<-- [start:key-builders] -->
 
 The default key is the SHA-256 of the function's module and qualified name and the `repr()` of
 its arguments, under `<prefix>:<namespace>:`. Arguments whose `repr()` changes on every call (a
@@ -1912,7 +2033,10 @@ async def index() -> dict[str, str]:
 
 Whatever the key builder, Alcazaba appends a digest of the `vary_headers`.
 
+<!-- --8<-- [end:key-builders] -->
+
 ## Backends
+<!-- --8<-- [start:backends] -->
 
 - **InMemoryBackend(max_size=10_000):** per process; for development, tests and single-process
   apps. Up to `max_size` cached responses, and as many keys of state (counters, revoked tokens…)
@@ -1949,7 +2073,10 @@ client = valkey.asyncio.from_url("valkey://localhost:6379/0")
 FastAPICache.init(ValkeyBackend(client), prefix="myapp", signing_key=settings.cache_signing_key)
 ```
 
+<!-- --8<-- [end:backends] -->
+
 ## Development
+<!-- --8<-- [start:development] -->
 
 ```shell
 make deps                     # .venv (Python's venv and pip), with every extra and the dev tools
@@ -1967,7 +2094,10 @@ fails a pull request with a benchmark more than 50 % slower than main's, compare
 so the speed of the runner doesn't count. See
 [CONTRIBUTING.md](https://github.com/nonodev96/fastapi-alcazaba/blob/main/CONTRIBUTING.md).
 
+<!-- --8<-- [end:development] -->
+
 ## License and credits
+<!-- --8<-- [start:license-and-credits] -->
 
 Apache License 2.0: see [LICENSE](https://github.com/nonodev96/fastapi-alcazaba/blob/main/LICENSE)
 and [NOTICE](https://github.com/nonodev96/fastapi-alcazaba/blob/main/NOTICE).
@@ -1975,3 +2105,5 @@ and [NOTICE](https://github.com/nonodev96/fastapi-alcazaba/blob/main/NOTICE).
 An alcazaba is the walled citadel of an Andalusian city, like those of Almería, Málaga or the
 Alhambra: walls around what matters, and gates that only let the right things in. The logo is one
 of its walls, crowned with pointed merlons, whose horseshoe arch opens on a bolt: safe, and fast.
+
+<!-- --8<-- [end:license-and-credits] -->
