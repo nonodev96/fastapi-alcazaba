@@ -1,0 +1,45 @@
+name: Fuzzing
+
+# ClusterFuzzLite runs the fuzz targets of fuzz/ with atheris, guided by coverage: briefly on pull
+# requests that touch the package (what they change), for longer every week and on demand (all of
+# them). A target that breaks a property it checks fails the job, with the input in the artifact.
+on:
+  pull_request:
+    paths:
+      - "fastapi_alcazaba/**"
+      - "fuzz/**"
+      - ".clusterfuzzlite/**"
+      - ".github/workflows/fuzzing.yml"
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      fuzz-seconds:
+        description: Seconds of fuzzing, shared by every target
+        type: number
+        default: 1800
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzzing-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: ClusterFuzzLite
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: python
+          sanitizer: address
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          sanitizer: address
+          mode: ${{ github.event_name == 'pull_request' && 'code-change' || 'batch' }}
+          fuzz-seconds: ${{ inputs.fuzz-seconds || (github.event_name == 'pull_request' && 300 || 1800) }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

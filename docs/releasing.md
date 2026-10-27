@@ -21,11 +21,13 @@ The project URLs in `pyproject.toml` already point to it.
 - **Actions → General → Workflow permissions:** read repository contents (the workflows ask for
   more per job).
 - **Rules → Rulesets:**
-    - `main`: require a pull request, the status checks of CI (`Lint and type check`, `Unit and
-      integration tests (3.11)` … `(3.14)`, `End-to-end`, `Package`, `Audit dependencies`,
-      `Docs`), linear history; block force pushes and deletion.
-    - Tags `v*`: only you can create them; block updates and deletion (a published version must
-      never move).
+    - `main`: block force pushes and deletion, require a linear history. With a single
+      maintainer pushing to it; with more, require a pull request and the status checks of CI
+      (`Lint and type check`, `Unit and integration tests (3.11)` … `(3.14)`, `End-to-end`,
+      `Package`, `Audit dependencies`, `Docs`) too.
+    - Tags `v*`: block updates and deletion (a published version must never move), and only the
+      repository's admins create them (a second ruleset, so that their bypass is for creating
+      only).
 - **Environments:**
     - `testpypi`: deployment tags `v*`.
     - `pypi`: deployment tags `v*`, **required reviewer: you** (the approval before PyPI).

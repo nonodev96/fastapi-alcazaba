@@ -30,6 +30,16 @@ make deps
 CI runs all of them on Python 3.11 to 3.14; a pull request needs them green, with coverage of at
 least 90 %.
 
+### Fuzzing
+
+`fuzz/` holds fuzz targets for what reads data from outside (uploads, cursors, webhooks, stored
+entries, audit details), each with the properties it must keep. `tests/unit/test_fuzz_targets.py`
+runs them on random inputs with the other unit tests; ClusterFuzzLite runs them with atheris,
+guided by coverage, on pull requests that touch the package and every week
+(`.github/workflows/fuzzing.yml`). An input that breaks a target goes in that test's known cases
+along with the fix. Locally, on Linux, `pip install atheris` and `python fuzz/uploads_fuzzer.py`
+fuzz one until you stop it.
+
 ## Guidelines
 
 - Keep the secure defaults: anything that could serve one user's data to another, trust data

@@ -1,0 +1,6 @@
+[tool.ruff]
+extend = "../pyproject.toml"
+
+[tool.ruff.lint]
+# The asserts are the properties the fuzzer checks.
+ignore = ["S101"]

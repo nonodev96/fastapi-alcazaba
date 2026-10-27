@@ -108,7 +108,7 @@ local_scheme = "no-local-version"
 packages = ["fastapi_alcazaba"]
 
 [tool.hatch.build.targets.sdist]
-include = ["fastapi_alcazaba", "tests", "examples", "README.md", "CHANGELOG.md", "SECURITY.md", "LICENSE", "NOTICE"]
+include = ["fastapi_alcazaba", "tests", "examples", "fuzz", "README.md", "CHANGELOG.md", "SECURITY.md", "LICENSE", "NOTICE"]
 
 [tool.ruff]
 line-length = 100
@@ -127,7 +127,7 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["examples", "fastapi_alcazaba"]
+known-first-party = ["examples", "fastapi_alcazaba", "fuzz"]
 
 [tool.pylint.main]
 py-version = "3.11"
@@ -180,13 +180,13 @@ disable = [
 ]
 
 [tool.mypy]
-files = ["fastapi_alcazaba", "tests", "scripts"]
+files = ["fastapi_alcazaba", "tests", "scripts", "fuzz"]
 python_version = "3.11"
 strict = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["aiomcache.*", "fakeredis.*"]
+module = ["aiomcache.*", "atheris", "fakeredis.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

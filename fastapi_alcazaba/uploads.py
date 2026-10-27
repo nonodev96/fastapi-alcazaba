@@ -430,7 +430,8 @@ def _shorten(text: str, max_bytes: int) -> str:
         return text
     stem, dot, extension = text.rpartition(".")
     suffix = dot + extension
-    if not stem or len(suffix) > 16:
+    # The extension stays when it's short, in bytes too: some room must be left for the stem.
+    if not stem or len(suffix) > 16 or len(suffix.encode()) >= max_bytes:
         stem, suffix = text, ""
     budget = max_bytes - len(suffix.encode())
     # Cut on a character boundary: "ignore" drops the bytes of a character cut in two.

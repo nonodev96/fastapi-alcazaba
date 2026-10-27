@@ -7,6 +7,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Fuzz targets (`fuzz/`) for what reads data from outside: the type and size sniffed from
+  uploads and the safe file names, compressed entries, pagination cursors, signed webhooks and
+  audit details, each checking the properties it must keep. ClusterFuzzLite runs them with
+  atheris on pull requests and every week; the unit tests run them on random inputs.
+
+### Fixed
+
+- `FastAPIPaginationCursor.decode()` raised a TypeError, instead of the 400 of an invalid cursor,
+  for a signed cursor with non-ASCII characters (the route's own parameter never lets one in).
+- `verify_audit_trail()` raised a TypeError for an event whose signature had non-ASCII
+  characters, instead of reporting it as altered.
+- `safe_filename()` with a `max_length` under 64 bytes could give a longer name when the
+  extension was short in characters but long in bytes (emoji): such an extension is now dropped.
+
 ## [0.2.0] - 2026-10-26
 
 ### Added

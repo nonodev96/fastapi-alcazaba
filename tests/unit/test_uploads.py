@@ -386,6 +386,12 @@ class TestSafeFilename:
         assert safe_filename("a" * 300 + "." + "b" * 20) == "a" * 254
         assert safe_filename("." + "a" * 300) == "a" * 253
 
+    def test_an_extension_short_in_characters_but_not_in_bytes(self) -> None:
+        emoji = "\U0001f600" * 15  # 15 characters, 60 bytes: no room left for the stem
+        assert safe_filename(f"{'a' * 100}.{emoji}", max_length=32) == "a" * 31
+        kept = safe_filename(f"{'a' * 100}.{emoji}", max_length=64)
+        assert (len(kept.encode()), kept[-15:]) == (63, emoji)
+
     def test_dots_left_at_the_cut(self) -> None:
         assert safe_filename("a" * 240 + "." * 20 + ".txt") == "a" * 240 + ".txt"
 

@@ -19,7 +19,7 @@ deps: $(BIN)/python
 	$(BIN)/python -m pip install --quiet --upgrade "pip>=26.2"
 	$(BIN)/python -m pip install --quiet -e ".[all]" --group dev
 
-SOURCES = fastapi_alcazaba examples tests scripts
+SOURCES = fastapi_alcazaba examples tests scripts fuzz
 
 # Multi-line signatures: one parameter per line, the last one with a comma. ruff format only
 # guarantees it once the comma is there; scripts/check_signatures.py checks it (--fix adds it).

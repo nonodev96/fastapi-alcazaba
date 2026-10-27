@@ -67,9 +67,9 @@ jobs:
         with:
           cache: ""
       - run: ruff check .
-      - run: python scripts/check_signatures.py fastapi_alcazaba examples tests scripts
+      - run: python scripts/check_signatures.py fastapi_alcazaba examples tests scripts fuzz
       - run: mypy
-      - run: pylint fastapi_alcazaba examples tests scripts
+      - run: pylint fastapi_alcazaba examples tests scripts fuzz
       - run: pytest tests/unit tests/integration tests/typing
 
   build:

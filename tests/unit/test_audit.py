@@ -678,12 +678,14 @@ async def test_altered_and_forged_events_are_found(audit: FastAPIAudit) -> None:
     first, second = await write(audit, 2)
     altered = {**second.to_dict(), "actor": "mallory"}
     forged = (await write(FastAPIAudit([MemoryAuditSink()], signing_key="m" * 32), 1))[0]
+    garbled = {**first.to_dict(), "signature": "é" * 64}  # not ASCII: no TypeError
 
-    problems = verify_audit_trail([first, altered, forged], KEY)
+    problems = verify_audit_trail([first, altered, forged, garbled], KEY)
 
     assert problems == [
         f"event {second.id!r} doesn't match its signature: altered, or not written with this key",
         f"event {forged.id!r} doesn't match its signature: altered, or not written with this key",
+        f"event {first.id!r} doesn't match its signature: altered, or not written with this key",
     ]
 
 

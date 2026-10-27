@@ -396,7 +396,8 @@ class FastAPIPaginationCursor:
 
     def decode(self, cursor: str) -> Position:
         """The position `cursor` points at. Raises an HTTPException (400) if it isn't valid."""
-        if len(cursor) > _MAX_CURSOR:
+        # Cursors are ASCII (base64 and hex), and compare_digest refuses strings that aren't.
+        if len(cursor) > _MAX_CURSOR or not cursor.isascii():
             raise HTTPException(400, "Invalid cursor")
         payload, _, tag = cursor.partition(".")
         if self._keys is not None and not any(

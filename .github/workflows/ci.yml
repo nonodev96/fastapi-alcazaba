@@ -27,11 +27,11 @@ jobs:
           persist-credentials: false
       - uses: $/.github/actions/python
       - run: ruff check .
-      - run: python scripts/check_signatures.py fastapi_alcazaba examples tests scripts
+      - run: python scripts/check_signatures.py fastapi_alcazaba examples tests scripts fuzz
       - run: ruff format --check .
       # Includes tests/typing: the decorator must keep the signatures.
       - run: mypy
-      - run: pylint fastapi_alcazaba examples tests scripts
+      - run: pylint fastapi_alcazaba examples tests scripts fuzz
 
   test:
     name: Unit and integration tests (${{ matrix.python }})

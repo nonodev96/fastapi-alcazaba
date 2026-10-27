@@ -41,3 +41,11 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+  # The image ClusterFuzzLite builds the fuzzers in, pinned by digest. It's rebuilt every day:
+  # monthly is enough.
+  - package-ecosystem: docker
+    directory: "/.clusterfuzzlite"
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7

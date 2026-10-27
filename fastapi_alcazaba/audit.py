@@ -675,7 +675,10 @@ def verify_audit_trail(
         if not isinstance(signature, str):
             problems.append(f"event {data.get('id')!r} isn't signed")
             continue
-        if not any(hmac.compare_digest(signature, _mac(key, data)) for key in keys):
+        # As bytes: compare_digest refuses strings with non-ASCII characters, which a line
+        # tampered with may have.
+        given = signature.encode()
+        if not any(hmac.compare_digest(given, _mac(key, data).encode()) for key in keys):
             problems.append(
                 f"event {data.get('id')!r} doesn't match its signature: altered, or not "
                 "written with this key"

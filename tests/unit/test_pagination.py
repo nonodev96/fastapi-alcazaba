@@ -279,6 +279,9 @@ class TestInvalidCursors:
         for forged in (raw(["b", 1]), f"{raw(['b', 1])}.{tag}", payload, f"{payload}.{'A' * 22}"):
             with pytest.raises(HTTPException):
                 signed.decode(forged)
+        for not_ascii in (f"{payload}.{tag[:-1]}é", "é", f"{payload}é.{tag}"):  # not a TypeError
+            with pytest.raises(HTTPException):
+                signed.decode(not_ascii)
 
     def test_rotating_the_secret(self) -> None:
         old = FastAPIPaginationCursor(secret="o" * 32).encode(5)
