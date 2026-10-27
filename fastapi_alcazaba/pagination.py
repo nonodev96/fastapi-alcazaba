@@ -21,6 +21,9 @@ fast as the first.
 The page parameters are an argument of the endpoint, so the cache keeps each page under a key of
 its own. fastapi-pagination's `add_pagination` keeps them out of the arguments, in a context
 variable: a cache that only sees the arguments would serve page 1 for every page.
+
+Responses link to the pages around them in the Link header (RFC 8288), as GitHub's API does:
+`</products?page=3&size=20>; rel="next", </products?page=13&size=20>; rel="last"`.
 """
 
 import base64
@@ -30,14 +33,15 @@ import hmac
 import inspect
 import json
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from math import ceil, isfinite
 from typing import Annotated, Any, Generic, TypeVar
+from urllib.parse import quote, urlencode
 from uuid import UUID
 
-from fastapi import HTTPException, Query
+from fastapi import HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from fastapi_alcazaba.integrity import Secrets, secret_list
@@ -53,7 +57,76 @@ _MAX_CURSOR = 1024  # characters of a cursor
 _CURSOR_PATTERN = r"^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)?$"
 _MAX_VALUES = 8  # values in a position
 _MAX_INT = 2**63  # integers as databases sort them: larger ones from a client would overflow
+# What a path keeps unquoted in a link: no "<", ">", "," or ";", which end it or the link.
+_PATH_SAFE = "/:@!$&'()*+="
 
+
+# region Links
+
+
+@dataclass(frozen=True, slots=True)
+class PageLinks:
+    """Where the Link header of a page goes: the response to the request that asked for it, and
+    the request's path and query parameters. The links keep the other parameters (filters,
+    sorting) and are relative to the host (`</products?page=3&size=20>`), so they don't depend
+    on the Host header nor on whether a proxy in front speaks HTTPS."""
+
+    response: Response
+    path: str
+    query: tuple[tuple[str, str], ...]
+
+    @classmethod
+    def of(cls, request: Request, response: Response) -> "PageLinks":
+        # The path as decoded and quoted again: nothing from the client ends the link early.
+        path = quote(request.scope["path"], safe=_PATH_SAFE)
+        return cls(response, path, tuple(request.query_params.multi_items()))
+
+    def add(self, page: object) -> None:
+        """Add the links of `page` to the response's Link header: first, prev, next and last of
+        a Page or a LimitOffsetPage, first and next of a CursorPage. Anything else has none."""
+        links = [self._link(rel, values) for rel, values in _relations(page)]
+        if not links:
+            return
+        existing = self.response.headers.get("link")
+        self.response.headers["Link"] = ", ".join([existing, *links] if existing else links)
+
+    def _link(self, rel: str, values: dict[str, object]) -> str:
+        """The link to the request's URL with `values` as page parameters (None leaves one out)."""
+        query = [(name, value) for name, value in self.query if name not in values]
+        query += [(name, str(value)) for name, value in values.items() if value is not None]
+        return f'<{self.path}?{urlencode(query)}>; rel="{rel}"'
+
+
+def _relations(page: object) -> list[tuple[str, dict[str, object]]]:
+    """The pages around `page`, by relation, as their parameters."""
+    if isinstance(page, Page):
+        last = max(page.pages, 1)
+        numbers = [("first", 1)]
+        if page.page > 1:
+            numbers.append(("prev", min(page.page - 1, last)))
+        if page.page < page.pages:
+            numbers.append(("next", page.page + 1))
+        numbers.append(("last", last))
+        return [(rel, {"page": number, "size": page.size}) for rel, number in numbers]
+    if isinstance(page, LimitOffsetPage):
+        # first and last on the grid of `limit` from 0, where clients that start at first walk.
+        last = (max(page.total, 1) - 1) // page.limit * page.limit
+        offsets = [("first", 0)]
+        if page.offset > 0:
+            offsets.append(("prev", min(max(page.offset - page.limit, 0), last)))
+        if page.offset + page.limit < page.total:
+            offsets.append(("next", page.offset + page.limit))
+        offsets.append(("last", last))
+        return [(rel, {"limit": page.limit, "offset": offset}) for rel, offset in offsets]
+    if isinstance(page, CursorPage):
+        cursors: list[tuple[str, str | None]] = [("first", None)]
+        if page.next_cursor is not None:
+            cursors.append(("next", page.next_cursor))
+        return [(rel, {"cursor": cursor, "size": page.size}) for rel, cursor in cursors]
+    return []
+
+
+# endregion
 
 # region Parameters and pages
 
@@ -64,6 +137,8 @@ class PageParams:
 
     page: int = 1
     size: int = 50
+    #: Where `paginate` puts the Link header; None outside a request (`params()`).
+    links: PageLinks | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.page < 1 or self.size < 1:
@@ -86,6 +161,8 @@ class LimitOffsetParams:
 
     limit: int = 50
     offset: int = 0
+    #: Where `paginate` puts the Link header; None outside a request (`params()`).
+    links: PageLinks | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.limit < 1 or self.offset < 0:
@@ -100,6 +177,8 @@ class CursorParams:
     size: int = 50
     cursor: str | None = None
     after: Position | None = None
+    #: Where `paginate` puts the Link header; None outside a request (`params()`).
+    links: PageLinks | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.size < 1:
@@ -167,6 +246,21 @@ def _window(items: Sequence[T], offset: int, limit: int, total: int | None) -> t
     return list(items), total
 
 
+# The request and FastAPI's response, for the links: no query parameters, nothing in OpenAPI.
+_REQUEST = [
+    inspect.Parameter("request", inspect.Parameter.KEYWORD_ONLY, annotation=Request),
+    inspect.Parameter("response", inspect.Parameter.KEYWORD_ONLY, annotation=Response),
+]
+
+PageT = TypeVar("PageT", bound=BaseModel)
+
+
+def _linked(page: PageT, links: PageLinks | None) -> PageT:
+    if links is not None:
+        links.add(page)
+    return page
+
+
 class FastAPIPagination:
     """Pagination by page number: `?page=2&size=20`.
 
@@ -187,14 +281,22 @@ class FastAPIPagination:
         # What FastAPI reads to know the query parameters: with this instance's limits.
         self.__signature__ = inspect.Signature(
             [
+                *_REQUEST,
                 _query("page", int, 1, ge=1, description="Page number, from 1"),
                 _query("size", int, default_size, ge=1, le=max_size, description="Items per page"),
             ],
             return_annotation=PageParams,
         )
 
-    async def __call__(self, *, page: int = 1, size: int | None = None) -> PageParams:
-        return self.params(page=page, size=size)
+    async def __call__(
+        self,
+        *,
+        request: Request,
+        response: Response,
+        page: int = 1,
+        size: int | None = None,
+    ) -> PageParams:
+        return replace(self.params(page=page, size=size), links=PageLinks.of(request, response))
 
     def params(self, *, page: int = 1, size: int | None = None) -> PageParams:
         """The parameters of a page, as the dependency gives them (for tests and scripts)."""
@@ -212,10 +314,14 @@ class FastAPIPagination:
     ) -> Page[T]:
         """The page of `items` that `params` asks for. Without `total`, `items` is the whole
         list and the page is sliced from it; with `total`, `items` is that page already (queried
-        with `params.offset` and `params.limit`)."""
+        with `params.offset` and `params.limit`). The response links to the first, previous,
+        next and last pages."""
         page, total = _window(items, params.offset, params.limit, total)
         pages = ceil(total / params.size)
-        return Page(items=page, total=total, page=params.page, size=params.size, pages=pages)
+        return _linked(
+            Page(items=page, total=total, page=params.page, size=params.size, pages=pages),
+            params.links,
+        )
 
 
 class FastAPIPaginationLimitOffset:
@@ -231,6 +337,7 @@ class FastAPIPaginationLimitOffset:
         self.max_limit = max_limit
         self.__signature__ = inspect.Signature(
             [
+                *_REQUEST,
                 _query(
                     "limit", int, default_limit, ge=1, le=max_limit, description="Items in the page"
                 ),
@@ -239,8 +346,16 @@ class FastAPIPaginationLimitOffset:
             return_annotation=LimitOffsetParams,
         )
 
-    async def __call__(self, *, limit: int | None = None, offset: int = 0) -> LimitOffsetParams:
-        return self.params(limit=limit, offset=offset)
+    async def __call__(
+        self,
+        *,
+        request: Request,
+        response: Response,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> LimitOffsetParams:
+        params = self.params(limit=limit, offset=offset)
+        return replace(params, links=PageLinks.of(request, response))
 
     def params(self, *, limit: int | None = None, offset: int = 0) -> LimitOffsetParams:
         """The parameters of a page, as the dependency gives them (for tests and scripts)."""
@@ -256,9 +371,13 @@ class FastAPIPaginationLimitOffset:
         *,
         total: int | None = None,
     ) -> LimitOffsetPage[T]:
-        """The page of `items` that `params` asks for, as `FastAPIPagination.paginate`."""
+        """The page of `items` that `params` asks for, as `FastAPIPagination.paginate`. The
+        first and last pages that the response links to start at multiples of the limit."""
         page, total = _window(items, params.offset, params.limit, total)
-        return LimitOffsetPage(items=page, total=total, limit=params.limit, offset=params.offset)
+        return _linked(
+            LimitOffsetPage(items=page, total=total, limit=params.limit, offset=params.offset),
+            params.links,
+        )
 
 
 def _decimal(text: str) -> Decimal:
@@ -355,6 +474,7 @@ class FastAPIPaginationCursor:
         )
         self.__signature__ = inspect.Signature(
             [
+                *_REQUEST,
                 _query(
                     "cursor",
                     str | None,
@@ -368,8 +488,16 @@ class FastAPIPaginationCursor:
             return_annotation=CursorParams,
         )
 
-    async def __call__(self, *, cursor: str | None = None, size: int | None = None) -> CursorParams:
-        return self.params(cursor=cursor, size=size)
+    async def __call__(
+        self,
+        *,
+        request: Request,
+        response: Response,
+        cursor: str | None = None,
+        size: int | None = None,
+    ) -> CursorParams:
+        params = self.params(cursor=cursor, size=size)
+        return replace(params, links=PageLinks.of(request, response))
 
     def params(self, *, cursor: str | None = None, size: int | None = None) -> CursorParams:
         """The parameters of a page, with the cursor decoded, as the dependency gives them.
@@ -453,7 +581,10 @@ class FastAPIPaginationCursor:
             page = list(items[start : start + params.size])
             more = start + params.size < len(items)
         next_cursor = self.encode(key(page[-1])) if more and page else None
-        return CursorPage(items=page, size=params.size, next_cursor=next_cursor)
+        return _linked(
+            CursorPage(items=page, size=params.size, next_cursor=next_cursor),
+            params.links,
+        )
 
     @staticmethod
     def _tag(key: bytes, payload: str) -> str:

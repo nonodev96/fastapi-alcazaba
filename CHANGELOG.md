@@ -16,6 +16,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `fastapi_alcazaba.canonical.canonical_json`: the JSON Canonicalization Scheme (RFC 8785), the
   one serialization of a JSON value that every language implementing it writes the same.
+- Paginated responses link to the pages around them in the `Link` header (RFC 8288): first, prev,
+  next and last by page number or by limit and offset, first and next by cursor. The links keep
+  the request's other query parameters and are relative to the host. Pages served by `@cache` get
+  them too, made for the request they answer and never stored with the entry. The page
+  parameters carry them as `links` (a `PageLinks`), left out of their repr and so of cache keys.
 
 ### Changed
 

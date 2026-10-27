@@ -25,6 +25,7 @@ from fastapi_alcazaba.compression import decompress
 from fastapi_alcazaba.errors import BackendUnavailable, CircuitOpen, UnstableCacheKeyWarning
 from fastapi_alcazaba.integrity import EntryProtector
 from fastapi_alcazaba.key_builder import default_key_builder
+from fastapi_alcazaba.pagination import CursorParams, LimitOffsetParams, PageParams
 from fastapi_alcazaba.resilience import BackendGuard
 from fastapi_alcazaba.types import Backend, KeyBuilder
 
@@ -249,6 +250,17 @@ class _HeaderPolicy:
                 seen = {v.lower() for v in existing}
                 added = [name.title() for name in self.vary if name not in seen]
                 target.headers["Vary"] = ", ".join(existing + added)
+
+
+def _add_page_links(result: object, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
+    """A page served from the cache gets the Link header that `paginate` gives it when the
+    endpoint runs. The links are made from this request, never stored with the entry: the first
+    request's Host header or query parameters would reach everybody else."""
+    for value in (*args, *kwargs.values()):
+        if isinstance(value, PageParams | LimitOffsetParams | CursorParams) and (
+            value.links is not None
+        ):
+            value.links.add(result)
 
 
 def _targets(response: Response | None, result: object) -> list[Response]:
@@ -664,6 +676,7 @@ class _CachedCall:
             )
             return _UNUSABLE
         self.policy.apply(_targets(self.response, result), status, etag, max_age)
+        _add_page_links(result, self.args, self.kwargs)
         return result
 
     def _finish(self, result: Any, payload: bytes | None) -> Any:

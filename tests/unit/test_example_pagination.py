@@ -50,8 +50,10 @@ class TestOneEntryPerPage:
         assert queries() == 0
 
     def test_categories(self, client: TestClient) -> None:
-        oil = client.get("/products?category=oil&size=3").json()
+        response = client.get("/products?category=oil&size=3")
+        oil = response.json()
         assert (ids(oil), oil["total"]) == ([2, 5, 8], 20)
+        assert response.links["next"]["url"] == "/products?category=oil&page=2&size=3"
         assert ids(client.get("/products?size=3").json()) == [1, 2, 3]
         assert queries() == 2
 

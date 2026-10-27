@@ -8,8 +8,9 @@ from decimal import Decimal
 from typing import Annotated, Any
 from uuid import UUID
 
+import httpx2 as httpx
 import pytest
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
@@ -83,9 +84,9 @@ class TestByPage:
                 FastAPIPagination(**wrong)
 
     def test_params_are_checked_immutable_and_stable(self) -> None:
-        for wrong in ({"page": 0}, {"size": 0}):
+        for page, size in ((0, 50), (1, 0)):
             with pytest.raises(ValueError, match="start at 1"):
-                PageParams(**wrong)
+                PageParams(page=page, size=size)
         params = PageParams(page=2)
         with pytest.raises(AttributeError):
             params.page = 3  # type: ignore[misc]
@@ -114,9 +115,9 @@ class TestByLimitAndOffset:
             pages.params(limit=21)
         with pytest.raises(ValueError, match="default limit"):
             FastAPIPaginationLimitOffset(default_limit=30, max_limit=20)
-        for wrong in ({"limit": 0}, {"offset": -1}):
+        for limit, offset in ((0, 0), (10, -1)):
             with pytest.raises(ValueError, match="limit starts at 1"):
-                LimitOffsetParams(**wrong)
+                LimitOffsetParams(limit=limit, offset=offset)
 
 
 class Event(BaseModel):
@@ -411,3 +412,140 @@ class TestWithTheCache:
         if path == "/items":  # with this tool's limits
             size = next(p for p in operation["parameters"] if p["name"] == "size")
             assert (size["schema"]["maximum"], size["schema"]["default"]) == (30, 10)
+
+
+def links(response: httpx.Response) -> dict[str, str]:
+    """The Link header as a client reads it: relation -> target."""
+    return {rel: link["url"] for rel, link in response.links.items() if rel is not None}
+
+
+class TestLinks:
+    def test_to_the_pages_around(self, client: TestClient) -> None:
+        response = client.get("/items?page=2&size=5")
+        assert response.headers["Link"] == (
+            '</items?page=1&size=5>; rel="first", </items?page=1&size=5>; rel="prev", '
+            '</items?page=3&size=5>; rel="next", </items?page=5&size=5>; rel="last"'
+        )
+        assert links(client.get("/items?size=5")) == {
+            "first": "/items?page=1&size=5",
+            "next": "/items?page=2&size=5",
+            "last": "/items?page=5&size=5",
+        }
+
+    def test_at_and_past_the_end(self, client: TestClient) -> None:
+        assert links(client.get("/items?page=3")) == {
+            "first": "/items?page=1&size=10",
+            "prev": "/items?page=2&size=10",
+            "last": "/items?page=3&size=10",
+        }
+        past = links(client.get("/items?page=9"))
+        assert (past["prev"], "next" in past) == ("/items?page=3&size=10", False)
+        empty = links(client.get("/items?q=99"))
+        assert empty == {
+            "first": "/items?q=99&page=1&size=10",
+            "last": "/items?q=99&page=1&size=10",
+        }
+
+    def test_by_limit_and_offset(self, client: TestClient) -> None:
+        assert links(client.get("/app_offsets?limit=2&offset=11")) == {
+            "first": "/app_offsets?limit=2&offset=0",
+            "prev": "/app_offsets?limit=2&offset=9",
+            "next": "/app_offsets?limit=2&offset=13",
+            "last": "/app_offsets?limit=2&offset=24",
+        }
+        assert links(client.get("/app_offsets?limit=10")) == {
+            "first": "/app_offsets?limit=10&offset=0",
+            "next": "/app_offsets?limit=10&offset=10",
+            "last": "/app_offsets?limit=10&offset=20",
+        }
+        assert links(client.get("/app_offsets?limit=10&offset=90")) == {
+            "first": "/app_offsets?limit=10&offset=0",
+            "prev": "/app_offsets?limit=10&offset=20",
+            "last": "/app_offsets?limit=10&offset=20",
+        }
+
+    def test_by_cursor(self, client: TestClient) -> None:
+        first = client.get("/events")
+        cursor = first.json()["next_cursor"]
+        assert links(first) == {
+            "first": "/events?size=4",
+            "next": f"/events?cursor={cursor}&size=4",
+        }
+        last = client.get("/events?size=50")
+        assert links(last) == {"first": "/events?size=50"}
+
+    def test_keep_the_other_parameters(self, client: TestClient) -> None:
+        assert links(client.get("/items?q=1&size=3&page=2"))["next"] == "/items?q=1&page=3&size=3"
+
+    def test_hits_get_the_links_of_their_own_request(
+        self,
+        client: TestClient,
+        calls: list[str],
+    ) -> None:
+        """The entry is shared by requests that differ in what the endpoint doesn't read: the
+        links are made for each request, not stored with the entry."""
+        first = client.get("/items?page=2&size=5&ref=mail")
+        again = client.get("/items?page=2&size=5&ref=feed")
+        assert (served(again.headers), len(calls)) == ("hit", 1)
+        assert links(first)["next"] == "/items?ref=mail&page=3&size=5"
+        assert links(again)["next"] == "/items?ref=feed&page=3&size=5"
+        cursor = client.get("/events").json()["next_cursor"]
+        assert served(client.get(f"/events?cursor={cursor}").headers) == "miss"
+        hit = client.get(f"/events?cursor={cursor}")
+        assert (served(hit.headers), set(links(hit))) == ("hit", {"first", "next"})
+
+    def test_nothing_from_the_client_ends_a_link(self) -> None:
+        app = FastAPI()
+        pages = FastAPIPagination()
+
+        @app.get("/shops/{name}/items")
+        async def items(params: Annotated[PageParams, Depends(pages)]) -> Page[Item]:
+            return pages.paginate(ITEMS, params)
+
+        with TestClient(app) as client:
+            response = client.get('/shops/a%3E%2C%3B%22b/items?q=x>,y;"z')
+        assert response.headers["Link"].startswith(
+            '</shops/a%3E%2C%3B%22b/items?q=x%3E%2Cy%3B%22z&page=1&size=50>; rel="first", '
+        )
+        last = "/shops/a%3E%2C%3B%22b/items?q=x%3E%2Cy%3B%22z&page=1&size=50"
+        assert links(response) == {"first": last, "last": last}
+
+    def test_after_the_endpoint_s_own(self) -> None:
+        app = FastAPI()
+        pages = FastAPIPagination()
+
+        @app.get("/items")
+        async def items(
+            params: Annotated[PageParams, Depends(pages)],
+            response: Response,
+        ) -> Page[Item]:
+            response.headers["Link"] = '</help>; rel="help"'
+            return pages.paginate(ITEMS, params)
+
+        with TestClient(app) as client:
+            assert set(links(client.get("/items"))) == {"help", "first", "last"}
+
+    def test_only_for_pages(self) -> None:
+        app = FastAPI()
+        pages = FastAPIPagination()
+
+        @app.get("/count")
+        async def count(params: Annotated[PageParams, Depends(pages)]) -> dict[str, int]:
+            return {"count": len(pages.paginate(ITEMS, params).items)}
+
+        @app.get("/cached-count")
+        @cache(expire=60)
+        async def cached_count(params: Annotated[PageParams, Depends(pages)]) -> dict[str, int]:
+            return {"offset": params.offset}
+
+        FastAPICache.init(InMemoryBackend())
+        with TestClient(app) as client:
+            assert "link" in client.get("/count").headers  # paginate() made a page
+            for _ in range(2):  # a miss and a hit
+                assert "link" not in client.get("/cached-count").headers
+
+    def test_none_outside_a_request(self) -> None:
+        pages = FastAPIPagination()
+        params = pages.params(page=2)
+        assert params.links is None
+        assert pages.paginate(ITEMS, params).page == 2

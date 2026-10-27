@@ -1678,6 +1678,11 @@ async def products(params: Annotated[PageParams, Depends(pages)]) -> Page[Produc
 `GET /products?page=2&size=20` answers `{"items": [...], "total": 245, "page": 2, "size": 20,
 "pages": 13}`.
 
+- **Links:** the response links to the first, previous, next and last pages in the `Link` header
+  ([RFC 8288](https://www.rfc-editor.org/rfc/rfc8288)), as GitHub's API does:
+  `</products?page=3&size=20>; rel="next"`. The links keep the request's other query parameters
+  and leave out the host, so they don't depend on the `Host` header nor on a proxy in front.
+  Pages served from the cache get them too, made for the request they answer.
 - **From a database:** query only the page and give the total:
   `pages.paginate(rows, params, total=count)`, with `params.offset` and `params.limit` in the
   query. Without `total`, `paginate` slices the page from the whole list.
@@ -1716,7 +1721,8 @@ async def events(params: Annotated[CursorParams, Depends(cursors)]) -> CursorPag
 ```
 
 `GET /events?size=20` answers `{"items": [...], "size": 20, "next_cursor": "WyIyMDI2..."}`, and
-`?cursor=<next_cursor>` the next page; `next_cursor` is null on the last one.
+`?cursor=<next_cursor>` the next page; `next_cursor` is null on the last one. The `Link` header
+has the first page and, except on the last page, the next one.
 
 - **The sort key** (`key`) must be unique: `(created_at, id)`, not `created_at` alone, which two
   items may share. Its values can be strings, integers (up to 64 bits), floats, booleans,

@@ -21,3 +21,5 @@ In the guide: [Pagination](../index.md#pagination). In an app: [the example](../
 ::: fastapi_alcazaba.pagination.LimitOffsetPage
 
 ::: fastapi_alcazaba.pagination.CursorPage
+
+::: fastapi_alcazaba.pagination.PageLinks

@@ -20,11 +20,13 @@ or a cursor made by one process is refused by the others.
 
 ## Try it
 
-A page, computed once and then served from the cache:
+A page, computed once and then served from the cache, which links to the pages around it in the
+[`Link`](https://www.rfc-editor.org/rfc/rfc8288) header:
 
 ```console
 $ curl -i "http://127.0.0.1:8000/products?page=2&size=3"
 HTTP/1.1 200 OK
+link: </products?page=1&size=3>; rel="first", </products?page=1&size=3>; rel="prev", </products?page=3&size=3>; rel="next", </products?page=20&size=3>; rel="last"
 cache-status: Alcazaba; fwd=miss; stored
 cache-control: max-age=300
 
@@ -50,6 +52,9 @@ $ curl "http://127.0.0.1:8000/products/newest?size=2"
 
 $ curl "http://127.0.0.1:8000/products/newest?size=2&cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw"
 {"items":[{"name":"Product 58",...,"id":58},{"name":"Product 57",...,"id":57}],"size":2,"next_cursor":"NTc.Vp3GtrQxFhsATIf18CX4aA"}
+
+$ curl -si "http://127.0.0.1:8000/products/newest?size=2" | grep link
+link: </products/newest?size=2>; rel="first", </products/newest?cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw&size=2>; rel="next"
 
 $ curl -i "http://127.0.0.1:8000/products/newest?cursor=abc"
 HTTP/1.1 400 Bad Request
@@ -81,6 +86,9 @@ cache-status: Alcazaba; fwd=miss; stored
   keys.
 - **Public data:** the cache is created with `vary_headers=()`, so pages are shared by everybody.
   Don't do that for anything that depends on who asks.
+- **Links made for each request:** a cached page gets the `Link` header of the request it answers,
+  with that request's other query parameters; the links aren't stored with the entry, where one
+  client's parameters would reach everybody else.
 
 ## The code
 
