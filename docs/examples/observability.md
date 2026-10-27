@@ -113,7 +113,7 @@ content-type: application/problem+json
 ```
 
 ```console
-2026-10-26 15:22:34,756 WARNING [7ec602139e1478ad0c023637123c599e] fastapi_alcazaba.timeouts: GET /reports/sales timed out after 10.0s: answered 504
+2026-10-26 15:22:34,756 WARNING [7ec602139e1478ad0c023637123c599e] fastapi_alcazaba.observability.timeouts: GET /reports/sales timed out after 10.0s: answered 504
 ```
 
 The export has no deadline: its 30 rows stream for 15 s, and it isn't cut short.

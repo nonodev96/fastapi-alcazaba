@@ -24,10 +24,10 @@ from pydantic import BaseModel, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fastapi_alcazaba import Cache, FastAPICache, get_cache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.response_cache import cache
 from redis import asyncio as aioredis
 
 

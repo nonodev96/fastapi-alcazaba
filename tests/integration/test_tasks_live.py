@@ -21,11 +21,12 @@ from typing import Any
 import pytest
 
 from fastapi_alcazaba import Cache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
 from fastapi_alcazaba.backends.valkey import ValkeyBackend
-from fastapi_alcazaba.tasks import READ_SCRIPT, FastAPITaskQueue
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.background import FastAPITaskQueue
+from fastapi_alcazaba.background.tasks import READ_SCRIPT
 
 pytestmark = pytest.mark.integration
 

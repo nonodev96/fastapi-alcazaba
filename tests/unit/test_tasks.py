@@ -21,13 +21,12 @@ from fastapi_alcazaba import BackendUnavailable, Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
-from fastapi_alcazaba.tasks import (
+from fastapi_alcazaba.background import FastAPITaskQueue, QueueFull
+from fastapi_alcazaba.background.tasks import (
     ACK_SCRIPT,
     LEAVE_SCRIPT,
     READ_SCRIPT,
     RECLAIM_SCRIPT,
-    FastAPITaskQueue,
-    QueueFull,
     _Entry,
 )
 
@@ -673,7 +672,7 @@ class TestWorkersThatDie:
         world: World,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        caplog.set_level(logging.INFO, logger="fastapi_alcazaba.tasks")
+        caplog.set_level(logging.INFO, logger="fastapi_alcazaba.background.tasks")
         queue = world.queue(visibility_timeout=0.2)
         ran: list[int] = []
 

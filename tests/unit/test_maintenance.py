@@ -14,17 +14,17 @@ from starlette.requests import HTTPConnection
 from starlette.types import Message, Receive, Scope, Send
 
 from fastapi_alcazaba import BackendUnavailable, Cache, FastAPICache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
-from fastapi_alcazaba.maintenance import (
+from fastapi_alcazaba.core.asgi import route_path
+from fastapi_alcazaba.operations import (
     MAX_MESSAGE_LENGTH,
     FastAPIMaintenance,
     MaintenanceMiddleware,
-    MaintenanceStatus,
 )
-from fastapi_alcazaba.middleware import _route_path
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.operations.maintenance import MaintenanceStatus
 
 KEY = "app!maintenance:state"
 
@@ -219,7 +219,7 @@ class TestMiddleware:
     def test_paths_without_the_root_path(self) -> None:
         middleware = MaintenanceMiddleware(ok, maintenance=FastAPIMaintenance())
         scope = {"type": "http", "path": "/api/health", "root_path": "/api"}
-        assert middleware.allowed_path(_route_path(scope))
+        assert middleware.allowed_path(route_path(scope))
         assert not middleware.allowed_path("/api/health")
 
     async def test_allowed_paths_dont_read_the_state(self) -> None:
@@ -273,7 +273,7 @@ class TestBackendFailures:
         await maintenance.enable("Back soon")
         backend.failing = True
         await asyncio.sleep(0.06)
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.maintenance"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.operations.maintenance"):
             assert (await maintenance.current()).message == "Back soon"
             gets = backend.gets
             assert (await maintenance.current()).enabled  # not asked again before `refresh`
@@ -299,7 +299,7 @@ class TestBackendFailures:
         backend = Counting()
         backend.failing = True
         maintenance = FastAPIMaintenance(Cache(backend, circuit_breaker_failures=1), refresh=0.01)
-        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.maintenance"):
+        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.operations.maintenance"):
             await maintenance.current()
             await asyncio.sleep(0.02)
             await maintenance.current()
@@ -315,7 +315,7 @@ class TestStoredState:
         assert (await maintenance.status()).message == "signed"
         planted = json.dumps({"message": "planted", "retry_after": None, "since": 1.0})
         await backend.set(KEY, planted.encode())
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.maintenance"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.operations.maintenance"):
             assert not (await maintenance.status()).enabled
         assert "didn't write" in caplog.text
 
@@ -341,7 +341,7 @@ class TestStoredState:
     ) -> None:
         backend = InMemoryBackend()
         await backend.set(KEY, payload)
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.maintenance"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.operations.maintenance"):
             assert not (await FastAPIMaintenance(Cache(backend, prefix="app")).status()).enabled
         assert "malformed" in caplog.text
 

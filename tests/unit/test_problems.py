@@ -15,11 +15,10 @@ from starlette.types import Message
 
 from fastapi_alcazaba import Cache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.breaker import BreakerOpen
-from fastapi_alcazaba.maintenance import FastAPIMaintenance, MaintenanceMiddleware
-from fastapi_alcazaba.middleware import BodySizeLimitMiddleware
-from fastapi_alcazaba.problems import MEDIA_TYPE, FastAPIProblemDetails, Problem
-from fastapi_alcazaba.request_id import RequestIDMiddleware
+from fastapi_alcazaba.observability import FastAPIProblemDetails, Problem, RequestIDMiddleware
+from fastapi_alcazaba.observability.problems import MEDIA_TYPE
+from fastapi_alcazaba.operations import BreakerOpen, FastAPIMaintenance, MaintenanceMiddleware
+from fastapi_alcazaba.security import BodySizeLimitMiddleware
 
 
 class Login(BaseModel):
@@ -155,7 +154,7 @@ class TestHTTPExceptions:
         client: TestClient,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.problems"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.observability.problems"):
             response = client.get("/raise/500", params={"detail": "db down at 10.0.0.7"})
         assert response.json() == {
             "type": "about:blank",
@@ -169,7 +168,7 @@ class TestHTTPExceptions:
         assert "db down at 10.0.0.7" in caplog.text
 
     def test_breaker_open(self, client: TestClient, caplog: pytest.LogCaptureFixture) -> None:
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.problems"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.observability.problems"):
             response = client.get("/breaker")
         assert response.status_code == 503
         assert response.headers["retry-after"] == "3"

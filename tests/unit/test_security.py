@@ -12,9 +12,8 @@ from starlette.testclient import TestClient
 
 from fastapi_alcazaba import FastAPICache, UnsignedEntriesWarning
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.coder import PickleCoder
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.integrity import Signer
+from fastapi_alcazaba.core import Signer
+from fastapi_alcazaba.response_cache import PickleCoder, cache
 from tests.cache_status import cache_status, served
 
 KEY = "k" * 32

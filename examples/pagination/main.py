@@ -33,8 +33,8 @@ from fastapi_alcazaba import (
     get_cache,
 )
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.decorator import cache
 from fastapi_alcazaba.pagination import CursorPage, CursorParams, Page, PageParams
+from fastapi_alcazaba.response_cache import cache
 
 
 class Category(StrEnum):

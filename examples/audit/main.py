@@ -31,13 +31,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.requests import HTTPConnection
 
 from fastapi_alcazaba import FastAPIAudit
-from fastapi_alcazaba.audit import (
-    AuditEntry,
-    LoggingAuditSink,
-    MemoryAuditSink,
-    verify_audit_trail,
-)
-from fastapi_alcazaba.request_id import RequestIDMiddleware
+from fastapi_alcazaba.audit import AuditEntry, LoggingAuditSink, MemoryAuditSink, verify_audit_trail
+from fastapi_alcazaba.observability import RequestIDMiddleware
 
 
 def throwaway_secret() -> SecretStr:

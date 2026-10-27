@@ -31,36 +31,36 @@ Alcazaba (`fastapi-alcazaba`) gathers the pieces most FastAPI apps end up writin
 built with security in mind and tested against real servers (the
 [examples](https://nonodev96.github.io/fastapi-alcazaba/examples/) show them at work):
 
-| Tool | What it does |
-| --- | --- |
-| [Response cache](#quick-start) | `@cache` for endpoints and functions, in memory, Redis, Valkey, memcached or DynamoDB |
-| [Rate limiter](#rate-limiting) | `FastAPIRateLimiter`: a dependency with a sliding window shared by every process |
-| [Locks](#locks) | `async with cache.lock("job")`: one process at a time, renewed while held |
-| [Idempotency keys](#idempotency-keys) | a retried POST gets the first response instead of running twice |
-| [Revoked tokens and one-time codes](#revoked-tokens-and-one-time-codes) | a JWT blocklist and e-mail/SMS codes, nothing stored in clear |
-| [API keys](#api-keys) | keys stored only as digests, with scopes and expiry |
-| [Signed webhooks](#signed-webhooks) | Standard Webhooks signing and verification, replays refused |
-| [Outbound calls](#outbound-calls) | an httpx transport with a deadline per call, a circuit breaker per origin and SSRF protection |
-| [Security headers and body size](#security-headers-and-body-size) | the OWASP headers, and a 413 for endless bodies |
-| [CSRF protection](#csrf-protection) | `CSRFMiddleware`: a 403 for what another site makes the browser send with its cookies |
-| [Server-side sessions](#server-side-sessions) | `request.session` kept in the backend, only a random id in the cookie: revocable |
-| [Checking uploads](#checking-uploads) | `FastAPIUploads`: the real type from the bytes, size, image dimensions, safe names |
-| [Problem details](#problem-details) | errors as RFC 9457 `application/problem+json`, never leaking internals |
-| [Request IDs](#request-ids) | an ID per request in logs, responses and errors |
-| [Audit trail](#audit-trail) | `FastAPIAudit`: who did what to which resource, and whether it worked; no secrets, signed and chained |
-| [Request timeouts](#request-timeouts) | a deadline per request: a 504 instead of a request hung forever |
-| [Health checks](#health-checks) | `/health/live` and `/health/ready` for load balancers and orchestrators |
-| [Scheduled jobs](#scheduled-jobs) | `FastAPIScheduler`: every N seconds or by cron, each tick once across processes |
-| [Task queue](#task-queue) | `FastAPITaskQueue`: background tasks on Redis streams, retried, at least once, never pickle |
-| [Circuit breakers](#circuit-breakers) | `FastAPIBreaker`: stop calling a dependency that keeps failing, a 503 meanwhile |
-| [Concurrency limits](#concurrency-limits) | `FastAPIConcurrencyLimiter`: at most N requests at a time, across processes |
-| [Leader election](#leader-election) | `FastAPILeader`: work that must run in exactly one process at a time |
-| [Maintenance mode](#maintenance-mode) | `FastAPIMaintenance`: a 503 with `Retry-After` for every process at once |
-| [Feature flags](#feature-flags) | `FastAPIFeatureFlags`: on, off, by percentage or by subject, shared by every process |
-| [Pagination](#pagination) | `FastAPIPagination`, `…LimitOffset` and `…Cursor`, each page cached under its own key |
-| [Invalidation by tag](#invalidating-by-tag) | drop every entry of a product, a user… without knowing their keys |
-| [Two-level cache](#two-level-cache) | a copy in each process in front of Redis, kept in sync by pub/sub |
-| [Metrics and traces](#metrics-and-traces) | OpenTelemetry for all of the above |
+| Tool | In `fastapi_alcazaba.` | What it does |
+| --- | --- | --- |
+| [Response cache](#quick-start) | `response_cache` | `@cache` for endpoints and functions, in memory, Redis, Valkey, memcached or DynamoDB |
+| [Rate limiter](#rate-limiting) | `rate_limit` | `FastAPIRateLimiter`: a dependency with a sliding window shared by every process |
+| [Locks](#locks) | `background` | `async with cache.lock("job")`: one process at a time, renewed while held |
+| [Idempotency keys](#idempotency-keys) | `idempotency` | a retried POST gets the first response instead of running twice |
+| [Revoked tokens and one-time codes](#revoked-tokens-and-one-time-codes) | `auth` | a JWT blocklist and e-mail/SMS codes, nothing stored in clear |
+| [API keys](#api-keys) | `auth` | keys stored only as digests, with scopes and expiry |
+| [Signed webhooks](#signed-webhooks) | `webhooks` | Standard Webhooks signing and verification, replays refused |
+| [Outbound calls](#outbound-calls) | `outbound` | an httpx transport with a deadline per call, a circuit breaker per origin and SSRF protection |
+| [Security headers and body size](#security-headers-and-body-size) | `security` | the OWASP headers, and a 413 for endless bodies |
+| [CSRF protection](#csrf-protection) | `security` | `CSRFMiddleware`: a 403 for what another site makes the browser send with its cookies |
+| [Server-side sessions](#server-side-sessions) | `security` | `request.session` kept in the backend, only a random id in the cookie: revocable |
+| [Checking uploads](#checking-uploads) | `uploads` | `FastAPIUploads`: the real type from the bytes, size, image dimensions, safe names |
+| [Problem details](#problem-details) | `observability` | errors as RFC 9457 `application/problem+json`, never leaking internals |
+| [Request IDs](#request-ids) | `observability` | an ID per request in logs, responses and errors |
+| [Audit trail](#audit-trail) | `audit` | `FastAPIAudit`: who did what to which resource, and whether it worked; no secrets, signed and chained |
+| [Request timeouts](#request-timeouts) | `observability` | a deadline per request: a 504 instead of a request hung forever |
+| [Health checks](#health-checks) | `observability` | `/health/live` and `/health/ready` for load balancers and orchestrators |
+| [Scheduled jobs](#scheduled-jobs) | `background` | `FastAPIScheduler`: every N seconds or by cron, each tick once across processes |
+| [Task queue](#task-queue) | `background` | `FastAPITaskQueue`: background tasks on Redis streams, retried, at least once, never pickle |
+| [Circuit breakers](#circuit-breakers) | `operations` | `FastAPIBreaker`: stop calling a dependency that keeps failing, a 503 meanwhile |
+| [Concurrency limits](#concurrency-limits) | `rate_limit` | `FastAPIConcurrencyLimiter`: at most N requests at a time, across processes |
+| [Leader election](#leader-election) | `background` | `FastAPILeader`: work that must run in exactly one process at a time |
+| [Maintenance mode](#maintenance-mode) | `operations` | `FastAPIMaintenance`: a 503 with `Retry-After` for every process at once |
+| [Feature flags](#feature-flags) | `operations` | `FastAPIFeatureFlags`: on, off, by percentage or by subject, shared by every process |
+| [Pagination](#pagination) | `pagination` | `FastAPIPagination`, `…LimitOffset` and `…Cursor`, each page cached under its own key |
+| [Invalidation by tag](#invalidating-by-tag) | `response_cache` | drop every entry of a product, a user… without knowing their keys |
+| [Two-level cache](#two-level-cache) | `backends` | a copy in each process in front of Redis, kept in sync by pub/sub |
+| [Metrics and traces](#metrics-and-traces) | `telemetry` | OpenTelemetry for all of the above |
 
 The response cache is safe by default:
 
@@ -116,7 +116,7 @@ from redis import asyncio as aioredis
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.decorator import cache
+from fastapi_alcazaba.response_cache import cache
 
 
 class Settings(BaseSettings):
@@ -302,7 +302,7 @@ from functools import partial
 from fastapi import APIRouter, Depends
 from starlette.requests import HTTPConnection
 
-from fastapi_alcazaba.limiter import FastAPIRateLimiter
+from fastapi_alcazaba.rate_limit import FastAPIRateLimiter
 
 
 @app.get("/search", dependencies=[Depends(FastAPIRateLimiter(times=10, minutes=1))])
@@ -366,7 +366,7 @@ returns `None` within the limit, else the seconds to wait. For example, the mess
 the login attempts to an account:
 
 ```python
-from fastapi_alcazaba.limiter import FastAPIRateLimiter, too_many_requests
+from fastapi_alcazaba.rate_limit import FastAPIRateLimiter, too_many_requests
 
 login_attempts = FastAPIRateLimiter(times=5, minutes=15, identifier=lambda _: "")
 
@@ -397,7 +397,7 @@ async def login(request: Request, form: Annotated[LoginForm, Form()]) -> Token:
 A lock shared by every process and container, for work that only one of them must do at a time:
 
 ```python
-from fastapi_alcazaba.locks import LockNotAcquired
+from fastapi_alcazaba.background import LockNotAcquired
 
 
 async def nightly_report() -> None:  # every instance runs it; one builds the report
@@ -475,7 +475,7 @@ A JWT can't be taken back once issued. `TokenBlocklist` keeps the revoked ones i
 backend, shared by every process, until they would have expired anyway:
 
 ```python
-from fastapi_alcazaba.tokens import OneTimeCodes, TokenBlocklist
+from fastapi_alcazaba.auth import OneTimeCodes, TokenBlocklist
 
 blocklist = TokenBlocklist()  # FastAPICache's backend; or TokenBlocklist(cache)
 
@@ -543,7 +543,7 @@ async def login(email: str, code: str) -> Token:
 them; your database keeps a record of each, never the key itself:
 
 ```python
-from fastapi_alcazaba.apikeys import FastAPIAPIKeys
+from fastapi_alcazaba.auth import FastAPIAPIKeys
 
 
 async def load_key(key_id: str) -> ApiKeyRow | None:  # any object with digest, scopes, expires_at
@@ -769,7 +769,7 @@ except BlockedDestinationError:
 Two ASGI middlewares for what FastAPI leaves to the deployment:
 
 ```python
-from fastapi_alcazaba.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
+from fastapi_alcazaba.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 
 app.add_middleware(
     BodySizeLimitMiddleware,
@@ -808,7 +808,7 @@ the browser adds the user's cookies by itself. `CSRFMiddleware` refuses those re
 from the headers browsers send to say where a request comes from:
 
 ```python
-from fastapi_alcazaba.csrf import CSRFMiddleware
+from fastapi_alcazaba.security import CSRFMiddleware
 
 app.add_middleware(
     CSRFMiddleware,
@@ -861,7 +861,7 @@ cache's backend instead, and the cookie only carries a random id; `request.sessi
 same:
 
 ```python
-from fastapi_alcazaba.sessions import ServerSessionMiddleware, clear_session, rotate_session
+from fastapi_alcazaba.security import ServerSessionMiddleware, clear_session, rotate_session
 
 app.add_middleware(ServerSessionMiddleware, max_age=8 * 3600, idle_timeout=1800)
 
@@ -965,7 +965,7 @@ the `content_type` found in its bytes, its `size`, its `width` and `height` (ima
 what they shouldn't know:
 
 ```python
-from fastapi_alcazaba.problems import FastAPIProblemDetails, Problem
+from fastapi_alcazaba.observability import FastAPIProblemDetails, Problem
 
 problems = FastAPIProblemDetails()
 problems.install(app)
@@ -1025,7 +1025,7 @@ let a client quote it when it reports an error:
 ```python
 import logging
 
-from fastapi_alcazaba.request_id import RequestIDLogFilter, RequestIDMiddleware, request_id
+from fastapi_alcazaba.observability import RequestIDLogFilter, RequestIDMiddleware, request_id
 
 app.add_middleware(RequestIDMiddleware)  # last: the outermost
 
@@ -1041,7 +1041,7 @@ async def create_job() -> dict[str, str | None]:
 ```
 
 With uvicorn, add the filter to its handlers too (`"filters": {"request_id": {"()":
-"fastapi_alcazaba.request_id.RequestIDLogFilter"}}` in its `log_config`), and its access and
+"fastapi_alcazaba.observability.RequestIDLogFilter"}}` in its `log_config`), and its access and
 error lines carry the ID.
 
 - **Incoming IDs:** the request's `X-Request-ID` (`header=` for another) is reused when a proxy
@@ -1119,7 +1119,7 @@ async def delete_invoice(
   chain, from `AuditEvent`s or the JSON lines read back. The signature covers
   `fastapi_alcazaba/audit2`, a NUL byte and the event's
   [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785) canonical JSON without its `signature`
-  (`fastapi_alcazaba.canonical.canonical_json`): any language with a JCS library checks it the
+  (`fastapi_alcazaba.core.canonical_json`): any language with a JCS library checks it the
   same way, a SIEM or an auditor's script included. For that, details keep to I-JSON: integers
   beyond 2⁵³ are recorded as text, lone surrogates as U+FFFD. It can't tell that the newest events were
   removed, and whoever has the key can rewrite the trail: keep it from the people whose actions
@@ -1146,7 +1146,7 @@ that trickles its body doesn't hold a request (and its database connection, its 
 forever:
 
 ```python
-from fastapi_alcazaba.timeouts import RequestTimeoutMiddleware
+from fastapi_alcazaba.observability import RequestTimeoutMiddleware
 
 app.add_middleware(
     RequestTimeoutMiddleware,
@@ -1181,7 +1181,7 @@ app.add_middleware(
 `health_router()` adds the two endpoints that load balancers and orchestrators probe:
 
 ```python
-from fastapi_alcazaba.health import HealthCheck, health_router
+from fastapi_alcazaba.observability import HealthCheck, health_router
 
 
 async def database() -> None:
@@ -1377,8 +1377,8 @@ and container, for endpoints whose cost is how long they run (AI, OCR, PDF rende
 limiter counts requests per window; this counts the ones in flight:
 
 ```python
-from fastapi_alcazaba.concurrency import FastAPIConcurrencyLimiter
-from fastapi_alcazaba.limiter import client_ip
+from fastapi_alcazaba.rate_limit import FastAPIConcurrencyLimiter
+from fastapi_alcazaba.rate_limit import client_ip
 
 ocr = FastAPIConcurrencyLimiter(4, name="ocr", wait=2)  # FastAPICache's backend, or cache=...
 
@@ -1427,7 +1427,7 @@ exactly one of them all the time (a queue consumer, an outbox relay, a watcher) 
 given times (that's the scheduler):
 
 ```python
-from fastapi_alcazaba.leader import FastAPILeader
+from fastapi_alcazaba.background import FastAPILeader
 
 leader = FastAPILeader("outbox")  # FastAPICache's backend; or FastAPILeader("outbox", cache=cache)
 
@@ -1468,8 +1468,8 @@ if leader.is_leader:  # anywhere, sync code included
 answers 503 with `Retry-After` to every request but the allowed ones:
 
 ```python
-from fastapi_alcazaba.limiter import client_ip
-from fastapi_alcazaba.maintenance import FastAPIMaintenance, MaintenanceMiddleware
+from fastapi_alcazaba.rate_limit import client_ip
+from fastapi_alcazaba.operations import FastAPIMaintenance, MaintenanceMiddleware
 
 maintenance = FastAPIMaintenance()  # FastAPICache's backend; or FastAPIMaintenance(cache)
 app.add_middleware(
@@ -1511,7 +1511,7 @@ await maintenance.disable()
 users or tenants, or for a percentage of them, from any process and without a deploy:
 
 ```python
-from fastapi_alcazaba.flags import FastAPIFeatureFlags
+from fastapi_alcazaba.operations import FastAPIFeatureFlags
 
 flags = FastAPIFeatureFlags()  # FastAPICache's backend; or FastAPIFeatureFlags(cache, refresh=5)
 

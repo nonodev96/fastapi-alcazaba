@@ -17,14 +17,11 @@ from starlette.requests import HTTPConnection, Request
 from starlette.websockets import WebSocketDisconnect
 
 from fastapi_alcazaba import BackendUnavailable, Cache, FastAPICache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.concurrency import (
-    MAX_LIMIT,
-    ConcurrencyLimitExceeded,
-    FastAPIConcurrencyLimiter,
-)
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.rate_limit import ConcurrencyLimitExceeded, FastAPIConcurrencyLimiter
+from fastapi_alcazaba.rate_limit.concurrency import MAX_LIMIT
 
 
 @pytest.fixture(name="cache", params=["memory", "redis"])
@@ -403,7 +400,7 @@ class TestBackendFailures:
         backend.failing = True
         limiter = FastAPIConcurrencyLimiter(1, cache=Cache(backend, circuit_breaker_failures=None))
         app, gate = gated_app(limiter)
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.concurrency"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.rate_limit.concurrency"):
             async with client(app) as http:
                 held = asyncio.create_task(http.get("/work"))
                 await until(lambda: gate.entered == 1)
@@ -445,7 +442,7 @@ class TestBackendFailures:
         limiter = FastAPIConcurrencyLimiter(
             1, name="r", cache=Cache(backend, circuit_breaker_failures=1)
         )
-        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.concurrency"):
+        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.rate_limit.concurrency"):
             async with limiter.slot():
                 pass
             async with limiter.slot():
@@ -457,7 +454,7 @@ class TestBackendFailures:
         backend.failing = True
         limiter = FastAPIConcurrencyLimiter(1, cache=Cache(backend), fail_open=False)
         app, _ = gated_app(limiter)
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.concurrency"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.rate_limit.concurrency"):
             async with client(app) as http:
                 refused = await http.get("/work")
         assert refused.status_code == 503

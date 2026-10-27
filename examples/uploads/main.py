@@ -30,14 +30,9 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.concurrency import run_in_threadpool
 
-from fastapi_alcazaba.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
-from fastapi_alcazaba.uploads import (
-    IMAGES,
-    OFFICE_DOCUMENTS,
-    CheckedFile,
-    FastAPIUploads,
-    safe_filename,
-)
+from fastapi_alcazaba.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
+from fastapi_alcazaba.uploads import IMAGES, CheckedFile, FastAPIUploads, safe_filename
+from fastapi_alcazaba.uploads.checks import OFFICE_DOCUMENTS
 
 MIB = 1024 * 1024
 MAX_DOCUMENTS = 5

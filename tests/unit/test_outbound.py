@@ -20,8 +20,8 @@ from fastapi_alcazaba.outbound import (
     ResilientTransport,
     ResponseTooLargeError,
     SSRFGuardTransport,
-    _is_public,
 )
+from fastapi_alcazaba.outbound.transports import _is_public
 
 Handler = Callable[[httpx.Request], Awaitable[httpx.Response]]
 
@@ -40,7 +40,7 @@ class Clock:
 @pytest.fixture(name="clock")
 def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     clock = Clock()
-    monkeypatch.setattr("fastapi_alcazaba.resilience.time", clock)
+    monkeypatch.setattr("fastapi_alcazaba.core.resilience.time", clock)
     return clock
 
 
@@ -155,7 +155,7 @@ class TestCircuitBreaker:
                 with pytest.raises(httpx.ConnectError):
                     await api.get("/")
             caplog.clear()
-            with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
+            with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound.transports"):
                 for _ in range(3):
                     with pytest.raises(CircuitOpenError, match="https://api.example: the circuit"):
                         await api.get("/")
@@ -166,7 +166,7 @@ class TestCircuitBreaker:
         assert caplog.messages == []  # it warns when it opens, not on every refusal
 
     async def test_it_warns_when_it_opens(self, caplog: pytest.LogCaptureFixture) -> None:
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound.transports"):
             async with resilient_client(
                 Server(error=True), failure_threshold=1, reset_timeout=7
             ) as api:
@@ -332,7 +332,7 @@ class TestCircuitBreaker:
                     await api.get("/")
             clock.now += 30
             caplog.clear()
-            with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
+            with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound.transports"):
                 with pytest.raises(httpx.ConnectError):
                     await api.get("/")  # the trial: one failure is enough
                 with pytest.raises(CircuitOpenError):
@@ -461,7 +461,7 @@ class TestCircuitBreaker:
                 await call
 
     async def test_a_bounded_number_of_origins(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("fastapi_alcazaba.outbound._MAX_ORIGINS", 2)
+        monkeypatch.setattr("fastapi_alcazaba.outbound.transports._MAX_ORIGINS", 2)
         transport = ResilientTransport(httpx.MockTransport(Server(error=True)), failure_threshold=1)
         async with httpx.AsyncClient(transport=transport) as api:
             for host in ("a", "b", "a", "c"):  # a was used after b: b is forgotten
@@ -776,7 +776,7 @@ class TestSSRFGuard:
     ) -> None:
         dns.add("evil.example", [address])
         async with guarded(origin) as client:
-            with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
+            with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound.transports"):
                 with pytest.raises(BlockedDestinationError) as error:
                     await client.get("https://evil.example/latest/meta-data")
         assert str(error.value) == "https://evil.example: its address isn't allowed"
@@ -1092,7 +1092,7 @@ class TestTransportPerName:
         transport = SSRFGuardTransport(lambda: Tracked(origin, made, close_fails=True), max_hosts=1)
         client = httpx.AsyncClient(transport=transport)
         await client.get("http://a.example/")
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.outbound.transports"):
             assert (await client.get("http://b.example/")).text == "ok"
         assert "Couldn't close the transport" in caplog.text
 

@@ -14,8 +14,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   audit details, each checking the properties it must keep. ClusterFuzzLite runs them with
   atheris on pull requests and every week; the unit tests run them on random inputs.
 
-- `fastapi_alcazaba.canonical.canonical_json`: the JSON Canonicalization Scheme (RFC 8785), the
-  one serialization of a JSON value that every language implementing it writes the same.
+- `fastapi_alcazaba.core.canonical_json`: the JSON Canonicalization Scheme (RFC 8785), the one
+  serialization of a JSON value that every language implementing it writes the same.
 - Paginated responses link to the pages around them in the `Link` header (RFC 8288): first, prev,
   next and last by page number or by limit and offset, first and next by cursor. The links keep
   the request's other query parameters and are relative to the host. Pages served by `@cache` get
@@ -24,6 +24,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- A folder per tool, each exporting its public names (`from fastapi_alcazaba.pagination import
+  Page`); the main class of each tool is still importable from `fastapi_alcazaba`. The modules
+  moved, with nothing left at their old paths:
+    - `response_cache`: `decorator` (`cache`), `cache` (`Cache`, `FastAPICache`, `get_cache`),
+      `coder`, `key_builder` (and `KeyBuilder`, from `types`), `compression`;
+    - `backends`: `Backend`, from `types`;
+    - `rate_limit`: `limiter`, `concurrency`;
+    - `auth`: `apikeys`, `tokens`;
+    - `security`: `sessions`, `csrf`, and `middleware`'s `SecurityHeadersMiddleware` and
+      `BodySizeLimitMiddleware`;
+    - `observability`: `problems`, `request_id`, `timeouts`, `health`;
+    - `background`: `scheduler`, `tasks`, `leader`, `locks`;
+    - `operations`: `breaker`, `flags`, `maintenance`;
+    - `outbound`: the transports of `outbound`;
+    - `core`: `errors`, `integrity`, `encryption`, `canonical`, `resilience`;
+    - `telemetry`: `metrics`, `tracing`;
+    - `pagination`, `idempotency`, `audit`, `uploads` and `webhooks` keep their names, now folders.
+
+    Loggers are named after the modules where they are (`fastapi_alcazaba.observability.timeouts`);
+    metrics, spans and the `fastapi_alcazaba.audit.events` logger keep their names.
 - Cached responses report the result in the `Cache-Status` header of RFC 9211 instead of
   `X-FastAPI-Cache`: `Alcazaba; hit; ttl=42` with the seconds the entry has left, or why the
   request reached the endpoint (`fwd=miss`, `stale` for an early refresh, `request` for a client's

@@ -278,7 +278,7 @@ class TestProtectedRecords:
         (key,) = (key for key in app.backend._state if "idempotency" in key)
         forged = {"fingerprint": "x", "status": 200, "headers": [], "body": ""}
         app.backend._state[key].data = json.dumps(forged).encode()
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.idempotency"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.idempotency.middleware"):
             assert client.post("/orders", json={"item": "a"}, headers=KEY).status_code == 201
         assert app.runs == 2
         assert "isn't ours" in caplog.text
@@ -390,7 +390,7 @@ class TestFailures:
 
     def test_a_response_that_cant_be_kept(self, caplog: pytest.LogCaptureFixture) -> None:
         app = App(Down({"set"}))
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.idempotency"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.idempotency.middleware"):
             response = app.client().post("/orders", json={"item": "a"}, headers=KEY)
         assert response.status_code == 201
         assert "Couldn't keep the response" in caplog.text

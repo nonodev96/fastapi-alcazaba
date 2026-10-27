@@ -13,10 +13,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from fastapi_alcazaba import Cache, FastAPICache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.leader import FastAPILeader
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.background import FastAPILeader
 
 
 @pytest.fixture(name="cache", params=["memory", "redis"])
@@ -136,7 +136,7 @@ class TestElection:
     ) -> None:
         backend = InMemoryBackend()
         leader, worker = leader_with_worker("outbox", Cache(backend))
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.leader"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.background.leader"):
             async with leader:
                 await until(lambda: worker.started == 1)
                 backend._locks.clear()  # e.g. it expired during a long pause
@@ -162,7 +162,7 @@ class TestElection:
         async def returns() -> None:
             ran.append("returns")
 
-        with caplog.at_level(logging.ERROR, "fastapi_alcazaba.leader"):
+        with caplog.at_level(logging.ERROR, "fastapi_alcazaba.background.leader"):
             async with leader:
                 await until(lambda: len(ran) == 2)
                 await asyncio.sleep(0.05)
@@ -192,7 +192,7 @@ class TestBackendFailures:
         backend = Flaky()
         backend.failing = True
         leader, worker = leader_with_worker("outbox", Cache(backend, circuit_breaker_failures=None))
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.leader"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.background.leader"):
             async with leader:
                 await asyncio.sleep(0.2)
                 assert not leader.is_leader
@@ -205,7 +205,7 @@ class TestBackendFailures:
         backend = Flaky()
         backend.failing = True
         leader = FastAPILeader("outbox", ttl=0.3, cache=Cache(backend, circuit_breaker_failures=1))
-        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.leader"):
+        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.background.leader"):
             async with leader:
                 await until(lambda: "circuit breaker is open" in caplog.text)
 

@@ -28,20 +28,18 @@ from starlette.status import WS_1008_POLICY_VIOLATION, WS_1011_INTERNAL_ERROR
 from starlette.websockets import WebSocketDisconnect
 
 from fastapi_alcazaba import FastAPIAudit
-from fastapi_alcazaba import audit as audit_module
 from fastapi_alcazaba.audit import (
-    MAX_ITEMS,
-    MAX_STRING,
-    REDACTED,
     AuditEntry,
     AuditEvent,
     LoggingAuditSink,
     MemoryAuditSink,
     verify_audit_trail,
 )
-from fastapi_alcazaba.canonical import canonical_json
-from fastapi_alcazaba.metrics import Metrics
-from fastapi_alcazaba.request_id import RequestIDMiddleware
+from fastapi_alcazaba.audit import trail as audit_module
+from fastapi_alcazaba.audit.trail import MAX_ITEMS, MAX_STRING, REDACTED
+from fastapi_alcazaba.core import canonical_json
+from fastapi_alcazaba.observability import RequestIDMiddleware
+from fastapi_alcazaba.telemetry import Metrics
 
 KEY = "k" * 32
 OLD_KEY = "o" * 32
@@ -558,7 +556,9 @@ async def test_the_logging_sink_says_when_events_are_lost(caplog: pytest.LogCapt
         nowhere.setLevel(logging.NOTSET)
 
     warnings = [
-        record.getMessage() for record in caplog.records if record.name == "fastapi_alcazaba.audit"
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "fastapi_alcazaba.audit.trail"
     ]
     assert len(warnings) == 2  # once per sink
     assert "'tests.audit.nowhere' outputs nothing at level INFO" in warnings[0]
@@ -607,7 +607,9 @@ async def test_a_failing_sink_doesn_t_keep_the_event_from_the_others(
     event = await audit.log("user.delete", actor="alice")
 
     assert only(trail) is event
-    broken, stuck = [record for record in caplog.records if record.name == "fastapi_alcazaba.audit"]
+    broken, stuck = [
+        record for record in caplog.records if record.name == "fastapi_alcazaba.audit.trail"
+    ]
     assert broken.levelno == stuck.levelno == logging.ERROR
     assert "Broken (ConnectionError)" in broken.getMessage()
     assert event.to_json() in broken.getMessage()  # logged, the event isn't lost

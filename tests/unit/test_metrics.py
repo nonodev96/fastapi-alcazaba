@@ -6,7 +6,7 @@ from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.decorator import cache
+from fastapi_alcazaba.response_cache import cache
 
 
 @pytest.fixture(name="reader")

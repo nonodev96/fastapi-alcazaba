@@ -7,12 +7,10 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from fastapi_alcazaba import FastAPICache
-from fastapi_alcazaba import encryption as encryption_module
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.coder import PickleCoder
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.encryption import Encrypter
-from fastapi_alcazaba.integrity import Signer
+from fastapi_alcazaba.core import Encrypter, Signer
+from fastapi_alcazaba.core import encryption as encryption_module
+from fastapi_alcazaba.response_cache import PickleCoder, cache
 
 KEY = "e" * 32
 OTHER_KEY = "o" * 32

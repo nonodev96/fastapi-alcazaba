@@ -27,8 +27,7 @@ from starlette.responses import JSONResponse, Response
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.coder import PickleCoder
-from fastapi_alcazaba.decorator import cache
+from fastapi_alcazaba.response_cache import PickleCoder, cache
 
 
 class Settings(BaseSettings):

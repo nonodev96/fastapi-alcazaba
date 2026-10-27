@@ -8,9 +8,9 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.coder import JsonCoder
-from fastapi_alcazaba.decorator import _compute_etag, _etag_matches
-from fastapi_alcazaba.integrity import Signer
+from fastapi_alcazaba.core import Signer
+from fastapi_alcazaba.response_cache import JsonCoder
+from fastapi_alcazaba.response_cache.decorator import _compute_etag, _etag_matches
 
 json_keys = st.text(max_size=10).filter(lambda key: not key.startswith("__fastapi_alcazaba"))
 json_values = st.recursive(

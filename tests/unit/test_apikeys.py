@@ -10,7 +10,8 @@ import pytest
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
-from fastapi_alcazaba.apikeys import APIKeyRecord, FastAPIAPIKeys, NewAPIKey
+from fastapi_alcazaba.auth import APIKeyRecord, FastAPIAPIKeys
+from fastapi_alcazaba.auth.apikeys import NewAPIKey
 
 PEPPER = "p" * 32
 OLD_PEPPER = "o" * 32
@@ -251,7 +252,7 @@ class TestAuthenticate:
         store.add(good)
         store.add(expired._replace(record=replace(expired.record, expires_at=datetime.now(UTC))))
         wrong = good.key[:-1] + ("a" if good.key[-1] != "a" else "b")
-        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.apikeys"):
+        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.auth.apikeys"):
             for key in (wrong, expired.key, "ak_" + "a" * 16 + "_" + "b" * 52):
                 await refused(keys, key)
         assert caplog.records
@@ -283,7 +284,7 @@ class TestCache:
     @pytest.fixture
     def clock(self, monkeypatch: pytest.MonkeyPatch) -> Clock:
         clock = Clock()
-        monkeypatch.setattr("fastapi_alcazaba.apikeys.time", clock)
+        monkeypatch.setattr("fastapi_alcazaba.auth.apikeys.time", clock)
         return clock
 
     async def test_records_are_kept_for_cache_ttl(self, store: Store, clock: Clock) -> None:

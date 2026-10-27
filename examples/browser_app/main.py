@@ -38,9 +38,14 @@ from starlette.concurrency import run_in_threadpool
 
 from fastapi_alcazaba import FastAPICache, FastAPIRateLimiter
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.csrf import CSRFMiddleware
-from fastapi_alcazaba.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
-from fastapi_alcazaba.sessions import ServerSessionMiddleware, clear_session, rotate_session
+from fastapi_alcazaba.security import (
+    BodySizeLimitMiddleware,
+    CSRFMiddleware,
+    SecurityHeadersMiddleware,
+    ServerSessionMiddleware,
+    clear_session,
+    rotate_session,
+)
 
 # Only the app's own script, styles and images; no plugins, no framing, forms only to the app.
 CSP = "default-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"

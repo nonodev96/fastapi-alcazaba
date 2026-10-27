@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from starlette.testclient import WebSocketDenialResponse
 from starlette.types import Message, Receive, Scope, Send
 
-from fastapi_alcazaba.request_id import RequestIDLogFilter, RequestIDMiddleware, request_id
+from fastapi_alcazaba.observability import RequestIDLogFilter, RequestIDMiddleware, request_id
 
 GENERATED = re.compile(r"[0-9a-f]{32}")
 

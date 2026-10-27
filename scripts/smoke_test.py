@@ -37,7 +37,7 @@ def check_distribution(expected_version: str | None) -> None:
 async def check_cache() -> None:
     from fastapi_alcazaba import FastAPICache
     from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-    from fastapi_alcazaba.decorator import cache
+    from fastapi_alcazaba.response_cache import cache
 
     calls: list[int] = []
     FastAPICache.init(InMemoryBackend(), signing_key="smoke-test-signing-key-0123456789abcdef")

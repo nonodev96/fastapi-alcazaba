@@ -13,8 +13,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
 from starlette.types import Message, Receive, Scope, Send
 
-from fastapi_alcazaba.request_id import RequestIDMiddleware
-from fastapi_alcazaba.timeouts import RequestTimeoutMiddleware
+from fastapi_alcazaba.observability import RequestIDMiddleware, RequestTimeoutMiddleware
 
 TIMED_OUT = {"detail": "Request timed out"}
 
@@ -109,7 +108,7 @@ class TestRequestTimeout:
         events: list[str],
         caplog: pytest.LogCaptureFixture,
     ) -> None:
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.timeouts"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.observability.timeouts"):
             response = TestClient(app).get("/slow")
         assert (response.status_code, response.json()) == (504, TIMED_OUT)
         assert response.headers["content-type"] == "application/json"
@@ -141,7 +140,7 @@ class TestRequestTimeout:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         with (
-            caplog.at_level(logging.WARNING, "fastapi_alcazaba.timeouts"),
+            caplog.at_level(logging.WARNING, "fastapi_alcazaba.observability.timeouts"),
             pytest.raises(TimeoutError),
         ):
             TestClient(app).get("/stream")
@@ -280,7 +279,7 @@ class TestRequestTimeoutInASGI:
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             await asyncio.sleep(10)
 
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.timeouts"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.observability.timeouts"):
             await RequestTimeoutMiddleware(app, timeout=0.01)(
                 http_scope("/a\nFORGED"), no_body, collect([])
             )

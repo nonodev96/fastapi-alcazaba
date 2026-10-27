@@ -12,8 +12,9 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, ValidationError
 from starlette.responses import JSONResponse
 
-from fastapi_alcazaba import coder as coder_module
-from fastapi_alcazaba.coder import JsonCoder, PickleCoder, needs_markers
+from fastapi_alcazaba.response_cache import JsonCoder, PickleCoder
+from fastapi_alcazaba.response_cache import coder as coder_module
+from fastapi_alcazaba.response_cache.coder import needs_markers
 
 
 @dataclass

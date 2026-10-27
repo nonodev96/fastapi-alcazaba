@@ -1,6 +1,7 @@
 # Webhooks and outbound calls
 
 Standard Webhooks in and out, and httpx transports with deadlines, breakers and SSRF checks.
+In `fastapi_alcazaba.webhooks` and `fastapi_alcazaba.outbound`.
 
 In the guide: [Signed webhooks](../index.md#signed-webhooks) · [Outbound calls](../index.md#outbound-calls). In an app: [the example](../examples/webhooks.md).
 

@@ -4,7 +4,7 @@ from collections import OrderedDict
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from fastapi_alcazaba.types import Backend, is_state_key
+from fastapi_alcazaba.backends.base import Backend, is_state_key
 
 
 @dataclass(slots=True)

@@ -4,7 +4,7 @@ import time
 from aiomcache import Client
 from aiomcache.exceptions import ClientException
 
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.backends.base import Backend
 
 # Beyond 30 days memcached reads exptime as a Unix timestamp, not as seconds from now.
 _MAX_RELATIVE_EXPTIME = 30 * 24 * 3600

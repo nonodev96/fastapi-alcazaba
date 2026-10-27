@@ -40,7 +40,7 @@ from redis.asyncio import Redis
 
 from fastapi_alcazaba import FastAPICache, FastAPILeader, FastAPIScheduler, FastAPITaskQueue
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.tasks import DeadLetter
+from fastapi_alcazaba.background import DeadLetter
 
 logger = logging.getLogger("signup")
 

@@ -31,9 +31,9 @@ from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fastapi_alcazaba import FastAPIAPIKeys, FastAPICache
+from fastapi_alcazaba.auth import OneTimeCodes, TokenBlocklist
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.limiter import FastAPIRateLimiter, too_many_requests
-from fastapi_alcazaba.tokens import OneTimeCodes, TokenBlocklist
+from fastapi_alcazaba.rate_limit import FastAPIRateLimiter, too_many_requests
 
 TOKEN_LIFETIME = 15 * 60  # seconds
 

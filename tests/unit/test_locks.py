@@ -11,11 +11,11 @@ import fakeredis
 import pytest
 
 from fastapi_alcazaba import BackendUnavailable, Cache, FastAPICache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
-from fastapi_alcazaba.locks import Lock, LockNotAcquired
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.background import Lock, LockNotAcquired
 
 
 @pytest.fixture(name="cache", params=["memory", "redis"])
@@ -116,7 +116,7 @@ class TestLostLocks:
         lock = Cache(backend).lock("report", ttl=0.1)
         await lock.acquire()
         backend._locks.clear()  # e.g. it expired during a long pause
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.locks"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.background.locks"):
             await asyncio.sleep(0.1)
         assert not lock.held
         assert "Lost the lock 'report'" in caplog.text

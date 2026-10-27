@@ -11,11 +11,11 @@ import fakeredis
 import pytest
 
 from fastapi_alcazaba import BackendUnavailable, Cache, FastAPICache
+from fastapi_alcazaba.auth import OneTimeCodes, TokenBlocklist
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
-from fastapi_alcazaba.tokens import OneTimeCodes, TokenBlocklist
-from fastapi_alcazaba.types import Backend
 
 NOW = 1_800_000_000.0
 SECRET = "s" * 32
@@ -188,7 +188,7 @@ class TestBlocklistStorage:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         blocklist = TokenBlocklist(Cache(Down()), fail_open=fail_open)
-        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.tokens"):
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.auth.tokens"):
             assert await blocklist.is_revoked("jti") is revoked
             assert await blocklist.is_revoked("jti", subject="a", issued_at=NOW) is revoked
         assert len(caplog.records) == 2
@@ -272,7 +272,7 @@ class TestOneTimeCodes:
         assert sorted(results) == [False] * 4 + [True]
 
     async def test_digits(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("fastapi_alcazaba.tokens.secrets.randbelow", lambda n: 42)
+        monkeypatch.setattr("fastapi_alcazaba.auth.tokens.secrets.randbelow", lambda n: 42)
         codes = OneTimeCodes(SECRET, Cache(InMemoryBackend()), digits=8)
         assert await codes.issue("alice") == "00000042"
         assert await codes.verify("alice", "00000042")
@@ -309,7 +309,7 @@ class TestCodeStorage:
         codes = OneTimeCodes(SECRET, Cache(Down()))
         with pytest.raises(BackendUnavailable):
             await codes.issue("alice")
-        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.tokens"):
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.auth.tokens"):
             assert not await codes.verify("alice", "123456")
         assert len(caplog.records) == 1
 

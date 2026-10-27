@@ -16,7 +16,8 @@ from fastapi.testclient import TestClient
 
 from fastapi_alcazaba import Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.health import HealthCheck, _call, health_router
+from fastapi_alcazaba.observability import HealthCheck, health_router
+from fastapi_alcazaba.observability.health import _call
 
 
 @pytest.fixture(autouse=True)
@@ -104,7 +105,7 @@ class TestReady:
         async def database() -> None:
             raise ConnectionError("postgresql://app:s3cret@db.internal:5432")
 
-        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.health"):
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.observability.health"):
             response = client_for({"database": database}).get("/health/ready")
         assert "s3cret" not in response.text
         assert "db.internal" not in response.text
@@ -115,7 +116,7 @@ class TestReady:
         async def check() -> bool:
             return False
 
-        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.health"):
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.observability.health"):
             client_for({"flag": check}).get("/health/ready")
         assert "'flag' returned False" in caplog.text
 
@@ -140,7 +141,7 @@ class TestTimeouts:
             await asyncio.sleep(10)
 
         start = time.monotonic()
-        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.health"):
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.observability.health"):
             response = client_for({"slow": HealthCheck(slow, timeout=0.05)}).get("/health/ready")
         assert time.monotonic() - start < 2
         assert response.status_code == 503
@@ -183,7 +184,7 @@ class TestTimeouts:
 
         with TestClient(app_with({"hangs": hangs}, timeout=0.05, reuse_for=0)) as client:
             client.get("/health/ready")
-            with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.health"):
+            with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.observability.health"):
                 assert client.get("/health/ready").status_code == 503
             assert "still running since an earlier probe" in caplog.text
             assert calls == [1]
@@ -267,7 +268,7 @@ class TestTimeouts:
         async def check() -> None:
             raise TimeoutError("the database's own timeout")
 
-        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.health"):
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.observability.health"):
             response = client_for({"database": check}).get("/health/ready")
         assert response.status_code == 503
         assert "'database' failed" in caplog.text
@@ -290,7 +291,7 @@ class TestThreads:
         def database() -> None:
             raise ConnectionError("db.internal refused the connection")
 
-        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.health"):
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.observability.health"):
             response = client_for({"database": database}).get("/health/ready")
         assert response.status_code == 503
         assert "db.internal" not in response.text

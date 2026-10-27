@@ -1,6 +1,7 @@
 # Audit trail
 
 `FastAPIAudit`, its entries and events, sinks, and the trail's verification.
+In `fastapi_alcazaba.audit`.
 
 In the guide: [Audit trail](../index.md#audit-trail). In an app: [the example](../examples/audit.md).
 

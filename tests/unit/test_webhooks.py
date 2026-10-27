@@ -38,7 +38,7 @@ class Clock:
 @pytest.fixture(name="clock")
 def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     clock = Clock()
-    monkeypatch.setattr("fastapi_alcazaba.webhooks.time", clock)
+    monkeypatch.setattr("fastapi_alcazaba.webhooks.signing.time", clock)
     return clock
 
 
@@ -362,7 +362,7 @@ class TestDependency:
     @pytest.mark.usefixtures("clock")
     def test_the_backend_down_refuses_with_a_503(self, caplog: pytest.LogCaptureFixture) -> None:
         client = app_with(FastAPIWebhooks(SECRET, cache=Cache(Down())))
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.webhooks"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.webhooks.signing"):
             response = client.post("/raw", content=BODY, headers=signed())
         assert (response.status_code, response.headers["retry-after"]) == (503, "5")
         assert "refused" in caplog.text
@@ -373,7 +373,7 @@ class TestDependency:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         client = app_with(FastAPIWebhooks(SECRET, cache=Cache(Down()), fail_open=True))
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.webhooks"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.webhooks.signing"):
             assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
             assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
         assert "accepted" in caplog.text

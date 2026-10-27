@@ -5,7 +5,7 @@ import secrets
 from collections.abc import Iterable, Sequence
 from typing import Any
 
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.backends.base import Backend
 
 _GLOB_SPECIAL = re.compile(r"([\\*?\[\]])")
 

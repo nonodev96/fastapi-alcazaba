@@ -1,5 +1,5 @@
 from fastapi_alcazaba.backends import inmemory, tiered
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.backends.base import Backend
 
 __all__ = ["Backend", "inmemory", "tiered"]
 

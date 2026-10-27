@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from fastapi_alcazaba._cookies import CookieSettings, cookie_values, has_cookies
+from fastapi_alcazaba.security._cookies import CookieSettings, cookie_values, has_cookies
 
 
 class TestSettings:

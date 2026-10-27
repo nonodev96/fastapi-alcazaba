@@ -18,7 +18,7 @@ from starlette.requests import HTTPConnection
 from fastapi_alcazaba import Backend, Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
-from fastapi_alcazaba.sessions import (
+from fastapi_alcazaba.security import (
     ServerSession,
     ServerSessionMiddleware,
     clear_session,
@@ -192,7 +192,7 @@ def issued(response: Any) -> str:
 @pytest.fixture(name="clock")
 def fixture_clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
     clock = Clock()
-    monkeypatch.setattr("fastapi_alcazaba.sessions.time", clock)
+    monkeypatch.setattr("fastapi_alcazaba.security.sessions.time", clock)
     return clock
 
 
@@ -461,7 +461,7 @@ class TestFailures:
         client = app.client()
         session_id = issued(client.post("/set?key=user&value=alice"))
         app.backend.failing.add("get")
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.sessions"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.security.sessions"):
             response = client.get("/session")
         assert (response.status_code, response.json()) == (200, {})
         assert "set-cookie" not in response.headers
@@ -484,7 +484,7 @@ class TestFailures:
         app = App()
         app.backend.failing.add("set")
         client = app.client()
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.sessions"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.security.sessions"):
             refused = client.post("/stream")
         assert (refused.status_code, refused.json()) == (503, {"detail": "Service Unavailable"})
         assert "set-cookie" not in refused.headers
@@ -520,13 +520,13 @@ class TestIntegrity:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         client = App().client()
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.sessions"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.security.sessions"):
             client.get("/public")
             client.get("/public")
         assert caplog.text.count("Sessions are stored unsigned") == 1
 
     def test_signed_sessions_arent_warned_about(self, caplog: pytest.LogCaptureFixture) -> None:
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.sessions"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.security.sessions"):
             App(cache_options={"signing_key": SIGNING_KEY}).client().get("/public")
         assert "unsigned" not in caplog.text
 
@@ -537,7 +537,7 @@ class TestIntegrity:
         ((key, _),) = app.backend.sessions().items()
         forged = {"created": 1, "seen": 1, "data": {"user": "admin"}}
         app.backend._state[key].data = json.dumps(forged).encode()
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.sessions"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.security.sessions"):
             assert client.get("/session").json() == {}
         assert "isn't ours" in caplog.text
 

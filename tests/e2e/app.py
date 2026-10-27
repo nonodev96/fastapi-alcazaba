@@ -15,8 +15,8 @@ from fastapi import Depends, FastAPI, Request
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.tiered import TieredBackend
 from fastapi_alcazaba.backends.valkey import ValkeyBackend
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.limiter import FastAPIRateLimiter
+from fastapi_alcazaba.rate_limit import FastAPIRateLimiter
+from fastapi_alcazaba.response_cache import cache
 
 PREFIX = os.environ.get("ALCAZABA_E2E_PREFIX", "fastapi-alcazaba-e2e")
 

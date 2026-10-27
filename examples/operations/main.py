@@ -42,12 +42,8 @@ from fastapi_alcazaba import (
     FastAPIMaintenance,
 )
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.flags import FeatureFlag
-from fastapi_alcazaba.maintenance import (
-    MAX_MESSAGE_LENGTH,
-    MaintenanceMiddleware,
-    MaintenanceStatus,
-)
+from fastapi_alcazaba.operations import MAX_MESSAGE_LENGTH, FeatureFlag, MaintenanceMiddleware
+from fastapi_alcazaba.operations.maintenance import MaintenanceStatus
 
 logger = logging.getLogger(__name__)
 

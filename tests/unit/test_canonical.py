@@ -14,7 +14,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from fastapi_alcazaba.canonical import MAX_SAFE_INTEGER, _number, canonical_json
+from fastapi_alcazaba.core import canonical_json
+from fastapi_alcazaba.core.canonical import MAX_SAFE_INTEGER, _number
 
 BACKSLASH, QUOTE = chr(92), chr(34)
 

@@ -9,7 +9,8 @@ from fastapi.testclient import TestClient
 from starlette.types import Message, Scope
 from starlette.websockets import WebSocketDisconnect
 
-from fastapi_alcazaba.csrf import CSRFMiddleware, _origin
+from fastapi_alcazaba.security import CSRFMiddleware
+from fastapi_alcazaba.security.csrf import _origin
 
 COOKIE = {"Cookie": "session=abc"}
 OWN = "https://testserver"
@@ -126,7 +127,7 @@ class TestFetchMetadata:
         assert post(app, **headers).status_code == 403
 
     def test_refusals_are_logged_without_secrets(self, caplog: pytest.LogCaptureFixture) -> None:
-        with caplog.at_level(logging.INFO, "fastapi_alcazaba.csrf"):
+        with caplog.at_level(logging.INFO, "fastapi_alcazaba.security.csrf"):
             post(client(), Cookie="session=s3cr3t", **{"Sec-Fetch-Site": "cross-site"})
         assert "Refused a cross-site POST request: Sec-Fetch-Site 'cross-site'" in caplog.text
         assert "s3cr3t" not in caplog.text
@@ -157,7 +158,7 @@ class TestOrigin:
         assert post(app, **COOKIE, Referer="not a url").status_code == 403
 
     def test_neither_origin_nor_referer(self, caplog: pytest.LogCaptureFixture) -> None:
-        with caplog.at_level(logging.INFO, "fastapi_alcazaba.csrf"):
+        with caplog.at_level(logging.INFO, "fastapi_alcazaba.security.csrf"):
             response = post(client(), **COOKIE)
         assert (response.status_code, response.json()) == (403, REFUSED)
         assert "neither Origin nor Referer" in caplog.text
@@ -283,7 +284,7 @@ class TestWebSockets:
 
     def test_cross_site_handshakes_are_refused(self, caplog: pytest.LogCaptureFixture) -> None:
         with (
-            caplog.at_level(logging.INFO, "fastapi_alcazaba.csrf"),
+            caplog.at_level(logging.INFO, "fastapi_alcazaba.security.csrf"),
             pytest.raises(WebSocketDisconnect) as refused,
             client().websocket_connect("/ws", headers={**COOKIE, "Origin": EVIL}),
         ):

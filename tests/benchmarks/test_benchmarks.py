@@ -12,12 +12,9 @@ from starlette.requests import Request
 
 from fastapi_alcazaba import Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.coder import JsonCoder
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.encryption import Encrypter
-from fastapi_alcazaba.integrity import Signer
-from fastapi_alcazaba.key_builder import default_key_builder
-from fastapi_alcazaba.limiter import FastAPIRateLimiter
+from fastapi_alcazaba.core import Encrypter, Signer
+from fastapi_alcazaba.rate_limit import FastAPIRateLimiter
+from fastapi_alcazaba.response_cache import JsonCoder, cache, default_key_builder
 
 
 class Item(BaseModel):

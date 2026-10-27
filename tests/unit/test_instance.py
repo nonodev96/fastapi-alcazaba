@@ -9,8 +9,7 @@ from starlette.testclient import TestClient
 
 from fastapi_alcazaba import Cache, FastAPICache, get_cache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.key_builder import default_key_builder
+from fastapi_alcazaba.response_cache import cache, default_key_builder
 from tests.cache_status import served
 
 

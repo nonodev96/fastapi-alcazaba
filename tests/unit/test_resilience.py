@@ -5,10 +5,9 @@ import pytest
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.errors import BackendUnavailable, CircuitOpen
-from fastapi_alcazaba.metrics import Metrics
-from fastapi_alcazaba.resilience import BackendGuard, CircuitBreaker
+from fastapi_alcazaba.core import BackendGuard, BackendUnavailable, CircuitBreaker, CircuitOpen
+from fastapi_alcazaba.response_cache import cache
+from fastapi_alcazaba.telemetry import Metrics
 
 
 class TestCircuitBreaker:

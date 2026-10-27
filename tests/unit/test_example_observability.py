@@ -1,5 +1,6 @@
 """The observability example: problem details, request IDs, deadlines and health checks."""
 
+import importlib
 import logging
 import re
 import subprocess
@@ -13,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from examples.observability.main import LOG_FORMAT, LOGGING, Database, app, create_app
-from fastapi_alcazaba.request_id import RequestIDLogFilter
+from fastapi_alcazaba.observability import RequestIDLogFilter
 
 ROOT = Path(__file__).parents[2]
 PROBLEM = "application/problem+json"
@@ -157,8 +158,9 @@ class TestRequestIDs:
         assert line.endswith(" INFO [-] orders: Starting")
 
     def test_every_handler_of_the_logging_config_has_the_filter(self) -> None:
-        filter_class = f"{RequestIDLogFilter.__module__}.{RequestIDLogFilter.__qualname__}"
-        assert LOGGING["filters"] == {"request_id": {"()": filter_class}}
+        assert list(LOGGING["filters"]) == ["request_id"]
+        module, _, name = LOGGING["filters"]["request_id"]["()"].rpartition(".")
+        assert getattr(importlib.import_module(module), name) is RequestIDLogFilter
         formats = {name: f.get("format") or f["fmt"] for name, f in LOGGING["formatters"].items()}
         for handler in LOGGING["handlers"].values():
             assert handler["filters"] == ["request_id"]
@@ -209,7 +211,7 @@ class TestDeadlines:
             },
         )
         assert log_lines[-1].endswith(
-            f"WARNING [{request_id}] fastapi_alcazaba.timeouts: "
+            f"WARNING [{request_id}] fastapi_alcazaba.observability.timeouts: "
             "GET /reports/sales timed out after 0.2s: answered 504"
         )
         assert database(orders_app).in_use == 0  # the connection went back to the pool

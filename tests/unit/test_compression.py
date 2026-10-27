@@ -9,11 +9,11 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from fastapi_alcazaba import FastAPICache
-from fastapi_alcazaba import compression as compression_module
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.compression import Compressor, decompress
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.encryption import Encrypter
+from fastapi_alcazaba.core import Encrypter
+from fastapi_alcazaba.response_cache import cache
+from fastapi_alcazaba.response_cache import compression as compression_module
+from fastapi_alcazaba.response_cache.compression import Compressor, decompress
 
 TEXT = b'{"name": "olive oil", "price": 9.5}' * 200
 CODECS = ["zstd", "zlib"]

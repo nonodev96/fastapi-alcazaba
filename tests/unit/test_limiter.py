@@ -15,11 +15,12 @@ from starlette.requests import HTTPConnection, Request
 from starlette.websockets import WebSocketDisconnect
 
 from fastapi_alcazaba import Cache, FastAPICache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.decorator import cache
-from fastapi_alcazaba.limiter import FastAPIRateLimiter, _wait, client_ip, client_network
-from fastapi_alcazaba.problems import FastAPIProblemDetails
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.observability import FastAPIProblemDetails
+from fastapi_alcazaba.rate_limit import FastAPIRateLimiter, client_ip, client_network
+from fastapi_alcazaba.rate_limit.limiter import _wait
+from fastapi_alcazaba.response_cache import cache
 from tests.cache_status import served
 from tests.unit.test_metrics import points
 
@@ -583,7 +584,7 @@ class TestFloods:
             assert statuses(limited_app(limiter), n=2) == [200, 429]
 
     async def test_a_bounded_number_of_clients(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("fastapi_alcazaba.limiter._MAX_BLOCKED", 2)
+        monkeypatch.setattr("fastapi_alcazaba.rate_limit.limiter._MAX_BLOCKED", 2)
         limiter = FastAPIRateLimiter(times=1, minutes=1, cache=Cache(InMemoryBackend()))
         for n in range(4):
             assert await limiter.hit(request_from(f"10.0.0.{n}")) is None

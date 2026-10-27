@@ -10,12 +10,13 @@ from aiomcache.exceptions import ClientException
 from botocore.exceptions import ClientError
 
 from fastapi_alcazaba import FastAPICache
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends._redis_common import RedisLikeBackend, escape_glob
+from fastapi_alcazaba.backends.base import is_state_key
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.memcached import MemcachedBackend, memcached_key
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.valkey import ValkeyBackend
-from fastapi_alcazaba.types import Backend, is_state_key
 
 
 async def check_incr_window(backend: Backend) -> None:

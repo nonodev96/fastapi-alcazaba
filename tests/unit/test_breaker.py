@@ -12,7 +12,7 @@ from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from fastapi_alcazaba import BreakerOpen, FastAPIBreaker, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.metrics import Metrics
+from fastapi_alcazaba.telemetry import Metrics
 from tests.unit.test_metrics import points
 
 
@@ -109,7 +109,7 @@ class TestStates:
         dependency.down = True
         await fail(breaker, dependency, 2)
         assert breaker.state == "open"
-        with caplog.at_level(logging.INFO, "fastapi_alcazaba.breaker"):
+        with caplog.at_level(logging.INFO, "fastapi_alcazaba.operations.breaker"):
             breaker.reset()
             breaker.reset()  # closed already: nothing to tell
         assert (breaker.state, breaker.retry_after) == ("closed", 0.0)
@@ -290,7 +290,7 @@ class TestObservability:
         breaker = FastAPIBreaker("db", failure_threshold=1, reset_timeout=0.05)
         dependency = Dependency()
         dependency.down = True
-        with caplog.at_level(logging.INFO, "fastapi_alcazaba.breaker"):
+        with caplog.at_level(logging.INFO, "fastapi_alcazaba.operations.breaker"):
             await fail(breaker, dependency, 1)
             await asyncio.sleep(0.06)
             dependency.down = False

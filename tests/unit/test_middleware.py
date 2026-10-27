@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 from starlette.types import Message, Receive, Scope, Send
 
-from fastapi_alcazaba.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
+from fastapi_alcazaba.security import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 
 DEFAULTS = {
     "x-content-type-options": "nosniff",

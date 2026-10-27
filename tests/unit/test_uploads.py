@@ -14,14 +14,13 @@ from fastapi import HTTPException, UploadFile
 
 from fastapi_alcazaba.uploads import (
     IMAGES,
-    KNOWN_TYPES,
-    OFFICE_DOCUMENTS,
     CheckedFile,
     FastAPIUploads,
     image_size,
     safe_filename,
     sniff,
 )
+from fastapi_alcazaba.uploads.checks import KNOWN_TYPES, OFFICE_DOCUMENTS
 
 DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

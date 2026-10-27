@@ -10,11 +10,10 @@ from collections.abc import AsyncIterator, Callable
 import pytest
 
 from fastapi_alcazaba import Cache
-from fastapi_alcazaba.concurrency import ConcurrencyLimitExceeded, FastAPIConcurrencyLimiter
-from fastapi_alcazaba.flags import FastAPIFeatureFlags
-from fastapi_alcazaba.leader import FastAPILeader
-from fastapi_alcazaba.maintenance import FastAPIMaintenance
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.backends import Backend
+from fastapi_alcazaba.background import FastAPILeader
+from fastapi_alcazaba.operations import FastAPIFeatureFlags, FastAPIMaintenance
+from fastapi_alcazaba.rate_limit import ConcurrencyLimitExceeded, FastAPIConcurrencyLimiter
 from tests.integration.test_backends_live import ENV, KINDS, _make
 
 pytestmark = pytest.mark.integration

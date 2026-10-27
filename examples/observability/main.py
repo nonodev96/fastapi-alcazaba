@@ -31,9 +31,11 @@ from pydantic import BaseModel, Field
 
 from fastapi_alcazaba import Cache, FastAPIProblemDetails, Problem
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.health import health_router
-from fastapi_alcazaba.request_id import RequestIDMiddleware
-from fastapi_alcazaba.timeouts import RequestTimeoutMiddleware
+from fastapi_alcazaba.observability import (
+    RequestIDMiddleware,
+    RequestTimeoutMiddleware,
+    health_router,
+)
 
 logger = logging.getLogger("orders")
 
@@ -45,7 +47,7 @@ ACCESS_FORMAT = '%(asctime)s %(levelname)s [%(request_id)s] "%(request_line)s" %
 LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {"request_id": {"()": "fastapi_alcazaba.request_id.RequestIDLogFilter"}},
+    "filters": {"request_id": {"()": "fastapi_alcazaba.observability.RequestIDLogFilter"}},
     "formatters": {
         "default": {"format": LOG_FORMAT},
         "access": {"()": "uvicorn.logging.AccessFormatter", "fmt": ACCESS_FORMAT},

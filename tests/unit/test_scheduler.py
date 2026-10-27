@@ -17,10 +17,10 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
 from fastapi_alcazaba import Cache, FastAPICache, FastAPIScheduler
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
-from fastapi_alcazaba.scheduler import _Cron, _Every
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.background.scheduler import _Cron, _Every
 from tests.unit.test_metrics import points
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -243,7 +243,7 @@ class TestScheduling:
             calls.append(1)
             raise RuntimeError("boom")
 
-        with caplog.at_level(logging.ERROR, "fastapi_alcazaba.scheduler"):
+        with caplog.at_level(logging.ERROR, "fastapi_alcazaba.background.scheduler"):
             await run_for(2.5 * TICK, scheduler)
         assert len(calls) >= 2
         assert "Scheduled job 'flaky' failed" in caplog.text
@@ -274,7 +274,7 @@ class TestBackendFailures:
         calls: list[int] = []
         (scheduler,) = processes(Down(), n=1)
         scheduler.every(seconds=TICK, name="job")(lambda: calls.append(1))
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.scheduler"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.background.scheduler"):
             await run_for(1.5 * TICK, scheduler)
         assert not calls
         assert "Scheduled job 'job' skipped: the backend failed" in caplog.text
@@ -283,7 +283,7 @@ class TestBackendFailures:
         calls: list[int] = []
         (scheduler,) = processes(Down(), n=1, fail_open=True)
         scheduler.every(seconds=TICK, name="job")(lambda: calls.append(1))
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.scheduler"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.background.scheduler"):
             await run_for(1.5 * TICK, scheduler)
         assert calls
         assert "runs unchecked" in caplog.text
@@ -346,7 +346,7 @@ class TestStopping:
 
         await scheduler.start()
         await asyncio.sleep(TICK + 0.05)
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.scheduler"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.background.scheduler"):
             await scheduler.stop()
         assert cancelled == [True]
         assert "Cancelling 1 scheduled jobs still running" in caplog.text

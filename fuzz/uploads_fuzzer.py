@@ -13,13 +13,8 @@ except ImportError:  # the unit tests run the target without it
 # Only Alcazaba's code is instrumented: its coverage is what guides the fuzzer, and instrumenting
 # every library imported (FastAPI, pydantic...) takes longer than a short run lasts.
 with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nullcontext():
-    from fastapi_alcazaba.uploads import (
-        _WINDOWS_RESERVED,
-        KNOWN_TYPES,
-        image_size,
-        safe_filename,
-        sniff,
-    )
+    from fastapi_alcazaba.uploads import image_size, safe_filename, sniff
+    from fastapi_alcazaba.uploads.checks import _WINDOWS_RESERVED, KNOWN_TYPES
 
 _FORBIDDEN = frozenset('/\\<>:"|?*')
 

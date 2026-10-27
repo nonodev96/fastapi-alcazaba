@@ -1,10 +1,11 @@
 # Backends
 
 Where entries and state live: in memory, Redis, Valkey, GLIDE, memcached, DynamoDB, two levels.
+In `fastapi_alcazaba.backends`.
 
 In the guide: [Backends](../index.md#backends) · [Two-level cache](../index.md#two-level-cache).
 
-::: fastapi_alcazaba.types.Backend
+::: fastapi_alcazaba.backends.Backend
 
 ::: fastapi_alcazaba.backends.inmemory.InMemoryBackend
 

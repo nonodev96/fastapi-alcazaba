@@ -16,12 +16,13 @@ from starlette.requests import HTTPConnection
 from starlette.websockets import WebSocketDisconnect
 
 from fastapi_alcazaba import BackendUnavailable, Cache, FastAPICache
-from fastapi_alcazaba import flags as flags_module
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
-from fastapi_alcazaba.flags import MAX_SUBJECTS, FastAPIFeatureFlags, FeatureFlag
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.operations import FastAPIFeatureFlags, FeatureFlag
+from fastapi_alcazaba.operations import flags as flags_module
+from fastapi_alcazaba.operations.flags import MAX_SUBJECTS
 
 DIGEST = "0" * 64
 
@@ -281,7 +282,7 @@ class TestBackendFailures:
         await flags.set("beta", enabled=True)
         backend.failing = True
         await asyncio.sleep(0.06)
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.flags"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.operations.flags"):
             assert await flags.enabled("beta")
             gets = backend.gets
             assert await flags.enabled("beta")  # not asked again before `refresh`
@@ -301,7 +302,7 @@ class TestBackendFailures:
         backend = Counting()
         backend.failing = True
         flags = FastAPIFeatureFlags(Cache(backend, circuit_breaker_failures=1))
-        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.flags"):
+        with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.operations.flags"):
             await flags.enabled("a")
             await flags.enabled("b")
         assert "circuit breaker is open" in caplog.text
@@ -329,7 +330,7 @@ class TestStoredDefinitions:
         assert await flags.get("beta") is not None
         planted: dict[str, Any] = {"enabled": True, "percentage": None, "allow": [], "deny": []}
         await backend.set("app!flags:planted", json.dumps(planted).encode())
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.flags"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.operations.flags"):
             assert await flags.get("planted") is None
         assert "didn't write" in caplog.text
 
@@ -356,7 +357,7 @@ class TestStoredDefinitions:
         backend = InMemoryBackend()
         payload = definition if isinstance(definition, str) else json.dumps(definition)
         await backend.set("app!flags:beta", payload.encode())
-        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.flags"):
+        with caplog.at_level(logging.WARNING, "fastapi_alcazaba.operations.flags"):
             assert await FastAPIFeatureFlags(Cache(backend, prefix="app")).get("beta") is None
         assert "malformed" in caplog.text
 

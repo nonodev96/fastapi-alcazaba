@@ -24,7 +24,7 @@ from fastapi_alcazaba.backends._redis_common import (
     pending_tag_key,
     window_args,
 )
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.backends.base import Backend
 
 _RELEASE_LOCK = Script(RELEASE_LOCK_SCRIPT)  # type: ignore[no-untyped-call]
 _ADD_TAG = Script(ADD_TAG_SCRIPT)  # type: ignore[no-untyped-call]

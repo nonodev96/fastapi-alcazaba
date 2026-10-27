@@ -7,7 +7,7 @@ from aiobotocore.client import AioBaseClient
 from aiobotocore.session import AioSession, get_session
 from botocore.exceptions import ClientError
 
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.backends.base import Backend
 
 if TYPE_CHECKING:
     from types_aiobotocore_dynamodb import DynamoDBClient

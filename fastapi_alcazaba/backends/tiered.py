@@ -9,8 +9,8 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from fastapi_alcazaba.backends.base import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.types import Backend
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -311,3 +311,9 @@ class TieredBackend(Backend):
         )
 
     # endregion
+
+
+def shared_backend(backend: Backend) -> Backend:
+    """The backend every process shares: a TieredBackend's copies in each process could lag
+    behind a change (a revocation, a logout, a flag switched off)."""
+    return backend.remote if isinstance(backend, TieredBackend) else backend

@@ -24,13 +24,12 @@ from fastapi import FastAPI
 from starlette.requests import Request
 
 from fastapi_alcazaba import Cache, FastAPICache, FastAPIScheduler
-from fastapi_alcazaba.compression import Codec
-from fastapi_alcazaba.decorator import cache
+from fastapi_alcazaba.auth import OneTimeCodes, TokenBlocklist
+from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.idempotency import IdempotencyMiddleware
-from fastapi_alcazaba.key_builder import default_key_builder
-from fastapi_alcazaba.limiter import FastAPIRateLimiter
-from fastapi_alcazaba.tokens import OneTimeCodes, TokenBlocklist
-from fastapi_alcazaba.types import Backend
+from fastapi_alcazaba.rate_limit import FastAPIRateLimiter
+from fastapi_alcazaba.response_cache import cache, default_key_builder
+from fastapi_alcazaba.response_cache.compression import Codec
 
 pytestmark = pytest.mark.integration
 
