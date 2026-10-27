@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="title">
+  <title id="title">Alcazaba: secure, maintained tools for FastAPI</title>
+  <defs>
+    <radialGradient id="night" cx="0.25" cy="0.2" r="1">
+      <stop offset="0" stop-color="#1B2E42"/>
+      <stop offset="1" stop-color="#0B141D"/>
+    </radialGradient>
+    <!-- Eight-pointed stars, as in the tiles (alicatado) of Andalusian palaces. -->
+    <pattern id="tiles" width="96" height="96" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#F4D0AE" stroke-width="2">
+        <rect x="26" y="26" width="44" height="44"/>
+        <rect x="26" y="26" width="44" height="44" transform="rotate(45 48 48)"/>
+        <path d="M0 48 H17 M79 48 H96 M48 0 V17 M48 79 V96"/>
+      </g>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0.35" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="1"/>
+    </linearGradient>
+    <mask id="right">
+      <rect width="1280" height="640" fill="url(#fade)"/>
+    </mask>
+  </defs>
+  <rect width="1280" height="640" fill="url(#night)"/>
+  <rect width="1280" height="640" fill="url(#tiles)" opacity=".07" mask="url(#right)"/>
+  <rect x="0" y="628" width="1280" height="12" fill="#C2552F"/>
+  <svg x="84" y="136" width="368" height="368" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D86C40"/>
+      <stop offset="1" stop-color="#A3432A"/>
+    </linearGradient>
+    <linearGradient id="gate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1D2C3C"/>
+      <stop offset="1" stop-color="#0D1620"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#45E0CA"/>
+      <stop offset="1" stop-color="#0E9E8E"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(256 256) scale(1.12) translate(-256 -280)">
+    <!-- The wall, crowned with pointed merlons as in Andalusian fortresses. -->
+    <path fill="url(#stone)" d="M80 428 V136 L104 108 L128 136 V166 H156 V136 L180 108 L204 136 V166
+      H232 V136 L256 108 L280 136 V166 H308 V136 L332 108 L356 136 V166 H384 V136 L408 108
+      L432 136 V428 Q432 452 408 452 H104 Q80 452 80 428 Z"/>
+    <!-- Courses of stone. -->
+    <path stroke="#8F3A24" stroke-width="5" stroke-linecap="round" opacity=".5"
+      d="M98 228 H414 M98 290 H160 M352 290 H414 M98 352 H160 M352 352 H414 M98 414 H160 M352 414 H414"/>
+    <!-- The alfiz, the frame around the arch. -->
+    <path fill="none" stroke="#F4D0AE" stroke-width="8" d="M170 452 V190 H342 V452"/>
+    <!-- A horseshoe arch, its gate open on a bolt. -->
+    <path fill="url(#gate)" d="M192 452 V331 A76 76 0 1 1 320 331 V452 Z"/>
+    <path fill="url(#bolt)" d="M272 250 L220 362 H251 L234 440 L293 326 H262 Z"/>
+  </g>
+  </svg>
+  <g font-family="Lato" fill="#F7EFE6">
+    <text x="500" y="290" font-size="128" font-weight="900" letter-spacing="-2">Alcazaba</text>
+    <text x="504" y="356" font-size="42" font-weight="500" fill="#F4D0AE">Secure, maintained tools for FastAPI</text>
+    <text x="504" y="420" font-size="27" font-weight="600" fill="#9FB4C9">Cache · Rate limits · Sessions · CSRF · Webhooks · Task queue</text>
+  </g>
+  <rect x="500" y="460" width="476" height="56" rx="12" fill="#0B141D" stroke="#2A4157" stroke-width="2"/>
+  <text x="524" y="497" font-family="DejaVu Sans Mono" font-size="25" fill="#45E0CA">pip install fastapi-alcazaba</text>
+</svg>
