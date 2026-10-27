@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://nonodev96.github.io/fastapi-alcazaba/"><strong>Documentation</strong></a> ·
-  <a href="https://nonodev96.github.io/fastapi-alcazaba/examples/">Examples</a> ·
+  <a href="https://nonodev96.github.io/fastapi-alcazaba/latest/examples/">Examples</a> ·
   <a href="https://pypi.org/project/fastapi-alcazaba/">PyPI</a> ·
   <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/CHANGELOG.md">Changelog</a> ·
   <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/SECURITY.md">Security policy</a>
@@ -35,7 +35,7 @@
 
 Alcazaba (`fastapi-alcazaba`) gathers the pieces most FastAPI apps end up writing themselves,
 built with security in mind and tested against real servers (the
-[examples](https://nonodev96.github.io/fastapi-alcazaba/examples/) show them at work):
+[examples](https://nonodev96.github.io/fastapi-alcazaba/latest/examples/) show them at work):
 
 | Tool | In `fastapi_alcazaba.` | What it does |
 | --- | --- | --- |

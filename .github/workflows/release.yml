@@ -81,7 +81,7 @@ jobs:
     permissions:
       contents: read
       id-token: write # Sigstore
-      attestations: write
+      attestations: write # build provenance and SBOM attestations
     env:
       VERSION: ${{ needs.verify.outputs.version }}
     steps:
@@ -232,7 +232,7 @@ jobs:
       (needs.publish-pypi.result == 'success' || needs.verify.outputs.prerelease == 'true')
     runs-on: ubuntu-26.04
     permissions:
-      contents: write
+      contents: write # creates the release
     env:
       NOTES_VERSION: ${{ needs.verify.outputs.notes_version }}
       PRERELEASE: ${{ needs.verify.outputs.prerelease }}
@@ -261,3 +261,18 @@ jobs:
           if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
           gh release create "$TAG" release/* --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "$TAG" --notes-file notes.md "${flags[@]}"
+
+  docs:
+    name: Publish its documentation
+    needs: [verify, github-release]
+    # Releases only: pre-releases have no documentation of their own.
+    if: needs.verify.outputs.prerelease == 'false'
+    runs-on: ubuntu-26.04
+    permissions:
+      actions: write # runs the docs workflow, on main: GitHub Pages only deploys from main
+    steps:
+      - name: Run the docs workflow for this release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh workflow run docs.yml --repo "$GITHUB_REPOSITORY" --ref main -f release="$TAG"

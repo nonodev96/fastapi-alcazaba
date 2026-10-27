@@ -42,6 +42,12 @@ extra_css:
   - stylesheets/brand.css
 
 extra:
+  # A site per version (dev, 0.3, 0.4...), which the docs workflow publishes with mike; the
+  # selector lists them, and the others than the latest release say so (overrides/main.html).
+  version:
+    provider: mike
+    default: latest
+    alias: true
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/nonodev96/fastapi-alcazaba

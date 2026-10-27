@@ -59,6 +59,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   them, instead of one long page; each object is set apart, with its kind and its signature.
 - So does the guide: a Guide tab starts with getting started and has a page per tool, and the
   documentation's home page introduces the tools instead of holding the whole README.
+- The documentation has a site per version, with a selector in the header: `dev` for what's on
+  main and `X.Y` for each release from 0.3, the newest being `latest`, where the site's address
+  leads. The other versions say they're not the latest.
 
 ### Fixed
 

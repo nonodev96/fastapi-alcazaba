@@ -1,10 +1,20 @@
 name: Docs
 
-# Publishes the documentation site to GitHub Pages (Settings → Pages → Source: GitHub Actions).
+# Publishes the documentation to GitHub Pages (Settings → Pages → Source: GitHub Actions): a site
+# per version, which mike keeps in the gh-pages branch, and a selector between them. main is "dev",
+# published on every push; each release is its X.Y, published when the release workflow is done
+# (it runs this one with the tag), and the newest takes the "latest" alias, where the root of the
+# site leads. Running it by hand with a tag publishes that release's documentation again. Until a
+# release has its documentation, "latest" is dev.
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      release:
+        description: A release tag (vX.Y.Z) whose documentation to publish; empty for main's
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -14,45 +24,163 @@ env:
   PIP_UPLOADED_PRIOR_TO: P3D
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  build:
-    name: Build
+  publish:
+    name: Publish to gh-pages
     # A fixed image, not ubuntu-latest: that one moves to a new Ubuntu on GitHub's schedule, and
     # for weeks a job may run on either. This one changes when the workflows do.
     runs-on: ubuntu-26.04
+    # One at a time per version: a newer push to main replaces a dev run that's still waiting.
+    concurrency:
+      group: docs-${{ inputs.release || 'dev' }}
+      cancel-in-progress: false
+    permissions:
+      contents: write # mike commits the site to gh-pages and pushes it
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # The release's own code: the API reference comes from its docstrings.
+          ref: ${{ inputs.release || github.sha }}
+          # The tags, to tell whether the release is the newest one, and main, to check that it's
+          # on it.
+          fetch-depth: 0
           persist-credentials: false
+      - name: Version
+        id: version
+        env:
+          RELEASE: ${{ inputs.release }}
+        run: |
+          if [ -z "$RELEASE" ]; then
+            echo "version=dev" >> "$GITHUB_OUTPUT"
+            # Until a release has its documentation, dev is also "latest", where the root leads.
+            released=false
+            if git rev-parse --verify --quiet origin/gh-pages > /dev/null; then
+              released="$(git show origin/gh-pages:versions.json | jq 'any(.[]; .version != "dev")')"
+            fi
+            if [ "$released" = true ]; then
+              echo "aliases=" >> "$GITHUB_OUTPUT"
+            else
+              echo "aliases=latest" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+          if ! [[ "$RELEASE" =~ ^v([0-9]+)\.([0-9]+)\.[0-9]+$ ]]; then
+            echo "::error::$RELEASE is not a release (vX.Y.Z; pre-releases have no documentation)"
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$RELEASE isn't on main"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # "latest" is the newest release's: publishing an older one again leaves it alone.
+          newest="$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
+          if [ "$(echo "$newest" | cut -d. -f1,2)" = "v$version" ]; then
+            echo "aliases=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "aliases=" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
         id: pages
       - uses: $/.github/actions/python
         with:
           groups: docs
           cache: ""
-      - name: Build the site
+      - name: Build and push with mike
         env:
+          # mike adds the version (…/0.3/) for each page's canonical URL.
           SITE_URL: ${{ steps.pages.outputs.base_url }}/
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-        run: mkdocs build --strict
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: site/
+          VERSION: ${{ steps.version.outputs.version }}
+          ALIASES: ${{ steps.version.outputs.aliases }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The token for mike's pushes, in this step's environment only: none in .git/config.
+          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$basic"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0="http.https://github.com/.extraheader"
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $basic"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          read -r -a aliases <<< "$ALIASES"
+          # The other version's run may push in between: start again from what it pushed.
+          for attempt in 1 2 3; do
+            if git show-ref --verify --quiet refs/heads/gh-pages; then
+              git branch --quiet --delete --force gh-pages
+            fi
+            # There's none before the first run (ls-remote exits with 2).
+            found=0
+            git ls-remote --exit-code --heads origin gh-pages > /dev/null || found=$?
+            case "$found" in
+              0) git fetch --quiet origin +refs/heads/gh-pages:refs/remotes/origin/gh-pages ;;
+              2) ;;
+              *) exit "$found" ;;
+            esac
+            if mike deploy --push --update-aliases --alias-type redirect "$VERSION" "${aliases[@]}" \
+                && mike set-default --push latest; then
+              exit 0
+            fi
+            echo "::warning::gh-pages moved while publishing (attempt $attempt)"
+            sleep $((attempt * 10))
+          done
+          exit 1
 
   deploy:
-    name: Deploy
-    needs: [build]
+    name: Deploy to GitHub Pages
+    needs: [publish]
     runs-on: ubuntu-26.04
+    # gh-pages as it is when the job starts: a waiting deploy is replaced by a newer one.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     permissions:
-      pages: write
-      id-token: write
+      contents: read # gh-pages
+      pages: write # deploy-pages
+      id-token: write # deploy-pages proves which run deploys
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          persist-credentials: false
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+        id: pages
+      - name: Addresses from before the versions
+        env:
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        # GitHub Pages answers every address that isn't there with the root's 404.html: those from
+        # before the site had versions (…/examples/cache/) lead to the same page of the latest,
+        # the others to their version's 404 page. Always within the site.
+        run: |
+          cat > 404.html.in << 'EOF'
+          <!doctype html>
+          <html lang="en">
+          <meta charset="utf-8">
+          <title>Page not found</title>
+          <p>Page not found: <a href="@BASE@/">go to the documentation</a>.</p>
+          <script>
+            const base = "@BASE@/";
+            function target(path, names) {
+              const rest = path.startsWith(base) ? path.slice(base.length) : "";
+              const first = rest.split("/")[0];
+              return names.has(first) ? base + first + "/404.html" : base + "latest/" + rest;
+            }
+            fetch(base + "versions.json")
+              .then((response) => response.json())
+              .then((versions) => {
+                const names = new Set(versions.flatMap((v) => [v.version, ...v.aliases]));
+                location.replace(target(location.pathname, names) + location.search + location.hash);
+              });
+          </script>
+          </html>
+          EOF
+          sed "s|@BASE@|$BASE_PATH|g" 404.html.in > 404.html
+          rm 404.html.in
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: .
       - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         id: deployment

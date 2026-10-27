@@ -88,6 +88,8 @@ docs = [
     "mkdocs>=1.6.1,<2",
     "mkdocs-material==9.7.1",
     "mkdocstrings-python>=2.0.10",
+    # One site per version (dev, 0.3, 0.4...) with Material's version selector.
+    "mike>=2.2.0",
 ]
 
 # Building and checking the distributions (CI and releases).

@@ -13,3 +13,9 @@
   {% if page and page.canonical_url %}<meta property="og:url" content="{{ page.canonical_url }}">{% endif %}
   <meta name="twitter:card" content="summary_large_image">
 {% endblock %}
+
+{# On every version but the latest release (extra.version.default). #}
+{% block outdated %}
+  This is the documentation of another version than the latest release.
+  <a href="{{ '../' ~ base_url }}"><strong>Go to the latest.</strong></a>
+{% endblock %}

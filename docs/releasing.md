@@ -31,8 +31,10 @@ The project URLs in `pyproject.toml` already point to it.
 - **Environments:**
     - `testpypi`: deployment tags `v*`.
     - `pypi`: deployment tags `v*`, **required reviewer: you** (the approval before PyPI).
-    - `github-pages`: created when Pages is enabled.
-- **Pages:** source "GitHub Actions".
+    - `github-pages`: created when Pages is enabled; deployment branch `main`, from which the
+      *Docs* workflow deploys every version.
+- **Pages:** source "GitHub Actions". The *Docs* workflow keeps a site per version in the
+  `gh-pages` branch, which its first run creates: `dev` for `main`, `X.Y` for each release.
 - **Security:** Dependabot alerts and security updates, secret scanning with push protection,
   private vulnerability reporting (SECURITY.md points there), code scanning (CodeQL and
   Scorecard upload their results).
@@ -77,11 +79,13 @@ No API token is created or stored anywhere: the workflow proves its identity wit
        attestations;
     7. creates the GitHub release with the distributions, the SBOM, the provenance, the Sigstore
        bundles and the notes of that version from the changelog;
-    8. the *Docs* workflow publishes the site.
+    8. runs the *Docs* workflow, which publishes the documentation of the release as `X.Y`, with
+       the `latest` alias that the root of the site leads to.
 
-Pre-releases (`vX.Y.ZrcN`, `aN`, `bN`) stop after TestPyPI and become GitHub pre-releases. They
-take the changelog section of the version they lead to (`v0.1.0rc1` → `## [0.1.0]`), which can
-still say `Unreleased`: a first rc tries the whole pipeline without spending the version.
+Pre-releases (`vX.Y.ZrcN`, `aN`, `bN`) stop after TestPyPI and become GitHub pre-releases, with no
+documentation of their own. They take the changelog section of the version they lead to (`v0.1.0rc1`
+→ `## [0.1.0]`), which can still say `Unreleased`: a first rc tries the whole pipeline without
+spending the version.
 
 ## If something goes wrong
 
