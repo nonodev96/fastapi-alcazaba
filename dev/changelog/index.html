@@ -2104,6 +2104,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#031-2026-10-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.1] - 2026-10-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.1] - 2026-10-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#030-2026-10-27" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2127,7 +2155,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2177,7 +2205,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2249,7 +2277,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2318,6 +2346,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#031-2026-10-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.1] - 2026-10-27
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.1] - 2026-10-27">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#030-2026-10-27" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2341,7 +2397,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2391,7 +2447,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2463,7 +2519,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Changed
@@ -2500,6 +2556,13 @@
 <p>The format is based on <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>, and this project
 adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="031-2026-10-27">[0.3.1] - 2026-10-27<a class="headerlink" href="#031-2026-10-27" title="Permanent link">&para;</a></h2>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Copying a terminal session of the documentation copies its commands alone, ready to paste into
+  a shell: no prompts, no output, no blank lines. The commands of several lines are written so
+  that they run as they're copied.</li>
+</ul>
 <h2 id="030-2026-10-27">[0.3.0] - 2026-10-27<a class="headerlink" href="#030-2026-10-27" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2519,7 +2582,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
   them too, made for the request they answer and never stored with the entry. The page
   parameters carry them as <code>links</code> (a <code>PageLinks</code>), left out of their repr and so of cache keys.</li>
 </ul>
-<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
 <p>A folder per tool, each exporting its public names (<code>from fastapi_alcazaba.pagination import
@@ -2827,7 +2890,7 @@ metrics, spans and the <code>fastapi_alcazaba.audit.events</code> logger keep th
   until it's used. The examples read their configuration with pydantic-settings, from the
   environment or a <code>.env</code> file.</li>
 </ul>
-<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
+<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>CircuitBreaker.allow()</code> returns the state the call goes through in (<code>"closed"</code>, or
   <code>"half-open"</code> for the single trial) or None when it's refused, instead of a bool; truthiness is
@@ -2922,7 +2985,7 @@ metrics, spans and the <code>fastapi_alcazaba.audit.events</code> logger keep th
 <li>In-memory entries without <code>expire</code> no longer expire immediately; memcached expirations over 30
   days; the settings of one call no longer leak into the next.</li>
 </ul>
-<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
+<h3 id="changed_3">Changed<a class="headerlink" href="#changed_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Distribution <code>fastapi-alcazaba</code>, import package <code>fastapi_alcazaba</code>. Python 3.11+ (3.10 reached its end
   of life in October 2026), Pydantic v2.</li>

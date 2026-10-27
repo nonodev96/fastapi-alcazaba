@@ -2109,15 +2109,15 @@
 
 
 <h1 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h1>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>deps<span class="w">                     </span><span class="c1"># .venv (Python's venv and pip), with every extra and the dev tools</span>
-.venv/bin/pytest<span class="w">              </span><span class="c1"># unit tests</span>
-make<span class="w"> </span>services-up<span class="w">              </span><span class="c1"># Redis, Valkey, a Valkey cluster, memcached and DynamoDB Local</span>
-make<span class="w"> </span>test-integration<span class="w">         </span><span class="c1"># every backend against those servers</span>
-make<span class="w"> </span>services-down
-make<span class="w"> </span>mutation<span class="w">                 </span><span class="c1"># mutation testing (slow; CI runs it weekly)</span>
-make<span class="w"> </span>lint<span class="w">                     </span><span class="c1"># ruff, ruff format --check, mypy --strict, pylint</span>
-make<span class="w"> </span>docs<span class="w">                     </span><span class="c1"># the documentation, built as CI does (make docs-serve to preview it)</span>
-</code></pre></div>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>deps<span class="w">                     </span><span class="c1"># .venv (Python's venv and pip), with every extra and the dev tools</span>
+</span><span id="__span-0-2">.venv/bin/pytest<span class="w">              </span><span class="c1"># unit tests</span>
+</span><span id="__span-0-3">make<span class="w"> </span>services-up<span class="w">              </span><span class="c1"># Redis, Valkey, a Valkey cluster, memcached and DynamoDB Local</span>
+</span><span id="__span-0-4">make<span class="w"> </span>test-integration<span class="w">         </span><span class="c1"># every backend against those servers</span>
+</span><span id="__span-0-5">make<span class="w"> </span>services-down
+</span><span id="__span-0-6">make<span class="w"> </span>mutation<span class="w">                 </span><span class="c1"># mutation testing (slow; CI runs it weekly)</span>
+</span><span id="__span-0-7">make<span class="w"> </span>lint<span class="w">                     </span><span class="c1"># ruff, ruff format --check, mypy --strict, pylint</span>
+</span><span id="__span-0-8">make<span class="w"> </span>docs<span class="w">                     </span><span class="c1"># the documentation, built as CI does (make docs-serve to preview it)</span>
+</span></code></pre></div>
 <p>Tests run in a random order (pytest-randomly; the seed is printed to reproduce a failure), and CI
 fails a pull request with a benchmark more than 50 % slower than main's, compared with the others
 so the speed of the runner doesn't count. See

@@ -2249,58 +2249,58 @@ JSON on standard output, signed and chained to the previous one, and <code>verif
 that none was altered or removed.</p>
 <h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Permanent link">&para;</a></h2>
 <p>From a clone of the repository:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
-<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-uvicorn<span class="w"> </span>examples.audit.main:app
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
+</span><span id="__span-0-2"><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-0-3">uvicorn<span class="w"> </span>examples.audit.main:app
+</span></code></pre></div>
 <p>The events are signed: set <code>AUDIT_SIGNING_KEY</code> (<code>secrets.token_urlsafe(32)</code>), the same in every
 process, and keep it from the people whose actions are recorded. The example has three accounts:
 <code>u1</code> (Ada, an admin, token <code>ada-token</code>), <code>u2</code> (Sam, support, token <code>sam-token</code>) and <code>u3</code> (Vic, a
 viewer).</p>
 <h2 id="try-it">Try it<a class="headerlink" href="#try-it" title="Permanent link">&para;</a></h2>
 <p>Ada makes Vic support:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/accounts/u3/role<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ada-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"role": "support"}'</span>
-<span class="go">HTTP/1.1 200 OK</span>
-<span class="go">x-request-id: 2b78a9c373054722779a26e2904a6b0a</span>
-
-<span class="go">{"id":"u3","email":"vic@example.com","role":"support"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/accounts/u3/role<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ada-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"role": "support"}'</span>
+</span><span id="__span-1-3"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-1-4"><span class="go">x-request-id: 2b78a9c373054722779a26e2904a6b0a</span>
+</span><span id="__span-1-5">
+</span><span id="__span-1-6"><span class="go">{"id":"u3","email":"vic@example.com","role":"support"}</span>
+</span></code></pre></div>
 <p>and the server's standard output gets the event, the request's ID included:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"eec01d5969ce42deb8787aae473acfa1"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.175075+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"account.role.change"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"success"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="s2">"u1"</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="s2">"account:u3"</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"2b78a9c373054722779a26e2904a6b0a"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"PUT"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/accounts/{account_id}/role"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{</span><span class="nt">"from"</span><span class="p">:</span><span class="s2">"viewer"</span><span class="p">,</span><span class="nt">"to"</span><span class="p">:</span><span class="s2">"support"</span><span class="p">},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"13c0da20bf320784d6a1a4698cd91574b2b97b8c8e818668ef104aa9cc65fb34"</span><span class="p">}</span>
-</code></pre></div>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"eec01d5969ce42deb8787aae473acfa1"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.175075+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"account.role.change"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"success"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="s2">"u1"</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="s2">"account:u3"</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"2b78a9c373054722779a26e2904a6b0a"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"PUT"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/accounts/{account_id}/role"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{</span><span class="nt">"from"</span><span class="p">:</span><span class="s2">"viewer"</span><span class="p">,</span><span class="nt">"to"</span><span class="p">:</span><span class="s2">"support"</span><span class="p">},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"13c0da20bf320784d6a1a4698cd91574b2b97b8c8e818668ef104aa9cc65fb34"</span><span class="p">}</span>
+</span></code></pre></div>
 <p>Sam, who isn't an admin, tries to delete Vic's account; then someone without a token does:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://127.0.0.1:8000/accounts/u3<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer sam-token"</span>
-<span class="go">HTTP/1.1 403 Forbidden</span>
-
-<span class="go">{"detail":"Only admins can do this"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://127.0.0.1:8000/accounts/u3
-<span class="go">HTTP/1.1 401 Unauthorized</span>
-<span class="go">www-authenticate: Bearer</span>
-
-<span class="go">{"detail":"Not authenticated"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://127.0.0.1:8000/accounts/u3<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer sam-token"</span>
+</span><span id="__span-3-2"><span class="go">HTTP/1.1 403 Forbidden</span>
+</span><span id="__span-3-3">
+</span><span id="__span-3-4"><span class="go">{"detail":"Only admins can do this"}</span>
+</span><span id="__span-3-5">
+</span><span id="__span-3-6"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://127.0.0.1:8000/accounts/u3
+</span><span id="__span-3-7"><span class="go">HTTP/1.1 401 Unauthorized</span>
+</span><span id="__span-3-8"><span class="go">www-authenticate: Bearer</span>
+</span><span id="__span-3-9">
+</span><span id="__span-3-10"><span class="go">{"detail":"Not authenticated"}</span>
+</span></code></pre></div>
 <p>Both are recorded as <code>denied</code>: Sam's with who he is and why, the anonymous one with the account
 it was after. Each event carries the signature of the one before:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"2221174595b04a82b269e441227a0933"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.178638+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"account.delete"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"denied"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="s2">"u2"</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="s2">"account:u3"</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="s2">"support, not admin"</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="mi">403</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"14500c6bd67ff72fd772d584cdb9fee5"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"DELETE"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/accounts/{account_id}"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="s2">"13c0da20bf320784d6a1a4698cd91574b2b97b8c8e818668ef104aa9cc65fb34"</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"41ea75d99c58cd8618d1f3e5bad140e52f270929beb26cc811a53c9bee452aa6"</span><span class="p">}</span>
-<span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"41a26fffb4bd41df9d8c370da2d9cc7d"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.182414+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"account.delete"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"denied"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="s2">"account:u3"</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="s2">"fastapi.exceptions.HTTPException"</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="mi">401</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"028f8c3e03768e47f6f85152ba18cf48"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"DELETE"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/accounts/{account_id}"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="s2">"41ea75d99c58cd8618d1f3e5bad140e52f270929beb26cc811a53c9bee452aa6"</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"be3d2ff3bb03a6642e81027d5ac0edc75356ab880f9434b2ba88a089ff91eda5"</span><span class="p">}</span>
-</code></pre></div>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"2221174595b04a82b269e441227a0933"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.178638+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"account.delete"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"denied"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="s2">"u2"</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="s2">"account:u3"</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="s2">"support, not admin"</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="mi">403</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"14500c6bd67ff72fd772d584cdb9fee5"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"DELETE"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/accounts/{account_id}"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="s2">"13c0da20bf320784d6a1a4698cd91574b2b97b8c8e818668ef104aa9cc65fb34"</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"41ea75d99c58cd8618d1f3e5bad140e52f270929beb26cc811a53c9bee452aa6"</span><span class="p">}</span>
+</span><span id="__span-4-2"><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"41a26fffb4bd41df9d8c370da2d9cc7d"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.182414+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"account.delete"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"denied"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="s2">"account:u3"</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="s2">"fastapi.exceptions.HTTPException"</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="mi">401</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"028f8c3e03768e47f6f85152ba18cf48"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"DELETE"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/accounts/{account_id}"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="s2">"41ea75d99c58cd8618d1f3e5bad140e52f270929beb26cc811a53c9bee452aa6"</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"be3d2ff3bb03a6642e81027d5ac0edc75356ab880f9434b2ba88a089ff91eda5"</span><span class="p">}</span>
+</span></code></pre></div>
 <p>A sign-in with a wrong password records which account was tried, never the password:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/sessions<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"email": "ada@example.com", "password": "hunter2"}'</span>
-<span class="go">HTTP/1.1 401 Unauthorized</span>
-<span class="go">x-request-id: b544c2688f7bd5b8cc1c58784a44ca68</span>
-
-<span class="go">{"detail":"Wrong e-mail or password"}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"6c10e3d17e1d4e3d9442c181ebc6e525"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.185776+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"session.create"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"denied"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="s2">"u1"</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="s2">"wrong password"</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"b544c2688f7bd5b8cc1c58784a44ca68"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"POST"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/sessions"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="s2">"be3d2ff3bb03a6642e81027d5ac0edc75356ab880f9434b2ba88a089ff91eda5"</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"9124fbfed7d210bde4fe27842947404b9c711d86acd3b6e1469e0af09d97c7d0"</span><span class="p">}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/sessions<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"email": "ada@example.com", "password": "hunter2"}'</span>
+</span><span id="__span-5-3"><span class="go">HTTP/1.1 401 Unauthorized</span>
+</span><span id="__span-5-4"><span class="go">x-request-id: b544c2688f7bd5b8cc1c58784a44ca68</span>
+</span><span id="__span-5-5">
+</span><span id="__span-5-6"><span class="go">{"detail":"Wrong e-mail or password"}</span>
+</span></code></pre></div>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-6-1"><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"6c10e3d17e1d4e3d9442c181ebc6e525"</span><span class="p">,</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-10-26T15:44:27.185776+00:00"</span><span class="p">,</span><span class="nt">"action"</span><span class="p">:</span><span class="s2">"session.create"</span><span class="p">,</span><span class="nt">"outcome"</span><span class="p">:</span><span class="s2">"denied"</span><span class="p">,</span><span class="nt">"actor"</span><span class="p">:</span><span class="s2">"u1"</span><span class="p">,</span><span class="nt">"resource"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"reason"</span><span class="p">:</span><span class="s2">"wrong password"</span><span class="p">,</span><span class="nt">"status"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"b544c2688f7bd5b8cc1c58784a44ca68"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">"method"</span><span class="p">:</span><span class="s2">"POST"</span><span class="p">,</span><span class="nt">"route"</span><span class="p">:</span><span class="s2">"/sessions"</span><span class="p">,</span><span class="nt">"client"</span><span class="p">:</span><span class="s2">"127.0.0.1"</span><span class="p">,</span><span class="nt">"details"</span><span class="p">:{},</span><span class="nt">"stream"</span><span class="p">:</span><span class="s2">"1c33125463a71ecb"</span><span class="p">,</span><span class="nt">"sequence"</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">"previous"</span><span class="p">:</span><span class="s2">"be3d2ff3bb03a6642e81027d5ac0edc75356ab880f9434b2ba88a089ff91eda5"</span><span class="p">,</span><span class="nt">"signature"</span><span class="p">:</span><span class="s2">"9124fbfed7d210bde4fe27842947404b9c711d86acd3b6e1469e0af09d97c7d0"</span><span class="p">}</span>
+</span></code></pre></div>
 <p>Ada checks the trail (and that check is recorded too, as <code>audit.read</code>). An event altered,
 forged or removed would be listed in <code>problems</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/audit/verify<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ada-token"</span>
-<span class="go">{"events":4,"problems":[]}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/audit/verify<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ada-token"</span>
+</span><span id="__span-7-2"><span class="go">{"events":4,"problems":[]}</span>
+</span></code></pre></div>
 <p><code>GET /audit/events</code> lists the last events, for admins only.</p>
 <h2 id="what-to-look-at">What to look at<a class="headerlink" href="#what-to-look-at" title="Permanent link">&para;</a></h2>
 <ul>
@@ -2325,223 +2325,223 @@ forged or removed would be listed in <code>problems</code>:</p>
 </ul>
 <h2 id="the-code">The code<a class="headerlink" href="#the-code" title="Permanent link">&para;</a></h2>
 <!-- fmt: off -->
-<div class="highlight"><span class="filename">examples/audit/main.py</span><pre><span></span><code><span class="sd">"""An admin API whose sensitive actions leave an audit trail: who did what to which account,</span>
-<span class="sd">whether it was allowed, and the request it came from.</span>
-
-<span class="sd">    uvicorn examples.audit.main:app</span>
-
-<span class="sd">- Changing a role and deleting an account are recorded when they end: `success`, `denied` (a 401</span>
-<span class="sd">  without a token, a 403 for someone who isn't an admin) or `failure` (a 404 for an account that</span>
-<span class="sd">  doesn't exist). Reading the trail is recorded too.</span>
-<span class="sd">- Each event is a line of JSON on standard output, apart from the app's other logs, for the log</span>
-<span class="sd">  pipeline to ship to storage that can't be rewritten. The events are signed and chained:</span>
-<span class="sd">  `GET /audit/verify` says whether any was altered or removed.</span>
-<span class="sd">- A sign-in records its outcome with `audit.log`, never the password, and the response carries</span>
-<span class="sd">  the request ID that the event holds.</span>
-
-<span class="sd">The accounts are a dict in memory here, a table in your database; the last events are kept in</span>
-<span class="sd">memory too, for `/audit/events` and `/audit/verify`.</span>
-<span class="sd">"""</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIAudit</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuditEntry</span><span class="p">,</span> <span class="n">LoggingAuditSink</span><span class="p">,</span> <span class="n">MemoryAuditSink</span><span class="p">,</span> <span class="n">verify_audit_trail</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestIDMiddleware</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
-<span class="sd">    processes."""</span>
-    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file."""</span>
-
-    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
-
-    <span class="c1"># Signs the events: AUDIT_SIGNING_KEY (secrets.token_urlsafe(32)), the same in every process,</span>
-    <span class="c1"># kept from the people whose actions are recorded: with it, they could rewrite the trail.</span>
-    <span class="n">audit_signing_key</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
-
-
-<span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
-
-<span class="c1"># The trail: one line of JSON per event on standard output, without the app's log format.</span>
-<span class="n">trail_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fastapi_alcazaba.audit.events"</span><span class="p">)</span>
-<span class="n">trail_log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">))</span>
-<span class="n">trail_log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-<span class="n">trail_log</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
-
-<span class="n">recent</span> <span class="o">=</span> <span class="n">MemoryAuditSink</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
-<span class="n">audit</span> <span class="o">=</span> <span class="n">FastAPIAudit</span><span class="p">([</span><span class="n">LoggingAuditSink</span><span class="p">(</span><span class="n">trail_log</span><span class="p">),</span> <span class="n">recent</span><span class="p">],</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">audit_signing_key</span><span class="p">)</span>
-
-<span class="n">Role</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"admin"</span><span class="p">,</span> <span class="s2">"support"</span><span class="p">,</span> <span class="s2">"viewer"</span><span class="p">]</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Account</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">role</span><span class="p">:</span> <span class="n">Role</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">RoleChange</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">role</span><span class="p">:</span> <span class="n">Role</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">SignIn</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span>
-
-
-<span class="c1"># Stands in for your users table, its password hashes and your access tokens.</span>
-<span class="n">PASSWORDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ada@example.com"</span><span class="p">:</span> <span class="s2">"correct horse"</span><span class="p">,</span> <span class="s2">"sam@example.com"</span><span class="p">:</span> <span class="s2">"battery staple"</span><span class="p">}</span>
-<span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ada-token"</span><span class="p">:</span> <span class="s2">"u1"</span><span class="p">,</span> <span class="s2">"sam-token"</span><span class="p">:</span> <span class="s2">"u2"</span><span class="p">}</span>
-
-
-<span class="nd">@asynccontextmanager</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">accounts</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">"u1"</span><span class="p">:</span> <span class="n">Account</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"u1"</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">"ada@example.com"</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">"admin"</span><span class="p">),</span>
-        <span class="s2">"u2"</span><span class="p">:</span> <span class="n">Account</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"u2"</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">"sam@example.com"</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">"support"</span><span class="p">),</span>
-        <span class="s2">"u3"</span><span class="p">:</span> <span class="n">Account</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"u3"</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">"vic@example.com"</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">"viewer"</span><span class="p">),</span>
-    <span class="p">}</span>
-    <span class="k">yield</span>
-
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-<span class="c1"># The ID of each request goes in its events and in the response: support finds the event a</span>
-<span class="c1"># user's complaint is about.</span>
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">RequestIDMiddleware</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">accounts</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Account</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">accounts</span>  <span class="c1"># type: ignore[no-any-return]</span>
-
-
-<span class="n">Accounts</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Account</span><span class="p">],</span> <span class="n">Depends</span><span class="p">(</span><span class="n">accounts</span><span class="p">)]</span>
-
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">current_account</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Stands in for your authentication: the account whose bearer token the request carries."""</span>
-    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
-    <span class="n">account_id</span> <span class="o">=</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">account</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">accounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">account_id</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Not authenticated"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
-    <span class="k">return</span> <span class="n">account</span>  <span class="c1"># type: ignore[no-any-return]</span>
-
-
-<span class="n">Me</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Account</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">current_account</span><span class="p">)]</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">:</span> <span class="n">AuditEntry</span><span class="p">,</span> <span class="n">me</span><span class="p">:</span> <span class="n">Account</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Who acts goes in the event before the check: a refusal is recorded with its actor."""</span>
-    <span class="n">entry</span><span class="o">.</span><span class="n">actor</span> <span class="o">=</span> <span class="n">me</span><span class="o">.</span><span class="n">id</span>
-    <span class="k">if</span> <span class="n">me</span><span class="o">.</span><span class="n">role</span> <span class="o">!=</span> <span class="s2">"admin"</span><span class="p">:</span>
-        <span class="n">entry</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">me</span><span class="o">.</span><span class="n">role</span><span class="si">}</span><span class="s2">, not admin"</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">403</span><span class="p">,</span> <span class="s2">"Only admins can do this"</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="n">all_accounts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Account</span><span class="p">],</span> <span class="n">account_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
-    <span class="n">account</span> <span class="o">=</span> <span class="n">all_accounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">account_id</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such account"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">account</span>
-
-
-<span class="c1"># The audit dependency goes before the authentication (Me): it records what that one refuses,</span>
-<span class="c1"># a 401, with the account from the path.</span>
-<span class="n">changing_role</span> <span class="o">=</span> <span class="n">audit</span><span class="o">.</span><span class="n">action</span><span class="p">(</span><span class="s2">"account.role.change"</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="s2">"account:</span><span class="si">{account_id}</span><span class="s2">"</span><span class="p">)</span>
-<span class="n">deleting</span> <span class="o">=</span> <span class="n">audit</span><span class="o">.</span><span class="n">action</span><span class="p">(</span><span class="s2">"account.delete"</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="s2">"account:</span><span class="si">{account_id}</span><span class="s2">"</span><span class="p">)</span>
-<span class="n">reading_trail</span> <span class="o">=</span> <span class="n">audit</span><span class="o">.</span><span class="n">action</span><span class="p">(</span><span class="s2">"audit.read"</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/accounts/</span><span class="si">{account_id}</span><span class="s2">/role"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">change_role</span><span class="p">(</span>
-    <span class="n">account_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">change</span><span class="p">:</span> <span class="n">RoleChange</span><span class="p">,</span>
-    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">changing_role</span><span class="p">)],</span>
-    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
-    <span class="n">all_accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
-    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
-    <span class="n">account</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="n">all_accounts</span><span class="p">,</span> <span class="n">account_id</span><span class="p">)</span>
-    <span class="n">entry</span><span class="o">.</span><span class="n">details</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"from"</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">role</span><span class="p">,</span> <span class="s2">"to"</span><span class="p">:</span> <span class="n">change</span><span class="o">.</span><span class="n">role</span><span class="p">})</span>
-    <span class="n">account</span><span class="o">.</span><span class="n">role</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">role</span>
-    <span class="k">return</span> <span class="n">account</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">"/accounts/</span><span class="si">{account_id}</span><span class="s2">"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_account</span><span class="p">(</span>
-    <span class="n">account_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">deleting</span><span class="p">)],</span>
-    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
-    <span class="n">all_accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
-    <span class="n">entry</span><span class="o">.</span><span class="n">details</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="n">all_accounts</span><span class="p">,</span> <span class="n">account_id</span><span class="p">)</span><span class="o">.</span><span class="n">email</span>
-    <span class="k">del</span> <span class="n">all_accounts</span><span class="p">[</span><span class="n">account_id</span><span class="p">]</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/sessions"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sign_in</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">SignIn</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">all_accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-    <span class="n">account</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">all_accounts</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">email</span> <span class="o">==</span> <span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">expected</span> <span class="o">=</span> <span class="n">PASSWORDS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
-    <span class="c1"># Compared in constant time, and the same answer whatever was wrong.</span>
-    <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">expected</span><span class="o">.</span><span class="n">encode</span><span class="p">()):</span>
-        <span class="k">await</span> <span class="n">audit</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-            <span class="s2">"session.create"</span><span class="p">,</span>
-            <span class="n">outcome</span><span class="o">=</span><span class="s2">"denied"</span><span class="p">,</span>
-            <span class="n">actor</span><span class="o">=</span><span class="n">account</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">account</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">reason</span><span class="o">=</span><span class="s2">"unknown e-mail"</span> <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"wrong password"</span><span class="p">,</span>
-            <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Wrong e-mail or password"</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">audit</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"session.create"</span><span class="p">,</span> <span class="n">actor</span><span class="o">=</span><span class="n">account</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
-    <span class="n">token</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">owner</span> <span class="ow">in</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">owner</span> <span class="o">==</span> <span class="n">account</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"access_token"</span><span class="p">:</span> <span class="n">token</span><span class="p">,</span> <span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span><span class="p">}</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/audit/events"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">audit_events</span><span class="p">(</span>
-    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">reading_trail</span><span class="p">)],</span>
-    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
-    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">recent</span><span class="o">.</span><span class="n">events</span><span class="p">)[</span><span class="o">-</span><span class="n">limit</span><span class="p">:]]</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/audit/verify"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">audit_verify</span><span class="p">(</span>
-    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">reading_trail</span><span class="p">)],</span>
-    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
-    <span class="n">events</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">recent</span><span class="o">.</span><span class="n">events</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"events"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">),</span>
-        <span class="s2">"problems"</span><span class="p">:</span> <span class="n">verify_audit_trail</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">audit_signing_key</span><span class="p">),</span>
-    <span class="p">}</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><span class="filename">examples/audit/main.py</span><pre><span></span><code><span id="__span-8-1"><span class="sd">"""An admin API whose sensitive actions leave an audit trail: who did what to which account,</span>
+</span><span id="__span-8-2"><span class="sd">whether it was allowed, and the request it came from.</span>
+</span><span id="__span-8-3">
+</span><span id="__span-8-4"><span class="sd">    uvicorn examples.audit.main:app</span>
+</span><span id="__span-8-5">
+</span><span id="__span-8-6"><span class="sd">- Changing a role and deleting an account are recorded when they end: `success`, `denied` (a 401</span>
+</span><span id="__span-8-7"><span class="sd">  without a token, a 403 for someone who isn't an admin) or `failure` (a 404 for an account that</span>
+</span><span id="__span-8-8"><span class="sd">  doesn't exist). Reading the trail is recorded too.</span>
+</span><span id="__span-8-9"><span class="sd">- Each event is a line of JSON on standard output, apart from the app's other logs, for the log</span>
+</span><span id="__span-8-10"><span class="sd">  pipeline to ship to storage that can't be rewritten. The events are signed and chained:</span>
+</span><span id="__span-8-11"><span class="sd">  `GET /audit/verify` says whether any was altered or removed.</span>
+</span><span id="__span-8-12"><span class="sd">- A sign-in records its outcome with `audit.log`, never the password, and the response carries</span>
+</span><span id="__span-8-13"><span class="sd">  the request ID that the event holds.</span>
+</span><span id="__span-8-14">
+</span><span id="__span-8-15"><span class="sd">The accounts are a dict in memory here, a table in your database; the last events are kept in</span>
+</span><span id="__span-8-16"><span class="sd">memory too, for `/audit/events` and `/audit/verify`.</span>
+</span><span id="__span-8-17"><span class="sd">"""</span>
+</span><span id="__span-8-18">
+</span><span id="__span-8-19"><span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span>
+</span><span id="__span-8-20"><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-8-21"><span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+</span><span id="__span-8-22"><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+</span><span id="__span-8-23"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-8-24"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-8-25"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+</span><span id="__span-8-26">
+</span><span id="__span-8-27"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="__span-8-28"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span>
+</span><span id="__span-8-29"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
+</span><span id="__span-8-30"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
+</span><span id="__span-8-31"><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
+</span><span id="__span-8-32">
+</span><span id="__span-8-33"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIAudit</span>
+</span><span id="__span-8-34"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.audit</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuditEntry</span><span class="p">,</span> <span class="n">LoggingAuditSink</span><span class="p">,</span> <span class="n">MemoryAuditSink</span><span class="p">,</span> <span class="n">verify_audit_trail</span>
+</span><span id="__span-8-35"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestIDMiddleware</span>
+</span><span id="__span-8-36">
+</span><span id="__span-8-37">
+</span><span id="__span-8-38"><span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
+</span><span id="__span-8-39"><span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
+</span><span id="__span-8-40"><span class="sd">    processes."""</span>
+</span><span id="__span-8-41">    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
+</span><span id="__span-8-42">
+</span><span id="__span-8-43">
+</span><span id="__span-8-44"><span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+</span><span id="__span-8-45"><span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file."""</span>
+</span><span id="__span-8-46">
+</span><span id="__span-8-47">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+</span><span id="__span-8-48">
+</span><span id="__span-8-49">    <span class="c1"># Signs the events: AUDIT_SIGNING_KEY (secrets.token_urlsafe(32)), the same in every process,</span>
+</span><span id="__span-8-50">    <span class="c1"># kept from the people whose actions are recorded: with it, they could rewrite the trail.</span>
+</span><span id="__span-8-51">    <span class="n">audit_signing_key</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
+</span><span id="__span-8-52">
+</span><span id="__span-8-53">
+</span><span id="__span-8-54"><span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
+</span><span id="__span-8-55">
+</span><span id="__span-8-56"><span class="c1"># The trail: one line of JSON per event on standard output, without the app's log format.</span>
+</span><span id="__span-8-57"><span class="n">trail_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fastapi_alcazaba.audit.events"</span><span class="p">)</span>
+</span><span id="__span-8-58"><span class="n">trail_log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">))</span>
+</span><span id="__span-8-59"><span class="n">trail_log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+</span><span id="__span-8-60"><span class="n">trail_log</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-8-61">
+</span><span id="__span-8-62"><span class="n">recent</span> <span class="o">=</span> <span class="n">MemoryAuditSink</span><span class="p">(</span><span class="n">maxlen</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+</span><span id="__span-8-63"><span class="n">audit</span> <span class="o">=</span> <span class="n">FastAPIAudit</span><span class="p">([</span><span class="n">LoggingAuditSink</span><span class="p">(</span><span class="n">trail_log</span><span class="p">),</span> <span class="n">recent</span><span class="p">],</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">audit_signing_key</span><span class="p">)</span>
+</span><span id="__span-8-64">
+</span><span id="__span-8-65"><span class="n">Role</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"admin"</span><span class="p">,</span> <span class="s2">"support"</span><span class="p">,</span> <span class="s2">"viewer"</span><span class="p">]</span>
+</span><span id="__span-8-66">
+</span><span id="__span-8-67">
+</span><span id="__span-8-68"><span class="k">class</span><span class="w"> </span><span class="nc">Account</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-8-69">    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-8-70">    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-8-71">    <span class="n">role</span><span class="p">:</span> <span class="n">Role</span>
+</span><span id="__span-8-72">
+</span><span id="__span-8-73">
+</span><span id="__span-8-74"><span class="k">class</span><span class="w"> </span><span class="nc">RoleChange</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-8-75">    <span class="n">role</span><span class="p">:</span> <span class="n">Role</span>
+</span><span id="__span-8-76">
+</span><span id="__span-8-77">
+</span><span id="__span-8-78"><span class="k">class</span><span class="w"> </span><span class="nc">SignIn</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-8-79">    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-8-80">    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-8-81">
+</span><span id="__span-8-82">
+</span><span id="__span-8-83"><span class="c1"># Stands in for your users table, its password hashes and your access tokens.</span>
+</span><span id="__span-8-84"><span class="n">PASSWORDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ada@example.com"</span><span class="p">:</span> <span class="s2">"correct horse"</span><span class="p">,</span> <span class="s2">"sam@example.com"</span><span class="p">:</span> <span class="s2">"battery staple"</span><span class="p">}</span>
+</span><span id="__span-8-85"><span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ada-token"</span><span class="p">:</span> <span class="s2">"u1"</span><span class="p">,</span> <span class="s2">"sam-token"</span><span class="p">:</span> <span class="s2">"u2"</span><span class="p">}</span>
+</span><span id="__span-8-86">
+</span><span id="__span-8-87">
+</span><span id="__span-8-88"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-8-89"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-8-90">    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">accounts</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-8-91">        <span class="s2">"u1"</span><span class="p">:</span> <span class="n">Account</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"u1"</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">"ada@example.com"</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">"admin"</span><span class="p">),</span>
+</span><span id="__span-8-92">        <span class="s2">"u2"</span><span class="p">:</span> <span class="n">Account</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"u2"</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">"sam@example.com"</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">"support"</span><span class="p">),</span>
+</span><span id="__span-8-93">        <span class="s2">"u3"</span><span class="p">:</span> <span class="n">Account</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"u3"</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">"vic@example.com"</span><span class="p">,</span> <span class="n">role</span><span class="o">=</span><span class="s2">"viewer"</span><span class="p">),</span>
+</span><span id="__span-8-94">    <span class="p">}</span>
+</span><span id="__span-8-95">    <span class="k">yield</span>
+</span><span id="__span-8-96">
+</span><span id="__span-8-97">
+</span><span id="__span-8-98"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-8-99"><span class="c1"># The ID of each request goes in its events and in the response: support finds the event a</span>
+</span><span id="__span-8-100"><span class="c1"># user's complaint is about.</span>
+</span><span id="__span-8-101"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">RequestIDMiddleware</span><span class="p">)</span>
+</span><span id="__span-8-102">
+</span><span id="__span-8-103">
+</span><span id="__span-8-104"><span class="k">def</span><span class="w"> </span><span class="nf">accounts</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Account</span><span class="p">]:</span>
+</span><span id="__span-8-105">    <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">accounts</span>  <span class="c1"># type: ignore[no-any-return]</span>
+</span><span id="__span-8-106">
+</span><span id="__span-8-107">
+</span><span id="__span-8-108"><span class="n">Accounts</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Account</span><span class="p">],</span> <span class="n">Depends</span><span class="p">(</span><span class="n">accounts</span><span class="p">)]</span>
+</span><span id="__span-8-109">
+</span><span id="__span-8-110">
+</span><span id="__span-8-111"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">current_account</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
+</span><span id="__span-8-112"><span class="w">    </span><span class="sd">"""Stands in for your authentication: the account whose bearer token the request carries."""</span>
+</span><span id="__span-8-113">    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+</span><span id="__span-8-114">    <span class="n">account_id</span> <span class="o">=</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-8-115">    <span class="n">account</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">accounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">account_id</span><span class="p">)</span>
+</span><span id="__span-8-116">    <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-8-117">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Not authenticated"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
+</span><span id="__span-8-118">    <span class="k">return</span> <span class="n">account</span>  <span class="c1"># type: ignore[no-any-return]</span>
+</span><span id="__span-8-119">
+</span><span id="__span-8-120">
+</span><span id="__span-8-121"><span class="n">Me</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Account</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">current_account</span><span class="p">)]</span>
+</span><span id="__span-8-122">
+</span><span id="__span-8-123">
+</span><span id="__span-8-124"><span class="k">def</span><span class="w"> </span><span class="nf">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">:</span> <span class="n">AuditEntry</span><span class="p">,</span> <span class="n">me</span><span class="p">:</span> <span class="n">Account</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-8-125"><span class="w">    </span><span class="sd">"""Who acts goes in the event before the check: a refusal is recorded with its actor."""</span>
+</span><span id="__span-8-126">    <span class="n">entry</span><span class="o">.</span><span class="n">actor</span> <span class="o">=</span> <span class="n">me</span><span class="o">.</span><span class="n">id</span>
+</span><span id="__span-8-127">    <span class="k">if</span> <span class="n">me</span><span class="o">.</span><span class="n">role</span> <span class="o">!=</span> <span class="s2">"admin"</span><span class="p">:</span>
+</span><span id="__span-8-128">        <span class="n">entry</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">me</span><span class="o">.</span><span class="n">role</span><span class="si">}</span><span class="s2">, not admin"</span>
+</span><span id="__span-8-129">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">403</span><span class="p">,</span> <span class="s2">"Only admins can do this"</span><span class="p">)</span>
+</span><span id="__span-8-130">
+</span><span id="__span-8-131">
+</span><span id="__span-8-132"><span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="n">all_accounts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Account</span><span class="p">],</span> <span class="n">account_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
+</span><span id="__span-8-133">    <span class="n">account</span> <span class="o">=</span> <span class="n">all_accounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">account_id</span><span class="p">)</span>
+</span><span id="__span-8-134">    <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-8-135">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such account"</span><span class="p">)</span>
+</span><span id="__span-8-136">    <span class="k">return</span> <span class="n">account</span>
+</span><span id="__span-8-137">
+</span><span id="__span-8-138">
+</span><span id="__span-8-139"><span class="c1"># The audit dependency goes before the authentication (Me): it records what that one refuses,</span>
+</span><span id="__span-8-140"><span class="c1"># a 401, with the account from the path.</span>
+</span><span id="__span-8-141"><span class="n">changing_role</span> <span class="o">=</span> <span class="n">audit</span><span class="o">.</span><span class="n">action</span><span class="p">(</span><span class="s2">"account.role.change"</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="s2">"account:</span><span class="si">{account_id}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-8-142"><span class="n">deleting</span> <span class="o">=</span> <span class="n">audit</span><span class="o">.</span><span class="n">action</span><span class="p">(</span><span class="s2">"account.delete"</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="s2">"account:</span><span class="si">{account_id}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-8-143"><span class="n">reading_trail</span> <span class="o">=</span> <span class="n">audit</span><span class="o">.</span><span class="n">action</span><span class="p">(</span><span class="s2">"audit.read"</span><span class="p">)</span>
+</span><span id="__span-8-144">
+</span><span id="__span-8-145">
+</span><span id="__span-8-146"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/accounts/</span><span class="si">{account_id}</span><span class="s2">/role"</span><span class="p">)</span>
+</span><span id="__span-8-147"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">change_role</span><span class="p">(</span>
+</span><span id="__span-8-148">    <span class="n">account_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-8-149">    <span class="n">change</span><span class="p">:</span> <span class="n">RoleChange</span><span class="p">,</span>
+</span><span id="__span-8-150">    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">changing_role</span><span class="p">)],</span>
+</span><span id="__span-8-151">    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
+</span><span id="__span-8-152">    <span class="n">all_accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">,</span>
+</span><span id="__span-8-153"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
+</span><span id="__span-8-154">    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
+</span><span id="__span-8-155">    <span class="n">account</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="n">all_accounts</span><span class="p">,</span> <span class="n">account_id</span><span class="p">)</span>
+</span><span id="__span-8-156">    <span class="n">entry</span><span class="o">.</span><span class="n">details</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">"from"</span><span class="p">:</span> <span class="n">account</span><span class="o">.</span><span class="n">role</span><span class="p">,</span> <span class="s2">"to"</span><span class="p">:</span> <span class="n">change</span><span class="o">.</span><span class="n">role</span><span class="p">})</span>
+</span><span id="__span-8-157">    <span class="n">account</span><span class="o">.</span><span class="n">role</span> <span class="o">=</span> <span class="n">change</span><span class="o">.</span><span class="n">role</span>
+</span><span id="__span-8-158">    <span class="k">return</span> <span class="n">account</span>
+</span><span id="__span-8-159">
+</span><span id="__span-8-160">
+</span><span id="__span-8-161"><span class="nd">@app</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">"/accounts/</span><span class="si">{account_id}</span><span class="s2">"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
+</span><span id="__span-8-162"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_account</span><span class="p">(</span>
+</span><span id="__span-8-163">    <span class="n">account_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-8-164">    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">deleting</span><span class="p">)],</span>
+</span><span id="__span-8-165">    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
+</span><span id="__span-8-166">    <span class="n">all_accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">,</span>
+</span><span id="__span-8-167"><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-8-168">    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
+</span><span id="__span-8-169">    <span class="n">entry</span><span class="o">.</span><span class="n">details</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="n">all_accounts</span><span class="p">,</span> <span class="n">account_id</span><span class="p">)</span><span class="o">.</span><span class="n">email</span>
+</span><span id="__span-8-170">    <span class="k">del</span> <span class="n">all_accounts</span><span class="p">[</span><span class="n">account_id</span><span class="p">]</span>
+</span><span id="__span-8-171">
+</span><span id="__span-8-172">
+</span><span id="__span-8-173"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/sessions"</span><span class="p">)</span>
+</span><span id="__span-8-174"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sign_in</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">SignIn</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">all_accounts</span><span class="p">:</span> <span class="n">Accounts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-8-175">    <span class="n">account</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">all_accounts</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">email</span> <span class="o">==</span> <span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-8-176">    <span class="n">expected</span> <span class="o">=</span> <span class="n">PASSWORDS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-8-177">    <span class="c1"># Compared in constant time, and the same answer whatever was wrong.</span>
+</span><span id="__span-8-178">    <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">expected</span><span class="o">.</span><span class="n">encode</span><span class="p">()):</span>
+</span><span id="__span-8-179">        <span class="k">await</span> <span class="n">audit</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+</span><span id="__span-8-180">            <span class="s2">"session.create"</span><span class="p">,</span>
+</span><span id="__span-8-181">            <span class="n">outcome</span><span class="o">=</span><span class="s2">"denied"</span><span class="p">,</span>
+</span><span id="__span-8-182">            <span class="n">actor</span><span class="o">=</span><span class="n">account</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">account</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-8-183">            <span class="n">reason</span><span class="o">=</span><span class="s2">"unknown e-mail"</span> <span class="k">if</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"wrong password"</span><span class="p">,</span>
+</span><span id="__span-8-184">            <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span>
+</span><span id="__span-8-185">        <span class="p">)</span>
+</span><span id="__span-8-186">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Wrong e-mail or password"</span><span class="p">)</span>
+</span><span id="__span-8-187">    <span class="k">await</span> <span class="n">audit</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"session.create"</span><span class="p">,</span> <span class="n">actor</span><span class="o">=</span><span class="n">account</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
+</span><span id="__span-8-188">    <span class="n">token</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">token</span> <span class="k">for</span> <span class="n">token</span><span class="p">,</span> <span class="n">owner</span> <span class="ow">in</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">owner</span> <span class="o">==</span> <span class="n">account</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-8-189">    <span class="k">return</span> <span class="p">{</span><span class="s2">"access_token"</span><span class="p">:</span> <span class="n">token</span><span class="p">,</span> <span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span><span class="p">}</span>
+</span><span id="__span-8-190">
+</span><span id="__span-8-191">
+</span><span id="__span-8-192"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/audit/events"</span><span class="p">)</span>
+</span><span id="__span-8-193"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">audit_events</span><span class="p">(</span>
+</span><span id="__span-8-194">    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">reading_trail</span><span class="p">)],</span>
+</span><span id="__span-8-195">    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
+</span><span id="__span-8-196">    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+</span><span id="__span-8-197"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+</span><span id="__span-8-198">    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
+</span><span id="__span-8-199">    <span class="k">return</span> <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">recent</span><span class="o">.</span><span class="n">events</span><span class="p">)[</span><span class="o">-</span><span class="n">limit</span><span class="p">:]]</span>
+</span><span id="__span-8-200">
+</span><span id="__span-8-201">
+</span><span id="__span-8-202"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/audit/verify"</span><span class="p">)</span>
+</span><span id="__span-8-203"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">audit_verify</span><span class="p">(</span>
+</span><span id="__span-8-204">    <span class="n">entry</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">AuditEntry</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">reading_trail</span><span class="p">)],</span>
+</span><span id="__span-8-205">    <span class="n">me</span><span class="p">:</span> <span class="n">Me</span><span class="p">,</span>
+</span><span id="__span-8-206"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+</span><span id="__span-8-207">    <span class="n">require_admin</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">me</span><span class="p">)</span>
+</span><span id="__span-8-208">    <span class="n">events</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">recent</span><span class="o">.</span><span class="n">events</span><span class="p">)</span>
+</span><span id="__span-8-209">    <span class="k">return</span> <span class="p">{</span>
+</span><span id="__span-8-210">        <span class="s2">"events"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">),</span>
+</span><span id="__span-8-211">        <span class="s2">"problems"</span><span class="p">:</span> <span class="n">verify_audit_trail</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">audit_signing_key</span><span class="p">),</span>
+</span><span id="__span-8-212">    <span class="p">}</span>
+</span><span id="__span-8-213">
+</span><span id="__span-8-214">
+</span><span id="__span-8-215"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-8-216">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 <!-- fmt: on -->
 
 

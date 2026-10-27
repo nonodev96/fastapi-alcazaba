@@ -2724,15 +2724,15 @@ In <code>fastapi_alcazaba.pagination</code>.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPagination" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIPagination</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIPagination</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
 
 
         <p>Pagination by page number: <code>?page=2&amp;size=20</code>.</p>
-<div class="highlight"><pre><span></span><code>pages = FastAPIPagination()
+<div class="language-text highlight"><pre><span></span><code>pages = FastAPIPagination()
 
 async def products(params: Annotated[PageParams, Depends(pages)]) -&gt; Page[Product]:
     return pages.paginate(rows, params, total=count)
@@ -2815,8 +2815,8 @@ million rows at once.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPagination.params" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">params</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PageParams</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">params</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PageParams</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2835,8 +2835,8 @@ million rows at once.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPagination.paginate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">PageParams</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">total</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">PageParams</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">total</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2867,8 +2867,8 @@ next and last pages.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationLimitOffset" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIPaginationLimitOffset</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIPaginationLimitOffset</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2952,8 +2952,8 @@ next and last pages.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationLimitOffset.params" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">params</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LimitOffsetParams</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">params</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LimitOffsetParams</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2972,8 +2972,8 @@ next and last pages.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationLimitOffset.paginate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">LimitOffsetParams</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">total</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LimitOffsetPage</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">LimitOffsetParams</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">total</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LimitOffsetPage</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3002,15 +3002,15 @@ first and last pages that the response links to start at multiples of the limit.
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationCursor" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIPaginationCursor</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">Secrets</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIPaginationCursor</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">Secrets</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
 
 
         <p>Pagination by cursor: <code>?size=20</code>, then <code>?size=20&amp;cursor=&lt;next_cursor&gt;</code>.</p>
-<div class="highlight"><pre><span></span><code>cursors = FastAPIPaginationCursor(secret=settings.cursor_secret)
+<div class="language-text highlight"><pre><span></span><code>cursors = FastAPIPaginationCursor(secret=settings.cursor_secret)
 
 @app.get("/events")
 @cache(expire=60)
@@ -3116,8 +3116,8 @@ first one signing and all of them accepted. None for unsigned cursors.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationCursor.params" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">params</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorParams</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">params</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorParams</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3137,8 +3137,8 @@ Raises an HTTPException (400) if the cursor isn't valid.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationCursor.encode" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">encode</span><span class="p">(</span><span class="n">position</span><span class="p">:</span> <span class="n">Position</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">encode</span><span class="p">(</span><span class="n">position</span><span class="p">:</span> <span class="n">Position</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3157,8 +3157,8 @@ Raises an HTTPException (400) if the cursor isn't valid.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationCursor.decode" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">decode</span><span class="p">(</span><span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Position</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">decode</span><span class="p">(</span><span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Position</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3177,8 +3177,8 @@ Raises an HTTPException (400) if the cursor isn't valid.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.FastAPIPaginationCursor.paginate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">CursorParams</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">Position</span><span class="p">],</span> <span class="n">descending</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">queried</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">CursorParams</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">Position</span><span class="p">],</span> <span class="n">descending</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">queried</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">T</span><span class="p">]</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3276,8 +3276,8 @@ the whole list, sorted by <code>key</code>, and the page is found in it.</p>
   </span>
 
 <a href="#fastapi_alcazaba.pagination.PageParams" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">PageParams</span><span class="p">(</span><span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">links</span><span class="p">:</span> <span class="n">PageLinks</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">PageParams</span><span class="p">(</span><span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">links</span><span class="p">:</span> <span class="n">PageLinks</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3316,8 +3316,8 @@ the whole list, sorted by <code>key</code>, and the page is found in it.</p>
   </span>
 
 <a href="#fastapi_alcazaba.pagination.PageParams.offset" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">offset</span><span class="p">:</span> <span class="nb">int</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">offset</span><span class="p">:</span> <span class="nb">int</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3340,8 +3340,8 @@ the whole list, sorted by <code>key</code>, and the page is found in it.</p>
   </span>
 
 <a href="#fastapi_alcazaba.pagination.PageParams.limit" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3375,8 +3375,8 @@ the whole list, sorted by <code>key</code>, and the page is found in it.</p>
   </span>
 
 <a href="#fastapi_alcazaba.pagination.LimitOffsetParams" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">LimitOffsetParams</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">links</span><span class="p">:</span> <span class="n">PageLinks</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">LimitOffsetParams</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">links</span><span class="p">:</span> <span class="n">PageLinks</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3426,8 +3426,8 @@ the whole list, sorted by <code>key</code>, and the page is found in it.</p>
   </span>
 
 <a href="#fastapi_alcazaba.pagination.CursorParams" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">CursorParams</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">after</span><span class="p">:</span> <span class="n">Position</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">links</span><span class="p">:</span> <span class="n">PageLinks</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">CursorParams</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">after</span><span class="p">:</span> <span class="n">Position</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">links</span><span class="p">:</span> <span class="n">PageLinks</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3467,8 +3467,8 @@ first page), with <code>after</code>, the position it points at, already decoded
   </span>
 
 <a href="#fastapi_alcazaba.pagination.CursorParams.limit" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3647,8 +3647,8 @@ next page.</p>
   </span>
 
 <a href="#fastapi_alcazaba.pagination.PageLinks" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">PageLinks</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">Response</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="o">...</span><span class="p">])</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">PageLinks</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">Response</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="o">...</span><span class="p">])</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3688,8 +3688,8 @@ on the Host header nor on whether a proxy in front speaks HTTPS.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.PageLinks.add" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">add</span><span class="p">(</span><span class="n">page</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">add</span><span class="p">(</span><span class="n">page</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 

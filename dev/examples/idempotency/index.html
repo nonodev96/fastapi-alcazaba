@@ -2250,76 +2250,76 @@ one. The responses are kept in the cache installed on the app, signed with its
 <a href="../../guide/security-model/#security-model"><code>signing_key</code></a>.</p>
 <h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Permanent link">&para;</a></h2>
 <p>From a clone of the repository:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
-<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-uvicorn<span class="w"> </span>examples.idempotency.main:app
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
+</span><span id="__span-0-2"><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-0-3">uvicorn<span class="w"> </span>examples.idempotency.main:app
+</span></code></pre></div>
 <p>Stored responses are signed: set <code>CACHE_SIGNING_KEY</code> (<code>secrets.token_urlsafe(32)</code>), the same in
 every process, or a retry that reaches another process charges again. The example has two
 customers, <code>alice</code> and <code>bob</code>, whose tokens are <code>alice-token</code> and <code>bob-token</code>.</p>
 <h2 id="try-it">Try it<a class="headerlink" href="#try-it" title="Permanent link">&para;</a></h2>
 <p>A payment, with a new key:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
-<span class="go">HTTP/1.1 201 Created</span>
-
-<span class="go">{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_182671f5910f3ece","customer":"alice","created_at":"2026-10-26T10:57:18.321689Z"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
+</span><span id="__span-1-5"><span class="go">HTTP/1.1 201 Created</span>
+</span><span id="__span-1-6">
+</span><span id="__span-1-7"><span class="go">{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_182671f5910f3ece","customer":"alice","created_at":"2026-10-26T10:57:18.321689Z"}</span>
+</span></code></pre></div>
 <p>The same request again, as a client retries it, gets the same response without charging again:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
-<span class="go">HTTP/1.1 201 Created</span>
-<span class="go">idempotent-replayed: true</span>
-
-<span class="go">{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_182671f5910f3ece","customer":"alice","created_at":"2026-10-26T10:57:18.321689Z"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span>
-<span class="go">[{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_182671f5910f3ece","customer":"alice","created_at":"2026-10-26T10:57:18.321689Z"}]</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
+</span><span id="__span-2-5"><span class="go">HTTP/1.1 201 Created</span>
+</span><span id="__span-2-6"><span class="go">idempotent-replayed: true</span>
+</span><span id="__span-2-7">
+</span><span id="__span-2-8"><span class="go">{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_182671f5910f3ece","customer":"alice","created_at":"2026-10-26T10:57:18.321689Z"}</span>
+</span><span id="__span-2-9">
+</span><span id="__span-2-10"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span>
+</span><span id="__span-2-11"><span class="go">[{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_182671f5910f3ece","customer":"alice","created_at":"2026-10-26T10:57:18.321689Z"}]</span>
+</span></code></pre></div>
 <p>The same key with another body is a bug in the client, not a retry:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 99000, "currency": "EUR", "description": "Order 1042"}'</span>
-<span class="go">HTTP/1.1 422 Unprocessable Content</span>
-
-<span class="go">{"detail": "This Idempotency-Key was used with a different request"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 99000, "currency": "EUR", "description": "Order 1042"}'</span>
+</span><span id="__span-3-5"><span class="go">HTTP/1.1 422 Unprocessable Content</span>
+</span><span id="__span-3-6">
+</span><span id="__span-3-7"><span class="go">{"detail": "This Idempotency-Key was used with a different request"}</span>
+</span></code></pre></div>
 <p>Keys are per customer: Bob sending Alice's key gets a payment of his own, not hers:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer bob-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
-<span class="go">HTTP/1.1 201 Created</span>
-
-<span class="go">{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_f9647245e9b65cf9","customer":"bob","created_at":"2026-10-26T10:57:19.339093Z"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer bob-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 8e03978e-40d5-43e8-bc93-6894a57f9324"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
+</span><span id="__span-4-5"><span class="go">HTTP/1.1 201 Created</span>
+</span><span id="__span-4-6">
+</span><span id="__span-4-7"><span class="go">{"amount":1250,"currency":"EUR","description":"Order 1042","id":"ch_f9647245e9b65cf9","customer":"bob","created_at":"2026-10-26T10:57:19.339093Z"}</span>
+</span></code></pre></div>
 <p>A payment without a key is refused:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
-<span class="go">HTTP/1.1 400 Bad Request</span>
-
-<span class="go">{"detail":"This request needs an Idempotency-Key header"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"amount": 1250, "currency": "EUR", "description": "Order 1042"}'</span>
+</span><span id="__span-5-4"><span class="go">HTTP/1.1 400 Bad Request</span>
+</span><span id="__span-5-5">
+</span><span id="__span-5-6"><span class="go">{"detail":"This request needs an Idempotency-Key header"}</span>
+</span></code></pre></div>
 <p>A retry that arrives while the first request is still charging the card (it takes a second) gets
 a 409 with <code>Retry-After: 1</code> and <code>{"detail": "A request with this Idempotency-Key is still being
 processed"}</code>, and the card is charged once:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>attempt<span class="w"> </span><span class="k">in</span><span class="w"> </span>first<span class="w"> </span>retry<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="go">    curl -s -o /dev/null -w "$attempt: %{http_code} after %{time_total}s\n" \</span>
-<span class="go">      -X POST http://127.0.0.1:8000/payments -H "Authorization: Bearer alice-token" \</span>
-<span class="go">      -H "Idempotency-Key: 5f0c1a8e-2b7d-4c39-9e61-0d4f8a3b7c25" \</span>
-<span class="go">      -H "Content-Type: application/json" \</span>
-<span class="go">      -d '{"amount": 4800, "currency": "EUR", "description": "Order 1043"}' &amp;</span>
-<span class="go">    sleep 0.2</span>
-<span class="go">  done; wait</span>
-<span class="go">retry: 409 after 0.000958s</span>
-<span class="go">first: 201 after 1.002062s</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>attempt<span class="w"> </span><span class="k">in</span><span class="w"> </span>first<span class="w"> </span>retry<span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><span class="w">    </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"</span><span class="nv">$attempt</span><span class="s2">: %{http_code} after %{time_total}s\n"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><span class="w">      </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/payments<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-4"><span class="w">      </span>-H<span class="w"> </span><span class="s2">"Idempotency-Key: 5f0c1a8e-2b7d-4c39-9e61-0d4f8a3b7c25"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-5"><span class="w">      </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-6"><span class="w">      </span>-d<span class="w"> </span><span class="s1">'{"amount": 4800, "currency": "EUR", "description": "Order 1043"}'</span><span class="w"> </span><span class="p">&amp;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-7"><span class="w">    </span>sleep<span class="w"> </span><span class="m">0</span>.2<span class="p">;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-8"><span class="w">  </span><span class="k">done</span><span class="p">;</span><span class="w"> </span><span class="nb">wait</span>
+</span><span id="__span-6-9"><span class="go">retry: 409 after 0.000958s</span>
+</span><span id="__span-6-10"><span class="go">first: 201 after 1.002062s</span>
+</span></code></pre></div>
 <h2 id="what-to-look-at">What to look at<a class="headerlink" href="#what-to-look-at" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Keys per customer, not per token:</strong> <code>identifier=customer_id</code> makes the middleware look keys
@@ -2344,158 +2344,158 @@ processed"}</code>, and the card is charged once:</p>
 </ul>
 <h2 id="the-code">The code<a class="headerlink" href="#the-code" title="Permanent link">&para;</a></h2>
 <!-- fmt: off -->
-<div class="highlight"><span class="filename">examples/idempotency/main.py</span><pre><span></span><code><span class="sd">"""A payments API where a retried request never charges a card twice, thanks to idempotency keys.</span>
-
-<span class="sd">    uvicorn examples.idempotency.main:app</span>
-
-<span class="sd">Clients send a new `Idempotency-Key` (a random UUID) with each new payment, and the same key when</span>
-<span class="sd">they retry it after a timeout or a dropped connection:</span>
-
-<span class="sd">- A retry gets the first response again, with `Idempotent-Replayed: true`: the card is charged</span>
-<span class="sd">  once.</span>
-<span class="sd">- A retry that arrives while the first request still runs gets a 409 with `Retry-After: 1`.</span>
-<span class="sd">- The same key with another body gets a 422: that's a bug in the client, not a retry.</span>
-<span class="sd">- Keys are per customer: nobody gets another customer's payment by sending their key.</span>
-<span class="sd">- `POST /payments` without a key gets a 400.</span>
-
-<span class="sd">The responses and the locks live in the cache's backend: InMemoryBackend here, so that it runs</span>
-<span class="sd">without a server. Production uses Redis or Valkey, so that a retry finds the first response</span>
-<span class="sd">whichever process it reaches.</span>
-<span class="sd">"""</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">datetime</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.idempotency</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdempotencyMiddleware</span><span class="p">,</span> <span class="n">require_idempotency_key</span>
-
-<span class="c1"># Stands in for your customers and their access tokens (a database, or a JWT check).</span>
-<span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"alice-token"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span> <span class="s2">"bob-token"</span><span class="p">:</span> <span class="s2">"bob"</span><span class="p">}</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
-<span class="sd">    processes."""</span>
-    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file."""</span>
-
-    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
-
-    <span class="c1"># Signs the stored responses, so that whoever can write to Redis can't plant one for a</span>
-    <span class="c1"># retry. Every process needs the same key, or a retry that reaches another process runs</span>
-    <span class="c1"># again: set CACHE_SIGNING_KEY (secrets.token_urlsafe(32)). With personal data in the</span>
-    <span class="c1"># responses, pass encryption_key= instead: they're encrypted too.</span>
-    <span class="n">cache_signing_key</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
-
-
-<span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">NewPayment</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1_000_000</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"In cents"</span><span class="p">)</span>
-    <span class="n">currency</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"EUR"</span><span class="p">,</span> <span class="s2">"USD"</span><span class="p">]</span>
-    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Payment</span><span class="p">(</span><span class="n">NewPayment</span><span class="p">):</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">customer</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
-
-
-<span class="nd">@asynccontextmanager</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-    <span class="c1"># Production: RedisBackend(redis.asyncio.from_url(...)), with the URL in the settings, shared</span>
-    <span class="c1"># by every process. Payments are a list in memory here, a table in your database.</span>
-    <span class="n">Cache</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"payments"</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">(</span>
-        <span class="n">application</span>
-    <span class="p">)</span>
-    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">payments</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">yield</span>
-
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">customer_id</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Stands in for your authentication: the customer whose bearer token the request carries,</span>
-<span class="sd">    "" if none."""</span>
-    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="k">else</span> <span class="s2">""</span>
-
-
-<span class="c1"># Keys are looked up among the requests of the same customer. The default, the Authorization</span>
-<span class="c1"># header, suits API keys that never change; with access tokens that expire, a retry sent with a</span>
-<span class="c1"># refreshed token would charge the card again.</span>
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">IdempotencyMiddleware</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">customer_id</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">current_customer</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">customer</span> <span class="o">:=</span> <span class="n">customer_id</span><span class="p">(</span><span class="n">request</span><span class="p">)):</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_401_UNAUTHORIZED</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
-    <span class="k">return</span> <span class="n">customer</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">get_payments</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">]:</span>
-    <span class="n">payments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">payments</span>
-    <span class="k">return</span> <span class="n">payments</span>
-
-
-<span class="n">Customer</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">current_customer</span><span class="p">)]</span>
-<span class="c1"># A 400 for requests without the header: a payment must never run without one.</span>
-<span class="n">IdempotencyKey</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">require_idempotency_key</span><span class="p">)]</span>
-<span class="n">Payments</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">],</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_payments</span><span class="p">)]</span>
-
-
-<span class="c1"># pylint: disable-next=unused-argument  # a stand-in: the provider's client sends them all</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">charge_card</span><span class="p">(</span><span class="n">customer</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payment</span><span class="p">:</span> <span class="n">NewPayment</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Stands in for the payment provider: charges the card, and returns the charge's id. The</span>
-<span class="sd">    key goes to the provider too, which charges a key once however often it's asked."""</span>
-    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># the round trip to the card network</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">"ch_</span><span class="si">{</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_hex</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/payments"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">pay</span><span class="p">(</span>
-    <span class="n">payment</span><span class="p">:</span> <span class="n">NewPayment</span><span class="p">,</span>
-    <span class="n">customer</span><span class="p">:</span> <span class="n">Customer</span><span class="p">,</span>
-    <span class="n">key</span><span class="p">:</span> <span class="n">IdempotencyKey</span><span class="p">,</span>
-    <span class="n">payments</span><span class="p">:</span> <span class="n">Payments</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Payment</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Runs once per Idempotency-Key: retries get this response again."""</span>
-    <span class="c1"># Server errors aren't kept, so a retry runs again. If this request fails after the charge,</span>
-    <span class="c1"># the provider's own idempotency keys (Stripe's, Adyen's...) keep the card from being charged</span>
-    <span class="c1"># twice: pass it this one, per customer like the middleware's.</span>
-    <span class="n">charge</span> <span class="o">=</span> <span class="k">await</span> <span class="n">charge_card</span><span class="p">(</span><span class="n">customer</span><span class="p">,</span> <span class="n">payment</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">customer</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="n">receipt</span> <span class="o">=</span> <span class="n">Payment</span><span class="p">(</span>
-        <span class="nb">id</span><span class="o">=</span><span class="n">charge</span><span class="p">,</span> <span class="n">customer</span><span class="o">=</span><span class="n">customer</span><span class="p">,</span> <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">),</span> <span class="o">**</span><span class="n">payment</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
-    <span class="p">)</span>
-    <span class="n">payments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">receipt</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">receipt</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/payments"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_payments</span><span class="p">(</span><span class="n">customer</span><span class="p">:</span> <span class="n">Customer</span><span class="p">,</span> <span class="n">payments</span><span class="p">:</span> <span class="n">Payments</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">payment</span> <span class="k">for</span> <span class="n">payment</span> <span class="ow">in</span> <span class="n">payments</span> <span class="k">if</span> <span class="n">payment</span><span class="o">.</span><span class="n">customer</span> <span class="o">==</span> <span class="n">customer</span><span class="p">]</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><span class="filename">examples/idempotency/main.py</span><pre><span></span><code><span id="__span-7-1"><span class="sd">"""A payments API where a retried request never charges a card twice, thanks to idempotency keys.</span>
+</span><span id="__span-7-2">
+</span><span id="__span-7-3"><span class="sd">    uvicorn examples.idempotency.main:app</span>
+</span><span id="__span-7-4">
+</span><span id="__span-7-5"><span class="sd">Clients send a new `Idempotency-Key` (a random UUID) with each new payment, and the same key when</span>
+</span><span id="__span-7-6"><span class="sd">they retry it after a timeout or a dropped connection:</span>
+</span><span id="__span-7-7">
+</span><span id="__span-7-8"><span class="sd">- A retry gets the first response again, with `Idempotent-Replayed: true`: the card is charged</span>
+</span><span id="__span-7-9"><span class="sd">  once.</span>
+</span><span id="__span-7-10"><span class="sd">- A retry that arrives while the first request still runs gets a 409 with `Retry-After: 1`.</span>
+</span><span id="__span-7-11"><span class="sd">- The same key with another body gets a 422: that's a bug in the client, not a retry.</span>
+</span><span id="__span-7-12"><span class="sd">- Keys are per customer: nobody gets another customer's payment by sending their key.</span>
+</span><span id="__span-7-13"><span class="sd">- `POST /payments` without a key gets a 400.</span>
+</span><span id="__span-7-14">
+</span><span id="__span-7-15"><span class="sd">The responses and the locks live in the cache's backend: InMemoryBackend here, so that it runs</span>
+</span><span id="__span-7-16"><span class="sd">without a server. Production uses Redis or Valkey, so that a retry finds the first response</span>
+</span><span id="__span-7-17"><span class="sd">whichever process it reaches.</span>
+</span><span id="__span-7-18"><span class="sd">"""</span>
+</span><span id="__span-7-19">
+</span><span id="__span-7-20"><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+</span><span id="__span-7-21"><span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+</span><span id="__span-7-22"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-7-23"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-7-24"><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">datetime</span>
+</span><span id="__span-7-25"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Literal</span>
+</span><span id="__span-7-26">
+</span><span id="__span-7-27"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="__span-7-28"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
+</span><span id="__span-7-29"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
+</span><span id="__span-7-30"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
+</span><span id="__span-7-31"><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
+</span><span id="__span-7-32">
+</span><span id="__span-7-33"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span>
+</span><span id="__span-7-34"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
+</span><span id="__span-7-35"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.idempotency</span><span class="w"> </span><span class="kn">import</span> <span class="n">IdempotencyMiddleware</span><span class="p">,</span> <span class="n">require_idempotency_key</span>
+</span><span id="__span-7-36">
+</span><span id="__span-7-37"><span class="c1"># Stands in for your customers and their access tokens (a database, or a JWT check).</span>
+</span><span id="__span-7-38"><span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"alice-token"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span> <span class="s2">"bob-token"</span><span class="p">:</span> <span class="s2">"bob"</span><span class="p">}</span>
+</span><span id="__span-7-39">
+</span><span id="__span-7-40">
+</span><span id="__span-7-41"><span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
+</span><span id="__span-7-42"><span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
+</span><span id="__span-7-43"><span class="sd">    processes."""</span>
+</span><span id="__span-7-44">    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
+</span><span id="__span-7-45">
+</span><span id="__span-7-46">
+</span><span id="__span-7-47"><span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+</span><span id="__span-7-48"><span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file."""</span>
+</span><span id="__span-7-49">
+</span><span id="__span-7-50">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+</span><span id="__span-7-51">
+</span><span id="__span-7-52">    <span class="c1"># Signs the stored responses, so that whoever can write to Redis can't plant one for a</span>
+</span><span id="__span-7-53">    <span class="c1"># retry. Every process needs the same key, or a retry that reaches another process runs</span>
+</span><span id="__span-7-54">    <span class="c1"># again: set CACHE_SIGNING_KEY (secrets.token_urlsafe(32)). With personal data in the</span>
+</span><span id="__span-7-55">    <span class="c1"># responses, pass encryption_key= instead: they're encrypted too.</span>
+</span><span id="__span-7-56">    <span class="n">cache_signing_key</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
+</span><span id="__span-7-57">
+</span><span id="__span-7-58">
+</span><span id="__span-7-59"><span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
+</span><span id="__span-7-60">
+</span><span id="__span-7-61">
+</span><span id="__span-7-62"><span class="k">class</span><span class="w"> </span><span class="nc">NewPayment</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-7-63">    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">gt</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1_000_000</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"In cents"</span><span class="p">)</span>
+</span><span id="__span-7-64">    <span class="n">currency</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"EUR"</span><span class="p">,</span> <span class="s2">"USD"</span><span class="p">]</span>
+</span><span id="__span-7-65">    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+</span><span id="__span-7-66">
+</span><span id="__span-7-67">
+</span><span id="__span-7-68"><span class="k">class</span><span class="w"> </span><span class="nc">Payment</span><span class="p">(</span><span class="n">NewPayment</span><span class="p">):</span>
+</span><span id="__span-7-69">    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-7-70">    <span class="n">customer</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-7-71">    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
+</span><span id="__span-7-72">
+</span><span id="__span-7-73">
+</span><span id="__span-7-74"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-7-75"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-7-76">    <span class="c1"># Production: RedisBackend(redis.asyncio.from_url(...)), with the URL in the settings, shared</span>
+</span><span id="__span-7-77">    <span class="c1"># by every process. Payments are a list in memory here, a table in your database.</span>
+</span><span id="__span-7-78">    <span class="n">Cache</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"payments"</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">(</span>
+</span><span id="__span-7-79">        <span class="n">application</span>
+</span><span id="__span-7-80">    <span class="p">)</span>
+</span><span id="__span-7-81">    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">payments</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-7-82">    <span class="k">yield</span>
+</span><span id="__span-7-83">
+</span><span id="__span-7-84">
+</span><span id="__span-7-85"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-7-86">
+</span><span id="__span-7-87">
+</span><span id="__span-7-88"><span class="k">def</span><span class="w"> </span><span class="nf">customer_id</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-7-89"><span class="w">    </span><span class="sd">"""Stands in for your authentication: the customer whose bearer token the request carries,</span>
+</span><span id="__span-7-90"><span class="sd">    "" if none."""</span>
+</span><span id="__span-7-91">    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+</span><span id="__span-7-92">    <span class="k">return</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="k">else</span> <span class="s2">""</span>
+</span><span id="__span-7-93">
+</span><span id="__span-7-94">
+</span><span id="__span-7-95"><span class="c1"># Keys are looked up among the requests of the same customer. The default, the Authorization</span>
+</span><span id="__span-7-96"><span class="c1"># header, suits API keys that never change; with access tokens that expire, a retry sent with a</span>
+</span><span id="__span-7-97"><span class="c1"># refreshed token would charge the card again.</span>
+</span><span id="__span-7-98"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">IdempotencyMiddleware</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">customer_id</span><span class="p">)</span>
+</span><span id="__span-7-99">
+</span><span id="__span-7-100">
+</span><span id="__span-7-101"><span class="k">def</span><span class="w"> </span><span class="nf">current_customer</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-7-102">    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">customer</span> <span class="o">:=</span> <span class="n">customer_id</span><span class="p">(</span><span class="n">request</span><span class="p">)):</span>
+</span><span id="__span-7-103">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_401_UNAUTHORIZED</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
+</span><span id="__span-7-104">    <span class="k">return</span> <span class="n">customer</span>
+</span><span id="__span-7-105">
+</span><span id="__span-7-106">
+</span><span id="__span-7-107"><span class="k">def</span><span class="w"> </span><span class="nf">get_payments</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">]:</span>
+</span><span id="__span-7-108">    <span class="n">payments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">payments</span>
+</span><span id="__span-7-109">    <span class="k">return</span> <span class="n">payments</span>
+</span><span id="__span-7-110">
+</span><span id="__span-7-111">
+</span><span id="__span-7-112"><span class="n">Customer</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">current_customer</span><span class="p">)]</span>
+</span><span id="__span-7-113"><span class="c1"># A 400 for requests without the header: a payment must never run without one.</span>
+</span><span id="__span-7-114"><span class="n">IdempotencyKey</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">require_idempotency_key</span><span class="p">)]</span>
+</span><span id="__span-7-115"><span class="n">Payments</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">],</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_payments</span><span class="p">)]</span>
+</span><span id="__span-7-116">
+</span><span id="__span-7-117">
+</span><span id="__span-7-118"><span class="c1"># pylint: disable-next=unused-argument  # a stand-in: the provider's client sends them all</span>
+</span><span id="__span-7-119"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">charge_card</span><span class="p">(</span><span class="n">customer</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payment</span><span class="p">:</span> <span class="n">NewPayment</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-7-120"><span class="w">    </span><span class="sd">"""Stands in for the payment provider: charges the card, and returns the charge's id. The</span>
+</span><span id="__span-7-121"><span class="sd">    key goes to the provider too, which charges a key once however often it's asked."""</span>
+</span><span id="__span-7-122">    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># the round trip to the card network</span>
+</span><span id="__span-7-123">    <span class="k">return</span> <span class="sa">f</span><span class="s2">"ch_</span><span class="si">{</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_hex</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="__span-7-124">
+</span><span id="__span-7-125">
+</span><span id="__span-7-126"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/payments"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
+</span><span id="__span-7-127"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">pay</span><span class="p">(</span>
+</span><span id="__span-7-128">    <span class="n">payment</span><span class="p">:</span> <span class="n">NewPayment</span><span class="p">,</span>
+</span><span id="__span-7-129">    <span class="n">customer</span><span class="p">:</span> <span class="n">Customer</span><span class="p">,</span>
+</span><span id="__span-7-130">    <span class="n">key</span><span class="p">:</span> <span class="n">IdempotencyKey</span><span class="p">,</span>
+</span><span id="__span-7-131">    <span class="n">payments</span><span class="p">:</span> <span class="n">Payments</span><span class="p">,</span>
+</span><span id="__span-7-132"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Payment</span><span class="p">:</span>
+</span><span id="__span-7-133"><span class="w">    </span><span class="sd">"""Runs once per Idempotency-Key: retries get this response again."""</span>
+</span><span id="__span-7-134">    <span class="c1"># Server errors aren't kept, so a retry runs again. If this request fails after the charge,</span>
+</span><span id="__span-7-135">    <span class="c1"># the provider's own idempotency keys (Stripe's, Adyen's...) keep the card from being charged</span>
+</span><span id="__span-7-136">    <span class="c1"># twice: pass it this one, per customer like the middleware's.</span>
+</span><span id="__span-7-137">    <span class="n">charge</span> <span class="o">=</span> <span class="k">await</span> <span class="n">charge_card</span><span class="p">(</span><span class="n">customer</span><span class="p">,</span> <span class="n">payment</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">customer</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-7-138">    <span class="n">receipt</span> <span class="o">=</span> <span class="n">Payment</span><span class="p">(</span>
+</span><span id="__span-7-139">        <span class="nb">id</span><span class="o">=</span><span class="n">charge</span><span class="p">,</span> <span class="n">customer</span><span class="o">=</span><span class="n">customer</span><span class="p">,</span> <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">),</span> <span class="o">**</span><span class="n">payment</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+</span><span id="__span-7-140">    <span class="p">)</span>
+</span><span id="__span-7-141">    <span class="n">payments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">receipt</span><span class="p">)</span>
+</span><span id="__span-7-142">    <span class="k">return</span> <span class="n">receipt</span>
+</span><span id="__span-7-143">
+</span><span id="__span-7-144">
+</span><span id="__span-7-145"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/payments"</span><span class="p">)</span>
+</span><span id="__span-7-146"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_payments</span><span class="p">(</span><span class="n">customer</span><span class="p">:</span> <span class="n">Customer</span><span class="p">,</span> <span class="n">payments</span><span class="p">:</span> <span class="n">Payments</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Payment</span><span class="p">]:</span>
+</span><span id="__span-7-147">    <span class="k">return</span> <span class="p">[</span><span class="n">payment</span> <span class="k">for</span> <span class="n">payment</span> <span class="ow">in</span> <span class="n">payments</span> <span class="k">if</span> <span class="n">payment</span><span class="o">.</span><span class="n">customer</span> <span class="o">==</span> <span class="n">customer</span><span class="p">]</span>
+</span><span id="__span-7-148">
+</span><span id="__span-7-149">
+</span><span id="__span-7-150"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-7-151">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 <!-- fmt: on -->
 
 

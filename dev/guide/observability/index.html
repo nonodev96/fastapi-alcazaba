@@ -2271,27 +2271,27 @@ request IDs, deadlines, health checks, metrics and traces.</p>
 <p><code>FastAPIProblemDetails</code> answers errors with RFC 9457 problem details
 (<code>application/problem+json</code>) instead of FastAPI's <code>{"detail": ...}</code>, and without telling clients
 what they shouldn't know:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIProblemDetails</span><span class="p">,</span> <span class="n">Problem</span>
-
-<span class="n">problems</span> <span class="o">=</span> <span class="n">FastAPIProblemDetails</span><span class="p">()</span>
-<span class="n">problems</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/orders"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">order</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">item</span><span class="o">.</span><span class="n">quantity</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">Problem</span><span class="p">(</span>
-            <span class="mi">409</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">"Only </span><span class="si">{</span><span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="si">}</span><span class="s2"> left"</span><span class="p">,</span>
-            <span class="nb">type</span><span class="o">=</span><span class="s2">"https://example.com/problems/out-of-stock"</span><span class="p">,</span>
-            <span class="n">title</span><span class="o">=</span><span class="s2">"Out of stock"</span><span class="p">,</span>
-            <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"available"</span><span class="p">:</span> <span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">]},</span>
-        <span class="p">)</span>
-    <span class="o">...</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/problems/out-of-stock"</span><span class="p">,</span><span class="w"> </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Out of stock"</span><span class="p">,</span><span class="w"> </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="mi">409</span><span class="p">,</span>
-<span class="w"> </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Only 3 left"</span><span class="p">,</span><span class="w"> </span><span class="nt">"instance"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/orders"</span><span class="p">,</span><span class="w"> </span><span class="nt">"available"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">"request_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"4bf92f35…"</span><span class="p">}</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIProblemDetails</span><span class="p">,</span> <span class="n">Problem</span>
+</span><span id="__span-0-2">
+</span><span id="__span-0-3"><span class="n">problems</span> <span class="o">=</span> <span class="n">FastAPIProblemDetails</span><span class="p">()</span>
+</span><span id="__span-0-4"><span class="n">problems</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</span><span id="__span-0-5">
+</span><span id="__span-0-6">
+</span><span id="__span-0-7"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/orders"</span><span class="p">)</span>
+</span><span id="__span-0-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">order</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
+</span><span id="__span-0-9">    <span class="k">if</span> <span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">item</span><span class="o">.</span><span class="n">quantity</span><span class="p">:</span>
+</span><span id="__span-0-10">        <span class="k">raise</span> <span class="n">Problem</span><span class="p">(</span>
+</span><span id="__span-0-11">            <span class="mi">409</span><span class="p">,</span>
+</span><span id="__span-0-12">            <span class="sa">f</span><span class="s2">"Only </span><span class="si">{</span><span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="si">}</span><span class="s2"> left"</span><span class="p">,</span>
+</span><span id="__span-0-13">            <span class="nb">type</span><span class="o">=</span><span class="s2">"https://example.com/problems/out-of-stock"</span><span class="p">,</span>
+</span><span id="__span-0-14">            <span class="n">title</span><span class="o">=</span><span class="s2">"Out of stock"</span><span class="p">,</span>
+</span><span id="__span-0-15">            <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"available"</span><span class="p">:</span> <span class="n">stock</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">id</span><span class="p">]},</span>
+</span><span id="__span-0-16">        <span class="p">)</span>
+</span><span id="__span-0-17">    <span class="o">...</span>
+</span></code></pre></div>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><span class="p">{</span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/problems/out-of-stock"</span><span class="p">,</span><span class="w"> </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Out of stock"</span><span class="p">,</span><span class="w"> </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="mi">409</span><span class="p">,</span>
+</span><span id="__span-1-2"><span class="w"> </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Only 3 left"</span><span class="p">,</span><span class="w"> </span><span class="nt">"instance"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/orders"</span><span class="p">,</span><span class="w"> </span><span class="nt">"available"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">"request_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"4bf92f35…"</span><span class="p">}</span>
+</span></code></pre></div>
 <ul>
 <li><strong>Members:</strong> <code>type</code> (<code>about:blank</code> unless a <code>Problem</code> says otherwise), <code>title</code> (the RFC 9110
   status phrase), <code>status</code>, <code>detail</code> when there's something to tell, <code>instance</code> (the request's
@@ -2324,22 +2324,22 @@ what they shouldn't know:</p>
 <h2 id="request-ids">Request IDs<a class="headerlink" href="#request-ids" title="Permanent link">&para;</a></h2>
 <p><code>RequestIDMiddleware</code> gives every request an ID, to find all the log lines of one request and to
 let a client quote it when it reports an error:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestIDLogFilter</span><span class="p">,</span> <span class="n">RequestIDMiddleware</span><span class="p">,</span> <span class="n">request_id</span>
-
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">RequestIDMiddleware</span><span class="p">)</span>  <span class="c1"># last: the outermost</span>
-
-<span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
-<span class="n">handler</span><span class="o">.</span><span class="n">addFilter</span><span class="p">(</span><span class="n">RequestIDLogFilter</span><span class="p">())</span>
-<span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">"</span><span class="si">%(asctime)s</span><span class="s2"> [</span><span class="si">%(request_id)s</span><span class="s2">] </span><span class="si">%(name)s</span><span class="s2">: </span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">))</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/jobs"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_job</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"ticket"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">()}</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-2-2">
+</span><span id="__span-2-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestIDLogFilter</span><span class="p">,</span> <span class="n">RequestIDMiddleware</span><span class="p">,</span> <span class="n">request_id</span>
+</span><span id="__span-2-4">
+</span><span id="__span-2-5"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">RequestIDMiddleware</span><span class="p">)</span>  <span class="c1"># last: the outermost</span>
+</span><span id="__span-2-6">
+</span><span id="__span-2-7"><span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
+</span><span id="__span-2-8"><span class="n">handler</span><span class="o">.</span><span class="n">addFilter</span><span class="p">(</span><span class="n">RequestIDLogFilter</span><span class="p">())</span>
+</span><span id="__span-2-9"><span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">"</span><span class="si">%(asctime)s</span><span class="s2"> [</span><span class="si">%(request_id)s</span><span class="s2">] </span><span class="si">%(name)s</span><span class="s2">: </span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">))</span>
+</span><span id="__span-2-10"><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+</span><span id="__span-2-11">
+</span><span id="__span-2-12">
+</span><span id="__span-2-13"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/jobs"</span><span class="p">)</span>
+</span><span id="__span-2-14"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_job</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-2-15">    <span class="k">return</span> <span class="p">{</span><span class="s2">"ticket"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">()}</span>
+</span></code></pre></div>
 <p>With uvicorn, add the filter to its handlers too (<code>"filters": {"request_id": {"()":
 "fastapi_alcazaba.observability.RequestIDLogFilter"}}</code> in its <code>log_config</code>), and its access and
 error lines carry the ID.</p>
@@ -2365,14 +2365,14 @@ error lines carry the ID.</p>
 <p><code>RequestTimeoutMiddleware</code> gives every request a deadline, so that a hung dependency or a client
 that trickles its body doesn't hold a request (and its database connection, its memory…)
 forever:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestTimeoutMiddleware</span>
-
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
-    <span class="n">RequestTimeoutMiddleware</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
-    <span class="n">paths</span><span class="o">=</span><span class="p">{</span><span class="s2">"/reports"</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="s2">"/events"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>  <span class="c1"># Server-Sent Events: no deadline</span>
-<span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestTimeoutMiddleware</span>
+</span><span id="__span-3-2">
+</span><span id="__span-3-3"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+</span><span id="__span-3-4">    <span class="n">RequestTimeoutMiddleware</span><span class="p">,</span>
+</span><span id="__span-3-5">    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+</span><span id="__span-3-6">    <span class="n">paths</span><span class="o">=</span><span class="p">{</span><span class="s2">"/reports"</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="s2">"/events"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>  <span class="c1"># Server-Sent Events: no deadline</span>
+</span><span id="__span-3-7"><span class="p">)</span>
+</span></code></pre></div>
 <ul>
 <li><strong>Before the response starts:</strong> at the deadline the app is cancelled, its <code>finally</code> blocks and
   the exit of its <code>yield</code> dependencies run, and the client gets a 504
@@ -2397,18 +2397,18 @@ forever:</p>
 </ul>
 <h2 id="health-checks">Health checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h2>
 <p><code>health_router()</code> adds the two endpoints that load balancers and orchestrators probe:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">health_router</span>
-
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">database</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">text</span><span class="p">(</span><span class="s2">"SELECT 1"</span><span class="p">))</span>
-
-
-<span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span>
-    <span class="n">health_router</span><span class="p">({</span><span class="s2">"database"</span><span class="p">:</span> <span class="n">database</span><span class="p">,</span> <span class="s2">"search"</span><span class="p">:</span> <span class="n">HealthCheck</span><span class="p">(</span><span class="n">ping_search</span><span class="p">,</span> <span class="n">critical</span><span class="o">=</span><span class="kc">False</span><span class="p">)})</span>
-<span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">health_router</span>
+</span><span id="__span-4-2">
+</span><span id="__span-4-3">
+</span><span id="__span-4-4"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">database</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-4-5">    <span class="k">async</span> <span class="k">with</span> <span class="n">engine</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+</span><span id="__span-4-6">        <span class="k">await</span> <span class="n">connection</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">text</span><span class="p">(</span><span class="s2">"SELECT 1"</span><span class="p">))</span>
+</span><span id="__span-4-7">
+</span><span id="__span-4-8">
+</span><span id="__span-4-9"><span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span>
+</span><span id="__span-4-10">    <span class="n">health_router</span><span class="p">({</span><span class="s2">"database"</span><span class="p">:</span> <span class="n">database</span><span class="p">,</span> <span class="s2">"search"</span><span class="p">:</span> <span class="n">HealthCheck</span><span class="p">(</span><span class="n">ping_search</span><span class="p">,</span> <span class="n">critical</span><span class="o">=</span><span class="kc">False</span><span class="p">)})</span>
+</span><span id="__span-4-11"><span class="p">)</span>
+</span></code></pre></div>
 <p>Point the liveness probe at <code>/health/live</code> and the readiness probe (or the load balancer's
 health check, e.g. the target group of an ECS service) at <code>/health/ready</code>.</p>
 <ul>
@@ -2441,16 +2441,16 @@ loggers.</p>
 <p>Alcazaba only uses the OpenTelemetry API (the <code>otel</code> extra): it records nothing until the app
 configures an SDK, and never configures one itself. The simplest way is OpenTelemetry's own
 zero-code instrumentation, with the standard variables:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-distro<span class="w"> </span>opentelemetry-exporter-otlp
-opentelemetry-bootstrap<span class="w"> </span>-a<span class="w"> </span>install<span class="w">  </span><span class="c1"># instrumentations for FastAPI, httpx2, redis, SQLAlchemy…</span>
-
-<span class="nv">OTEL_SERVICE_NAME</span><span class="o">=</span>shop-api<span class="w"> </span><span class="se">\</span>
-<span class="nv">OTEL_RESOURCE_ATTRIBUTES</span><span class="o">=</span>deployment.environment.name<span class="o">=</span>production<span class="w"> </span><span class="se">\</span>
-<span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>https://collector.internal:4317<span class="w"> </span><span class="se">\</span>
-<span class="nv">OTEL_PYTHON_LOG_CORRELATION</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<span class="nv">OTEL_PYTHON_FASTAPI_EXCLUDED_URLS</span><span class="o">=</span><span class="s2">"health/live,health/ready"</span><span class="w"> </span><span class="se">\</span>
-opentelemetry-instrument<span class="w"> </span>uvicorn<span class="w"> </span>app:app
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1">pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-distro<span class="w"> </span>opentelemetry-exporter-otlp
+</span><span id="__span-5-2">opentelemetry-bootstrap<span class="w"> </span>-a<span class="w"> </span>install<span class="w">  </span><span class="c1"># instrumentations for FastAPI, httpx2, redis, SQLAlchemy…</span>
+</span><span id="__span-5-3">
+</span><span id="__span-5-4"><span class="nv">OTEL_SERVICE_NAME</span><span class="o">=</span>shop-api<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-5"><span class="nv">OTEL_RESOURCE_ATTRIBUTES</span><span class="o">=</span>deployment.environment.name<span class="o">=</span>production<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-6"><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>https://collector.internal:4317<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-7"><span class="nv">OTEL_PYTHON_LOG_CORRELATION</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-8"><span class="nv">OTEL_PYTHON_FASTAPI_EXCLUDED_URLS</span><span class="o">=</span><span class="s2">"health/live,health/ready"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-9">opentelemetry-instrument<span class="w"> </span>uvicorn<span class="w"> </span>app:app
+</span></code></pre></div>
 <p>Give the collector's endpoint explicitly, over TLS: traces and logs carry what your app does.
 Then Alcazaba adds to them:</p>
 <ul>

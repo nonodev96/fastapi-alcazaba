@@ -2512,8 +2512,8 @@ In <code>fastapi_alcazaba.observability</code>.</p>
 
 
 <a href="#fastapi_alcazaba.observability.FastAPIProblemDetails" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIProblemDetails</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">expose_detail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_errors</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIProblemDetails</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">expose_detail</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">max_errors</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2614,8 +2614,8 @@ get a huge answer.</p>
 
 
 <a href="#fastapi_alcazaba.observability.FastAPIProblemDetails.install" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">install</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Starlette</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">install</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Starlette</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2636,13 +2636,13 @@ with problems too (the 504 of a timeout, the 413 of a body too large...).</p>
 
 
 <a href="#fastapi_alcazaba.observability.FastAPIProblemDetails.response" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">response</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="n">HTTPException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">response</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="n">HTTPException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>The answer to <code>exc</code>, for your own exception handlers:</p>
-<div class="highlight"><pre><span></span><code>@app.exception_handler(OutOfStock)
+<div class="language-text highlight"><pre><span></span><code>@app.exception_handler(OutOfStock)
 async def out_of_stock(request: Request, exc: OutOfStock) -&gt; Response:
     return problems.response(request, Problem(409, title="Out of stock"))
 </code></pre></div>
@@ -2670,8 +2670,8 @@ async def out_of_stock(request: Request, exc: OutOfStock) -&gt; Response:
 
 
 <a href="#fastapi_alcazaba.observability.Problem" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Problem</span><span class="p">(</span><span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'about:blank'</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extensions</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">Problem</span><span class="p">(</span><span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">detail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'about:blank'</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extensions</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -2683,7 +2683,7 @@ async def out_of_stock(request: Request, exc: OutOfStock) -&gt; Response:
 identifies the kind of problem, ideally to its documentation), <code>title</code>, <code>detail</code> and
 extension members. Its detail and extensions always reach the client, also with a 5xx: you
 write them for it.</p>
-<div class="highlight"><pre><span></span><code>raise Problem(403, "Your balance is 30, but that costs 50",
+<div class="language-text highlight"><pre><span></span><code>raise Problem(403, "Your balance is 30, but that costs 50",
               type="https://example.com/problems/out-of-credit", title="Out of credit",
               extensions={"balance": 30, "cost": 50})
 </code></pre></div>
@@ -2839,8 +2839,8 @@ replace the standard members.</p>
 
 
 <a href="#fastapi_alcazaba.observability.RequestIDMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RequestIDMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-Request-ID'</span><span class="p">,</span> <span class="n">trust_incoming</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">RequestIDMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-Request-ID'</span><span class="p">,</span> <span class="n">trust_incoming</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2848,7 +2848,7 @@ replace the standard members.</p>
 
         <p>Gives every HTTP request and WebSocket an ID, available from <code>request_id()</code> while it's
 handled and sent back in the response's <code>header</code>.</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(RequestIDMiddleware, trust_incoming=False)
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(RequestIDMiddleware, trust_incoming=False)
 </code></pre></div>
 <p>Add it last, the outermost, so that every log line and every answer of the other middlewares
 carry the ID. When the app raises, the ID stays set for the rest of the request's task: the
@@ -2946,7 +2946,7 @@ you don't want them to choose their IDs.</p>
 
         <p>A request ID for every request, to find all the log lines of one request and to let a client
 quote it when it reports an error.</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(RequestIDMiddleware)  # last: the outermost
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(RequestIDMiddleware)  # last: the outermost
 
 handler.addFilter(RequestIDLogFilter())  # then "%(request_id)s" in the format
 </code></pre></div>
@@ -2984,8 +2984,8 @@ log lines, an endless value) gets a new one.</p>
 
 
 <a href="#fastapi_alcazaba.observability.request_id.RequestIDMiddleware" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RequestIDMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-Request-ID'</span><span class="p">,</span> <span class="n">trust_incoming</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">RequestIDMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-Request-ID'</span><span class="p">,</span> <span class="n">trust_incoming</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2993,7 +2993,7 @@ log lines, an endless value) gets a new one.</p>
 
         <p>Gives every HTTP request and WebSocket an ID, available from <code>request_id()</code> while it's
 handled and sent back in the response's <code>header</code>.</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(RequestIDMiddleware, trust_incoming=False)
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(RequestIDMiddleware, trust_incoming=False)
 </code></pre></div>
 <p>Add it last, the outermost, so that every log line and every answer of the other middlewares
 carry the ID. When the app raises, the ID stays set for the rest of the request's task: the
@@ -3086,8 +3086,8 @@ you don't want them to choose their IDs.</p>
 
 
 <a href="#fastapi_alcazaba.observability.request_id.RequestIDLogFilter" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RequestIDLogFilter</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'-'</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">RequestIDLogFilter</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'-'</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
@@ -3098,7 +3098,7 @@ you don't want them to choose their IDs.</p>
         <p>Sets <code>record.request_id</code> to the ID of the request being handled (<code>default</code> outside one),
 for formats with <code>%(request_id)s</code>. Add it to the handlers: a logger's filters don't see the
 records of its child loggers.</p>
-<div class="highlight"><pre><span></span><code>handler.addFilter(RequestIDLogFilter())
+<div class="language-text highlight"><pre><span></span><code>handler.addFilter(RequestIDLogFilter())
 </code></pre></div>
 <p>A <code>request_id</code> passed in <code>extra=</code> is kept.</p>
 
@@ -3140,8 +3140,8 @@ records of its child loggers.</p>
 
 
 <a href="#fastapi_alcazaba.observability.request_id.request_id" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">request_id</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">request_id</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3169,8 +3169,8 @@ records of its child loggers.</p>
 
 
 <a href="#fastapi_alcazaba.observability.RequestIDLogFilter" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RequestIDLogFilter</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'-'</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">RequestIDLogFilter</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'-'</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -3181,7 +3181,7 @@ records of its child loggers.</p>
         <p>Sets <code>record.request_id</code> to the ID of the request being handled (<code>default</code> outside one),
 for formats with <code>%(request_id)s</code>. Add it to the handlers: a logger's filters don't see the
 records of its child loggers.</p>
-<div class="highlight"><pre><span></span><code>handler.addFilter(RequestIDLogFilter())
+<div class="language-text highlight"><pre><span></span><code>handler.addFilter(RequestIDLogFilter())
 </code></pre></div>
 <p>A <code>request_id</code> passed in <code>extra=</code> is kept.</p>
 
@@ -3223,8 +3223,8 @@ records of its child loggers.</p>
 
 
 <a href="#fastapi_alcazaba.observability.RequestTimeoutMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RequestTimeoutMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">RequestTimeoutMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3232,7 +3232,7 @@ records of its child loggers.</p>
 
         <p>Gives every HTTP request <code>timeout</code> seconds, from its arrival until its response has been
 sent; WebSockets and lifespan events go through untouched.</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(RequestTimeoutMiddleware, timeout=30, paths={"/exports": None})
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(RequestTimeoutMiddleware, timeout=30, paths={"/exports": None})
 </code></pre></div>
 <ul>
 <li>Out of time before the response starts: the app is cancelled and the client gets a 504
@@ -3326,8 +3326,8 @@ matching prefix wins; None for none), matched like the app's routes: without the
 
 
 <a href="#fastapi_alcazaba.observability.RequestTimeoutMiddleware.timeout_for" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">timeout_for</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">timeout_for</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3354,13 +3354,13 @@ matching prefix wins; None for none), matched like the app's routes: without the
 
 
 <a href="#fastapi_alcazaba.observability.health_router" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">health_router</span><span class="p">(</span><span class="n">checks</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Check</span> <span class="o">|</span> <span class="n">HealthCheck</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">include_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'/health'</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">reuse_for</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">include_in_schema</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Enum</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">APIRouter</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">health_router</span><span class="p">(</span><span class="n">checks</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Check</span> <span class="o">|</span> <span class="n">HealthCheck</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">include_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'/health'</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">reuse_for</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">include_in_schema</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">Enum</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">APIRouter</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
         <p><code>GET {prefix}/live</code> and <code>GET {prefix}/ready</code>, to include in the app.</p>
-<div class="highlight"><pre><span></span><code>app.include_router(health_router({"database": check_database}))
+<div class="language-text highlight"><pre><span></span><code>app.include_router(health_router({"database": check_database}))
 </code></pre></div>
 
 
@@ -3531,8 +3531,8 @@ for every probe (concurrent probes still share one run).</p>
   </span>
 
 <a href="#fastapi_alcazaba.observability.HealthCheck" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">HealthCheck</span><span class="p">(</span><span class="n">check</span><span class="p">:</span> <span class="n">Check</span><span class="p">,</span> <span class="n">critical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">HealthCheck</span><span class="p">(</span><span class="n">check</span><span class="p">:</span> <span class="n">Check</span><span class="p">,</span> <span class="n">critical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 

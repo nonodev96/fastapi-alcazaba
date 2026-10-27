@@ -2190,12 +2190,12 @@ Valkey lets every process share it. Only the background work needs one.</p>
 </div>
 <h2 id="running-them">Running them<a class="headerlink" href="#running-them" title="Permanent link">&para;</a></h2>
 <p>From a clone of the repository, each one starts with uvicorn:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/nonodev96/fastapi-alcazaba.git
-<span class="nb">cd</span><span class="w"> </span>fastapi-alcazaba
-make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
-<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-uvicorn<span class="w"> </span>examples.cache.main:app
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">git<span class="w"> </span>clone<span class="w"> </span>https://github.com/nonodev96/fastapi-alcazaba.git
+</span><span id="__span-0-2"><span class="nb">cd</span><span class="w"> </span>fastapi-alcazaba
+</span><span id="__span-0-3">make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
+</span><span id="__span-0-4"><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-0-5">uvicorn<span class="w"> </span>examples.cache.main:app
+</span></code></pre></div>
 <p>Then open <a href="http://127.0.0.1:8000/docs">http://127.0.0.1:8000/docs</a> to try its endpoints from the browser. The keys and
 secrets they need come from environment variables, with a throwaway value for trying them out:
 set real ones in production.</p>

@@ -2244,18 +2244,18 @@
 </tbody>
 </table>
 <p>Valkey example with valkey-py:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">valkey.asyncio</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.valkey</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValkeyBackend</span>
-
-<span class="n">client</span> <span class="o">=</span> <span class="n">valkey</span><span class="o">.</span><span class="n">asyncio</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">"valkey://localhost:6379/0"</span><span class="p">)</span>
-<span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">ValkeyBackend</span><span class="p">(</span><span class="n">client</span><span class="p">),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"myapp"</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">import</span><span class="w"> </span><span class="nn">valkey.asyncio</span>
+</span><span id="__span-0-2">
+</span><span id="__span-0-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.valkey</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValkeyBackend</span>
+</span><span id="__span-0-4">
+</span><span id="__span-0-5"><span class="n">client</span> <span class="o">=</span> <span class="n">valkey</span><span class="o">.</span><span class="n">asyncio</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">"valkey://localhost:6379/0"</span><span class="p">)</span>
+</span><span id="__span-0-6"><span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">ValkeyBackend</span><span class="p">(</span><span class="n">client</span><span class="p">),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"myapp"</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">)</span>
+</span></code></pre></div>
 <h2 id="two-level-cache">Two-level cache<a class="headerlink" href="#two-level-cache" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.tiered</span><span class="w"> </span><span class="kn">import</span> <span class="n">TieredBackend</span>
-
-<span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">TieredBackend</span><span class="p">(</span><span class="n">ValkeyBackend</span><span class="p">(</span><span class="n">client</span><span class="p">),</span> <span class="n">local_ttl</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"myapp"</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.tiered</span><span class="w"> </span><span class="kn">import</span> <span class="n">TieredBackend</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3"><span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">TieredBackend</span><span class="p">(</span><span class="n">ValkeyBackend</span><span class="p">(</span><span class="n">client</span><span class="p">),</span> <span class="n">local_ttl</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"myapp"</span><span class="p">)</span>
+</span></code></pre></div>
 <p><code>TieredBackend</code> keeps a small copy of each entry in the memory of every process, in front of the
 shared backend: hits served from there skip the network (131 µs → 56 µs per hit against a Valkey
 on the same machine; more across a real network). A local copy lives at most <code>local_ttl</code> seconds

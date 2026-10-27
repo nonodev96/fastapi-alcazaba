@@ -2490,8 +2490,8 @@ In <code>fastapi_alcazaba.auth</code>.</p>
 
 
 <a href="#fastapi_alcazaba.auth.FastAPIAPIKeys" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIAPIKeys</span><span class="p">(</span><span class="n">lookup</span><span class="p">:</span> <span class="n">Lookup</span><span class="p">[</span><span class="n">R</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-API-Key'</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'ak'</span><span class="p">,</span> <span class="n">bearer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">pepper</span><span class="p">:</span> <span class="n">Secrets</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cache_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span> <span class="n">scheme_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'APIKey'</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIAPIKeys</span><span class="p">(</span><span class="n">lookup</span><span class="p">:</span> <span class="n">Lookup</span><span class="p">[</span><span class="n">R</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-API-Key'</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'ak'</span><span class="p">,</span> <span class="n">bearer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">pepper</span><span class="p">:</span> <span class="n">Secrets</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">cache_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span><span class="p">,</span> <span class="n">scheme_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'APIKey'</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -2500,7 +2500,7 @@ In <code>fastapi_alcazaba.auth</code>.</p>
 
 
         <p>FastAPI dependency that authenticates a request by its API key and returns its record.</p>
-<div class="highlight"><pre><span></span><code>keys = FastAPIAPIKeys(load_key, pepper=settings.api_key_pepper)
+<div class="language-text highlight"><pre><span></span><code>keys = FastAPIAPIKeys(load_key, pepper=settings.api_key_pepper)
 
 @app.get("/me")
 async def me(key: Annotated[StoredKey, Depends(keys)]) -&gt; ...
@@ -2711,8 +2711,8 @@ default.</p>
 
 
 <a href="#fastapi_alcazaba.auth.FastAPIAPIKeys.require" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">require</span><span class="p">(</span><span class="o">*</span><span class="n">scopes</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">R</span><span class="p">]]</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require</span><span class="p">(</span><span class="o">*</span><span class="n">scopes</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="n">R</span><span class="p">]]</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2732,8 +2732,8 @@ them): <code>Depends(keys.require("orders:write"))</code>.</p>
 
 
 <a href="#fastapi_alcazaba.auth.FastAPIAPIKeys.generate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">generate</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">scopes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NewAPIKey</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">generate</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">scopes</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NewAPIKey</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2757,8 +2757,8 @@ names ("orders:read"); <code>expires_at</code> a datetime with its time zone.</p
   </span>
 
 <a href="#fastapi_alcazaba.auth.FastAPIAPIKeys.authenticate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">authenticate</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">authenticate</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2778,8 +2778,8 @@ that come some other way (a WebSocket message, a test).</p>
 
 
 <a href="#fastapi_alcazaba.auth.FastAPIAPIKeys.forget" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">forget</span><span class="p">(</span><span class="n">key_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">forget</span><span class="p">(</span><span class="n">key_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2812,8 +2812,8 @@ it after revoking a key, for this process to see it at once.</p>
   </span>
 
 <a href="#fastapi_alcazaba.auth.APIKeyRecord" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">APIKeyRecord</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">digest</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">scopes</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(),</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">APIKeyRecord</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">digest</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">scopes</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(),</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2859,15 +2859,15 @@ it after revoking a key, for this process to see it at once.</p>
 
 
 <a href="#fastapi_alcazaba.auth.TokenBlocklist" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">TokenBlocklist</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'revoked'</span><span class="p">,</span> <span class="n">fail_open</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">leeway</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">TokenBlocklist</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'revoked'</span><span class="p">,</span> <span class="n">fail_open</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">leeway</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
 
 
         <p>Revoked tokens (by their <code>jti</code>) and subjects logged out everywhere (<code>revoke_subject</code>).</p>
-<div class="highlight"><pre><span></span><code>blocklist = TokenBlocklist()
+<div class="language-text highlight"><pre><span></span><code>blocklist = TokenBlocklist()
 
 async def current_user(claims: Annotated[dict[str, Any], Depends(decode_jwt)]) -&gt; str:
     sub, iat = claims["sub"], claims["iat"]
@@ -2995,8 +2995,8 @@ instead of True (refused, the default).</p>
   </span>
 
 <a href="#fastapi_alcazaba.auth.TokenBlocklist.revoke" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">revoke</span><span class="p">(</span><span class="n">token_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">Moment</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">revoke</span><span class="p">(</span><span class="n">token_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">Moment</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3021,8 +3021,8 @@ when the backend fails: the token isn't revoked then.</p>
   </span>
 
 <a href="#fastapi_alcazaba.auth.TokenBlocklist.revoke_subject" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">revoke_subject</span><span class="p">(</span><span class="n">subject</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">revoke_subject</span><span class="p">(</span><span class="n">subject</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3049,8 +3049,8 @@ fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.auth.TokenBlocklist.is_revoked" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">is_revoked</span><span class="p">(</span><span class="n">token_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">issued_at</span><span class="p">:</span> <span class="n">Moment</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">is_revoked</span><span class="p">(</span><span class="n">token_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">issued_at</span><span class="p">:</span> <span class="n">Moment</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3080,8 +3080,8 @@ everywhere after it was issued (give its <code>sub</code> and <code>iat</code>).
 
 
 <a href="#fastapi_alcazaba.auth.OneTimeCodes" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">OneTimeCodes</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">Secrets</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="n">max_attempts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'otp'</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">OneTimeCodes</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">Secrets</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">digits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="n">max_attempts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'otp'</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3089,7 +3089,7 @@ everywhere after it was issued (give its <code>sub</code> and <code>iat</code>).
 
         <p>Codes of <code>digits</code> digits, sent by e-mail or SMS, that prove who someone is: each lasts
 <code>ttl</code> seconds, works once and is lost after <code>max_attempts</code> wrong guesses.</p>
-<div class="highlight"><pre><span></span><code>codes = OneTimeCodes(secret=settings.otp_secret)
+<div class="language-text highlight"><pre><span></span><code>codes = OneTimeCodes(secret=settings.otp_secret)
 
 code = await codes.issue(user.email, purpose="login")  # send it to the user
 ...
@@ -3247,8 +3247,8 @@ each call.</p>
   </span>
 
 <a href="#fastapi_alcazaba.auth.OneTimeCodes.issue" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">issue</span><span class="p">(</span><span class="n">subject</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">purpose</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">issue</span><span class="p">(</span><span class="n">subject</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">purpose</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3273,8 +3273,8 @@ backend fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.auth.OneTimeCodes.verify" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">verify</span><span class="p">(</span><span class="n">subject</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">purpose</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">verify</span><span class="p">(</span><span class="n">subject</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">purpose</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 

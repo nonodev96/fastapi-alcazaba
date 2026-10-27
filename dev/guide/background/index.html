@@ -2248,25 +2248,25 @@ locks.</p>
 <h2 id="scheduled-jobs">Scheduled jobs<a class="headerlink" href="#scheduled-jobs" title="Permanent link">&para;</a></h2>
 <p><code>FastAPIScheduler</code> runs jobs every N seconds or by a cron expression, in every process of the
 app, and each tick once across them all:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIScheduler</span>
-
-<span class="n">scheduler</span> <span class="o">=</span> <span class="n">FastAPIScheduler</span><span class="p">()</span>  <span class="c1"># FastAPICache's backend; or FastAPIScheduler(cache)</span>
-
-
-<span class="nd">@scheduler</span><span class="o">.</span><span class="n">every</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh_catalog</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-
-
-<span class="nd">@scheduler</span><span class="o">.</span><span class="n">cron</span><span class="p">(</span><span class="s2">"0 3 * * *"</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="s2">"Europe/Madrid"</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">nightly_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># sync jobs run in a thread</span>
-
-
-<span class="nd">@scheduler</span><span class="o">.</span><span class="n">every</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">exclusive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reload_settings</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># in every process: what each keeps in memory</span>
-
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">scheduler</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># or `async with scheduler:` in your lifespan</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIScheduler</span>
+</span><span id="__span-0-2">
+</span><span id="__span-0-3"><span class="n">scheduler</span> <span class="o">=</span> <span class="n">FastAPIScheduler</span><span class="p">()</span>  <span class="c1"># FastAPICache's backend; or FastAPIScheduler(cache)</span>
+</span><span id="__span-0-4">
+</span><span id="__span-0-5">
+</span><span id="__span-0-6"><span class="nd">@scheduler</span><span class="o">.</span><span class="n">every</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-0-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh_catalog</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-0-8">
+</span><span id="__span-0-9">
+</span><span id="__span-0-10"><span class="nd">@scheduler</span><span class="o">.</span><span class="n">cron</span><span class="p">(</span><span class="s2">"0 3 * * *"</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="s2">"Europe/Madrid"</span><span class="p">)</span>
+</span><span id="__span-0-11"><span class="k">def</span><span class="w"> </span><span class="nf">nightly_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># sync jobs run in a thread</span>
+</span><span id="__span-0-12">
+</span><span id="__span-0-13">
+</span><span id="__span-0-14"><span class="nd">@scheduler</span><span class="o">.</span><span class="n">every</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">exclusive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-0-15"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reload_settings</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># in every process: what each keeps in memory</span>
+</span><span id="__span-0-16">
+</span><span id="__span-0-17">
+</span><span id="__span-0-18"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">scheduler</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># or `async with scheduler:` in your lifespan</span>
+</span></code></pre></div>
 <ul>
 <li><strong>Once per tick:</strong> at each tick, the processes claim it in the backend, with an atomic counter
   named after the job and the tick, and only the first runs it. A lock held while the job runs
@@ -2295,23 +2295,23 @@ app, and each tick once across them all:</p>
 <h2 id="task-queue">Task queue<a class="headerlink" href="#task-queue" title="Permanent link">&para;</a></h2>
 <p><code>FastAPITaskQueue</code> hands work over from an endpoint to run in the background, in this process or
 in any other that shares the cache's Redis or Valkey:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPITaskQueue</span>
-
-<span class="n">queue</span> <span class="o">=</span> <span class="n">FastAPITaskQueue</span><span class="p">()</span>  <span class="c1"># FastAPICache's backend; or FastAPITaskQueue(cache)</span>
-
-
-<span class="nd">@queue</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_welcome_email</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">queue</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># this process runs tasks too</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/users"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">NewUser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="o">...</span>
-    <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">send_welcome_email</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># delay=60 or a timedelta to wait first</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPITaskQueue</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3"><span class="n">queue</span> <span class="o">=</span> <span class="n">FastAPITaskQueue</span><span class="p">()</span>  <span class="c1"># FastAPICache's backend; or FastAPITaskQueue(cache)</span>
+</span><span id="__span-1-4">
+</span><span id="__span-1-5">
+</span><span id="__span-1-6"><span class="nd">@queue</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-1-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_welcome_email</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-1-8">
+</span><span id="__span-1-9">
+</span><span id="__span-1-10"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">queue</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># this process runs tasks too</span>
+</span><span id="__span-1-11">
+</span><span id="__span-1-12">
+</span><span id="__span-1-13"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/users"</span><span class="p">)</span>
+</span><span id="__span-1-14"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">NewUser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-1-15">    <span class="o">...</span>
+</span><span id="__span-1-16">    <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">send_welcome_email</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># delay=60 or a timedelta to wait first</span>
+</span></code></pre></div>
 <ul>
 <li><strong>At least once:</strong> tasks live in a Redis stream read by a consumer group, and leave it only once
   they've finished. A process that dies while running one, or can't reach the backend to say it
@@ -2353,24 +2353,24 @@ in any other that shares the cache's Redis or Valkey:</p>
 <p><code>FastAPILeader</code> elects one process among all those sharing the backend, for work that must run in
 exactly one of them all the time (a queue consumer, an outbox relay, a watcher) rather than at
 given times (that's the scheduler):</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPILeader</span>
-
-<span class="n">leader</span> <span class="o">=</span> <span class="n">FastAPILeader</span><span class="p">(</span><span class="s2">"outbox"</span><span class="p">)</span>  <span class="c1"># FastAPICache's backend; or FastAPILeader("outbox", cache=cache)</span>
-
-
-<span class="nd">@leader</span><span class="o">.</span><span class="n">run</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">relay_outbox</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">relay_pending</span><span class="p">()</span>
-        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">leader</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># or `async with leader:` in your lifespan</span>
-
-<span class="o">...</span>
-<span class="k">if</span> <span class="n">leader</span><span class="o">.</span><span class="n">is_leader</span><span class="p">:</span>  <span class="c1"># anywhere, sync code included</span>
-    <span class="o">...</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPILeader</span>
+</span><span id="__span-2-2">
+</span><span id="__span-2-3"><span class="n">leader</span> <span class="o">=</span> <span class="n">FastAPILeader</span><span class="p">(</span><span class="s2">"outbox"</span><span class="p">)</span>  <span class="c1"># FastAPICache's backend; or FastAPILeader("outbox", cache=cache)</span>
+</span><span id="__span-2-4">
+</span><span id="__span-2-5">
+</span><span id="__span-2-6"><span class="nd">@leader</span><span class="o">.</span><span class="n">run</span>
+</span><span id="__span-2-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">relay_outbox</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-2-8">    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="__span-2-9">        <span class="k">await</span> <span class="n">relay_pending</span><span class="p">()</span>
+</span><span id="__span-2-10">        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-2-11">
+</span><span id="__span-2-12">
+</span><span id="__span-2-13"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">leader</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># or `async with leader:` in your lifespan</span>
+</span><span id="__span-2-14">
+</span><span id="__span-2-15"><span class="o">...</span>
+</span><span id="__span-2-16"><span class="k">if</span> <span class="n">leader</span><span class="o">.</span><span class="n">is_leader</span><span class="p">:</span>  <span class="c1"># anywhere, sync code included</span>
+</span><span id="__span-2-17">    <span class="o">...</span>
+</span></code></pre></div>
 <ul>
 <li><strong>Election:</strong> every process campaigns for a lock named after the leader, renewed every
   <code>ttl / 3</code> seconds (<code>ttl</code> is 15 by default). The one that takes it leads and runs the functions
@@ -2390,16 +2390,16 @@ given times (that's the scheduler):</p>
 </ul>
 <h2 id="locks">Locks<a class="headerlink" href="#locks" title="Permanent link">&para;</a></h2>
 <p>A lock shared by every process and container, for work that only one of them must do at a time:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">LockNotAcquired</span>
-
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">nightly_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># every instance runs it; one builds the report</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">FastAPICache</span><span class="o">.</span><span class="n">lock</span><span class="p">(</span><span class="s2">"nightly-report"</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>  <span class="c1"># or cache.lock(...)</span>
-            <span class="k">await</span> <span class="n">build_report</span><span class="p">()</span>
-    <span class="k">except</span> <span class="n">LockNotAcquired</span><span class="p">:</span>
-        <span class="k">pass</span>  <span class="c1"># another instance is on it</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">LockNotAcquired</span>
+</span><span id="__span-3-2">
+</span><span id="__span-3-3">
+</span><span id="__span-3-4"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">nightly_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># every instance runs it; one builds the report</span>
+</span><span id="__span-3-5">    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-3-6">        <span class="k">async</span> <span class="k">with</span> <span class="n">FastAPICache</span><span class="o">.</span><span class="n">lock</span><span class="p">(</span><span class="s2">"nightly-report"</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>  <span class="c1"># or cache.lock(...)</span>
+</span><span id="__span-3-7">            <span class="k">await</span> <span class="n">build_report</span><span class="p">()</span>
+</span><span id="__span-3-8">    <span class="k">except</span> <span class="n">LockNotAcquired</span><span class="p">:</span>
+</span><span id="__span-3-9">        <span class="k">pass</span>  <span class="c1"># another instance is on it</span>
+</span></code></pre></div>
 <ul>
 <li><strong>Expiry and renewal:</strong> a lock expires after <code>ttl</code> seconds, so a holder that dies doesn't keep it
   forever; while it's held, a background task renews it every <code>ttl / 3</code>.</li>

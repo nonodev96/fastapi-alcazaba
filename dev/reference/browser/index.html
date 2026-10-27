@@ -2412,8 +2412,8 @@ In <code>fastapi_alcazaba.security</code>.</p>
 
 
 <a href="#fastapi_alcazaba.security.ServerSessionMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ServerSessionMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cookie_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'session'</span><span class="p">,</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">14</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">,</span> <span class="n">idle_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">secure</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">same_site</span><span class="p">:</span> <span class="n">SameSite</span> <span class="o">=</span> <span class="s1">'lax'</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'/'</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16384</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'session'</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">ServerSessionMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cookie_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'session'</span><span class="p">,</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">14</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">,</span> <span class="n">idle_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">secure</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">same_site</span><span class="p">:</span> <span class="n">SameSite</span> <span class="o">=</span> <span class="s1">'lax'</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'/'</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16384</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'session'</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2421,7 +2421,7 @@ In <code>fastapi_alcazaba.security</code>.</p>
 
         <p>ASGI middleware that keeps each browser's session in the cache's backend, under a random
 id carried by a cookie (HttpOnly, Secure and SameSite by default).</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(ServerSessionMiddleware)
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(ServerSessionMiddleware)
 </code></pre></div>
 <ul>
 <li><strong>Saved only when it changed</strong>, when the response starts; an empty session isn't stored
@@ -2656,8 +2656,8 @@ default. With a TieredBackend, only its shared (remote) tier is used.</p>
 
 
 <a href="#fastapi_alcazaba.security.rotate_session" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">rotate_session</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">rotate_session</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2678,8 +2678,8 @@ fixation) is deleted with the old session. The new session's <code>max_age</code
 
 
 <a href="#fastapi_alcazaba.security.clear_session" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">clear_session</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">clear_session</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2700,8 +2700,8 @@ response starts. Data stored afterwards in the same request goes to a new sessio
 
 
 <a href="#fastapi_alcazaba.security.ServerSession" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ServerSession</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">ServerSession</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -2743,8 +2743,8 @@ tells it on every <code>request.session</code>; older ones don't, so its reads t
 
 
 <a href="#fastapi_alcazaba.security.ServerSession.mark_accessed" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">mark_accessed</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">mark_accessed</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2772,8 +2772,8 @@ tells it on every <code>request.session</code>; older ones don't, so its reads t
 
 
 <a href="#fastapi_alcazaba.security.CSRFMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">CSRFMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">trusted_origins</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">exempt_paths</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">require_token</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">check_all</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cookie_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'__Host-csrftoken'</span><span class="p">,</span> <span class="n">header_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-CSRF-Token'</span><span class="p">,</span> <span class="n">cookie_secure</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">cookie_domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">CSRFMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">trusted_origins</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">exempt_paths</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">require_token</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">check_all</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cookie_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'__Host-csrftoken'</span><span class="p">,</span> <span class="n">header_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'X-CSRF-Token'</span><span class="p">,</span> <span class="n">cookie_secure</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">cookie_domain</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2781,7 +2781,7 @@ tells it on every <code>request.session</code>; older ones don't, so its reads t
 
         <p>ASGI middleware that refuses, with a 403, unsafe requests that a page on another site made
 the user's browser send. See the module's documentation for the rules.</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(CSRFMiddleware)
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(CSRFMiddleware)
 </code></pre></div>
 <p>The app's own origin is the scheme and the <code>Host</code> header as the server sees them. Behind a
 proxy that terminates TLS, let the server trust it (<code>uvicorn --proxy-headers
@@ -2978,8 +2978,8 @@ read it (then pick a name without the <code>__Host-</code> prefix).</p>
 
 
 <a href="#fastapi_alcazaba.security.SecurityHeadersMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">SecurityHeadersMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hsts</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s1">'max-age=63072000; includeSubDomains'</span><span class="p">,</span> <span class="n">csp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"default-src 'none'; frame-ancestors 'none'"</span><span class="p">,</span> <span class="n">html_csp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">SecurityHeadersMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hsts</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s1">'max-age=63072000; includeSubDomains'</span><span class="p">,</span> <span class="n">csp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"default-src 'none'; frame-ancestors 'none'"</span><span class="p">,</span> <span class="n">html_csp</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2987,7 +2987,7 @@ read it (then pick a name without the <code>__Host-</code> prefix).</p>
 
         <p>Adds the security headers of the OWASP REST Security Cheat Sheet to every response,
 without overwriting the ones the app sets itself.</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(SecurityHeadersMiddleware)
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(SecurityHeadersMiddleware)
 </code></pre></div>
 <ul>
 <li><code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code>
@@ -3118,8 +3118,8 @@ without overwriting the ones the app sets itself.</p>
 
 
 <a href="#fastapi_alcazaba.security.BodySizeLimitMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">BodySizeLimitMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1048576</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">BodySizeLimitMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1048576</span><span class="p">,</span> <span class="n">paths</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3127,7 +3127,7 @@ without overwriting the ones the app sets itself.</p>
 
         <p>Refuses request bodies larger than <code>max_size</code> bytes with a 413. FastAPI has no limit of its
 own: a client could send an endless body that the app reads into memory.</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(BodySizeLimitMiddleware, max_size=1_048_576, paths={"/uploads": None})
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(BodySizeLimitMiddleware, max_size=1_048_576, paths={"/uploads": None})
 </code></pre></div>
 <p>A <code>Content-Length</code> over the limit is refused before the app runs. Bodies without one (chunked)
 are counted while the app reads them, and refused as soon as they pass the limit.</p>
@@ -3210,8 +3210,8 @@ prefix wins; None for no limit). They're matched like the app's routes: without 
 
 
 <a href="#fastapi_alcazaba.security.BodySizeLimitMiddleware.limit" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">limit</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">limit</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3243,8 +3243,8 @@ prefix wins; None for no limit). They're matched like the app's routes: without 
   </span>
 
 <a href="#fastapi_alcazaba.security.DEFAULT_SECURITY_HEADERS" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">DEFAULT_SECURITY_HEADERS</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'X-Content-Type-Options'</span><span class="p">:</span> <span class="s1">'nosniff'</span><span class="p">,</span> <span class="s1">'X-Frame-Options'</span><span class="p">:</span> <span class="s1">'DENY'</span><span class="p">,</span> <span class="s1">'Referrer-Policy'</span><span class="p">:</span> <span class="s1">'no-referrer'</span><span class="p">,</span> <span class="s1">'Cross-Origin-Opener-Policy'</span><span class="p">:</span> <span class="s1">'same-origin'</span><span class="p">}</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">DEFAULT_SECURITY_HEADERS</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'X-Content-Type-Options'</span><span class="p">:</span> <span class="s1">'nosniff'</span><span class="p">,</span> <span class="s1">'X-Frame-Options'</span><span class="p">:</span> <span class="s1">'DENY'</span><span class="p">,</span> <span class="s1">'Referrer-Policy'</span><span class="p">:</span> <span class="s1">'no-referrer'</span><span class="p">,</span> <span class="s1">'Cross-Origin-Opener-Policy'</span><span class="p">:</span> <span class="s1">'same-origin'</span><span class="p">}</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 

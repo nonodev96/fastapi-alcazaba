@@ -2249,88 +2249,88 @@ report endpoint that renders at most two reports at a time across every process.
 <a href="../../guide/limits/#concurrency-limits"><code>FastAPIConcurrencyLimiter</code></a> the ones in flight.</p>
 <h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Permanent link">&para;</a></h2>
 <p>From a clone of the repository:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
-<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-uvicorn<span class="w"> </span>examples.limits.main:app
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
+</span><span id="__span-0-2"><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-0-3">uvicorn<span class="w"> </span>examples.limits.main:app
+</span></code></pre></div>
 <p>The example has three users, <code>alice</code>, <code>bob</code> and <code>carol</code>, whose tokens are <code>alice-token</code>,
 <code>bob-token</code> and <code>carol-token</code>.</p>
 <h2 id="try-it">Try it<a class="headerlink" href="#try-it" title="Permanent link">&para;</a></h2>
 <p>The public search allows 10 requests a minute per address. Every response says how many are left
 (<code>r</code>), and for how many seconds at least (<code>t</code>):</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/search?q=oli"</span>
-<span class="go">HTTP/1.1 200 OK</span>
-<span class="go">ratelimit: "10/60s";r=9;t=16</span>
-<span class="go">ratelimit-policy: "10/60s";q=10;w=60</span>
-
-<span class="go">[{"name":"Olive oil","price":9.5},{"name":"Olives","price":3.2}]</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/search?q=oli"</span>
+</span><span id="__span-1-2"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-1-3"><span class="go">ratelimit: "10/60s";r=9;t=16</span>
+</span><span id="__span-1-4"><span class="go">ratelimit-policy: "10/60s";q=10;w=60</span>
+</span><span id="__span-1-5">
+</span><span id="__span-1-6"><span class="go">[{"name":"Olive oil","price":9.5},{"name":"Olives","price":3.2}]</span>
+</span></code></pre></div>
 <p>The eleventh within the minute is refused, with the seconds to wait:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">9</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/search?q=oli"</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/search?q=oli"</span>
-<span class="go">HTTP/1.1 429 Too Many Requests</span>
-<span class="go">ratelimit: "10/60s";r=0;t=22</span>
-<span class="go">ratelimit-policy: "10/60s";q=10;w=60</span>
-<span class="go">retry-after: 22</span>
-
-<span class="go">{"detail":"Too Many Requests"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">9</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/search?q=oli"</span><span class="p">;</span><span class="w"> </span><span class="k">done</span>
+</span><span id="__span-2-2"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/search?q=oli"</span>
+</span><span id="__span-2-3"><span class="go">HTTP/1.1 429 Too Many Requests</span>
+</span><span id="__span-2-4"><span class="go">ratelimit: "10/60s";r=0;t=22</span>
+</span><span id="__span-2-5"><span class="go">ratelimit-policy: "10/60s";q=10;w=60</span>
+</span><span id="__span-2-6"><span class="go">retry-after: 22</span>
+</span><span id="__span-2-7">
+</span><span id="__span-2-8"><span class="go">{"detail":"Too Many Requests"}</span>
+</span></code></pre></div>
 <p>Signed-in users have one budget of 30 a minute for <code>/orders</code> and <code>/reports</code> together:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span>
-<span class="go">HTTP/1.1 200 OK</span>
-<span class="go">ratelimit: "api";r=29;t=16</span>
-<span class="go">ratelimit-policy: "api";q=30;w=60</span>
-
-<span class="go">[{"id":1,"customer":"alice","total":12.5},{"id":2,"customer":"alice","total":25.0},{"id":3,"customer":"alice","total":37.5}]</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span>
+</span><span id="__span-3-2"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-3-3"><span class="go">ratelimit: "api";r=29;t=16</span>
+</span><span id="__span-3-4"><span class="go">ratelimit-policy: "api";q=30;w=60</span>
+</span><span id="__span-3-5">
+</span><span id="__span-3-6"><span class="go">[{"id":1,"customer":"alice","total":12.5},{"id":2,"customer":"alice","total":25.0},{"id":3,"customer":"alice","total":37.5}]</span>
+</span></code></pre></div>
 <p>A report takes 10 of it, and three seconds to render:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"month": "2026-09"}'</span>
-<span class="go">HTTP/1.1 200 OK</span>
-<span class="go">ratelimit: "api";r=19;t=16</span>
-<span class="go">ratelimit-policy: "api";q=30;w=60</span>
-
-<span class="go">{"month":"2026-09","customer":"alice","pages":12}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"month": "2026-09"}'</span>
+</span><span id="__span-4-3"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-4-4"><span class="go">ratelimit: "api";r=19;t=16</span>
+</span><span id="__span-4-5"><span class="go">ratelimit-policy: "api";q=30;w=60</span>
+</span><span id="__span-4-6">
+</span><span id="__span-4-7"><span class="go">{"month":"2026-09","customer":"alice","pages":12}</span>
+</span></code></pre></div>
 <p>After a second report Alice has 9 left: not enough for a third, but enough to list her orders.
 Bob's budget is his own:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"month": "2026-10"}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ratelimit:
-<span class="go">ratelimit: "api";r=9;t=13</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"month": "2026-08"}'</span>
-<span class="go">HTTP/1.1 429 Too Many Requests</span>
-<span class="go">ratelimit: "api";r=9;t=10</span>
-<span class="go">ratelimit-policy: "api";q=30;w=60</span>
-<span class="go">retry-after: 13</span>
-
-<span class="go">{"detail":"Too Many Requests"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span>http://127.0.0.1:8000/orders<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ratelimit:
-<span class="go">ratelimit: "api";r=8;t=10</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span>http://127.0.0.1:8000/orders<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer bob-token"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ratelimit:
-<span class="go">ratelimit: "api";r=29;t=10</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"month": "2026-10"}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ratelimit:
+</span><span id="__span-5-3"><span class="go">ratelimit: "api";r=9;t=13</span>
+</span><span id="__span-5-4">
+</span><span id="__span-5-5"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-6"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"month": "2026-08"}'</span>
+</span><span id="__span-5-7"><span class="go">HTTP/1.1 429 Too Many Requests</span>
+</span><span id="__span-5-8"><span class="go">ratelimit: "api";r=9;t=10</span>
+</span><span id="__span-5-9"><span class="go">ratelimit-policy: "api";q=30;w=60</span>
+</span><span id="__span-5-10"><span class="go">retry-after: 13</span>
+</span><span id="__span-5-11">
+</span><span id="__span-5-12"><span class="go">{"detail":"Too Many Requests"}</span>
+</span><span id="__span-5-13">
+</span><span id="__span-5-14"><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span>http://127.0.0.1:8000/orders<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer alice-token"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ratelimit:
+</span><span id="__span-5-15"><span class="go">ratelimit: "api";r=8;t=10</span>
+</span><span id="__span-5-16">
+</span><span id="__span-5-17"><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span>http://127.0.0.1:8000/orders<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer bob-token"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ratelimit:
+</span><span id="__span-5-18"><span class="go">ratelimit: "api";r=29;t=10</span>
+</span></code></pre></div>
 <p>Without a valid token, a request is refused before it reaches any limiter:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders
-<span class="go">HTTP/1.1 401 Unauthorized</span>
-<span class="go">www-authenticate: Bearer</span>
-
-<span class="go">{"detail":"Unauthorized"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders
+</span><span id="__span-6-2"><span class="go">HTTP/1.1 401 Unauthorized</span>
+</span><span id="__span-6-3"><span class="go">www-authenticate: Bearer</span>
+</span><span id="__span-6-4">
+</span><span id="__span-6-5"><span class="go">{"detail":"Unauthorized"}</span>
+</span></code></pre></div>
 <p>Three reports at once: two render, and the third waits 2 seconds for a slot, then gets a 503 with
 <code>Retry-After: 3</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>month<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">2026</span>-07<span class="w"> </span><span class="m">2026</span>-08<span class="w"> </span><span class="m">2026</span>-09<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="go">    curl -s -o /dev/null -w "$month: %{http_code} after %{time_total}s\n" \</span>
-<span class="go">      -X POST http://127.0.0.1:8000/reports -H "Authorization: Bearer carol-token" \</span>
-<span class="go">      -H "Content-Type: application/json" -d "{\"month\": \"$month\"}" &amp;</span>
-<span class="go">  done; wait</span>
-<span class="go">2026-08: 503 after 2.009854s</span>
-<span class="go">2026-09: 200 after 3.009745s</span>
-<span class="go">2026-07: 200 after 3.009700s</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>month<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">2026</span>-07<span class="w"> </span><span class="m">2026</span>-08<span class="w"> </span><span class="m">2026</span>-09<span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-2"><span class="w">    </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"</span><span class="nv">$month</span><span class="s2">: %{http_code} after %{time_total}s\n"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><span class="w">      </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer carol-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><span class="w">      </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s2">"{\"month\": \"</span><span class="nv">$month</span><span class="s2">\"}"</span><span class="w"> </span><span class="p">&amp;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-5"><span class="w">  </span><span class="k">done</span><span class="p">;</span><span class="w"> </span><span class="nb">wait</span>
+</span><span id="__span-7-6"><span class="go">2026-08: 503 after 2.009854s</span>
+</span><span id="__span-7-7"><span class="go">2026-09: 200 after 3.009745s</span>
+</span><span id="__span-7-8"><span class="go">2026-07: 200 after 3.009700s</span>
+</span></code></pre></div>
 <h2 id="what-to-look-at">What to look at<a class="headerlink" href="#what-to-look-at" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Who a client is:</strong> <code>/search</code> counts by the address that the ASGI server reports (IPv6
@@ -2355,149 +2355,149 @@ Bob's budget is his own:</p>
 </ul>
 <h2 id="the-code">The code<a class="headerlink" href="#the-code" title="Permanent link">&para;</a></h2>
 <!-- fmt: off -->
-<div class="highlight"><span class="filename">examples/limits/main.py</span><pre><span></span><code><span class="sd">"""An API with rate limits per client and per user, and a concurrency limit on its slowest</span>
-<span class="sd">endpoint.</span>
-
-<span class="sd">    uvicorn examples.limits.main:app</span>
-
-<span class="sd">- `GET /search` is public: 10 requests a minute per client address (IPv6 addresses by their /64</span>
-<span class="sd">  network, what an ISP gives a single customer).</span>
-<span class="sd">- `GET /orders` and `POST /reports` are for signed-in users, and share one budget of 30 requests a</span>
-<span class="sd">  minute per user, of which each report takes 10.</span>
-<span class="sd">- `POST /reports` renders at most 2 reports at a time, across every process: a request waits up</span>
-<span class="sd">  to 2 seconds for a slot, then gets a 503.</span>
-
-<span class="sd">Over a rate limit, clients get a 429. Refused requests say when to retry (`Retry-After`), and</span>
-<span class="sd">the other responses how much is left (`RateLimit` and `RateLimit-Policy`), for clients to slow</span>
-<span class="sd">down before they get a 429.</span>
-
-<span class="sd">The counters and the slots live in the cache's backend: InMemoryBackend here, so that it runs</span>
-<span class="sd">without a server. Production uses Redis or Valkey, so that every process shares them.</span>
-<span class="sd">"""</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Query</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span><span class="p">,</span> <span class="n">FastAPIConcurrencyLimiter</span><span class="p">,</span> <span class="n">FastAPIRateLimiter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
-
-<span class="c1"># Stands in for your users and their access tokens (a database, or a JWT check).</span>
-<span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"alice-token"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span> <span class="s2">"bob-token"</span><span class="p">:</span> <span class="s2">"bob"</span><span class="p">,</span> <span class="s2">"carol-token"</span><span class="p">:</span> <span class="s2">"carol"</span><span class="p">}</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">customer</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">ReportRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">month</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">"^\d</span><span class="si">{4}</span><span class="s2">-(0[1-9]|1[0-2])$"</span><span class="p">,</span> <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">"2026-09"</span><span class="p">])</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Report</span><span class="p">(</span><span class="n">ReportRequest</span><span class="p">):</span>
-    <span class="n">customer</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">pages</span><span class="p">:</span> <span class="nb">int</span>
-
-
-<span class="n">CATALOG</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olive oil"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">9.5</span><span class="p">),</span>
-    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olives"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">3.2</span><span class="p">),</span>
-    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Oregano"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">2.1</span><span class="p">),</span>
-    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Orange jam"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">4.8</span><span class="p">),</span>
-<span class="p">]</span>
-
-
-<span class="nd">@asynccontextmanager</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-    <span class="c1"># InMemoryBackend counts in this process only. Production uses Redis or Valkey</span>
-    <span class="c1"># (RedisBackend(redis.asyncio.from_url(...)), with the URL in the app's settings): with</span>
-    <span class="c1"># several processes, each would otherwise allow its own 10 searches a minute and its own 2</span>
-    <span class="c1"># reports at a time.</span>
-    <span class="n">Cache</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"limits"</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
-    <span class="k">yield</span>
-
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/search"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">))])</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Query</span><span class="p">(</span><span class="n">min_length</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">50</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Public: 10 requests a minute per client address. Behind a proxy, let uvicorn take the</span>
-<span class="sd">    address from its headers (`--proxy-headers --forwarded-allow-ips=&lt;proxy address&gt;`): the</span>
-<span class="sd">    limiter never reads `X-Forwarded-For`, which any client can set."""</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">product</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">CATALOG</span> <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">authenticate</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Stands in for your authentication: the user whose bearer token it is, else a 401."""</span>
-    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_401_UNAUTHORIZED</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
-    <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="n">user</span>
-    <span class="k">return</span> <span class="n">user</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">user_id</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Whose budget a request takes: the user that authenticate() found."""</span>
-    <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user_id</span>
-    <span class="k">return</span> <span class="n">user</span>
-
-
-<span class="n">User</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">authenticate</span><span class="p">)]</span>
-
-<span class="c1"># The router's dependencies run before the routes' own: user_id() finds the user, and requests</span>
-<span class="c1"># without a valid token are refused before they take anybody's budget.</span>
-<span class="n">api</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">authenticate</span><span class="p">)])</span>
-
-<span class="c1"># Limiters with the same name and rate share one budget, whatever the route; `cost=` makes a</span>
-<span class="c1"># route take more of it.</span>
-<span class="n">api_budget</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"api"</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
-
-<span class="c1"># At most 2 reports at a time, whoever asks for them: each one keeps a CPU busy for seconds.</span>
-<span class="c1"># Named, so that a job outside requests can take the same slots: `async with report_slots.slot()`.</span>
-<span class="n">report_slots</span> <span class="o">=</span> <span class="n">FastAPIConcurrencyLimiter</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"reports"</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-
-
-<span class="nd">@api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/orders"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">api_budget</span><span class="p">())])</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">Order</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">customer</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="mf">12.5</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
-
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">render_report</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">month</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Report</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Stands in for the slow part: rendering a PDF, OCR, a call to an AI model."""</span>
-    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Report</span><span class="p">(</span><span class="n">customer</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span> <span class="n">pages</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
-
-
-<span class="c1"># The budget before the slots: a client over its budget is refused at once, instead of waiting</span>
-<span class="c1"># for a slot first.</span>
-<span class="nd">@api</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/reports"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">api_budget</span><span class="p">(</span><span class="n">cost</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span> <span class="n">Depends</span><span class="p">(</span><span class="n">report_slots</span><span class="p">)])</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_report</span><span class="p">(</span><span class="n">report</span><span class="p">:</span> <span class="n">ReportRequest</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Report</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""10 of the user's 30 a minute, and one of the 2 slots while it renders."""</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">render_report</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">report</span><span class="o">.</span><span class="n">month</span><span class="p">)</span>
-
-
-<span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><span class="filename">examples/limits/main.py</span><pre><span></span><code><span id="__span-8-1"><span class="sd">"""An API with rate limits per client and per user, and a concurrency limit on its slowest</span>
+</span><span id="__span-8-2"><span class="sd">endpoint.</span>
+</span><span id="__span-8-3">
+</span><span id="__span-8-4"><span class="sd">    uvicorn examples.limits.main:app</span>
+</span><span id="__span-8-5">
+</span><span id="__span-8-6"><span class="sd">- `GET /search` is public: 10 requests a minute per client address (IPv6 addresses by their /64</span>
+</span><span id="__span-8-7"><span class="sd">  network, what an ISP gives a single customer).</span>
+</span><span id="__span-8-8"><span class="sd">- `GET /orders` and `POST /reports` are for signed-in users, and share one budget of 30 requests a</span>
+</span><span id="__span-8-9"><span class="sd">  minute per user, of which each report takes 10.</span>
+</span><span id="__span-8-10"><span class="sd">- `POST /reports` renders at most 2 reports at a time, across every process: a request waits up</span>
+</span><span id="__span-8-11"><span class="sd">  to 2 seconds for a slot, then gets a 503.</span>
+</span><span id="__span-8-12">
+</span><span id="__span-8-13"><span class="sd">Over a rate limit, clients get a 429. Refused requests say when to retry (`Retry-After`), and</span>
+</span><span id="__span-8-14"><span class="sd">the other responses how much is left (`RateLimit` and `RateLimit-Policy`), for clients to slow</span>
+</span><span id="__span-8-15"><span class="sd">down before they get a 429.</span>
+</span><span id="__span-8-16">
+</span><span id="__span-8-17"><span class="sd">The counters and the slots live in the cache's backend: InMemoryBackend here, so that it runs</span>
+</span><span id="__span-8-18"><span class="sd">without a server. Production uses Redis or Valkey, so that every process shares them.</span>
+</span><span id="__span-8-19"><span class="sd">"""</span>
+</span><span id="__span-8-20">
+</span><span id="__span-8-21"><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+</span><span id="__span-8-22"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-8-23"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-8-24"><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+</span><span id="__span-8-25"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
+</span><span id="__span-8-26">
+</span><span id="__span-8-27"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="__span-8-28"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Query</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
+</span><span id="__span-8-29"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+</span><span id="__span-8-30"><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
+</span><span id="__span-8-31">
+</span><span id="__span-8-32"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span><span class="p">,</span> <span class="n">FastAPIConcurrencyLimiter</span><span class="p">,</span> <span class="n">FastAPIRateLimiter</span>
+</span><span id="__span-8-33"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
+</span><span id="__span-8-34">
+</span><span id="__span-8-35"><span class="c1"># Stands in for your users and their access tokens (a database, or a JWT check).</span>
+</span><span id="__span-8-36"><span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"alice-token"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span> <span class="s2">"bob-token"</span><span class="p">:</span> <span class="s2">"bob"</span><span class="p">,</span> <span class="s2">"carol-token"</span><span class="p">:</span> <span class="s2">"carol"</span><span class="p">}</span>
+</span><span id="__span-8-37">
+</span><span id="__span-8-38">
+</span><span id="__span-8-39"><span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-8-40">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-8-41">    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-8-42">
+</span><span id="__span-8-43">
+</span><span id="__span-8-44"><span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-8-45">    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-8-46">    <span class="n">customer</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-8-47">    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-8-48">
+</span><span id="__span-8-49">
+</span><span id="__span-8-50"><span class="k">class</span><span class="w"> </span><span class="nc">ReportRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-8-51">    <span class="n">month</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">"^\d</span><span class="si">{4}</span><span class="s2">-(0[1-9]|1[0-2])$"</span><span class="p">,</span> <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">"2026-09"</span><span class="p">])</span>
+</span><span id="__span-8-52">
+</span><span id="__span-8-53">
+</span><span id="__span-8-54"><span class="k">class</span><span class="w"> </span><span class="nc">Report</span><span class="p">(</span><span class="n">ReportRequest</span><span class="p">):</span>
+</span><span id="__span-8-55">    <span class="n">customer</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-8-56">    <span class="n">pages</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-8-57">
+</span><span id="__span-8-58">
+</span><span id="__span-8-59"><span class="n">CATALOG</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-8-60">    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olive oil"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">9.5</span><span class="p">),</span>
+</span><span id="__span-8-61">    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olives"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">3.2</span><span class="p">),</span>
+</span><span id="__span-8-62">    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Oregano"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">2.1</span><span class="p">),</span>
+</span><span id="__span-8-63">    <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Orange jam"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">4.8</span><span class="p">),</span>
+</span><span id="__span-8-64"><span class="p">]</span>
+</span><span id="__span-8-65">
+</span><span id="__span-8-66">
+</span><span id="__span-8-67"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-8-68"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-8-69">    <span class="c1"># InMemoryBackend counts in this process only. Production uses Redis or Valkey</span>
+</span><span id="__span-8-70">    <span class="c1"># (RedisBackend(redis.asyncio.from_url(...)), with the URL in the app's settings): with</span>
+</span><span id="__span-8-71">    <span class="c1"># several processes, each would otherwise allow its own 10 searches a minute and its own 2</span>
+</span><span id="__span-8-72">    <span class="c1"># reports at a time.</span>
+</span><span id="__span-8-73">    <span class="n">Cache</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"limits"</span><span class="p">)</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">application</span><span class="p">)</span>
+</span><span id="__span-8-74">    <span class="k">yield</span>
+</span><span id="__span-8-75">
+</span><span id="__span-8-76">
+</span><span id="__span-8-77"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-8-78">
+</span><span id="__span-8-79">
+</span><span id="__span-8-80"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/search"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">))])</span>
+</span><span id="__span-8-81"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Query</span><span class="p">(</span><span class="n">min_length</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">50</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-8-82"><span class="w">    </span><span class="sd">"""Public: 10 requests a minute per client address. Behind a proxy, let uvicorn take the</span>
+</span><span id="__span-8-83"><span class="sd">    address from its headers (`--proxy-headers --forwarded-allow-ips=&lt;proxy address&gt;`): the</span>
+</span><span id="__span-8-84"><span class="sd">    limiter never reads `X-Forwarded-For`, which any client can set."""</span>
+</span><span id="__span-8-85">    <span class="k">return</span> <span class="p">[</span><span class="n">product</span> <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">CATALOG</span> <span class="k">if</span> <span class="n">q</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span>
+</span><span id="__span-8-86">
+</span><span id="__span-8-87">
+</span><span id="__span-8-88"><span class="k">def</span><span class="w"> </span><span class="nf">authenticate</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-8-89"><span class="w">    </span><span class="sd">"""Stands in for your authentication: the user whose bearer token it is, else a 401."""</span>
+</span><span id="__span-8-90">    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+</span><span id="__span-8-91">    <span class="n">user</span> <span class="o">=</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-8-92">    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-8-93">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_401_UNAUTHORIZED</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
+</span><span id="__span-8-94">    <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user_id</span> <span class="o">=</span> <span class="n">user</span>
+</span><span id="__span-8-95">    <span class="k">return</span> <span class="n">user</span>
+</span><span id="__span-8-96">
+</span><span id="__span-8-97">
+</span><span id="__span-8-98"><span class="k">def</span><span class="w"> </span><span class="nf">user_id</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-8-99"><span class="w">    </span><span class="sd">"""Whose budget a request takes: the user that authenticate() found."""</span>
+</span><span id="__span-8-100">    <span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user_id</span>
+</span><span id="__span-8-101">    <span class="k">return</span> <span class="n">user</span>
+</span><span id="__span-8-102">
+</span><span id="__span-8-103">
+</span><span id="__span-8-104"><span class="n">User</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">authenticate</span><span class="p">)]</span>
+</span><span id="__span-8-105">
+</span><span id="__span-8-106"><span class="c1"># The router's dependencies run before the routes' own: user_id() finds the user, and requests</span>
+</span><span id="__span-8-107"><span class="c1"># without a valid token are refused before they take anybody's budget.</span>
+</span><span id="__span-8-108"><span class="n">api</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">authenticate</span><span class="p">)])</span>
+</span><span id="__span-8-109">
+</span><span id="__span-8-110"><span class="c1"># Limiters with the same name and rate share one budget, whatever the route; `cost=` makes a</span>
+</span><span id="__span-8-111"><span class="c1"># route take more of it.</span>
+</span><span id="__span-8-112"><span class="n">api_budget</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"api"</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+</span><span id="__span-8-113">
+</span><span id="__span-8-114"><span class="c1"># At most 2 reports at a time, whoever asks for them: each one keeps a CPU busy for seconds.</span>
+</span><span id="__span-8-115"><span class="c1"># Named, so that a job outside requests can take the same slots: `async with report_slots.slot()`.</span>
+</span><span id="__span-8-116"><span class="n">report_slots</span> <span class="o">=</span> <span class="n">FastAPIConcurrencyLimiter</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"reports"</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-8-117">
+</span><span id="__span-8-118">
+</span><span id="__span-8-119"><span class="nd">@api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/orders"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">api_budget</span><span class="p">())])</span>
+</span><span id="__span-8-120"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
+</span><span id="__span-8-121">    <span class="k">return</span> <span class="p">[</span><span class="n">Order</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">customer</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="mf">12.5</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)]</span>
+</span><span id="__span-8-122">
+</span><span id="__span-8-123">
+</span><span id="__span-8-124"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">render_report</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">month</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Report</span><span class="p">:</span>
+</span><span id="__span-8-125"><span class="w">    </span><span class="sd">"""Stands in for the slow part: rendering a PDF, OCR, a call to an AI model."""</span>
+</span><span id="__span-8-126">    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span id="__span-8-127">    <span class="k">return</span> <span class="n">Report</span><span class="p">(</span><span class="n">customer</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="n">month</span><span class="p">,</span> <span class="n">pages</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+</span><span id="__span-8-128">
+</span><span id="__span-8-129">
+</span><span id="__span-8-130"><span class="c1"># The budget before the slots: a client over its budget is refused at once, instead of waiting</span>
+</span><span id="__span-8-131"><span class="c1"># for a slot first.</span>
+</span><span id="__span-8-132"><span class="nd">@api</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/reports"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">api_budget</span><span class="p">(</span><span class="n">cost</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span> <span class="n">Depends</span><span class="p">(</span><span class="n">report_slots</span><span class="p">)])</span>
+</span><span id="__span-8-133"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_report</span><span class="p">(</span><span class="n">report</span><span class="p">:</span> <span class="n">ReportRequest</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Report</span><span class="p">:</span>
+</span><span id="__span-8-134"><span class="w">    </span><span class="sd">"""10 of the user's 30 a minute, and one of the 2 slots while it renders."""</span>
+</span><span id="__span-8-135">    <span class="k">return</span> <span class="k">await</span> <span class="n">render_report</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">report</span><span class="o">.</span><span class="n">month</span><span class="p">)</span>
+</span><span id="__span-8-136">
+</span><span id="__span-8-137">
+</span><span id="__span-8-138"><span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span><span class="n">api</span><span class="p">)</span>
+</span><span id="__span-8-139">
+</span><span id="__span-8-140">
+</span><span id="__span-8-141"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-8-142">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 <!-- fmt: on -->
 
 

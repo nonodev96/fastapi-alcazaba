@@ -2248,54 +2248,54 @@ one entry for a whole short list sliced into pages, and one entry per cursor. Ev
 tagged, so adding a product drops every page at once.</p>
 <h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Permanent link">&para;</a></h2>
 <p>From a clone of the repository:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
-<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-uvicorn<span class="w"> </span>examples.pagination.main:app
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
+</span><span id="__span-0-2"><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-0-3">uvicorn<span class="w"> </span>examples.pagination.main:app
+</span></code></pre></div>
 <p>Cursors are signed: set <code>CURSOR_SECRET</code> (<code>secrets.token_urlsafe(32)</code>), the same in every process,
 or a cursor made by one process is refused by the others.</p>
 <h2 id="try-it">Try it<a class="headerlink" href="#try-it" title="Permanent link">&para;</a></h2>
 <p>A page, computed once and then served from the cache, which links to the pages around it in the
 <a href="https://www.rfc-editor.org/rfc/rfc8288"><code>Link</code></a> header:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?page=2&amp;size=3"</span>
-<span class="go">HTTP/1.1 200 OK</span>
-<span class="go">link: &lt;/products?page=1&amp;size=3&gt;; rel="first", &lt;/products?page=1&amp;size=3&gt;; rel="prev", &lt;/products?page=3&amp;size=3&gt;; rel="next", &lt;/products?page=20&amp;size=3&gt;; rel="last"</span>
-<span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
-<span class="go">cache-control: max-age=300</span>
-
-<span class="go">{"items":[{"name":"Product 4","category":"vegetables","price":1.4,"id":4},{"name":"Product 5","category":"oil","price":1.5,"id":5},{"name":"Product 6","category":"fruit","price":1.6,"id":6}],"total":60,"page":2,"size":3,"pages":20}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?page=2&amp;size=3"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cache-status
-<span class="go">cache-status: Alcazaba; hit; ttl=300</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?page=2&amp;size=3"</span>
+</span><span id="__span-1-2"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-1-3"><span class="go">link: &lt;/products?page=1&amp;size=3&gt;; rel="first", &lt;/products?page=1&amp;size=3&gt;; rel="prev", &lt;/products?page=3&amp;size=3&gt;; rel="next", &lt;/products?page=20&amp;size=3&gt;; rel="last"</span>
+</span><span id="__span-1-4"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
+</span><span id="__span-1-5"><span class="go">cache-control: max-age=300</span>
+</span><span id="__span-1-6">
+</span><span id="__span-1-7"><span class="go">{"items":[{"name":"Product 4","category":"vegetables","price":1.4,"id":4},{"name":"Product 5","category":"oil","price":1.5,"id":5},{"name":"Product 6","category":"fruit","price":1.6,"id":6}],"total":60,"page":2,"size":3,"pages":20}</span>
+</span><span id="__span-1-8">
+</span><span id="__span-1-9"><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?page=2&amp;size=3"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cache-status
+</span><span id="__span-1-10"><span class="go">cache-status: Alcazaba; hit; ttl=300</span>
+</span></code></pre></div>
 <p>Pages have a maximum size, checked before anything is queried:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?size=1000"</span>
-<span class="go">{"detail":[{"type":"less_than_equal","loc":["query","size"],"msg":"Input should be less than or equal to 100","input":"1000","ctx":{"le":100}}]}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><span class="gp">$ </span>curl<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?size=1000"</span>
+</span><span id="__span-2-2"><span class="go">{"detail":[{"type":"less_than_equal","loc":["query","size"],"msg":"Input should be less than or equal to 100","input":"1000","ctx":{"le":100}}]}</span>
+</span></code></pre></div>
 <p>By cursor, newest first: each <code>next_cursor</code> gives the products right after the last one seen,
 however many are added meanwhile. Cursors are signed, so a made-up one is refused:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?size=2"</span>
-<span class="go">{"items":[{"name":"Product 60",...,"id":60},{"name":"Product 59",...,"id":59}],"size":2,"next_cursor":"NTk.fYIHDRFKRMk2AgxgOKB_Xw"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?size=2&amp;cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw"</span>
-<span class="go">{"items":[{"name":"Product 58",...,"id":58},{"name":"Product 57",...,"id":57}],"size":2,"next_cursor":"NTc.Vp3GtrQxFhsATIf18CX4aA"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?size=2"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>link
-<span class="go">link: &lt;/products/newest?size=2&gt;; rel="first", &lt;/products/newest?cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw&amp;size=2&gt;; rel="next"</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?cursor=abc"</span>
-<span class="go">HTTP/1.1 400 Bad Request</span>
-
-<span class="go">{"detail":"Invalid cursor"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">$ </span>curl<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?size=2"</span>
+</span><span id="__span-3-2"><span class="go">{"items":[{"name":"Product 60",...,"id":60},{"name":"Product 59",...,"id":59}],"size":2,"next_cursor":"NTk.fYIHDRFKRMk2AgxgOKB_Xw"}</span>
+</span><span id="__span-3-3">
+</span><span id="__span-3-4"><span class="gp">$ </span>curl<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?size=2&amp;cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw"</span>
+</span><span id="__span-3-5"><span class="go">{"items":[{"name":"Product 58",...,"id":58},{"name":"Product 57",...,"id":57}],"size":2,"next_cursor":"NTc.Vp3GtrQxFhsATIf18CX4aA"}</span>
+</span><span id="__span-3-6">
+</span><span id="__span-3-7"><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?size=2"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>link
+</span><span id="__span-3-8"><span class="go">link: &lt;/products/newest?size=2&gt;; rel="first", &lt;/products/newest?cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw&amp;size=2&gt;; rel="next"</span>
+</span><span id="__span-3-9">
+</span><span id="__span-3-10"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products/newest?cursor=abc"</span>
+</span><span id="__span-3-11"><span class="go">HTTP/1.1 400 Bad Request</span>
+</span><span id="__span-3-12">
+</span><span id="__span-3-13"><span class="go">{"detail":"Invalid cursor"}</span>
+</span></code></pre></div>
 <p>Adding a product drops every cached page:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/products<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"name": "Capers", "category": "vegetables", "price": 2.5}'</span>
-<span class="go">{"name":"Capers","category":"vegetables","price":2.5,"id":61}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?page=2&amp;size=3"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cache-status
-<span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/products<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"name": "Capers", "category": "vegetables", "price": 2.5}'</span>
+</span><span id="__span-4-3"><span class="go">{"name":"Capers","category":"vegetables","price":2.5,"id":61}</span>
+</span><span id="__span-4-4">
+</span><span id="__span-4-5"><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/products?page=2&amp;size=3"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cache-status
+</span><span id="__span-4-6"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
+</span></code></pre></div>
 <h2 id="what-to-look-at">What to look at<a class="headerlink" href="#what-to-look-at" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>The page parameters are arguments of the endpoint,</strong> so <code>@cache</code> keeps each page, size and
@@ -2315,188 +2315,188 @@ however many are added meanwhile. Cursors are signed, so a made-up one is refuse
 </ul>
 <h2 id="the-code">The code<a class="headerlink" href="#the-code" title="Permanent link">&para;</a></h2>
 <!-- fmt: off -->
-<div class="highlight"><span class="filename">examples/pagination/main.py</span><pre><span></span><code><span class="sd">"""A product catalogue paginated and cached by Alcazaba, with no other library.</span>
-
-<span class="sd">    uvicorn examples.pagination.main:app</span>
-
-<span class="sd">Three ways to cache paginated lists:</span>
-
-<span class="sd">- `/products`: `@cache` on the endpoint, one entry per page. Each response is served straight from</span>
-<span class="sd">  the cache. Best for big lists, where most clients only read the first pages.</span>
-<span class="sd">- `/categories/{category}/products`: the whole list cached once with `get_or_set`, and every page</span>
-<span class="sd">  sliced from it. One entry, whatever the page and size. Best for short lists.</span>
-<span class="sd">- `/products/newest`: by cursor, newest first, one entry per cursor. Products added meanwhile</span>
-<span class="sd">  don't shift the pages, which suits infinite scroll and clients that sync everything.</span>
-
-<span class="sd">They're tagged "products", so a write drops every page at once without knowing their keys.</span>
-<span class="sd">"""</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrEnum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">Cache</span><span class="p">,</span>
-    <span class="n">FastAPICache</span><span class="p">,</span>
-    <span class="n">FastAPIPagination</span><span class="p">,</span>
-    <span class="n">FastAPIPaginationCursor</span><span class="p">,</span>
-    <span class="n">get_cache</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorPage</span><span class="p">,</span> <span class="n">CursorParams</span><span class="p">,</span> <span class="n">Page</span><span class="p">,</span> <span class="n">PageParams</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.response_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Category</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-    <span class="c1"># An enum, not any string: clients can't create cache entries without end.</span>
-    <span class="n">FRUIT</span> <span class="o">=</span> <span class="s2">"fruit"</span>
-    <span class="n">VEGETABLES</span> <span class="o">=</span> <span class="s2">"vegetables"</span>
-    <span class="n">OIL</span> <span class="o">=</span> <span class="s2">"oil"</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">NewProduct</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">category</span><span class="p">:</span> <span class="n">Category</span>
-    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">NewProduct</span><span class="p">):</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Catalog</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Stands in for the database (a session per request in a real app)."""</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">categories</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Category</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">products</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">Product</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Product </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">categories</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="mi">3</span><span class="p">],</span> <span class="n">price</span><span class="o">=</span><span class="mi">1</span> <span class="o">+</span> <span class="n">i</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">61</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">queries</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="n">Category</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">queries</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span> <span class="k">if</span> <span class="n">category</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">p</span><span class="o">.</span><span class="n">category</span> <span class="o">==</span> <span class="n">category</span><span class="p">]</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">PageParams</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="n">Category</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""What a database does: count, and fetch only the page (OFFSET/LIMIT)."""</span>
-        <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="n">params</span><span class="o">.</span><span class="n">offset</span> <span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">offset</span> <span class="o">+</span> <span class="n">params</span><span class="o">.</span><span class="n">limit</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">pages</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">))</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">newest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">CursorParams</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""What a database does: WHERE id &lt; :after ORDER BY id DESC LIMIT :limit."""</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">queries</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="n">newest</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># the id of the last product of the page before</span>
-            <span class="n">newest</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">newest</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span> <span class="o">&lt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">]</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="n">newest</span><span class="p">[:</span> <span class="n">params</span><span class="o">.</span><span class="n">limit</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">cursors</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">product</span><span class="p">:</span> <span class="n">NewProduct</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
-        <span class="n">saved</span> <span class="o">=</span> <span class="n">Product</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">product</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">saved</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">saved</span>
-
-
-<span class="nd">@asynccontextmanager</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-    <span class="c1"># Redis or Valkey in production, so that every process shares the entries.</span>
-    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"catalog"</span><span class="p">,</span> <span class="n">vary_headers</span><span class="o">=</span><span class="p">())</span>  <span class="c1"># public data</span>
-    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">catalog</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
-    <span class="k">yield</span>
-
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">get_catalog</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Catalog</span><span class="p">:</span>
-    <span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">catalog</span>
-    <span class="k">return</span> <span class="n">catalog</span>
-
-
-<span class="n">CatalogDep</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Catalog</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_catalog</span><span class="p">)]</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
-<span class="sd">    processes."""</span>
-    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file."""</span>
-
-    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
-
-    <span class="n">cursor_secret</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
-
-
-<span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
-<span class="n">pages</span> <span class="o">=</span> <span class="n">FastAPIPagination</span><span class="p">(</span><span class="n">default_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-<span class="c1"># Signed: clients can't make cursors up. Every process must have the same secret, or a cursor</span>
-<span class="c1"># made by one is refused by the others: set CURSOR_SECRET (secrets.token_urlsafe(32)).</span>
-<span class="n">cursors</span> <span class="o">=</span> <span class="n">FastAPIPaginationCursor</span><span class="p">(</span><span class="n">secret</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cursor_secret</span><span class="p">,</span> <span class="n">default_size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">)</span>
-<span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">],</span> <span class="n">exclude_params</span><span class="o">=</span><span class="p">[</span><span class="s2">"catalog"</span><span class="p">])</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span>
-    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">PageParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">pages</span><span class="p">)],</span>
-    <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">,</span>
-    <span class="n">category</span><span class="p">:</span> <span class="n">Category</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""One entry per page, size and category: the page parameters are arguments, part of the</span>
-<span class="sd">    key. The session is left out of it, since it changes from one request to the next."""</span>
-    <span class="k">return</span> <span class="n">catalog</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">category</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/categories/</span><span class="si">{category}</span><span class="s2">/products"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">category_products</span><span class="p">(</span>
-    <span class="n">category</span><span class="p">:</span> <span class="n">Category</span><span class="p">,</span>
-    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">PageParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">pages</span><span class="p">)],</span>
-    <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">,</span>
-    <span class="n">app_cache</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Cache</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_cache</span><span class="p">)],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""One entry for the whole category: every page is sliced from it."""</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>  <span class="c1"># annotated: the entry comes back as products</span>
-        <span class="k">return</span> <span class="n">catalog</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
-
-    <span class="n">found</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app_cache</span><span class="o">.</span><span class="n">get_or_set</span><span class="p">(</span><span class="sa">f</span><span class="s2">"category:</span><span class="si">{</span><span class="n">category</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">load</span><span class="p">,</span> <span class="n">expire</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">pages</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products/newest"</span><span class="p">)</span>
-<span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">],</span> <span class="n">exclude_params</span><span class="o">=</span><span class="p">[</span><span class="s2">"catalog"</span><span class="p">])</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">newest_products</span><span class="p">(</span>
-    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">CursorParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">cursors</span><span class="p">)],</span>
-    <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""By cursor, newest first: each next_cursor gives the products right after the last one seen,</span>
-<span class="sd">    however many were added since."""</span>
-    <span class="k">return</span> <span class="n">catalog</span><span class="o">.</span><span class="n">newest</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_product</span><span class="p">(</span><span class="n">product</span><span class="p">:</span> <span class="n">NewProduct</span><span class="p">,</span> <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The new product may land on any page: drop them all."""</span>
-    <span class="n">saved</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">FastAPICache</span><span class="o">.</span><span class="n">invalidate_tags</span><span class="p">(</span><span class="s2">"products"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">saved</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><span class="filename">examples/pagination/main.py</span><pre><span></span><code><span id="__span-5-1"><span class="sd">"""A product catalogue paginated and cached by Alcazaba, with no other library.</span>
+</span><span id="__span-5-2">
+</span><span id="__span-5-3"><span class="sd">    uvicorn examples.pagination.main:app</span>
+</span><span id="__span-5-4">
+</span><span id="__span-5-5"><span class="sd">Three ways to cache paginated lists:</span>
+</span><span id="__span-5-6">
+</span><span id="__span-5-7"><span class="sd">- `/products`: `@cache` on the endpoint, one entry per page. Each response is served straight from</span>
+</span><span id="__span-5-8"><span class="sd">  the cache. Best for big lists, where most clients only read the first pages.</span>
+</span><span id="__span-5-9"><span class="sd">- `/categories/{category}/products`: the whole list cached once with `get_or_set`, and every page</span>
+</span><span id="__span-5-10"><span class="sd">  sliced from it. One entry, whatever the page and size. Best for short lists.</span>
+</span><span id="__span-5-11"><span class="sd">- `/products/newest`: by cursor, newest first, one entry per cursor. Products added meanwhile</span>
+</span><span id="__span-5-12"><span class="sd">  don't shift the pages, which suits infinite scroll and clients that sync everything.</span>
+</span><span id="__span-5-13">
+</span><span id="__span-5-14"><span class="sd">They're tagged "products", so a write drops every page at once without knowing their keys.</span>
+</span><span id="__span-5-15"><span class="sd">"""</span>
+</span><span id="__span-5-16">
+</span><span id="__span-5-17"><span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+</span><span id="__span-5-18"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-5-19"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-5-20"><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrEnum</span>
+</span><span id="__span-5-21"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
+</span><span id="__span-5-22">
+</span><span id="__span-5-23"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="__span-5-24"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
+</span><span id="__span-5-25"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
+</span><span id="__span-5-26"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
+</span><span id="__span-5-27">
+</span><span id="__span-5-28"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-5-29">    <span class="n">Cache</span><span class="p">,</span>
+</span><span id="__span-5-30">    <span class="n">FastAPICache</span><span class="p">,</span>
+</span><span id="__span-5-31">    <span class="n">FastAPIPagination</span><span class="p">,</span>
+</span><span id="__span-5-32">    <span class="n">FastAPIPaginationCursor</span><span class="p">,</span>
+</span><span id="__span-5-33">    <span class="n">get_cache</span><span class="p">,</span>
+</span><span id="__span-5-34"><span class="p">)</span>
+</span><span id="__span-5-35"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
+</span><span id="__span-5-36"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorPage</span><span class="p">,</span> <span class="n">CursorParams</span><span class="p">,</span> <span class="n">Page</span><span class="p">,</span> <span class="n">PageParams</span>
+</span><span id="__span-5-37"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.response_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+</span><span id="__span-5-38">
+</span><span id="__span-5-39">
+</span><span id="__span-5-40"><span class="k">class</span><span class="w"> </span><span class="nc">Category</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+</span><span id="__span-5-41">    <span class="c1"># An enum, not any string: clients can't create cache entries without end.</span>
+</span><span id="__span-5-42">    <span class="n">FRUIT</span> <span class="o">=</span> <span class="s2">"fruit"</span>
+</span><span id="__span-5-43">    <span class="n">VEGETABLES</span> <span class="o">=</span> <span class="s2">"vegetables"</span>
+</span><span id="__span-5-44">    <span class="n">OIL</span> <span class="o">=</span> <span class="s2">"oil"</span>
+</span><span id="__span-5-45">
+</span><span id="__span-5-46">
+</span><span id="__span-5-47"><span class="k">class</span><span class="w"> </span><span class="nc">NewProduct</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-5-48">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-5-49">    <span class="n">category</span><span class="p">:</span> <span class="n">Category</span>
+</span><span id="__span-5-50">    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-5-51">
+</span><span id="__span-5-52">
+</span><span id="__span-5-53"><span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">NewProduct</span><span class="p">):</span>
+</span><span id="__span-5-54">    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-5-55">
+</span><span id="__span-5-56">
+</span><span id="__span-5-57"><span class="k">class</span><span class="w"> </span><span class="nc">Catalog</span><span class="p">:</span>
+</span><span id="__span-5-58"><span class="w">    </span><span class="sd">"""Stands in for the database (a session per request in a real app)."""</span>
+</span><span id="__span-5-59">
+</span><span id="__span-5-60">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-5-61">        <span class="n">categories</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Category</span><span class="p">)</span>
+</span><span id="__span-5-62">        <span class="bp">self</span><span class="o">.</span><span class="n">products</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-5-63">            <span class="n">Product</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Product </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">categories</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="mi">3</span><span class="p">],</span> <span class="n">price</span><span class="o">=</span><span class="mi">1</span> <span class="o">+</span> <span class="n">i</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-5-64">            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">61</span><span class="p">)</span>
+</span><span id="__span-5-65">        <span class="p">]</span>
+</span><span id="__span-5-66">        <span class="bp">self</span><span class="o">.</span><span class="n">queries</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-5-67">
+</span><span id="__span-5-68">    <span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="n">Category</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-5-69">        <span class="bp">self</span><span class="o">.</span><span class="n">queries</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-5-70">        <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span> <span class="k">if</span> <span class="n">category</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">p</span><span class="o">.</span><span class="n">category</span> <span class="o">==</span> <span class="n">category</span><span class="p">]</span>
+</span><span id="__span-5-71">
+</span><span id="__span-5-72">    <span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">PageParams</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="n">Category</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-5-73"><span class="w">        </span><span class="sd">"""What a database does: count, and fetch only the page (OFFSET/LIMIT)."""</span>
+</span><span id="__span-5-74">        <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+</span><span id="__span-5-75">        <span class="n">rows</span> <span class="o">=</span> <span class="n">found</span><span class="p">[</span><span class="n">params</span><span class="o">.</span><span class="n">offset</span> <span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">offset</span> <span class="o">+</span> <span class="n">params</span><span class="o">.</span><span class="n">limit</span><span class="p">]</span>
+</span><span id="__span-5-76">        <span class="k">return</span> <span class="n">pages</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">))</span>
+</span><span id="__span-5-77">
+</span><span id="__span-5-78">    <span class="k">def</span><span class="w"> </span><span class="nf">newest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">CursorParams</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-5-79"><span class="w">        </span><span class="sd">"""What a database does: WHERE id &lt; :after ORDER BY id DESC LIMIT :limit."""</span>
+</span><span id="__span-5-80">        <span class="bp">self</span><span class="o">.</span><span class="n">queries</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-5-81">        <span class="n">newest</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-5-82">        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>  <span class="c1"># the id of the last product of the page before</span>
+</span><span id="__span-5-83">            <span class="n">newest</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">newest</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span> <span class="o">&lt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">]</span>
+</span><span id="__span-5-84">        <span class="n">rows</span> <span class="o">=</span> <span class="n">newest</span><span class="p">[:</span> <span class="n">params</span><span class="o">.</span><span class="n">limit</span><span class="p">]</span>
+</span><span id="__span-5-85">        <span class="k">return</span> <span class="n">cursors</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-5-86">
+</span><span id="__span-5-87">    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">product</span><span class="p">:</span> <span class="n">NewProduct</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
+</span><span id="__span-5-88">        <span class="n">saved</span> <span class="o">=</span> <span class="n">Product</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">product</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+</span><span id="__span-5-89">        <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">saved</span><span class="p">)</span>
+</span><span id="__span-5-90">        <span class="k">return</span> <span class="n">saved</span>
+</span><span id="__span-5-91">
+</span><span id="__span-5-92">
+</span><span id="__span-5-93"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-5-94"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-5-95">    <span class="c1"># Redis or Valkey in production, so that every process shares the entries.</span>
+</span><span id="__span-5-96">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"catalog"</span><span class="p">,</span> <span class="n">vary_headers</span><span class="o">=</span><span class="p">())</span>  <span class="c1"># public data</span>
+</span><span id="__span-5-97">    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">catalog</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">()</span>
+</span><span id="__span-5-98">    <span class="k">yield</span>
+</span><span id="__span-5-99">
+</span><span id="__span-5-100">
+</span><span id="__span-5-101"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-5-102">
+</span><span id="__span-5-103">
+</span><span id="__span-5-104"><span class="k">def</span><span class="w"> </span><span class="nf">get_catalog</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Catalog</span><span class="p">:</span>
+</span><span id="__span-5-105">    <span class="n">catalog</span><span class="p">:</span> <span class="n">Catalog</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">catalog</span>
+</span><span id="__span-5-106">    <span class="k">return</span> <span class="n">catalog</span>
+</span><span id="__span-5-107">
+</span><span id="__span-5-108">
+</span><span id="__span-5-109"><span class="n">CatalogDep</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Catalog</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_catalog</span><span class="p">)]</span>
+</span><span id="__span-5-110">
+</span><span id="__span-5-111">
+</span><span id="__span-5-112"><span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
+</span><span id="__span-5-113"><span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
+</span><span id="__span-5-114"><span class="sd">    processes."""</span>
+</span><span id="__span-5-115">    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
+</span><span id="__span-5-116">
+</span><span id="__span-5-117">
+</span><span id="__span-5-118"><span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+</span><span id="__span-5-119"><span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file."""</span>
+</span><span id="__span-5-120">
+</span><span id="__span-5-121">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+</span><span id="__span-5-122">
+</span><span id="__span-5-123">    <span class="n">cursor_secret</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
+</span><span id="__span-5-124">
+</span><span id="__span-5-125">
+</span><span id="__span-5-126"><span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
+</span><span id="__span-5-127"><span class="n">pages</span> <span class="o">=</span> <span class="n">FastAPIPagination</span><span class="p">(</span><span class="n">default_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-5-128"><span class="c1"># Signed: clients can't make cursors up. Every process must have the same secret, or a cursor</span>
+</span><span id="__span-5-129"><span class="c1"># made by one is refused by the others: set CURSOR_SECRET (secrets.token_urlsafe(32)).</span>
+</span><span id="__span-5-130"><span class="n">cursors</span> <span class="o">=</span> <span class="n">FastAPIPaginationCursor</span><span class="p">(</span><span class="n">secret</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cursor_secret</span><span class="p">,</span> <span class="n">default_size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</span><span id="__span-5-131">
+</span><span id="__span-5-132">
+</span><span id="__span-5-133"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">)</span>
+</span><span id="__span-5-134"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">],</span> <span class="n">exclude_params</span><span class="o">=</span><span class="p">[</span><span class="s2">"catalog"</span><span class="p">])</span>
+</span><span id="__span-5-135"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span>
+</span><span id="__span-5-136">    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">PageParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">pages</span><span class="p">)],</span>
+</span><span id="__span-5-137">    <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">,</span>
+</span><span id="__span-5-138">    <span class="n">category</span><span class="p">:</span> <span class="n">Category</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-5-139"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-5-140"><span class="w">    </span><span class="sd">"""One entry per page, size and category: the page parameters are arguments, part of the</span>
+</span><span id="__span-5-141"><span class="sd">    key. The session is left out of it, since it changes from one request to the next."""</span>
+</span><span id="__span-5-142">    <span class="k">return</span> <span class="n">catalog</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">category</span><span class="p">)</span>
+</span><span id="__span-5-143">
+</span><span id="__span-5-144">
+</span><span id="__span-5-145"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/categories/</span><span class="si">{category}</span><span class="s2">/products"</span><span class="p">)</span>
+</span><span id="__span-5-146"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">category_products</span><span class="p">(</span>
+</span><span id="__span-5-147">    <span class="n">category</span><span class="p">:</span> <span class="n">Category</span><span class="p">,</span>
+</span><span id="__span-5-148">    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">PageParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">pages</span><span class="p">)],</span>
+</span><span id="__span-5-149">    <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">,</span>
+</span><span id="__span-5-150">    <span class="n">app_cache</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Cache</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_cache</span><span class="p">)],</span>
+</span><span id="__span-5-151"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-5-152"><span class="w">    </span><span class="sd">"""One entry for the whole category: every page is sliced from it."""</span>
+</span><span id="__span-5-153">
+</span><span id="__span-5-154">    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>  <span class="c1"># annotated: the entry comes back as products</span>
+</span><span id="__span-5-155">        <span class="k">return</span> <span class="n">catalog</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">category</span><span class="p">)</span>
+</span><span id="__span-5-156">
+</span><span id="__span-5-157">    <span class="n">found</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app_cache</span><span class="o">.</span><span class="n">get_or_set</span><span class="p">(</span><span class="sa">f</span><span class="s2">"category:</span><span class="si">{</span><span class="n">category</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">load</span><span class="p">,</span> <span class="n">expire</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">])</span>
+</span><span id="__span-5-158">    <span class="k">return</span> <span class="n">pages</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</span><span id="__span-5-159">
+</span><span id="__span-5-160">
+</span><span id="__span-5-161"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products/newest"</span><span class="p">)</span>
+</span><span id="__span-5-162"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">],</span> <span class="n">exclude_params</span><span class="o">=</span><span class="p">[</span><span class="s2">"catalog"</span><span class="p">])</span>
+</span><span id="__span-5-163"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">newest_products</span><span class="p">(</span>
+</span><span id="__span-5-164">    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">CursorParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">cursors</span><span class="p">)],</span>
+</span><span id="__span-5-165">    <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">,</span>
+</span><span id="__span-5-166"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-5-167"><span class="w">    </span><span class="sd">"""By cursor, newest first: each next_cursor gives the products right after the last one seen,</span>
+</span><span id="__span-5-168"><span class="sd">    however many were added since."""</span>
+</span><span id="__span-5-169">    <span class="k">return</span> <span class="n">catalog</span><span class="o">.</span><span class="n">newest</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</span><span id="__span-5-170">
+</span><span id="__span-5-171">
+</span><span id="__span-5-172"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
+</span><span id="__span-5-173"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_product</span><span class="p">(</span><span class="n">product</span><span class="p">:</span> <span class="n">NewProduct</span><span class="p">,</span> <span class="n">catalog</span><span class="p">:</span> <span class="n">CatalogDep</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
+</span><span id="__span-5-174"><span class="w">    </span><span class="sd">"""The new product may land on any page: drop them all."""</span>
+</span><span id="__span-5-175">    <span class="n">saved</span> <span class="o">=</span> <span class="n">catalog</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
+</span><span id="__span-5-176">    <span class="k">await</span> <span class="n">FastAPICache</span><span class="o">.</span><span class="n">invalidate_tags</span><span class="p">(</span><span class="s2">"products"</span><span class="p">)</span>
+</span><span id="__span-5-177">    <span class="k">return</span> <span class="n">saved</span>
+</span><span id="__span-5-178">
+</span><span id="__span-5-179">
+</span><span id="__span-5-180"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-5-181">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 <!-- fmt: on -->
 
 

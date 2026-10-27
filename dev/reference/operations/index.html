@@ -2722,8 +2722,8 @@ In <code>fastapi_alcazaba.operations</code>.</p>
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIBreaker" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIBreaker</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">failures</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,),</span> <span class="n">exclude</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIBreaker</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">failures</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,),</span> <span class="n">exclude</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2731,7 +2731,7 @@ In <code>fastapi_alcazaba.operations</code>.</p>
 
         <p>A circuit breaker named <code>name</code> (for logs and metrics), as a decorator of async or sync
 functions, or around a block with <code>attempt()</code>:</p>
-<div class="highlight"><pre><span></span><code>@breaker
+<div class="language-text highlight"><pre><span></span><code>@breaker
 async def fetch(...): ...
 
 async with breaker.attempt():
@@ -2883,8 +2883,8 @@ they count as successes, and go on to the caller like any other.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIBreaker.state" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">state</span><span class="p">:</span> <span class="nb">str</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">state</span><span class="p">:</span> <span class="nb">str</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2907,8 +2907,8 @@ they count as successes, and go on to the caller like any other.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIBreaker.retry_after" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">retry_after</span><span class="p">:</span> <span class="nb">float</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">retry_after</span><span class="p">:</span> <span class="nb">float</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2931,8 +2931,8 @@ they count as successes, and go on to the caller like any other.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIBreaker.failure_threshold" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">failure_threshold</span><span class="p">:</span> <span class="nb">int</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">failure_threshold</span><span class="p">:</span> <span class="nb">int</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2955,8 +2955,8 @@ they count as successes, and go on to the caller like any other.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIBreaker.reset_timeout" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">reset_timeout</span><span class="p">:</span> <span class="nb">float</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">reset_timeout</span><span class="p">:</span> <span class="nb">float</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2977,8 +2977,8 @@ they count as successes, and go on to the caller like any other.</p>
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIBreaker.reset" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">reset</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">reset</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2998,8 +2998,8 @@ admin says so), or between tests. Only this process's breaker: each process has 
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIBreaker.attempt" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">attempt</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">_Attempt</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">attempt</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">_Attempt</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3027,8 +3027,8 @@ admin says so), or between tests. Only this process's breaker: each process has 
 
 
 <a href="#fastapi_alcazaba.operations.BreakerOpen" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">BreakerOpen</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">retry_after</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">BreakerOpen</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">retry_after</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -3077,8 +3077,8 @@ the response doesn't name the dependency.</p>
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIMaintenance" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIMaintenance</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">refresh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'maintenance'</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIMaintenance</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">refresh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'maintenance'</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3179,8 +3179,8 @@ each call.</p>
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIMaintenance.forget" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">forget</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">forget</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3203,8 +3203,8 @@ each call.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIMaintenance.enable" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">enable</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">retry_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">enable</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">retry_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3229,8 +3229,8 @@ when the backend fails: nothing changes then.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIMaintenance.disable" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">disable</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">disable</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3254,8 +3254,8 @@ BackendUnavailable when the backend fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIMaintenance.status" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">status</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">status</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3279,8 +3279,8 @@ BackendUnavailable when the backend fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIMaintenance.current" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">current</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">current</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3310,8 +3310,8 @@ last state read (off if none).</p>
 
 
 <a href="#fastapi_alcazaba.operations.MaintenanceMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">MaintenanceMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">maintenance</span><span class="p">:</span> <span class="n">FastAPIMaintenance</span><span class="p">,</span> <span class="n">allow_paths</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'/health'</span><span class="p">,),</span> <span class="n">allow</span><span class="p">:</span> <span class="n">Allow</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">MaintenanceMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">maintenance</span><span class="p">:</span> <span class="n">FastAPIMaintenance</span><span class="p">,</span> <span class="n">allow_paths</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'/health'</span><span class="p">,),</span> <span class="n">allow</span><span class="p">:</span> <span class="n">Allow</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3319,7 +3319,7 @@ last state read (off if none).</p>
 
         <p>While <code>maintenance</code> is on, answers every HTTP request with a 503 (its message as <code>detail</code>,
 and <code>Retry-After</code> when it has one) and closes WebSockets with 1013 (try again later), except:</p>
-<div class="highlight"><pre><span></span><code>app.add_middleware(
+<div class="language-text highlight"><pre><span></span><code>app.add_middleware(
     MaintenanceMiddleware,
     maintenance=maintenance,
     allow_paths=("/health", "/admin"),
@@ -3420,8 +3420,8 @@ matched like the app's routes: without the <code>root_path</code> a proxy or a m
 
 
 <a href="#fastapi_alcazaba.operations.MaintenanceMiddleware.allowed_path" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">allowed_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">allowed_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3449,8 +3449,8 @@ matched like the app's routes: without the <code>root_path</code> a proxy or a m
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIFeatureFlags" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIFeatureFlags</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">refresh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'flags'</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIFeatureFlags</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">refresh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'flags'</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -3551,8 +3551,8 @@ each call.</p>
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIFeatureFlags.forget" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">forget</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">forget</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3576,8 +3576,8 @@ backend.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIFeatureFlags.set" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">percentage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">allow</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">deny</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">())</span> <span class="o">-&gt;</span> <span class="n">FeatureFlag</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">set</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">percentage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">allow</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">deny</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">())</span> <span class="o">-&gt;</span> <span class="n">FeatureFlag</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3603,8 +3603,8 @@ Raises BackendUnavailable when the backend fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIFeatureFlags.delete" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">delete</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">delete</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3628,8 +3628,8 @@ when the backend fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIFeatureFlags.get" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureFlag</span> <span class="o">|</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">get</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureFlag</span> <span class="o">|</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3653,8 +3653,8 @@ is updated with it. Raises BackendUnavailable when the backend fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.operations.FastAPIFeatureFlags.enabled" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">enabled</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">enabled</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3674,8 +3674,8 @@ backend fails and this process never read it.</p>
 
 
 <a href="#fastapi_alcazaba.operations.FastAPIFeatureFlags.require" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">require</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Subject</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">HTTPConnection</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Subject</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">HTTPConnection</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 

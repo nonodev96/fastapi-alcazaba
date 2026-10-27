@@ -2229,24 +2229,24 @@ it (it's only base64), it can't be revoked (a copied cookie keeps working after 
 expires) and it can't hold much more than 4 KB. <code>ServerSessionMiddleware</code> keeps the data in the
 cache's backend instead, and the cookie only carries a random id; <code>request.session</code> works the
 same:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">ServerSessionMiddleware</span><span class="p">,</span> <span class="n">clear_session</span><span class="p">,</span> <span class="n">rotate_session</span>
-
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">ServerSessionMiddleware</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">,</span> <span class="n">idle_timeout</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Login</span><span class="p">,</span> <span class="n">Form</span><span class="p">()])</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">authenticate</span><span class="p">(</span><span class="n">form</span><span class="p">)</span>
-    <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span>
-    <span class="n">rotate_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># a new id: one planted in the browser before is now worthless</span>
-    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/logout"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logout</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
-    <span class="n">clear_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># deleted from the backend: a copied cookie is worth nothing now</span>
-    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">ServerSessionMiddleware</span><span class="p">,</span> <span class="n">clear_session</span><span class="p">,</span> <span class="n">rotate_session</span>
+</span><span id="__span-0-2">
+</span><span id="__span-0-3"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">ServerSessionMiddleware</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">,</span> <span class="n">idle_timeout</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
+</span><span id="__span-0-4">
+</span><span id="__span-0-5">
+</span><span id="__span-0-6"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">)</span>
+</span><span id="__span-0-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Login</span><span class="p">,</span> <span class="n">Form</span><span class="p">()])</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
+</span><span id="__span-0-8">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">authenticate</span><span class="p">(</span><span class="n">form</span><span class="p">)</span>
+</span><span id="__span-0-9">    <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span>
+</span><span id="__span-0-10">    <span class="n">rotate_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># a new id: one planted in the browser before is now worthless</span>
+</span><span id="__span-0-11">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-0-12">
+</span><span id="__span-0-13">
+</span><span id="__span-0-14"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/logout"</span><span class="p">)</span>
+</span><span id="__span-0-15"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logout</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
+</span><span id="__span-0-16">    <span class="n">clear_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># deleted from the backend: a copied cookie is worth nothing now</span>
+</span><span id="__span-0-17">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span></code></pre></div>
 <ul>
 <li><strong>The cookie</strong> holds 256 random bits (<code>secrets.token_urlsafe(32)</code>), <code>HttpOnly</code>, <code>Secure</code> and
   <code>SameSite=Lax</code> by default, with <code>Max-Age</code> = <code>max_age</code>. Use <code>cookie_name="__Host-session"</code> so that
@@ -2280,14 +2280,14 @@ same:</p>
 <p>A page on another site can make the user's browser send a form, or a <code>fetch</code>, to your app, and
 the browser adds the user's cookies by itself. <code>CSRFMiddleware</code> refuses those requests with a 403,
 from the headers browsers send to say where a request comes from:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">CSRFMiddleware</span>
-
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
-    <span class="n">CSRFMiddleware</span><span class="p">,</span>
-    <span class="n">trusted_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">"https://admin.example.com"</span><span class="p">],</span>  <span class="c1"># other origins whose pages may post here</span>
-    <span class="n">exempt_paths</span><span class="o">=</span><span class="p">[</span><span class="s2">"/webhooks"</span><span class="p">],</span>  <span class="c1"># signed in their own way</span>
-<span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">CSRFMiddleware</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+</span><span id="__span-1-4">    <span class="n">CSRFMiddleware</span><span class="p">,</span>
+</span><span id="__span-1-5">    <span class="n">trusted_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">"https://admin.example.com"</span><span class="p">],</span>  <span class="c1"># other origins whose pages may post here</span>
+</span><span id="__span-1-6">    <span class="n">exempt_paths</span><span class="o">=</span><span class="p">[</span><span class="s2">"/webhooks"</span><span class="p">],</span>  <span class="c1"># signed in their own way</span>
+</span><span id="__span-1-7"><span class="p">)</span>
+</span></code></pre></div>
 <ul>
 <li><strong>Fetch metadata first:</strong> every current browser sends <code>Sec-Fetch-Site</code>. <code>same-origin</code> (and
   <code>none</code>, a request the user typed) goes through; <code>same-site</code> and <code>cross-site</code> are refused unless
@@ -2326,15 +2326,15 @@ from the headers browsers send to say where a request comes from:</p>
 </ul>
 <h2 id="security-headers-and-body-size">Security headers and body size<a class="headerlink" href="#security-headers-and-body-size" title="Permanent link">&para;</a></h2>
 <p>Two ASGI middlewares for what FastAPI leaves to the deployment:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">BodySizeLimitMiddleware</span><span class="p">,</span> <span class="n">SecurityHeadersMiddleware</span>
-
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
-    <span class="n">BodySizeLimitMiddleware</span><span class="p">,</span>
-    <span class="n">max_size</span><span class="o">=</span><span class="mi">1_048_576</span><span class="p">,</span>  <span class="c1"># 1 MiB</span>
-    <span class="n">paths</span><span class="o">=</span><span class="p">{</span><span class="s2">"/uploads"</span><span class="p">:</span> <span class="mi">50</span> <span class="o">*</span> <span class="mi">1_048_576</span><span class="p">,</span> <span class="s2">"/internal/stream"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
-<span class="p">)</span>
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityHeadersMiddleware</span><span class="p">)</span>  <span class="c1"># last: the outermost</span>
-</code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">BodySizeLimitMiddleware</span><span class="p">,</span> <span class="n">SecurityHeadersMiddleware</span>
+</span><span id="__span-2-2">
+</span><span id="__span-2-3"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+</span><span id="__span-2-4">    <span class="n">BodySizeLimitMiddleware</span><span class="p">,</span>
+</span><span id="__span-2-5">    <span class="n">max_size</span><span class="o">=</span><span class="mi">1_048_576</span><span class="p">,</span>  <span class="c1"># 1 MiB</span>
+</span><span id="__span-2-6">    <span class="n">paths</span><span class="o">=</span><span class="p">{</span><span class="s2">"/uploads"</span><span class="p">:</span> <span class="mi">50</span> <span class="o">*</span> <span class="mi">1_048_576</span><span class="p">,</span> <span class="s2">"/internal/stream"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+</span><span id="__span-2-7"><span class="p">)</span>
+</span><span id="__span-2-8"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityHeadersMiddleware</span><span class="p">)</span>  <span class="c1"># last: the outermost</span>
+</span></code></pre></div>
 <ul>
 <li><strong>Security headers:</strong> the OWASP REST ones: <code>X-Content-Type-Options: nosniff</code>,
   <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code> and <code>Cross-Origin-Opener-Policy:

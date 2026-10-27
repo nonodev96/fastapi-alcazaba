@@ -2536,15 +2536,15 @@ In <code>fastapi_alcazaba.webhooks</code> and <code>fastapi_alcazaba.outbound</c
 
 
 <a href="#fastapi_alcazaba.webhooks.FastAPIWebhooks" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">FastAPIWebhooks</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">WebhookSecrets</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_body_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1048576</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'webhook'</span><span class="p">,</span> <span class="n">fail_open</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIWebhooks</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">WebhookSecrets</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tolerance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_body_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1048576</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'webhook'</span><span class="p">,</span> <span class="n">fail_open</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
 
 
         <p>FastAPI dependency that accepts only webhooks signed with <code>secret</code>, and each delivery once.</p>
-<div class="highlight"><pre><span></span><code>webhooks = FastAPIWebhooks(settings.webhook_secret)
+<div class="language-text highlight"><pre><span></span><code>webhooks = FastAPIWebhooks(settings.webhook_secret)
 
 @app.post("/webhooks")
 async def receive(message: Annotated[WebhookMessage, Depends(webhooks)]) -&gt; None: ...
@@ -2709,8 +2709,8 @@ replay would run its effects again.</p>
 
 
 <a href="#fastapi_alcazaba.webhooks.FastAPIWebhooks.verify" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">verify</span><span class="p">(</span><span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WebhookMessage</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">verify</span><span class="p">(</span><span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WebhookMessage</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2740,15 +2740,15 @@ scripts and queues that deduplicate on their own.</p>
 
 
 <a href="#fastapi_alcazaba.webhooks.WebhookSigner" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">WebhookSigner</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">WebhookSecrets</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">WebhookSigner</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">WebhookSecrets</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
 
 
         <p>Signs outgoing webhooks the Standard Webhooks way.</p>
-<div class="highlight"><pre><span></span><code>signer = WebhookSigner(settings.webhook_secret)
+<div class="language-text highlight"><pre><span></span><code>signer = WebhookSigner(settings.webhook_secret)
 body = json.dumps(event).encode()
 await client.post(url, content=body, headers=signer.sign(body))
 </code></pre></div>
@@ -2821,8 +2821,8 @@ while it's being rotated.</p>
   </span>
 
 <a href="#fastapi_alcazaba.webhooks.WebhookSigner.generate_secret" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">generate_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">generate_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2841,8 +2841,8 @@ while it's being rotated.</p>
 
 
 <a href="#fastapi_alcazaba.webhooks.WebhookSigner.sign" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">sign</span><span class="p">(</span><span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">sign</span><span class="p">(</span><span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2876,8 +2876,8 @@ one by default) and leave <code>timestamp</code> (now) alone: each attempt is si
   </span>
 
 <a href="#fastapi_alcazaba.webhooks.WebhookMessage" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">WebhookMessage</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">WebhookMessage</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
 
@@ -2914,8 +2914,8 @@ one by default) and leave <code>timestamp</code> (now) alone: each attempt is si
 
 
 <a href="#fastapi_alcazaba.webhooks.WebhookMessage.json" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">json</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">json</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -2943,8 +2943,8 @@ one by default) and leave <code>timestamp</code> (now) alone: each attempt is si
 
 
 <a href="#fastapi_alcazaba.outbound.ResilientTransport" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ResilientTransport</span><span class="p">(</span><span class="n">transport</span><span class="p">:</span> <span class="n">AsyncBaseTransport</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span> <span class="n">failure_statuses</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">),</span> <span class="n">max_response_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">ResilientTransport</span><span class="p">(</span><span class="n">transport</span><span class="p">:</span> <span class="n">AsyncBaseTransport</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">,</span> <span class="n">failure_statuses</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">502</span><span class="p">,</span> <span class="mi">503</span><span class="p">,</span> <span class="mi">504</span><span class="p">),</span> <span class="n">max_response_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -2953,7 +2953,7 @@ one by default) and leave <code>timestamp</code> (now) alone: each attempt is si
 
 
         <p>An httpx transport that gives every call a deadline and every origin a circuit breaker.</p>
-<div class="highlight"><pre><span></span><code>client = httpx.AsyncClient(transport=ResilientTransport(timeout=5), base_url=...)
+<div class="language-text highlight"><pre><span></span><code>client = httpx.AsyncClient(transport=ResilientTransport(timeout=5), base_url=...)
 </code></pre></div>
 <p>Responses are read whole within the deadline before they're returned, so don't stream large
 downloads through it; <code>max_response_size</code> bounds what it reads.</p>
@@ -3126,8 +3126,8 @@ origin. None for no limit.</p>
 
 
 <a href="#fastapi_alcazaba.outbound.ResilientTransport.state" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">state</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">URL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">state</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">URL</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 
@@ -3219,8 +3219,8 @@ client, like <code>httpx.TooManyRedirects</code>, not a transport error: retryin
 
 
 <a href="#fastapi_alcazaba.outbound.SSRFGuardTransport" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">SSRFGuardTransport</span><span class="p">(</span><span class="n">transport</span><span class="p">:</span> <span class="n">InnerTransport</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AllowedDestination</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">ports</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_hosts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">SSRFGuardTransport</span><span class="p">(</span><span class="n">transport</span><span class="p">:</span> <span class="n">InnerTransport</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">allow</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AllowedDestination</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">ports</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_hosts</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
@@ -3230,7 +3230,7 @@ client, like <code>httpx.TooManyRedirects</code>, not a transport error: retryin
 
         <p>An httpx transport that only calls the public internet: no private, loopback, link-local
 (cloud metadata), multicast or reserved addresses, whatever the URL says.</p>
-<div class="highlight"><pre><span></span><code>client = httpx.AsyncClient(transport=ResilientTransport(SSRFGuardTransport()))
+<div class="language-text highlight"><pre><span></span><code>client = httpx.AsyncClient(transport=ResilientTransport(SSRFGuardTransport()))
 </code></pre></div>
 <p>It resolves the host itself and refuses the request (<code>BlockedDestinationError</code>) if any of its
 addresses isn't public, IPv6 forms of IPv4 addresses (<code>::ffff:127.0.0.1</code>, NAT64, 6to4) and
@@ -3383,8 +3383,8 @@ FastAPICache's by default.</p>
   </span>
 
 <a href="#fastapi_alcazaba.outbound.SSRFGuardTransport.check" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">check</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="n">URL</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">check</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="n">URL</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
 
     <div class="doc doc-contents ">
 

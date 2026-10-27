@@ -2254,129 +2254,129 @@ reaches all of them. Each process keeps a copy for up to 1 s (maintenance) or 5 
 that requests don't each ask the backend. The breaker is each process's own.</p>
 <h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Permanent link">&para;</a></h2>
 <p>From a clone of the repository:</p>
-<div class="highlight"><pre><span></span><code>make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
-<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-uvicorn<span class="w"> </span>examples.operations.main:app
-</code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
+</span><span id="__span-0-2"><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-0-3">uvicorn<span class="w"> </span>examples.operations.main:app
+</span></code></pre></div>
 <p>The admin routes take <code>Authorization: Bearer $ADMIN_TOKEN</code>. Set <code>ADMIN_TOKEN</code> and
 <code>CACHE_SIGNING_KEY</code> (<code>secrets.token_urlsafe(32)</code>), the same in every process. Without
 <code>ADMIN_TOKEN</code>, the app makes one up at each start and logs it:</p>
-<div class="highlight"><pre><span></span><code><span class="go">ADMIN_TOKEN isn't set: the admin token of this run is YbLt_8-WKnm4zWknL3mgHNar4E3MmBsCNtk6KPJLBB4</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><span class="go">ADMIN_TOKEN isn't set: the admin token of this run is YbLt_8-WKnm4zWknL3mgHNar4E3MmBsCNtk6KPJLBB4</span>
+</span></code></pre></div>
 <p>It keeps the switch and the flags in memory, so don't start it with <code>--workers</code>: each worker would
 have a switch of its own. In production, a Redis or Valkey backend lets every process share them.</p>
 <h2 id="try-it">Try it<a class="headerlink" href="#try-it" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span><span class="nv">TOKEN</span><span class="o">=</span>YbLt_8-WKnm4zWknL3mgHNar4E3MmBsCNtk6KPJLBB4
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><span class="gp">$ </span><span class="nv">TOKEN</span><span class="o">=</span>YbLt_8-WKnm4zWknL3mgHNar4E3MmBsCNtk6KPJLBB4
+</span></code></pre></div>
 <p>Without the token, the admin routes answer 401:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/maintenance<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{}'</span>
-<span class="go">HTTP/1.1 401 Unauthorized</span>
-<span class="go">www-authenticate: Bearer</span>
-
-<span class="go">{"detail":"Unauthorized"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/maintenance<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{}'</span>
+</span><span id="__span-3-2"><span class="go">HTTP/1.1 401 Unauthorized</span>
+</span><span id="__span-3-3"><span class="go">www-authenticate: Bearer</span>
+</span><span id="__span-3-4">
+</span><span id="__span-3-5"><span class="go">{"detail":"Unauthorized"}</span>
+</span></code></pre></div>
 <p>Close the app for maintenance. Every request gets a 503 with the message and <code>Retry-After</code>, but
 the health check is still served:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/maintenance<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"message": "Back at 10:30", "retry_after": 900}'</span>
-<span class="go">{"enabled":true,"message":"Back at 10:30","retry_after":900,"since":1793011967.4372241}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/checkout
-<span class="go">HTTP/1.1 503 Service Unavailable</span>
-<span class="go">cache-control: no-store</span>
-<span class="go">retry-after: 900</span>
-
-<span class="go">{"detail": "Back at 10:30"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/health
-<span class="go">{"status":"ok"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://127.0.0.1:8000/admin/maintenance<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
-<span class="go">HTTP/1.1 204 No Content</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/checkout
-<span class="go">{"checkout":"classic"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/maintenance<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"message": "Back at 10:30", "retry_after": 900}'</span>
+</span><span id="__span-4-3"><span class="go">{"enabled":true,"message":"Back at 10:30","retry_after":900,"since":1793011967.4372241}</span>
+</span><span id="__span-4-4">
+</span><span id="__span-4-5"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/checkout
+</span><span id="__span-4-6"><span class="go">HTTP/1.1 503 Service Unavailable</span>
+</span><span id="__span-4-7"><span class="go">cache-control: no-store</span>
+</span><span id="__span-4-8"><span class="go">retry-after: 900</span>
+</span><span id="__span-4-9">
+</span><span id="__span-4-10"><span class="go">{"detail": "Back at 10:30"}</span>
+</span><span id="__span-4-11">
+</span><span id="__span-4-12"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/health
+</span><span id="__span-4-13"><span class="go">{"status":"ok"}</span>
+</span><span id="__span-4-14">
+</span><span id="__span-4-15"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>http://127.0.0.1:8000/admin/maintenance<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+</span><span id="__span-4-16"><span class="go">HTTP/1.1 204 No Content</span>
+</span><span id="__span-4-17">
+</span><span id="__span-4-18"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/checkout
+</span><span id="__span-4-19"><span class="go">{"checkout":"classic"}</span>
+</span></code></pre></div>
 <p>Roll the new checkout out to 30 % of the users. Here the bearer token stands for the user, so that
 you can try it with curl. Each user keeps their answer from one request to the next, and anonymous
 visitors aren't part of a partial rollout:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/flags/new-checkout<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"enabled": true, "percentage": 30}'</span>
-<span class="go">{"name":"new-checkout","enabled":true,"percentage":30.0,"allow":[],"deny":[]}</span>
-
-<span class="gp">$ </span><span class="k">for</span><span class="w"> </span>user<span class="w"> </span><span class="k">in</span><span class="w"> </span>ana<span class="w"> </span>bea<span class="w"> </span>carlos<span class="w"> </span>david<span class="w"> </span>elena<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="go">&gt;   echo "$user: $(curl -s http://127.0.0.1:8000/checkout -H "Authorization: Bearer $user")"</span>
-<span class="go">&gt; done</span>
-<span class="go">ana: {"checkout":"new"}</span>
-<span class="go">bea: {"checkout":"classic"}</span>
-<span class="go">carlos: {"checkout":"classic"}</span>
-<span class="go">david: {"checkout":"new"}</span>
-<span class="go">elena: {"checkout":"classic"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/checkout
-<span class="go">{"checkout":"classic"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/flags/new-checkout<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"enabled": true, "percentage": 30}'</span>
+</span><span id="__span-5-3"><span class="go">{"name":"new-checkout","enabled":true,"percentage":30.0,"allow":[],"deny":[]}</span>
+</span><span id="__span-5-4">
+</span><span id="__span-5-5"><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>user<span class="w"> </span><span class="k">in</span><span class="w"> </span>ana<span class="w"> </span>bea<span class="w"> </span>carlos<span class="w"> </span>david<span class="w"> </span>elena<span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-6"><span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$user</span><span class="s2">: </span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>http://127.0.0.1:8000/checkout<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$user</span><span class="s2">"</span><span class="k">)</span><span class="s2">"</span><span class="p">;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-7"><span class="w">  </span><span class="k">done</span>
+</span><span id="__span-5-8"><span class="go">ana: {"checkout":"new"}</span>
+</span><span id="__span-5-9"><span class="go">bea: {"checkout":"classic"}</span>
+</span><span id="__span-5-10"><span class="go">carlos: {"checkout":"classic"}</span>
+</span><span id="__span-5-11"><span class="go">david: {"checkout":"new"}</span>
+</span><span id="__span-5-12"><span class="go">elena: {"checkout":"classic"}</span>
+</span><span id="__span-5-13">
+</span><span id="__span-5-14"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/checkout
+</span><span id="__span-5-15"><span class="go">{"checkout":"classic"}</span>
+</span></code></pre></div>
 <p>The beta report is a 404, like a page that doesn't exist, until the user is on the allow list.
 Without a percentage, a flag with an allow list is for nobody else. The list comes back as
 digests: the backend never gets the users' ids.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/reports/beta<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ana"</span>
-<span class="go">{"detail":"Not Found"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/flags/beta-reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"enabled": true, "allow": ["ana"]}'</span>
-<span class="go">{"name":"beta-reports","enabled":true,"percentage":null,"allow":["44d27c2ae32d479abf13f231ea9ee8295988d4a14fdf8be30c16aa81e894946b"],"deny":[]}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/reports/beta<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ana"</span>
-<span class="go">{"report":"Sales by hour"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/reports/beta<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer bea"</span>
-<span class="go">HTTP/1.1 404 Not Found</span>
-
-<span class="go">{"detail":"Not Found"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/reports/beta<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ana"</span>
+</span><span id="__span-6-2"><span class="go">{"detail":"Not Found"}</span>
+</span><span id="__span-6-3">
+</span><span id="__span-6-4"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/admin/flags/beta-reports<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-5"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"enabled": true, "allow": ["ana"]}'</span>
+</span><span id="__span-6-6"><span class="go">{"name":"beta-reports","enabled":true,"percentage":null,"allow":["44d27c2ae32d479abf13f231ea9ee8295988d4a14fdf8be30c16aa81e894946b"],"deny":[]}</span>
+</span><span id="__span-6-7">
+</span><span id="__span-6-8"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/reports/beta<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ana"</span>
+</span><span id="__span-6-9"><span class="go">{"report":"Sales by hour"}</span>
+</span><span id="__span-6-10">
+</span><span id="__span-6-11"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/reports/beta<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer bea"</span>
+</span><span id="__span-6-12"><span class="go">HTTP/1.1 404 Not Found</span>
+</span><span id="__span-6-13">
+</span><span id="__span-6-14"><span class="go">{"detail":"Not Found"}</span>
+</span></code></pre></div>
 <p>Make the shipping service fail. The first three requests wait for it and get a 502; then the
 breaker opens, and requests get a 503 at once, without calling the service:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
-<span class="go">{"order_id":7,"carrier":"Alhambra Express","days":2}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/admin/simulate/shipping?down=true"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping<span class="w">    </span><span class="c1"># three times</span>
-<span class="go">HTTP/1.1 502 Bad Gateway</span>
-
-<span class="go">{"detail":"The shipping service failed"}</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
-<span class="go">HTTP/1.1 503 Service Unavailable</span>
-<span class="go">retry-after: 30</span>
-
-<span class="go">{"detail":"Service Unavailable"}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-7-1"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
+</span><span id="__span-7-2"><span class="go">{"order_id":7,"carrier":"Alhambra Express","days":2}</span>
+</span><span id="__span-7-3">
+</span><span id="__span-7-4"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/admin/simulate/shipping?down=true"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+</span><span id="__span-7-5">
+</span><span id="__span-7-6"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping<span class="w">    </span><span class="c1"># three times</span>
+</span><span id="__span-7-7"><span class="go">HTTP/1.1 502 Bad Gateway</span>
+</span><span id="__span-7-8">
+</span><span id="__span-7-9"><span class="go">{"detail":"The shipping service failed"}</span>
+</span><span id="__span-7-10">
+</span><span id="__span-7-11"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
+</span><span id="__span-7-12"><span class="go">HTTP/1.1 503 Service Unavailable</span>
+</span><span id="__span-7-13"><span class="go">retry-after: 30</span>
+</span><span id="__span-7-14">
+</span><span id="__span-7-15"><span class="go">{"detail":"Service Unavailable"}</span>
+</span></code></pre></div>
 <p>The status page reads the shared state from the backend, and the breaker from this process:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/admin/status<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
-<span class="go">{"maintenance":{"enabled":false,"message":null,"retry_after":null,"since":null},"flags":{"new-checkout":{...},"beta-reports":{...}},"process":{"pid":831700,"shipping_breaker":"open"}}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-8-1"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/admin/status<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+</span><span id="__span-8-2"><span class="go">{"maintenance":{"enabled":false,"message":null,"retry_after":null,"since":null},"flags":{"new-checkout":{...},"beta-reports":{...}},"process":{"pid":831700,"shipping_breaker":"open"}}</span>
+</span></code></pre></div>
 <p>The breaker stays open for 30 s, even when the service is back. Then a single request tries it,
 and its success closes the breaker:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/admin/simulate/shipping?down=false"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
-<span class="go">HTTP/1.1 503 Service Unavailable</span>
-<span class="go">retry-after: 30</span>
-
-<span class="go">{"detail":"Service Unavailable"}</span>
-
-<span class="gp">$ </span>sleep<span class="w"> </span><span class="m">30</span><span class="p">;</span><span class="w"> </span>curl<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
-<span class="go">{"order_id":7,"carrier":"Alhambra Express","days":2}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-9-1"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span><span class="s2">"http://127.0.0.1:8000/admin/simulate/shipping?down=false"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+</span><span id="__span-9-2">
+</span><span id="__span-9-3"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
+</span><span id="__span-9-4"><span class="go">HTTP/1.1 503 Service Unavailable</span>
+</span><span id="__span-9-5"><span class="go">retry-after: 30</span>
+</span><span id="__span-9-6">
+</span><span id="__span-9-7"><span class="go">{"detail":"Service Unavailable"}</span>
+</span><span id="__span-9-8">
+</span><span id="__span-9-9"><span class="gp">$ </span>sleep<span class="w"> </span><span class="m">30</span><span class="p">;</span><span class="w"> </span>curl<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
+</span><span id="__span-9-10"><span class="go">{"order_id":7,"carrier":"Alhambra Express","days":2}</span>
+</span></code></pre></div>
 <p>Or, once you know the service is back, close the breaker at once. Only in the process that gets
 the request: each process has its own.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/admin/breakers/shipping/close<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
-<span class="go">HTTP/1.1 204 No Content</span>
-
-<span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
-<span class="go">{"order_id":7,"carrier":"Alhambra Express","days":2}</span>
-</code></pre></div>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/admin/breakers/shipping/close<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+</span><span id="__span-10-2"><span class="go">HTTP/1.1 204 No Content</span>
+</span><span id="__span-10-3">
+</span><span id="__span-10-4"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/orders/7/shipping
+</span><span id="__span-10-5"><span class="go">{"order_id":7,"carrier":"Alhambra Express","days":2}</span>
+</span></code></pre></div>
 <h2 id="what-to-look-at">What to look at<a class="headerlink" href="#what-to-look-at" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>The admin token is compared in constant time, as bytes:</strong> <code>secrets.compare_digest</code> takes the
@@ -2401,257 +2401,257 @@ the request: each process has its own.</p>
 </ul>
 <h2 id="the-code">The code<a class="headerlink" href="#the-code" title="Permanent link">&para;</a></h2>
 <!-- fmt: off -->
-<div class="highlight"><span class="filename">examples/operations/main.py</span><pre><span></span><code><span class="sd">"""Operating an app without a deploy: maintenance mode, feature flags and a circuit breaker.</span>
-
-<span class="sd">    uvicorn examples.operations.main:app</span>
-
-<span class="sd">- `PUT /admin/maintenance` closes the app: a 503 with `Retry-After` for every request but</span>
-<span class="sd">  `/health` (the load balancer keeps the processes) and `/admin` (you can reopen it).</span>
-<span class="sd">- `PUT /admin/flags/{name}`: `new-checkout` goes to a percentage of the users, always the same</span>
-<span class="sd">  ones; `/reports/beta` is a 404 but for the users on the allow list of `beta-reports`.</span>
-<span class="sd">- `/orders/{order_id}/shipping` calls a flaky shipping service (simulated). After 3 failures in a</span>
-<span class="sd">  row, each a 502 that waited for it, the breaker opens: a 503 at once for 30 s, without calling</span>
-<span class="sd">  it. Then one request tries again; `POST /admin/breakers/shipping/close` closes it at once.</span>
-
-<span class="sd">The admin routes take `Authorization: Bearer $ADMIN_TOKEN`.</span>
-
-<span class="sd">The maintenance switch and the flags live in the backend, shared by every process. Each process</span>
-<span class="sd">keeps a copy, read again at most every 1 s (maintenance) or 5 s (flags): requests don't each ask</span>
-<span class="sd">the backend, and a change reaches every process within that. Breakers are each process's own:</span>
-<span class="sd">one opens after its process's failures, with no round trip on every call.</span>
-<span class="sd">"""</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrEnum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONResponse</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPAuthorizationCredentials</span><span class="p">,</span> <span class="n">HTTPBearer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">BackendUnavailable</span><span class="p">,</span>
-    <span class="n">FastAPIBreaker</span><span class="p">,</span>
-    <span class="n">FastAPICache</span><span class="p">,</span>
-    <span class="n">FastAPIFeatureFlags</span><span class="p">,</span>
-    <span class="n">FastAPIMaintenance</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.operations</span><span class="w"> </span><span class="kn">import</span> <span class="n">MAX_MESSAGE_LENGTH</span><span class="p">,</span> <span class="n">FeatureFlag</span><span class="p">,</span> <span class="n">MaintenanceMiddleware</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.operations.maintenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">MaintenanceStatus</span>
-
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
-<span class="sd">    processes."""</span>
-    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file. Set both in production, the</span>
-<span class="sd">    same in every process (secrets.token_urlsafe(32))."""</span>
-
-    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
-
-    <span class="n">admin_token</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
-    <span class="c1"># Seals the switch and the flags in the backend: a state planted there by someone else is</span>
-    <span class="c1"># ignored, and so is what a process with another key writes.</span>
-    <span class="n">cache_signing_key</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
-
-
-<span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Flag</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""The flags this app reads: the admin routes define only these."""</span>
-
-    <span class="n">NEW_CHECKOUT</span> <span class="o">=</span> <span class="s2">"new-checkout"</span>
-    <span class="n">BETA_REPORTS</span> <span class="o">=</span> <span class="s2">"beta-reports"</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Quote</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">carrier</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">days</span><span class="p">:</span> <span class="nb">int</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">ShippingService</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Stands in for a downstream service and its SDK: fails while `down`, and counts the calls</span>
-<span class="sd">    that reach it."""</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">down</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">quote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quote</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">(</span><span class="s2">"the shipping service doesn't answer"</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Quote</span><span class="p">(</span><span class="n">order_id</span><span class="o">=</span><span class="n">order_id</span><span class="p">,</span> <span class="n">carrier</span><span class="o">=</span><span class="s2">"Alhambra Express"</span><span class="p">,</span> <span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-
-
-<span class="nd">@asynccontextmanager</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-    <span class="c1"># Redis or Valkey in production, so that every process shares the switch and the flags:</span>
-    <span class="c1"># InMemoryBackend keeps them in this process.</span>
-    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"ops"</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">)</span>
-    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping</span> <span class="o">=</span> <span class="n">ShippingService</span><span class="p">()</span>
-    <span class="c1"># Only what says the service is down counts, not a bug of ours; a call that hangs is cancelled</span>
-    <span class="c1"># after 5 s and counts too.</span>
-    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span> <span class="o">=</span> <span class="n">FastAPIBreaker</span><span class="p">(</span>
-        <span class="s2">"shipping"</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">failures</span><span class="o">=</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,)</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="s2">"admin_token"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">model_fields_set</span><span class="p">:</span>
-        <span class="n">token</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">admin_token</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"ADMIN_TOKEN isn't set: the admin token of this run is </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
-    <span class="k">yield</span>
-
-
-<span class="c1"># How old each process's copy of the shared state may be, in seconds.</span>
-<span class="n">maintenance</span> <span class="o">=</span> <span class="n">FastAPIMaintenance</span><span class="p">(</span><span class="n">refresh</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">flags</span> <span class="o">=</span> <span class="n">FastAPIFeatureFlags</span><span class="p">(</span><span class="n">refresh</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
-    <span class="n">MaintenanceMiddleware</span><span class="p">,</span> <span class="n">maintenance</span><span class="o">=</span><span class="n">maintenance</span><span class="p">,</span> <span class="n">allow_paths</span><span class="o">=</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">,</span> <span class="s2">"/admin"</span><span class="p">)</span>
-<span class="p">)</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">exception_handler</span><span class="p">(</span><span class="n">BackendUnavailable</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">backend_unavailable</span><span class="p">(</span><span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">_exc</span><span class="p">:</span> <span class="n">BackendUnavailable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JSONResponse</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""An admin change the backend didn't take: nothing changed, and the response says so."""</span>
-    <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">({</span><span class="s2">"detail"</span><span class="p">:</span> <span class="s2">"Not changed: the backend is unavailable"</span><span class="p">},</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">current_user</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The user's id. Stands in for your authentication: here the bearer token is the id itself,</span>
-<span class="sd">    so that you can try it with curl. Take it from a session or a token you verify, or anyone</span>
-<span class="sd">    could put themselves on an allow list."""</span>
-    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">token</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="ow">and</span> <span class="n">token</span> <span class="k">else</span> <span class="kc">None</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Served during maintenance too: the processes are fine, nothing should restart them."""</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"ok"</span><span class="p">}</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/checkout"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checkout</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">current_user</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""The new checkout for the users in the rollout; without a user, a partial rollout is off."""</span>
-    <span class="n">new</span> <span class="o">=</span> <span class="k">await</span> <span class="n">flags</span><span class="o">.</span><span class="n">enabled</span><span class="p">(</span><span class="n">Flag</span><span class="o">.</span><span class="n">NEW_CHECKOUT</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">user</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"checkout"</span><span class="p">:</span> <span class="s2">"new"</span> <span class="k">if</span> <span class="n">new</span> <span class="k">else</span> <span class="s2">"classic"</span><span class="p">}</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-    <span class="s2">"/reports/beta"</span><span class="p">,</span>
-    <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">flags</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="n">Flag</span><span class="o">.</span><span class="n">BETA_REPORTS</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">))],</span>
-<span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">beta_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""A 404 for the users the flag is off for, as if the route didn't exist."""</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"report"</span><span class="p">:</span> <span class="s2">"Sales by hour"</span><span class="p">}</span>
-
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/orders/</span><span class="si">{order_id}</span><span class="s2">/shipping"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shipping_quote</span><span class="p">(</span><span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quote</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A 502 when the service fails; while the breaker is open, a 503 with Retry-After."""</span>
-    <span class="n">breaker</span><span class="p">:</span> <span class="n">FastAPIBreaker</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span>
-    <span class="n">shipping</span><span class="p">:</span> <span class="n">ShippingService</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">breaker</span><span class="o">.</span><span class="n">attempt</span><span class="p">():</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="n">shipping</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
-    <span class="k">except</span> <span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_502_BAD_GATEWAY</span><span class="p">,</span> <span class="s2">"The shipping service failed"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">require_admin</span><span class="p">(</span>
-    <span class="n">credentials</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
-        <span class="n">HTTPAuthorizationCredentials</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">HTTPBearer</span><span class="p">(</span><span class="n">auto_error</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
-    <span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Compared in constant time, and as bytes: compare_digest refuses strings with non-ASCII</span>
-<span class="sd">    characters, which a client can send."""</span>
-    <span class="n">token</span> <span class="o">=</span> <span class="n">credentials</span><span class="o">.</span><span class="n">credentials</span> <span class="k">if</span> <span class="n">credentials</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">""</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">secrets</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">settings</span><span class="o">.</span><span class="n">admin_token</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">()):</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_401_UNAUTHORIZED</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
-
-
-<span class="n">admin</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">"/admin"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">require_admin</span><span class="p">)])</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">MaintenanceUpdate</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">MAX_MESSAGE_LENGTH</span><span class="p">)</span>
-    <span class="n">retry_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">FlagUpdate</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span>
-    <span class="c1"># None: everybody, or only the allow list when there's one.</span>
-    <span class="n">percentage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-    <span class="n">allow</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
-    <span class="n">deny</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
-
-
-<span class="nd">@admin</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/maintenance"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start_maintenance</span><span class="p">(</span><span class="n">update</span><span class="p">:</span> <span class="n">MaintenanceUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Close the app, in every process within a second."""</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">maintenance</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">update</span><span class="o">.</span><span class="n">retry_after</span><span class="p">)</span>
-
-
-<span class="nd">@admin</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">"/maintenance"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">end_maintenance</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">await</span> <span class="n">maintenance</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
-
-
-<span class="nd">@admin</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/flags/</span><span class="si">{name}</span><span class="s2">"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_flag</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="n">FlagUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureFlag</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Define a flag, for every process within 5 seconds. The lists come back as digests: the</span>
-<span class="sd">    backend never gets the users' ids."""</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">flags</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">update</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
-
-
-<span class="nd">@admin</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/simulate/shipping"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">simulate_shipping</span><span class="p">(</span><span class="n">down</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Only in this example: makes the shipping service fail, to watch the breaker open."""</span>
-    <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping</span><span class="o">.</span><span class="n">down</span> <span class="o">=</span> <span class="n">down</span>
-
-
-<span class="nd">@admin</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/breakers/shipping/close"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_shipping_breaker</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The shipping service is back: call it again now, instead of waiting for the trial. Only</span>
-<span class="sd">    in the process that gets this request: each process has its own breaker."""</span>
-    <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-
-
-<span class="nd">@admin</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/status"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">status_report</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""The shared state as the backend has it now (this process's copies are updated with it),</span>
-<span class="sd">    and the breaker as this process sees it."""</span>
-    <span class="n">breaker</span><span class="p">:</span> <span class="n">FastAPIBreaker</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"maintenance"</span><span class="p">:</span> <span class="k">await</span> <span class="n">maintenance</span><span class="o">.</span><span class="n">status</span><span class="p">(),</span>
-        <span class="s2">"flags"</span><span class="p">:</span> <span class="p">{</span><span class="n">flag</span><span class="p">:</span> <span class="k">await</span> <span class="n">flags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span> <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">Flag</span><span class="p">},</span>
-        <span class="s2">"process"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"pid"</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="s2">"shipping_breaker"</span><span class="p">:</span> <span class="n">breaker</span><span class="o">.</span><span class="n">state</span><span class="p">},</span>
-    <span class="p">}</span>
-
-
-<span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span><span class="n">admin</span><span class="p">)</span>
-
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<div class="language-python highlight"><span class="filename">examples/operations/main.py</span><pre><span></span><code><span id="__span-11-1"><span class="sd">"""Operating an app without a deploy: maintenance mode, feature flags and a circuit breaker.</span>
+</span><span id="__span-11-2">
+</span><span id="__span-11-3"><span class="sd">    uvicorn examples.operations.main:app</span>
+</span><span id="__span-11-4">
+</span><span id="__span-11-5"><span class="sd">- `PUT /admin/maintenance` closes the app: a 503 with `Retry-After` for every request but</span>
+</span><span id="__span-11-6"><span class="sd">  `/health` (the load balancer keeps the processes) and `/admin` (you can reopen it).</span>
+</span><span id="__span-11-7"><span class="sd">- `PUT /admin/flags/{name}`: `new-checkout` goes to a percentage of the users, always the same</span>
+</span><span id="__span-11-8"><span class="sd">  ones; `/reports/beta` is a 404 but for the users on the allow list of `beta-reports`.</span>
+</span><span id="__span-11-9"><span class="sd">- `/orders/{order_id}/shipping` calls a flaky shipping service (simulated). After 3 failures in a</span>
+</span><span id="__span-11-10"><span class="sd">  row, each a 502 that waited for it, the breaker opens: a 503 at once for 30 s, without calling</span>
+</span><span id="__span-11-11"><span class="sd">  it. Then one request tries again; `POST /admin/breakers/shipping/close` closes it at once.</span>
+</span><span id="__span-11-12">
+</span><span id="__span-11-13"><span class="sd">The admin routes take `Authorization: Bearer $ADMIN_TOKEN`.</span>
+</span><span id="__span-11-14">
+</span><span id="__span-11-15"><span class="sd">The maintenance switch and the flags live in the backend, shared by every process. Each process</span>
+</span><span id="__span-11-16"><span class="sd">keeps a copy, read again at most every 1 s (maintenance) or 5 s (flags): requests don't each ask</span>
+</span><span id="__span-11-17"><span class="sd">the backend, and a change reaches every process within that. Breakers are each process's own:</span>
+</span><span id="__span-11-18"><span class="sd">one opens after its process's failures, with no round trip on every call.</span>
+</span><span id="__span-11-19"><span class="sd">"""</span>
+</span><span id="__span-11-20">
+</span><span id="__span-11-21"><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+</span><span id="__span-11-22"><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="__span-11-23"><span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+</span><span id="__span-11-24"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-11-25"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-11-26"><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrEnum</span>
+</span><span id="__span-11-27"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span><span class="p">,</span> <span class="n">Any</span>
+</span><span id="__span-11-28">
+</span><span id="__span-11-29"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="__span-11-30"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
+</span><span id="__span-11-31"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">JSONResponse</span>
+</span><span id="__span-11-32"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPAuthorizationCredentials</span><span class="p">,</span> <span class="n">HTTPBearer</span>
+</span><span id="__span-11-33"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">SecretStr</span>
+</span><span id="__span-11-34"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
+</span><span id="__span-11-35"><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPConnection</span>
+</span><span id="__span-11-36">
+</span><span id="__span-11-37"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-11-38">    <span class="n">BackendUnavailable</span><span class="p">,</span>
+</span><span id="__span-11-39">    <span class="n">FastAPIBreaker</span><span class="p">,</span>
+</span><span id="__span-11-40">    <span class="n">FastAPICache</span><span class="p">,</span>
+</span><span id="__span-11-41">    <span class="n">FastAPIFeatureFlags</span><span class="p">,</span>
+</span><span id="__span-11-42">    <span class="n">FastAPIMaintenance</span><span class="p">,</span>
+</span><span id="__span-11-43"><span class="p">)</span>
+</span><span id="__span-11-44"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
+</span><span id="__span-11-45"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.operations</span><span class="w"> </span><span class="kn">import</span> <span class="n">MAX_MESSAGE_LENGTH</span><span class="p">,</span> <span class="n">FeatureFlag</span><span class="p">,</span> <span class="n">MaintenanceMiddleware</span>
+</span><span id="__span-11-46"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.operations.maintenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">MaintenanceStatus</span>
+</span><span id="__span-11-47">
+</span><span id="__span-11-48"><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+</span><span id="__span-11-49">
+</span><span id="__span-11-50">
+</span><span id="__span-11-51"><span class="k">def</span><span class="w"> </span><span class="nf">throwaway_secret</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SecretStr</span><span class="p">:</span>
+</span><span id="__span-11-52"><span class="w">    </span><span class="sd">"""A random secret, for trying the example: it changes at every start and differs between</span>
+</span><span id="__span-11-53"><span class="sd">    processes."""</span>
+</span><span id="__span-11-54">    <span class="k">return</span> <span class="n">SecretStr</span><span class="p">(</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">))</span>
+</span><span id="__span-11-55">
+</span><span id="__span-11-56">
+</span><span id="__span-11-57"><span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+</span><span id="__span-11-58"><span class="w">    </span><span class="sd">"""The configuration, from environment variables or a .env file. Set both in production, the</span>
+</span><span id="__span-11-59"><span class="sd">    same in every process (secrets.token_urlsafe(32))."""</span>
+</span><span id="__span-11-60">
+</span><span id="__span-11-61">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
+</span><span id="__span-11-62">
+</span><span id="__span-11-63">    <span class="n">admin_token</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
+</span><span id="__span-11-64">    <span class="c1"># Seals the switch and the flags in the backend: a state planted there by someone else is</span>
+</span><span id="__span-11-65">    <span class="c1"># ignored, and so is what a process with another key writes.</span>
+</span><span id="__span-11-66">    <span class="n">cache_signing_key</span><span class="p">:</span> <span class="n">SecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">throwaway_secret</span><span class="p">)</span>
+</span><span id="__span-11-67">
+</span><span id="__span-11-68">
+</span><span id="__span-11-69"><span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
+</span><span id="__span-11-70">
+</span><span id="__span-11-71">
+</span><span id="__span-11-72"><span class="k">class</span><span class="w"> </span><span class="nc">Flag</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+</span><span id="__span-11-73"><span class="w">    </span><span class="sd">"""The flags this app reads: the admin routes define only these."""</span>
+</span><span id="__span-11-74">
+</span><span id="__span-11-75">    <span class="n">NEW_CHECKOUT</span> <span class="o">=</span> <span class="s2">"new-checkout"</span>
+</span><span id="__span-11-76">    <span class="n">BETA_REPORTS</span> <span class="o">=</span> <span class="s2">"beta-reports"</span>
+</span><span id="__span-11-77">
+</span><span id="__span-11-78">
+</span><span id="__span-11-79"><span class="k">class</span><span class="w"> </span><span class="nc">Quote</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-11-80">    <span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-11-81">    <span class="n">carrier</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-11-82">    <span class="n">days</span><span class="p">:</span> <span class="nb">int</span>
+</span><span id="__span-11-83">
+</span><span id="__span-11-84">
+</span><span id="__span-11-85"><span class="k">class</span><span class="w"> </span><span class="nc">ShippingService</span><span class="p">:</span>
+</span><span id="__span-11-86"><span class="w">    </span><span class="sd">"""Stands in for a downstream service and its SDK: fails while `down`, and counts the calls</span>
+</span><span id="__span-11-87"><span class="sd">    that reach it."""</span>
+</span><span id="__span-11-88">
+</span><span id="__span-11-89">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-11-90">        <span class="bp">self</span><span class="o">.</span><span class="n">down</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-11-91">        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-11-92">
+</span><span id="__span-11-93">    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">quote</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quote</span><span class="p">:</span>
+</span><span id="__span-11-94">        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">+=</span> <span class="mi">1</span>
+</span><span id="__span-11-95">        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">:</span>
+</span><span id="__span-11-96">            <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">(</span><span class="s2">"the shipping service doesn't answer"</span><span class="p">)</span>
+</span><span id="__span-11-97">        <span class="k">return</span> <span class="n">Quote</span><span class="p">(</span><span class="n">order_id</span><span class="o">=</span><span class="n">order_id</span><span class="p">,</span> <span class="n">carrier</span><span class="o">=</span><span class="s2">"Alhambra Express"</span><span class="p">,</span> <span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</span><span id="__span-11-98">
+</span><span id="__span-11-99">
+</span><span id="__span-11-100"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-11-101"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">application</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-11-102">    <span class="c1"># Redis or Valkey in production, so that every process shares the switch and the flags:</span>
+</span><span id="__span-11-103">    <span class="c1"># InMemoryBackend keeps them in this process.</span>
+</span><span id="__span-11-104">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"ops"</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">)</span>
+</span><span id="__span-11-105">    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping</span> <span class="o">=</span> <span class="n">ShippingService</span><span class="p">()</span>
+</span><span id="__span-11-106">    <span class="c1"># Only what says the service is down counts, not a bug of ours; a call that hangs is cancelled</span>
+</span><span id="__span-11-107">    <span class="c1"># after 5 s and counts too.</span>
+</span><span id="__span-11-108">    <span class="n">application</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span> <span class="o">=</span> <span class="n">FastAPIBreaker</span><span class="p">(</span>
+</span><span id="__span-11-109">        <span class="s2">"shipping"</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">failures</span><span class="o">=</span><span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,)</span>
+</span><span id="__span-11-110">    <span class="p">)</span>
+</span><span id="__span-11-111">    <span class="k">if</span> <span class="s2">"admin_token"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">model_fields_set</span><span class="p">:</span>
+</span><span id="__span-11-112">        <span class="n">token</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">admin_token</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>
+</span><span id="__span-11-113">        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"ADMIN_TOKEN isn't set: the admin token of this run is </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+</span><span id="__span-11-114">    <span class="k">yield</span>
+</span><span id="__span-11-115">
+</span><span id="__span-11-116">
+</span><span id="__span-11-117"><span class="c1"># How old each process's copy of the shared state may be, in seconds.</span>
+</span><span id="__span-11-118"><span class="n">maintenance</span> <span class="o">=</span> <span class="n">FastAPIMaintenance</span><span class="p">(</span><span class="n">refresh</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-11-119"><span class="n">flags</span> <span class="o">=</span> <span class="n">FastAPIFeatureFlags</span><span class="p">(</span><span class="n">refresh</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-11-120">
+</span><span id="__span-11-121"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-11-122"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+</span><span id="__span-11-123">    <span class="n">MaintenanceMiddleware</span><span class="p">,</span> <span class="n">maintenance</span><span class="o">=</span><span class="n">maintenance</span><span class="p">,</span> <span class="n">allow_paths</span><span class="o">=</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">,</span> <span class="s2">"/admin"</span><span class="p">)</span>
+</span><span id="__span-11-124"><span class="p">)</span>
+</span><span id="__span-11-125">
+</span><span id="__span-11-126">
+</span><span id="__span-11-127"><span class="nd">@app</span><span class="o">.</span><span class="n">exception_handler</span><span class="p">(</span><span class="n">BackendUnavailable</span><span class="p">)</span>
+</span><span id="__span-11-128"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">backend_unavailable</span><span class="p">(</span><span class="n">_request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">_exc</span><span class="p">:</span> <span class="n">BackendUnavailable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JSONResponse</span><span class="p">:</span>
+</span><span id="__span-11-129"><span class="w">    </span><span class="sd">"""An admin change the backend didn't take: nothing changed, and the response says so."""</span>
+</span><span id="__span-11-130">    <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">({</span><span class="s2">"detail"</span><span class="p">:</span> <span class="s2">"Not changed: the backend is unavailable"</span><span class="p">},</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">)</span>
+</span><span id="__span-11-131">
+</span><span id="__span-11-132">
+</span><span id="__span-11-133"><span class="k">def</span><span class="w"> </span><span class="nf">current_user</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-11-134"><span class="w">    </span><span class="sd">"""The user's id. Stands in for your authentication: here the bearer token is the id itself,</span>
+</span><span id="__span-11-135"><span class="sd">    so that you can try it with curl. Take it from a session or a token you verify, or anyone</span>
+</span><span id="__span-11-136"><span class="sd">    could put themselves on an allow list."""</span>
+</span><span id="__span-11-137">    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">token</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+</span><span id="__span-11-138">    <span class="k">return</span> <span class="n">token</span> <span class="k">if</span> <span class="n">scheme</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"bearer"</span> <span class="ow">and</span> <span class="n">token</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-11-139">
+</span><span id="__span-11-140">
+</span><span id="__span-11-141"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
+</span><span id="__span-11-142"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-11-143"><span class="w">    </span><span class="sd">"""Served during maintenance too: the processes are fine, nothing should restart them."""</span>
+</span><span id="__span-11-144">    <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"ok"</span><span class="p">}</span>
+</span><span id="__span-11-145">
+</span><span id="__span-11-146">
+</span><span id="__span-11-147"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/checkout"</span><span class="p">)</span>
+</span><span id="__span-11-148"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">checkout</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">current_user</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-11-149"><span class="w">    </span><span class="sd">"""The new checkout for the users in the rollout; without a user, a partial rollout is off."""</span>
+</span><span id="__span-11-150">    <span class="n">new</span> <span class="o">=</span> <span class="k">await</span> <span class="n">flags</span><span class="o">.</span><span class="n">enabled</span><span class="p">(</span><span class="n">Flag</span><span class="o">.</span><span class="n">NEW_CHECKOUT</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">user</span><span class="p">)</span>
+</span><span id="__span-11-151">    <span class="k">return</span> <span class="p">{</span><span class="s2">"checkout"</span><span class="p">:</span> <span class="s2">"new"</span> <span class="k">if</span> <span class="n">new</span> <span class="k">else</span> <span class="s2">"classic"</span><span class="p">}</span>
+</span><span id="__span-11-152">
+</span><span id="__span-11-153">
+</span><span id="__span-11-154"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="__span-11-155">    <span class="s2">"/reports/beta"</span><span class="p">,</span>
+</span><span id="__span-11-156">    <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">flags</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="n">Flag</span><span class="o">.</span><span class="n">BETA_REPORTS</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">))],</span>
+</span><span id="__span-11-157"><span class="p">)</span>
+</span><span id="__span-11-158"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">beta_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-11-159"><span class="w">    </span><span class="sd">"""A 404 for the users the flag is off for, as if the route didn't exist."""</span>
+</span><span id="__span-11-160">    <span class="k">return</span> <span class="p">{</span><span class="s2">"report"</span><span class="p">:</span> <span class="s2">"Sales by hour"</span><span class="p">}</span>
+</span><span id="__span-11-161">
+</span><span id="__span-11-162">
+</span><span id="__span-11-163"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/orders/</span><span class="si">{order_id}</span><span class="s2">/shipping"</span><span class="p">)</span>
+</span><span id="__span-11-164"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shipping_quote</span><span class="p">(</span><span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quote</span><span class="p">:</span>
+</span><span id="__span-11-165"><span class="w">    </span><span class="sd">"""A 502 when the service fails; while the breaker is open, a 503 with Retry-After."""</span>
+</span><span id="__span-11-166">    <span class="n">breaker</span><span class="p">:</span> <span class="n">FastAPIBreaker</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span>
+</span><span id="__span-11-167">    <span class="n">shipping</span><span class="p">:</span> <span class="n">ShippingService</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping</span>
+</span><span id="__span-11-168">    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-11-169">        <span class="k">async</span> <span class="k">with</span> <span class="n">breaker</span><span class="o">.</span><span class="n">attempt</span><span class="p">():</span>
+</span><span id="__span-11-170">            <span class="k">return</span> <span class="k">await</span> <span class="n">shipping</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
+</span><span id="__span-11-171">    <span class="k">except</span> <span class="p">(</span><span class="ne">ConnectionError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+</span><span id="__span-11-172">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_502_BAD_GATEWAY</span><span class="p">,</span> <span class="s2">"The shipping service failed"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+</span><span id="__span-11-173">
+</span><span id="__span-11-174">
+</span><span id="__span-11-175"><span class="k">def</span><span class="w"> </span><span class="nf">require_admin</span><span class="p">(</span>
+</span><span id="__span-11-176">    <span class="n">credentials</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span>
+</span><span id="__span-11-177">        <span class="n">HTTPAuthorizationCredentials</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">HTTPBearer</span><span class="p">(</span><span class="n">auto_error</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+</span><span id="__span-11-178">    <span class="p">],</span>
+</span><span id="__span-11-179"><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-11-180"><span class="w">    </span><span class="sd">"""Compared in constant time, and as bytes: compare_digest refuses strings with non-ASCII</span>
+</span><span id="__span-11-181"><span class="sd">    characters, which a client can send."""</span>
+</span><span id="__span-11-182">    <span class="n">token</span> <span class="o">=</span> <span class="n">credentials</span><span class="o">.</span><span class="n">credentials</span> <span class="k">if</span> <span class="n">credentials</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">""</span>
+</span><span id="__span-11-183">    <span class="k">if</span> <span class="ow">not</span> <span class="n">secrets</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">settings</span><span class="o">.</span><span class="n">admin_token</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">()):</span>
+</span><span id="__span-11-184">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_401_UNAUTHORIZED</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
+</span><span id="__span-11-185">
+</span><span id="__span-11-186">
+</span><span id="__span-11-187"><span class="n">admin</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">"/admin"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">require_admin</span><span class="p">)])</span>
+</span><span id="__span-11-188">
+</span><span id="__span-11-189">
+</span><span id="__span-11-190"><span class="k">class</span><span class="w"> </span><span class="nc">MaintenanceUpdate</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-11-191">    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">MAX_MESSAGE_LENGTH</span><span class="p">)</span>
+</span><span id="__span-11-192">    <span class="n">retry_after</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-11-193">
+</span><span id="__span-11-194">
+</span><span id="__span-11-195"><span class="k">class</span><span class="w"> </span><span class="nc">FlagUpdate</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-11-196">    <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span>
+</span><span id="__span-11-197">    <span class="c1"># None: everybody, or only the allow list when there's one.</span>
+</span><span id="__span-11-198">    <span class="n">percentage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-11-199">    <span class="n">allow</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+</span><span id="__span-11-200">    <span class="n">deny</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+</span><span id="__span-11-201">
+</span><span id="__span-11-202">
+</span><span id="__span-11-203"><span class="nd">@admin</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/maintenance"</span><span class="p">)</span>
+</span><span id="__span-11-204"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start_maintenance</span><span class="p">(</span><span class="n">update</span><span class="p">:</span> <span class="n">MaintenanceUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MaintenanceStatus</span><span class="p">:</span>
+</span><span id="__span-11-205"><span class="w">    </span><span class="sd">"""Close the app, in every process within a second."""</span>
+</span><span id="__span-11-206">    <span class="k">return</span> <span class="k">await</span> <span class="n">maintenance</span><span class="o">.</span><span class="n">enable</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">update</span><span class="o">.</span><span class="n">retry_after</span><span class="p">)</span>
+</span><span id="__span-11-207">
+</span><span id="__span-11-208">
+</span><span id="__span-11-209"><span class="nd">@admin</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">"/maintenance"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+</span><span id="__span-11-210"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">end_maintenance</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-11-211">    <span class="k">await</span> <span class="n">maintenance</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
+</span><span id="__span-11-212">
+</span><span id="__span-11-213">
+</span><span id="__span-11-214"><span class="nd">@admin</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/flags/</span><span class="si">{name}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-11-215"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_flag</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="n">Flag</span><span class="p">,</span> <span class="n">update</span><span class="p">:</span> <span class="n">FlagUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureFlag</span><span class="p">:</span>
+</span><span id="__span-11-216"><span class="w">    </span><span class="sd">"""Define a flag, for every process within 5 seconds. The lists come back as digests: the</span>
+</span><span id="__span-11-217"><span class="sd">    backend never gets the users' ids."""</span>
+</span><span id="__span-11-218">    <span class="k">return</span> <span class="k">await</span> <span class="n">flags</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">update</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+</span><span id="__span-11-219">
+</span><span id="__span-11-220">
+</span><span id="__span-11-221"><span class="nd">@admin</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/simulate/shipping"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+</span><span id="__span-11-222"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">simulate_shipping</span><span class="p">(</span><span class="n">down</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-11-223"><span class="w">    </span><span class="sd">"""Only in this example: makes the shipping service fail, to watch the breaker open."""</span>
+</span><span id="__span-11-224">    <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping</span><span class="o">.</span><span class="n">down</span> <span class="o">=</span> <span class="n">down</span>
+</span><span id="__span-11-225">
+</span><span id="__span-11-226">
+</span><span id="__span-11-227"><span class="nd">@admin</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/breakers/shipping/close"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+</span><span id="__span-11-228"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_shipping_breaker</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-11-229"><span class="w">    </span><span class="sd">"""The shipping service is back: call it again now, instead of waiting for the trial. Only</span>
+</span><span id="__span-11-230"><span class="sd">    in the process that gets this request: each process has its own breaker."""</span>
+</span><span id="__span-11-231">    <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</span><span id="__span-11-232">
+</span><span id="__span-11-233">
+</span><span id="__span-11-234"><span class="nd">@admin</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/status"</span><span class="p">)</span>
+</span><span id="__span-11-235"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">status_report</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+</span><span id="__span-11-236"><span class="w">    </span><span class="sd">"""The shared state as the backend has it now (this process's copies are updated with it),</span>
+</span><span id="__span-11-237"><span class="sd">    and the breaker as this process sees it."""</span>
+</span><span id="__span-11-238">    <span class="n">breaker</span><span class="p">:</span> <span class="n">FastAPIBreaker</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">shipping_breaker</span>
+</span><span id="__span-11-239">    <span class="k">return</span> <span class="p">{</span>
+</span><span id="__span-11-240">        <span class="s2">"maintenance"</span><span class="p">:</span> <span class="k">await</span> <span class="n">maintenance</span><span class="o">.</span><span class="n">status</span><span class="p">(),</span>
+</span><span id="__span-11-241">        <span class="s2">"flags"</span><span class="p">:</span> <span class="p">{</span><span class="n">flag</span><span class="p">:</span> <span class="k">await</span> <span class="n">flags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span> <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">Flag</span><span class="p">},</span>
+</span><span id="__span-11-242">        <span class="s2">"process"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"pid"</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">(),</span> <span class="s2">"shipping_breaker"</span><span class="p">:</span> <span class="n">breaker</span><span class="o">.</span><span class="n">state</span><span class="p">},</span>
+</span><span id="__span-11-243">    <span class="p">}</span>
+</span><span id="__span-11-244">
+</span><span id="__span-11-245">
+</span><span id="__span-11-246"><span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span><span class="n">admin</span><span class="p">)</span>
+</span><span id="__span-11-247">
+</span><span id="__span-11-248">
+</span><span id="__span-11-249"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-11-250">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 <!-- fmt: on -->
 
 
