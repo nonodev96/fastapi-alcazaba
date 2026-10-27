@@ -72,6 +72,13 @@ jobs:
           if ! git merge-base --is-ancestor HEAD origin/main; then
             echo "::error::$RELEASE isn't on main"; exit 1
           fi
+          # X.Y's documentation is its newest patch's: an older one would replace it.
+          newest_patch="$(git tag --list "v$version.*" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V | tail -n 1)"
+          if [ "$newest_patch" != "$RELEASE" ]; then
+            echo "::error::$version's documentation is $newest_patch's, which is newer than $RELEASE"
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           # "latest" is the newest release's: publishing an older one again leaves it alone.
           newest="$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"

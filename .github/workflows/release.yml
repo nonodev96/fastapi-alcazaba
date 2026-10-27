@@ -15,8 +15,10 @@ env:
   PIP_UPLOADED_PRIOR_TO: P3D
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
+# One run per tag, not one for every release: GitHub cancels a run of the group that waits for an
+# approval (TestPyPI, PyPI) when another one starts, which is how pushing v0.3.1 cancelled 0.3.0's.
 concurrency:
-  group: release
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:

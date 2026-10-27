@@ -9,6 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.3.1] - 2026-10-27
 
+0.3.0's release was cancelled before it reached PyPI: 0.3.1 is the first release with the changes
+of 0.3.0, below.
+
 ### Changed
 
 - Copying a terminal session of the documentation copies its commands alone, ready to paste into
