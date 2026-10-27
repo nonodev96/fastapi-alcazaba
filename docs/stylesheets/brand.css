@@ -43,3 +43,15 @@
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+
+/* The API reference: a rule between the objects of a page, and their members set in. */
+.md-typeset > .doc-object + .doc-object {
+  margin-top: 2.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--md-default-fg-color--lighter);
+}
+
+.md-typeset .doc-object .doc-children {
+  padding-left: 0.8em;
+  border-left: 2px solid var(--md-default-fg-color--lightest);
+}

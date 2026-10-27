@@ -66,7 +66,22 @@ nav:
     - Errors and observability: examples/observability.md
     - Background work: examples/background.md
     - Operations: examples/operations.md
-  - API reference: reference.md
+  - API reference:
+    - reference/index.md
+    - Response cache: reference/cache.md
+    - Backends: reference/backends.md
+    - Pagination: reference/pagination.md
+    - Rate and concurrency limits: reference/limits.md
+    - Idempotency keys: reference/idempotency.md
+    - API keys, tokens and codes: reference/auth.md
+    - Sessions, CSRF and security headers: reference/browser.md
+    - Audit trail: reference/audit.md
+    - Checking uploads: reference/uploads.md
+    - Webhooks and outbound calls: reference/webhooks.md
+    - Errors and observability: reference/observability.md
+    - Background work: reference/background.md
+    - Operations: reference/operations.md
+    - Integrity, resilience and errors: reference/integrity.md
   - Project:
     - Security policy: security.md
     - Deployment and releases: releasing.md
@@ -98,6 +113,14 @@ plugins:
             show_root_heading: true
             members_order: source
             filters: ["!^_"]
+            # Each object a section of its own: its kind in the heading and in the table of
+            # contents, the signature apart under it, the constructor's parameters in the class's.
+            heading_level: 2
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            separate_signature: true
+            show_signature_annotations: true
+            merge_init_into_class: true
 
 validation:
   links:

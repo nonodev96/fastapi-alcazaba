@@ -282,8 +282,10 @@ class Cache:
     ) -> "Lock":
         """A lock shared by every process using this backend (see `fastapi_alcazaba.locks`):
 
-        async with cache.lock("nightly-report", ttl=60):
-            ...
+            async with cache.lock("nightly-report", ttl=60):
+                ...
+
+        `ttl`, `wait` and `renew` are those of `Lock`.
         """
         from fastapi_alcazaba.locks import Lock
 
@@ -315,9 +317,9 @@ def get_cache(request: HTTPConnection) -> Cache:
     """FastAPI dependency: the cache installed on the app (`Cache.install`), else FastAPICache's.
     Works in WebSocket routes too.
 
-    @app.post("/products/{product_id}")
-    async def update(product_id: int, cache: Annotated[Cache, Depends(get_cache)]) -> None:
-        await cache.invalidate_tags(f"product:{product_id}")
+        @app.post("/products/{product_id}")
+        async def update(product_id: int, cache: Annotated[Cache, Depends(get_cache)]) -> None:
+            await cache.invalidate_tags(f"product:{product_id}")
     """
     installed = getattr(request.app.state, "fastapi_alcazaba", None)
     if isinstance(installed, Cache):

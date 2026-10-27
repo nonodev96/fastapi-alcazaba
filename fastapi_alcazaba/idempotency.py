@@ -47,9 +47,11 @@ def authorization(connection: HTTPConnection) -> str:
 
 
 def require_idempotency_key(request: Request) -> str:
-    """FastAPI dependency for routes that must not run without an `Idempotency-Key` (a 400):
+    """FastAPI dependency for routes that must not run without an `Idempotency-Key`:
 
-    @app.post("/payments", dependencies=[Depends(require_idempotency_key)])
+        @app.post("/payments", dependencies=[Depends(require_idempotency_key)])
+
+    A request without one gets a 400; it returns the key.
     """
     value = request.headers.get(HEADER)
     if not value:

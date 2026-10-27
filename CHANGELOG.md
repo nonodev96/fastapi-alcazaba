@@ -14,6 +14,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   audit details, each checking the properties it must keep. ClusterFuzzLite runs them with
   atheris on pull requests and every week; the unit tests run them on random inputs.
 
+### Changed
+
+- The API reference has a page per tool (cache, backends, limits, audit...) with an index of
+  them, instead of one long page; each object is set apart, with its kind and its signature.
+
 ### Fixed
 
 - `FastAPIPaginationCursor.decode()` raised a TypeError, instead of the 400 of an invalid cursor,
