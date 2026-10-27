@@ -118,6 +118,7 @@ jobs:
           export SOURCE_DATE_EPOCH
           python scripts/sbom.py dist/*.whl -o "sbom/fastapi-alcazaba-$VERSION.cdx.json"
       - name: Attest the build provenance (SLSA)
+        id: provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*
@@ -136,6 +137,13 @@ jobs:
           verify-cert-identity: ${{ github.server_url }}/${{ github.workflow_ref }}
           verify-oidc-issuer: https://token.actions.githubusercontent.com
           release-signing-artifacts: false
+      # The provenance goes with the release too, to verify it without GitHub's attestation API
+      # (and for Scorecard, which looks for it there). It's a Sigstore bundle already: it's added
+      # once the other files are signed.
+      - name: The provenance, with the release
+        env:
+          PROVENANCE: ${{ steps.provenance.outputs.bundle-path }}
+        run: cp "$PROVENANCE" "release/fastapi-alcazaba-$VERSION.intoto.jsonl"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist

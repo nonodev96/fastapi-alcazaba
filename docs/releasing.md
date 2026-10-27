@@ -75,8 +75,8 @@ No API token is created or stored anywhere: the workflow proves its identity wit
     5. publishes to TestPyPI and installs that version in a clean environment (smoke test);
     6. waits for your approval in the `pypi` environment, then publishes to PyPI with PEP 740
        attestations;
-    7. creates the GitHub release with the distributions, the SBOM, the Sigstore bundles and the
-       notes of that version from the changelog;
+    7. creates the GitHub release with the distributions, the SBOM, the provenance, the Sigstore
+       bundles and the notes of that version from the changelog;
     8. the *Docs* workflow publishes the site.
 
 Pre-releases (`vX.Y.ZrcN`, `aN`, `bN`) stop after TestPyPI and become GitHub pre-releases. They

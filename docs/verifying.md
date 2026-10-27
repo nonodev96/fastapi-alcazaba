@@ -29,9 +29,19 @@ gh attestation verify fastapi_alcazaba-X.Y.Z-py3-none-any.whl --repo nonodev96/f
   --predicate-type https://cyclonedx.org/bom
 ```
 
+The release carries the provenance too, `fastapi-alcazaba-X.Y.Z.intoto.jsonl` (the Sigstore
+bundle of the attestation, one JSON line): with it, `gh attestation verify` doesn't ask GitHub
+for it, and checks the repository's name as the certificate recorded it when the release was
+built.
+
+```shell
+gh attestation verify fastapi_alcazaba-X.Y.Z-py3-none-any.whl --repo nonodev96/fastapi-alcazaba \
+  --bundle fastapi-alcazaba-X.Y.Z.intoto.jsonl
+```
+
 ## Sigstore bundles of the GitHub release
 
-Each file of the release has a `.sigstore.json` bundle next to it:
+Each file of the release but the provenance has a `.sigstore.json` bundle next to it:
 
 ```shell
 verify/bin/sigstore verify github fastapi_alcazaba-X.Y.Z-py3-none-any.whl \
