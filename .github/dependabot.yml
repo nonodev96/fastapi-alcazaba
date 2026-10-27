@@ -12,6 +12,23 @@ updates:
     ignore:
       # Pinned to 9.7.1 on purpose: see the docs group of pyproject.toml.
       - dependency-name: mkdocs-material
+      # The library's own requirements: their lower bounds are the oldest releases it works with,
+      # not the newest, so that apps on older versions can install it; CI tests the newest anyway.
+      # Raise one when the code needs it. The development tools do rise.
+      - dependency-name: fastapi
+      - dependency-name: pydantic
+      - dependency-name: typing-extensions
+      - dependency-name: redis
+      - dependency-name: valkey
+      - dependency-name: valkey-glide
+      - dependency-name: opentelemetry-api
+      - dependency-name: cryptography
+      - dependency-name: backports.zstd
+      - dependency-name: aiomcache
+      - dependency-name: aiobotocore
+      # And what builds the sdist.
+      - dependency-name: hatchling
+      - dependency-name: hatch-vcs
     groups:
       python:
         patterns: ["*"]
