@@ -20,7 +20,9 @@ concurrency:
 jobs:
   lint:
     name: Lint and type check
-    runs-on: ubuntu-latest
+    # A fixed image, not ubuntu-latest: that one moves to a new Ubuntu on GitHub's schedule, and
+    # for weeks a job may run on either. This one changes when the workflows do.
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -35,7 +37,7 @@ jobs:
 
   test:
     name: Unit and integration tests (${{ matrix.python }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     # A run takes about 3 minutes: a test that hangs fails the job instead of holding it for 6 h.
     timeout-minutes: 20
     strategy:
@@ -84,7 +86,7 @@ jobs:
 
   e2e:
     name: End-to-end
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     services:
       valkey:
         image: valkey/valkey:8
@@ -100,7 +102,7 @@ jobs:
 
   package:
     name: Package
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -129,7 +131,7 @@ jobs:
 
   audit:
     name: Audit dependencies
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -144,7 +146,7 @@ jobs:
 
   docs:
     name: Docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -156,7 +158,7 @@ jobs:
 
   benchmarks:
     name: Benchmarks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

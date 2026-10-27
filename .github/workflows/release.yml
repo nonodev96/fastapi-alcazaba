@@ -22,7 +22,9 @@ concurrency:
 jobs:
   verify:
     name: Verify the tag and test
-    runs-on: ubuntu-latest
+    # A fixed image, not ubuntu-latest: that one moves to a new Ubuntu on GitHub's schedule, and
+    # for weeks a job may run on either. This one changes when the workflows do.
+    runs-on: ubuntu-26.04
     services:
       redis:
         image: redis:8
@@ -75,7 +77,7 @@ jobs:
   build:
     name: Build, SBOM and signatures
     needs: [verify]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       id-token: write # Sigstore
@@ -120,7 +122,7 @@ jobs:
         with:
           subject-path: dist/*
       - name: Attest the SBOM
-        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: dist/*
           sbom-path: sbom/fastapi-alcazaba-${{ needs.verify.outputs.version }}.cdx.json
@@ -146,7 +148,7 @@ jobs:
   publish-testpypi:
     name: Publish to TestPyPI
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment:
       name: testpypi
       url: https://test.pypi.org/project/fastapi-alcazaba/
@@ -164,7 +166,7 @@ jobs:
   check-testpypi:
     name: Install from TestPyPI
     needs: [verify, publish-testpypi]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     env:
       VERSION: ${{ needs.verify.outputs.version }}
     steps:
@@ -201,7 +203,7 @@ jobs:
     name: Publish to PyPI
     needs: [verify, check-testpypi]
     if: needs.verify.outputs.prerelease == 'false'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment:
       name: pypi # requires your approval
       url: https://pypi.org/project/fastapi-alcazaba/
@@ -220,7 +222,7 @@ jobs:
     if: >-
       !cancelled() && needs.check-testpypi.result == 'success' &&
       (needs.publish-pypi.result == 'success' || needs.verify.outputs.prerelease == 'true')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     env:

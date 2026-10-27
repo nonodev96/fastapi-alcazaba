@@ -13,7 +13,9 @@ permissions:
 jobs:
   analysis:
     name: Scorecard analysis
-    runs-on: ubuntu-latest
+    # A fixed image, not ubuntu-latest: that one moves to a new Ubuntu on GitHub's schedule, and
+    # for weeks a job may run on either. This one changes when the workflows do.
+    runs-on: ubuntu-26.04
     permissions:
       security-events: write
       id-token: write

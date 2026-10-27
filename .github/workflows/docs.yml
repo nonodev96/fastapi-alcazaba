@@ -21,7 +21,9 @@ concurrency:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    # A fixed image, not ubuntu-latest: that one moves to a new Ubuntu on GitHub's schedule, and
+    # for weeks a job may run on either. This one changes when the workflows do.
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -44,7 +46,7 @@ jobs:
   deploy:
     name: Deploy
     needs: [build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

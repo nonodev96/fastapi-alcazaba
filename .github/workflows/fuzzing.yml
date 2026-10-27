@@ -29,7 +29,9 @@ concurrency:
 jobs:
   fuzz:
     name: ClusterFuzzLite
-    runs-on: ubuntu-latest
+    # A fixed image, not ubuntu-latest: that one moves to a new Ubuntu on GitHub's schedule, and
+    # for weeks a job may run on either. This one changes when the workflows do.
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
       - uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1

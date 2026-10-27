@@ -4,3 +4,9 @@ paths:
   .github/workflows/**/*.{yml,yaml}:
     ignore:
       - 'specifying action "\$/[^"]+" in invalid format because ref is missing'
+
+# Nor GitHub's Ubuntu 26.04 image (generally available since October 2026): it isn't a
+# self-hosted runner, it's newer than actionlint's list of GitHub's labels.
+self-hosted-runner:
+  labels:
+    - ubuntu-26.04
