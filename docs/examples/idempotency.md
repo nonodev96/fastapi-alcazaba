@@ -91,13 +91,13 @@ a 409 with `Retry-After: 1` and `{"detail": "A request with this Idempotency-Key
 processed"}`, and the card is charged once:
 
 ```console
-$ for attempt in first retry; do
+$ for attempt in first retry; do \
     curl -s -o /dev/null -w "$attempt: %{http_code} after %{time_total}s\n" \
       -X POST http://127.0.0.1:8000/payments -H "Authorization: Bearer alice-token" \
       -H "Idempotency-Key: 5f0c1a8e-2b7d-4c39-9e61-0d4f8a3b7c25" \
       -H "Content-Type: application/json" \
-      -d '{"amount": 4800, "currency": "EUR", "description": "Order 1043"}' &
-    sleep 0.2
+      -d '{"amount": 4800, "currency": "EUR", "description": "Order 1043"}' & \
+    sleep 0.2; \
   done; wait
 retry: 409 after 0.000958s
 first: 201 after 1.002062s

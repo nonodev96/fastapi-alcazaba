@@ -120,7 +120,12 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc: {permalink: true}
-  - pymdownx.highlight
+  - pymdownx.highlight:
+      # Each line in a span of its own: the output of a terminal session is left out of copies
+      # whole, its line break included (stylesheets/brand.css).
+      line_spans: __span
+      # A class per language (language-console), for the rules of terminal sessions.
+      pygments_lang_class: true
   - pymdownx.superfences
   - pymdownx.snippets: {check_paths: true}
 

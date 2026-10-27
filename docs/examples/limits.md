@@ -107,10 +107,10 @@ Three reports at once: two render, and the third waits 2 seconds for a slot, the
 `Retry-After: 3`:
 
 ```console
-$ for month in 2026-07 2026-08 2026-09; do
+$ for month in 2026-07 2026-08 2026-09; do \
     curl -s -o /dev/null -w "$month: %{http_code} after %{time_total}s\n" \
       -X POST http://127.0.0.1:8000/reports -H "Authorization: Bearer carol-token" \
-      -H "Content-Type: application/json" -d "{\"month\": \"$month\"}" &
+      -H "Content-Type: application/json" -d "{\"month\": \"$month\"}" & \
   done; wait
 2026-08: 503 after 2.009854s
 2026-09: 200 after 3.009745s

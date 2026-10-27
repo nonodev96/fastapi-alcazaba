@@ -55,3 +55,17 @@
   padding-left: 0.8em;
   border-left: 2px solid var(--md-default-fg-color--lightest);
 }
+
+/* Terminal sessions (```console): the copy button copies the commands alone, without the prompts,
+   what they print or the blank lines between them, ready to paste into a shell; selecting with
+   the mouse leaves the prompts out too. Material hides what's hidden while [data-md-copying] is
+   set, as it reads the text; each line is a span of its own (line_spans in mkdocs.yml). */
+[data-md-copying] .gp,
+[data-md-copying] [id^="__span"]:has(> .go),
+.language-console [data-md-copying] [id^="__span"]:not(:has(> *)) {
+  display: none;
+}
+
+.highlight .gp {
+  user-select: none;
+}

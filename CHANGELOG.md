@@ -7,6 +7,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Copying a terminal session of the documentation copies its commands alone, ready to paste into
+  a shell: no prompts, no output, no blank lines. The commands of several lines are written so
+  that they run as they're copied.
+
 ## [0.3.0] - 2026-10-27
 
 ### Added

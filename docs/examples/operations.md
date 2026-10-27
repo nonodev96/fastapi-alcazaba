@@ -83,9 +83,9 @@ $ curl -X PUT http://127.0.0.1:8000/admin/flags/new-checkout -H "Authorization: 
     -H "Content-Type: application/json" -d '{"enabled": true, "percentage": 30}'
 {"name":"new-checkout","enabled":true,"percentage":30.0,"allow":[],"deny":[]}
 
-$ for user in ana bea carlos david elena; do
->   echo "$user: $(curl -s http://127.0.0.1:8000/checkout -H "Authorization: Bearer $user")"
-> done
+$ for user in ana bea carlos david elena; do \
+    echo "$user: $(curl -s http://127.0.0.1:8000/checkout -H "Authorization: Bearer $user")"; \
+  done
 ana: {"checkout":"new"}
 bea: {"checkout":"classic"}
 carlos: {"checkout":"classic"}

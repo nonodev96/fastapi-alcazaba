@@ -39,11 +39,10 @@ Sign it as the provider would, with the same secret (in the same shell as the `e
 keep the headers in a file for curl:
 
 ```console
-$ sign() { python -c 'import os, sys
-from fastapi_alcazaba.webhooks import WebhookSigner
-signer = WebhookSigner(os.environ["PAYMENTS_WEBHOOK_SECRET"])
-for name, value in signer.sign(sys.argv[1], message_id="msg_1").items():
-    print(f"{name}: {value}")' "$BODY" > signed.txt; }
+$ sign() { python -c 'import os, sys; from fastapi_alcazaba.webhooks import WebhookSigner; \
+    signer = WebhookSigner(os.environ["PAYMENTS_WEBHOOK_SECRET"]); \
+    headers = signer.sign(sys.argv[1], message_id="msg_1"); \
+    print("\n".join(f"{name}: {value}" for name, value in headers.items()))' "$BODY" > signed.txt; }
 $ sign && cat signed.txt
 webhook-id: msg_1
 webhook-timestamp: 1793012100
