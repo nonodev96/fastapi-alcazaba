@@ -13,10 +13,10 @@
 <!-- --8<-- [end:header] -->
 
 <p align="center">
-  <a href="https://nonodev96.github.io/fastapi-alcazaba/"><strong>Documentation</strong></a> ·
-  <a href="https://nonodev96.github.io/fastapi-alcazaba/latest/examples/">Examples</a> ·
-  <a href="https://pypi.org/project/fastapi-alcazaba/">PyPI</a> ·
-  <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/CHANGELOG.md">Changelog</a> ·
+  <a href="https://nonodev96.github.io/fastapi-alcazaba/"><strong>Documentation</strong></a> |
+  <a href="https://nonodev96.github.io/fastapi-alcazaba/latest/examples/">Examples</a> |
+  <a href="https://pypi.org/project/fastapi-alcazaba/">PyPI</a> |
+  <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/CHANGELOG.md">Changelog</a> |
   <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/SECURITY.md">Security policy</a>
 </p>
 
@@ -43,8 +43,10 @@ built with security in mind and tested against real servers (the
 | [Rate limiter](#rate-limiting) | `rate_limit` | `FastAPIRateLimiter`: a dependency with a sliding window shared by every process |
 | [Locks](#locks) | `background` | `async with cache.lock("job")`: one process at a time, renewed while held |
 | [Idempotency keys](#idempotency-keys) | `idempotency` | a retried POST gets the first response instead of running twice |
+| [Authentication strategies](#authentication-strategies) | `auth` | `FastAPIAuth`: who makes a request, by strategies: JWTs, bearer tokens, sessions, OAuth2 and SAML logins, your own |
 | [Revoked tokens and one-time codes](#revoked-tokens-and-one-time-codes) | `auth` | a JWT blocklist and e-mail/SMS codes, nothing stored in clear |
 | [API keys](#api-keys) | `auth` | keys stored only as digests, with scopes and expiry |
+| [Authorization with Casbin](#authorization-with-casbin) | `authz` | `FastAPICasbin`: a Casbin policy (ACL, RBAC, ABAC) decides who may do what, per route or for every request |
 | [Signed webhooks](#signed-webhooks) | `webhooks` | Standard Webhooks signing and verification, replays refused |
 | [Outbound calls](#outbound-calls) | `outbound` | an httpx transport with a deadline per call, a circuit breaker per origin and SSRF protection |
 | [Security headers and body size](#security-headers-and-body-size) | `security` | the OWASP headers, and a 413 for endless bodies |
@@ -63,7 +65,7 @@ built with security in mind and tested against real servers (the
 | [Leader election](#leader-election) | `background` | `FastAPILeader`: work that must run in exactly one process at a time |
 | [Maintenance mode](#maintenance-mode) | `operations` | `FastAPIMaintenance`: a 503 with `Retry-After` for every process at once |
 | [Feature flags](#feature-flags) | `operations` | `FastAPIFeatureFlags`: on, off, by percentage or by subject, shared by every process |
-| [Pagination](#pagination) | `pagination` | `FastAPIPagination`, `…LimitOffset` and `…Cursor`, each page cached under its own key |
+| [Pagination](#pagination) | `pagination` | Twelve strategies: page numbers, offsets, ranges, cursors, keysets, ids, timestamps, sort values, tokens, scrolls and streams, each page cached under its own key |
 | [Invalidation by tag](#invalidating-by-tag) | `response_cache` | drop every entry of a product, a user… without knowing their keys |
 | [Two-level cache](#two-level-cache) | `backends` | a copy in each process in front of Redis, kept in sync by pub/sub |
 | [Metrics and traces](#metrics-and-traces) | `telemetry` | OpenTelemetry for all of the above |
@@ -109,6 +111,10 @@ pip install "fastapi-alcazaba[redis]"   # or [valkey], [glide], [memcache], [dyn
 pip install "fastapi-alcazaba[otel]"    # OpenTelemetry metrics
 pip install "fastapi-alcazaba[crypto]"  # encrypted entries
 pip install "fastapi-alcazaba[zstd]"    # zstd compression before Python 3.14
+pip install "fastapi-alcazaba[casbin]"  # authorization with Casbin
+pip install "fastapi-alcazaba[auth-strategy-jwt]"     # JWTStrategy
+pip install "fastapi-alcazaba[auth-strategy-oauth2]"  # OAuth2Strategy
+pip install "fastapi-alcazaba[auth-strategy-saml]"    # SAMLStrategy
 ```
 
 Python 3.11+, FastAPI 0.115+ and Pydantic v2.
@@ -404,19 +410,6 @@ async def login(request: Request, form: Annotated[LoginForm, Form()]) -> Token:
     ...
 ```
 
-### Migrating from fastapi-limiter
-
-| fastapi-limiter | Alcazaba |
-| --- | --- |
-| `await FastAPILimiter.init(redis)` | The cache's backend: `FastAPICache.init(...)` or `Cache(...).install(app)` |
-| `RateLimiter(times=2, seconds=5)` (0.1), `RateLimiter(limiter=Limiter(Rate(2, Duration.SECOND * 5)))` (0.2) | `FastAPIRateLimiter(times=2, seconds=5)` |
-| The client address from `X-Forwarded-For`: a new one, a new budget | From the ASGI server, which you tell which proxies to trust |
-| A budget per URL: `/items/1`, `/items/2`… | Per route, or per `name` across routes |
-| `callback(request, response, pexpire)` | `callback(request, seconds_to_wait)` |
-| `WebSocketRateLimiter(...)(websocket, context_key)` | `await FastAPIRateLimiter(...).hit(websocket, key=...)` |
-| `@skip_limiter` | Put the limiter only on the routes or routers that need it |
-| No headers for clients | `RateLimit` and `RateLimit-Policy` on the responses |
-
 <!-- --8<-- [end:rate-limiting] -->
 
 ## Locks
@@ -501,6 +494,259 @@ The client sends a fresh key with each new request, and the same one when it ret
   and needs a backend with locks.
 
 <!-- --8<-- [end:idempotency-keys] -->
+
+## Authentication strategies
+<!-- --8<-- [start:authentication-strategies] -->
+
+`FastAPIAuth` tells who makes a request by strategies: each strategy knows one way (a JWT, a
+session, a login with GitHub…), and a dependency tries those of a route in order. The first one that finds a user gives it to the route; when none
+does, a 401. Each strategy has its extra:
+
+```shell
+pip install "fastapi-alcazaba[auth-strategy-jwt]"          # JWTStrategy, with PyJWT
+pip install "fastapi-alcazaba[auth-strategy-oauth2]"       # OAuth2Strategy, with httpx2
+pip install "fastapi-alcazaba[auth-strategy-saml]"         # SAMLStrategy, with signxml
+pip install "fastapi-alcazaba[auth-strategy-http-bearer]"  # HTTPBearerStrategy: nothing more
+```
+
+```python
+from fastapi_alcazaba.auth import FastAPIAuth, SessionStrategy
+from fastapi_alcazaba.auth.strategies.jwt import JWTStrategy
+from fastapi_alcazaba.auth.strategies.oauth2 import OAuth2Strategy
+
+auth = FastAPIAuth()
+github = auth.use(
+    OAuth2Strategy(
+        name="github",
+        authorization_url="https://github.com/login/oauth/authorize",
+        token_url="https://github.com/login/oauth/access_token",
+        userinfo_url="https://api.github.com/user",
+        client_id=settings.github_client_id,
+        client_secret=settings.github_client_secret,
+        redirect_uri="https://example.com/auth/github/callback",
+        verify=find_or_create_user,  # (tokens, profile) -> your user
+    )
+)
+sessions = auth.use(SessionStrategy(load_user))  # load_user(user_id) -> your user
+tokens = auth.use(JWTStrategy(settings.jwt_secret, verify=lambda c: load_user(c["sub"])))
+
+CurrentUser = Annotated[User, Depends(auth.authenticate("session", "jwt"))]
+GitHubUser = Annotated[User, Depends(auth.authenticate("github"))]
+
+
+@app.get("/me")
+async def me(user: CurrentUser) -> User:  # a browser's session, or a script's token
+    return user
+
+
+@app.get("/login/github")
+async def login() -> RedirectResponse:
+    return github.redirect()  # to GitHub, which sends the user back to the callback
+
+
+@app.get("/auth/github/callback")
+async def callback(request: Request, user: GitHubUser) -> RedirectResponse:
+    sessions.login(request, user.id)
+    return RedirectResponse("/me", status_code=303)
+```
+
+The strategies of a dependency are tried in order. Each returns the user; None when the request
+doesn't carry its credentials; or raises `AuthenticationFailed` when they're there but wrong
+(logged, never sent). Either way the next one is tried. When none finds a user, a 401 with the
+`WWW-Authenticate` challenges of those tried, a WebSocket is closed with 1008, and
+`optional=True` gives None. Any other error is a 500, never a request let through. Without a
+dependency: `await auth.user(connection)`. The `verify` and `load_user` functions that turn
+credentials into your user can be async or not, and return None to refuse them.
+
+<!-- --8<-- [end:authentication-strategies] -->
+
+### JWTStrategy
+<!-- --8<-- [start:jwt-strategy] -->
+
+`JWTStrategy` reads the token of `Authorization: Bearer` (or of the cookie named by `cookie=`)
+and verifies it with PyJWT: the signature, `exp`, `nbf` and the `required` claims (`exp`, `sub`),
+and `aud` and `iss` when given; a token with an `aud` is refused when no `audience` is set, as
+it's meant for another service. `alg: none` never, nor HMAC and asymmetric algorithms together: a
+public key taken for an HMAC secret would let anyone sign.
+
+```python
+from fastapi_alcazaba.auth import TokenBlocklist
+from fastapi_alcazaba.auth.strategies.jwt import JWTStrategy
+
+# The app's own tokens, signed with the first secret; the second one still verifies.
+tokens = auth.use(
+    JWTStrategy(
+        [settings.jwt_secret, settings.previous_jwt_secret],
+        verify=lambda claims: load_user(claims["sub"]),
+        blocklist=TokenBlocklist(),
+    )
+)
+token = tokens.issue(str(user.id), expires_in=900)
+
+# An identity provider's tokens, with its public keys.
+idp = auth.use(
+    JWTStrategy(
+        jwks_url="https://idp.example.com/.well-known/jwks.json",
+        algorithms=["RS256"],
+        audience="https://api.example.com",
+        issuer="https://idp.example.com/",
+        name="idp",
+    )
+)
+```
+
+- **Keys:** HMAC secrets have at least 32 bytes and rotate with a list; public keys need
+  `algorithms=["RS256"]` (or ES256, EdDSA…), and an identity provider's keys come from its JWKS
+  (`jwks_url=`, by each token's `kid`), with the `audience` and `issuer` it requires: a provider
+  signs the tokens of every app it serves with the same keys.
+- **Revoked tokens:** `blocklist=` refuses the tokens revoked in a `TokenBlocklist` (see "Revoked
+  tokens and one-time codes").
+- **Issuing:** `issue(subject, expires_in=900)` signs one, with `iat`, `exp` and a random `jti`.
+- **OpenAPI:** it shows in the schema, for the docs' Authorize button.
+
+<!-- --8<-- [end:jwt-strategy] -->
+
+### OAuth2Strategy
+<!-- --8<-- [start:oauth2-strategy] -->
+
+`OAuth2Strategy` logs people in with the authorization code flow and PKCE, for any OAuth2 or
+OpenID Connect provider (GitHub, Google, Keycloak…):
+
+- **The login:** `redirect()` sends the browser to the provider with a random `state`; the state
+  and the PKCE verifier wait in a cookie for 10 minutes (`__Host-`, HttpOnly, SameSite=Lax).
+- **The callback:** the strategy checks the state, so that nobody can log a user in with their
+  own account (login CSRF); exchanges the code, with the app's credentials by HTTP Basic
+  (`client_auth="post"` in the form); reads `userinfo_url`; and calls `verify(tokens, profile)`.
+  It only goes on the callback route: elsewhere it finds nobody.
+- **The provider:** its URLs are HTTPS (or `http://localhost`); a provider that doesn't answer is
+  a 502.
+
+<!-- --8<-- [end:oauth2-strategy] -->
+
+### SessionStrategy
+<!-- --8<-- [start:session-strategy] -->
+
+`SessionStrategy` finds the user id that `sessions.login(request, user_id)` kept in the session,
+and loads the user with `load_user`. With `ServerSessionMiddleware` the session gets a new id
+at login (no session fixation), and `sessions.logout(request)` deletes it from the backend. A
+session whose user doesn't exist any more fails.
+
+<!-- --8<-- [end:session-strategy] -->
+
+### HTTPBearerStrategy
+<!-- --8<-- [start:http-bearer-strategy] -->
+
+`HTTPBearerStrategy` takes opaque tokens of `Authorization: Bearer`, which your `verify(token)`
+looks up (in a database, at the provider's introspection endpoint). It needs no other library.
+
+```python
+from fastapi_alcazaba.auth import HTTPBearerStrategy
+
+
+async def find_token(token: str) -> User | None:
+    digest = hashlib.sha256(token.encode()).hexdigest()  # store digests, not tokens
+    return await db.user_by_token_digest(digest)
+
+
+bearer = auth.use(HTTPBearerStrategy(find_token))
+```
+
+A token that isn't RFC 6750's syntax, or longer than 4 KiB, fails without reaching `verify`.
+Keep digests of the tokens, not the tokens. Behind a JWTStrategy, JWTs go to that one and opaque
+tokens to this one.
+
+<!-- --8<-- [end:http-bearer-strategy] -->
+
+### SAMLStrategy
+<!-- --8<-- [start:saml-strategy] -->
+
+`SAMLStrategy` is SAML 2.0 single sign-on with an identity provider (Okta, Entra ID, ADFS,
+Keycloak…):
+
+- **The login:** `redirect()` sends the browser to the IdP with an AuthnRequest; the IdP posts its
+  answer to the ACS route.
+- **The answer:** the strategy verifies its XML signature with the IdP's certificate (signxml,
+  SHA-2 only, no DTDs). Then, on what the signature covers and nothing else (signature
+  wrapping), it checks the issuer, the audience (`entity_id`), the recipient (`acs_url`), the
+  request it answers and when it's valid.
+- **Once:** each assertion works once: it's kept in the cache's backend until it expires, and
+  logins are refused when the backend fails.
+- **Metadata:** `metadata()` is the app's metadata, for the IdP.
+- **Not supported:** logins the IdP starts, encrypted assertions, signed requests, single logout.
+
+The SAML request's id waits in a `SameSite=None` cookie, because the IdP posts the answer from
+its own site; for the same reason `CSRFMiddleware` must let the ACS through:
+
+```python
+from fastapi_alcazaba.auth.strategies.saml import SAMLStrategy
+
+saml = auth.use(
+    SAMLStrategy(
+        entity_id="https://example.com/saml/metadata",  # this app, at the IdP
+        acs_url="https://example.com/saml/acs",
+        idp_entity_id=settings.idp_entity_id,
+        idp_sso_url=settings.idp_sso_url,
+        idp_certificate=settings.idp_certificate,  # PEM; a list while it rotates
+        verify=find_or_create_user,  # (SAMLProfile) -> your user
+    )
+)
+SAMLUser = Annotated[User, Depends(auth.authenticate("saml"))]
+app.add_middleware(CSRFMiddleware, exempt_paths=["/saml/acs"])  # the IdP posts it
+
+
+@app.get("/saml/login")
+async def saml_login() -> RedirectResponse:
+    return saml.redirect()
+
+
+@app.post("/saml/acs")
+async def saml_acs(request: Request, user: SAMLUser) -> RedirectResponse:
+    sessions.login(request, user.id)
+    return RedirectResponse("/me", status_code=303)
+
+
+@app.get("/saml/metadata")
+async def saml_metadata() -> Response:
+    return Response(saml.metadata(), media_type="application/samlmetadata+xml")
+```
+
+<!-- --8<-- [end:saml-strategy] -->
+
+### Your own strategy
+<!-- --8<-- [start:your-own-strategy] -->
+
+Your own strategy (an API key, a client certificate, a signed request…) is a `Strategy` whose
+`authenticate()` returns the user, None, or raises `AuthenticationFailed`; `challenge` and
+`openapi_scheme()` are optional:
+
+```python
+from fastapi import HTTPException
+from starlette.requests import HTTPConnection
+
+from fastapi_alcazaba.auth import AuthenticationFailed, FastAPIAPIKeys, Strategy
+
+
+class APIKeyStrategy(Strategy):
+    challenge = "APIKey"
+
+    def __init__(self, keys: FastAPIAPIKeys[Any]) -> None:
+        super().__init__("api-key")
+        self.keys = keys
+
+    async def authenticate(self, connection: HTTPConnection) -> Any:
+        key = connection.headers.get("x-api-key")
+        if key is None:
+            return None  # not this strategy's: the next one is tried
+        try:
+            return await self.keys.authenticate(key)
+        except HTTPException as exc:  # FastAPIAPIKeys' 401
+            raise AuthenticationFailed("invalid API key") from exc
+
+
+auth.use(APIKeyStrategy(keys))
+```
+
+<!-- --8<-- [end:your-own-strategy] -->
 
 ## Revoked tokens and one-time codes
 <!-- --8<-- [start:revoked-tokens-and-one-time-codes] -->
@@ -631,6 +877,123 @@ async def orders(key: Annotated[ApiKeyRow, Depends(keys.require("orders:read"))]
   WebSocket message).
 
 <!-- --8<-- [end:api-keys] -->
+
+## Authorization with Casbin
+<!-- --8<-- [start:authorization-with-casbin] -->
+
+`FastAPICasbin` lets a request through only when a [Casbin](https://casbin.org) policy allows it.
+Who may do what lives in the policy (ACL, RBAC, RBAC with domains, ABAC…), not in checks spread
+over the routes. The `casbin` extra installs [PyCasbin](https://github.com/casbin/pycasbin).
+
+A Casbin model says what a request is and how it matches the policy; the policy, who may do
+what. Here a request is (user, object, action), and users get permissions through roles:
+
+```ini title="model.conf"
+[request_definition]
+r = sub, obj, act
+
+[policy_definition]
+p = sub, obj, act
+
+[role_definition]
+g = _, _
+
+[policy_effect]
+e = some(where (p.eft == allow))
+
+[matchers]
+m = g(r.sub, p.sub) && keyMatch2(r.obj, p.obj) && r.act == p.act
+```
+
+```text title="policy.csv"
+p, reader, /articles/:id, GET
+p, editor, /articles/:id, PUT
+p, editor, articles, publish
+g, editor, reader
+g, ana, editor
+```
+
+```python
+import casbin
+
+from fastapi_alcazaba.authz import FastAPICasbin
+
+enforcer = casbin.Enforcer("model.conf", "policy.csv")
+authz = FastAPICasbin(enforcer, subject=current_username)  # your dependency: who's asking
+
+# (user, path, method): may ana PUT /articles/7?
+api = APIRouter(dependencies=[Depends(authz)])
+
+
+# (user, *values): your own objects and actions. Both dependencies return the user.
+@app.post("/articles/{article_id}/publish")
+async def publish(
+    article_id: int,
+    editor: Annotated[str, Depends(authz.require("articles", "publish"))],
+) -> Article: ...
+
+
+# {name} takes a path parameter: (user, "projects/7", "archive").
+archive = authz.require("projects/{project_id}", "archive")
+
+
+@app.post("/projects/{project_id}/archive", dependencies=[Depends(archive)])
+async def archive_project(project_id: int) -> None: ...
+```
+
+- **Who:** `subject` is a FastAPI dependency that returns who makes the request: a user name, an
+  id, or an object for ABAC matchers (`r.sub.age >= 18`); None when nobody is logged in. Its own
+  dependencies (a bearer token, a session) appear in the OpenAPI schema, for the docs' Authorize
+  button. Without one, the user of Starlette's `AuthenticationMiddleware`.
+- **What:** `Depends(authz)` checks the path the app routes (without the `root_path` a proxy or
+  a mount adds in front) and the method; WebSockets have the action `WEBSOCKET`, so a policy for
+  GET doesn't open them. `authz.require(...)` checks your own values instead, `{name}` filled
+  from the path parameters. In `keyMatch2`, `:name` is a parameter: name objects without colons
+  (`projects/7`, not `project:7`), or the rule for `project:7` lets `project:8` through.
+- **Answers:** a request without a subject gets a 401 with `WWW-Authenticate: Bearer`
+  (`challenge=`), without asking the policy; `anonymous="anonymous"` has the policy check it as
+  that subject instead, for routes open to everybody (`p, anonymous, /catalog, GET`). A subject
+  that the policy refuses gets a 403. WebSockets are closed with 1008 (policy violation). A path
+  with control characters (`/users/%0A`) gets a 400 without asking the policy: Starlette routes
+  it to `/users/`, while the policy would read the newline. With `FastAPIProblemDetails`, the
+  errors are problem details.
+- **In a route:** `authz.enforce(user, "drafts", "read")` returns a bool, for what depends on the
+  data: the items of a list, the owner of an object.
+- **Fails closed:** a broken model, or a request that doesn't fit it (`invalid request size`),
+  raises: a 500, never a request let through. A disabled enforcer
+  (`enforcer.enable_enforce(False)`) lets everything through, as Casbin does.
+- **Enforcers:** any of Casbin's: `Enforcer`, `SyncedEnforcer`, `FastEnforcer`, `AsyncEnforcer`
+  (for async adapters; `await enforcer.load_policy()` in the lifespan). The checks run in the
+  event loop, like an AsyncEnforcer's changes: a request never sees half a change. Casbin tries
+  the rules one by one, a few microseconds each (about 2.5 ms per request with 1,000 rules on a
+  laptop): give permissions to roles rather than users, and roles to users.
+- **Several processes:** each one has its copy of the policy. A change made in one
+  (`await enforcer.add_role_for_user(...)`) reaches the database through the adapter, and the
+  other processes when they load the policy again: a Casbin watcher (casbin-redis-watcher…)
+  tells them.
+
+`CasbinMiddleware` checks every request instead, as (user, path, method) with the user of
+Starlette's `AuthenticationMiddleware`, `anonymous` when there's none. Add it before
+`AuthenticationMiddleware`, so that it runs after it; the policy must then open the public
+routes (`/docs`, `/login`…) to `anonymous`:
+
+```python
+from starlette.middleware.authentication import AuthenticationMiddleware
+
+from fastapi_alcazaba.authz import CasbinMiddleware
+
+app.add_middleware(CasbinMiddleware, enforcer=enforcer)
+app.add_middleware(AuthenticationMiddleware, backend=JWTBackend())
+```
+
+It checks the path the app routes, without the `root_path`, and the method, `WEBSOCKET` for
+WebSockets. Refusals get a 403 with `{"detail": "Forbidden"}`, like FastAPI's errors (problem
+details with `FastAPIProblemDetails`), or a 401 with `WWW-Authenticate` when `anonymous` is
+refused, and a 400 for paths with control characters; WebSockets are closed with 1008. `OPTIONS`
+requests are checked like the others: add `CORSMiddleware` after `CasbinMiddleware` (outside it),
+to answer the preflights.
+
+<!-- --8<-- [end:authorization-with-casbin] -->
 
 ## Signed webhooks
 <!-- --8<-- [start:signed-webhooks] -->
@@ -1734,6 +2097,8 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.outbound.ssrf.blocked` | `fastapi_alcazaba.reason` (scheme, host, port, address) |
 | `fastapi_alcazaba.webhooks` | `fastapi_alcazaba.outcome` (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable) |
 | `fastapi_alcazaba.api_keys` | `fastapi_alcazaba.outcome` (accepted, malformed, unknown, wrong_secret, expired, insufficient_scope) |
+| `fastapi_alcazaba.auth` | `fastapi_alcazaba.strategy`, `fastapi_alcazaba.outcome` (success, failure: credentials there but refused, unauthenticated: no strategy found a user) |
+| `fastapi_alcazaba.authz` | `fastapi_alcazaba.outcome` (allowed, denied, unauthenticated): a burst of denied is someone probing |
 | `fastapi_alcazaba.csrf.refused` | `fastapi_alcazaba.kind` (http, websocket), `fastapi_alcazaba.reason` (fetch_site, origin, no_source, token) |
 | `fastapi_alcazaba.sessions` | `fastapi_alcazaba.event` (created, updated, rotated, deleted, touched, rejected: forged or altered, unreadable, unavailable) |
 | `fastapi_alcazaba.uploads` | `fastapi_alcazaba.outcome` (accepted, too_large, too_many_pixels, unsupported, unreadable, empty) |
@@ -1759,47 +2124,189 @@ or a user would get the cached response in another user's language.
 ## Pagination
 <!-- --8<-- [start:pagination] -->
 
-Three tools, with nothing but FastAPI and pydantic: `FastAPIPagination` (`?page=2&size=20`),
-`FastAPIPaginationLimitOffset` (`?limit=20&offset=40`) and `FastAPIPaginationCursor`
-(`?size=20&cursor=...`). Each is configured once and used as a dependency, which reads and checks
-the query parameters; the endpoint gets them as an argument, so `@cache` keeps each page under a
-key of its own:
+Twelve strategies, with nothing but FastAPI and pydantic. Each is configured once and used as a
+dependency, which reads and checks its query parameters; the endpoint gets them as an argument, so
+`@cache` keeps each page under a key of its own:
+
+| Strategy | Query parameters | For |
+| --- | --- | --- |
+| `PaginationPageNumber` | `page`, `page_size` | Numbered pages, with the total |
+| `PaginationLimitOffset` | `limit`, `offset` | Slices, with the total |
+| `PaginationOffset` | `offset`, `limit` | Slices, without counting the whole list |
+| `PaginationRange` | `start`, `end` | Ranges of items, with `Content-Range` |
+| `PaginationCursor` | `cursor`, `limit` | An opaque, signed cursor: infinite scroll, feeds |
+| `PaginationKeyset` | `after`, `before`, `limit` | Keyset pagination, both ways |
+| `PaginationIdBased` | `last_id`, `limit` | The id of the last item seen |
+| `PaginationTimeBased` | `timestamp`, `limit` | Before or after a time: feeds, syncing |
+| `PaginationSearchAfter` | `search_after`, `limit` | The sort values of the last item, readable |
+| `PaginationToken` | `page_token`, `page_size` | An opaque token, bound to the query, that expires |
+| `PaginationScroll` | `scroll_id`, `batch_size` | A snapshot kept in the backend, read in batches |
+| `PaginationStreaming` | none | Every item as it comes, as NDJSON |
 
 ```python
-from fastapi_alcazaba import FastAPIPagination
-from fastapi_alcazaba.pagination import Page, PageParams
+from fastapi_alcazaba.pagination.page_number import (
+    PageNumberPage,
+    PageNumberParams,
+    PaginationPageNumber,
+)
 
-pages = FastAPIPagination(default_size=20, max_size=100)
+pages = PaginationPageNumber(default_page_size=20, max_page_size=100)
 
 
 @app.get("/products")
 @cache(expire=60, tags=["products"])
-async def products(params: Annotated[PageParams, Depends(pages)]) -> Page[Product]:
+async def products(
+    params: Annotated[PageNumberParams, Depends(pages)],
+) -> PageNumberPage[Product]:
     return pages.paginate(await load_products(), params)
 ```
 
-`GET /products?page=2&size=20` answers `{"items": [...], "total": 245, "page": 2, "size": 20,
-"pages": 13}`.
-
-- **Links:** the response links to the first, previous, next and last pages in the `Link` header
+- **By position or by key:** page numbers, offsets and ranges count items, so a row added or
+  deleted meanwhile shifts the pages (an item skipped or seen twice), and a database walks past
+  every row before the page. Cursors, keysets, ids, timestamps and sort values point at the last
+  item instead: the pages don't shift, and an index finds any of them as fast as the first.
+- **Links:** the response links to the pages around it in the `Link` header
   ([RFC 8288](https://www.rfc-editor.org/rfc/rfc8288)), as GitHub's API does:
-  `</products?page=3&size=20>; rel="next"`. The links keep the request's other query parameters
-  and leave out the host, so they don't depend on the `Host` header nor on a proxy in front.
-  Pages served from the cache get them too, made for the request they answer.
-- **From a database:** query only the page and give the total:
-  `pages.paginate(rows, params, total=count)`, with `params.offset` and `params.limit` in the
-  query. Without `total`, `paginate` slices the page from the whole list.
-- **Limit and offset:** `FastAPIPaginationLimitOffset(default_limit=..., max_limit=...)` gives
-  `LimitOffsetParams` and makes `LimitOffsetPage`s, the same way.
-- **Limits:** each tool has its own (`max_size`, `max_limit`; 100 by default), so that nobody asks
-  for a million rows at once: anything beyond, or malformed, is a 422 before the endpoint runs.
-  They're in the OpenAPI schema too.
-- **Coming from fastapi-pagination:** the JSON is that of its `Page` and `LimitOffsetPage`, so
-  clients don't change. Its `add_pagination` keeps the page parameters out of the endpoint's
-  arguments, in a context variable: a cache that only sees the arguments can't tell the pages
-  apart, and would serve page 1 for every page.
+  `</products?page=3&page_size=20>; rel="next"`. The links keep the request's other query
+  parameters and leave out the host, so they don't depend on the `Host` header nor on a proxy in
+  front. Pages served from the cache get them too, made for the request they answer.
+- **From a database:** `paginate` takes the whole list and finds the page in it, or the rows the
+  database returned for the page: with their `total` for the strategies that count, or
+  `queried=True` for the others, which fetch one row more (`params.fetch`) to tell whether
+  there's a next page.
+- **Limits:** each strategy has its own maximum (100 items by default), so that nobody asks for a
+  million rows at once: anything beyond, or malformed, is a 422 before the endpoint runs. They're
+  in the OpenAPI schema too.
+- **Cached:** every page, size and filter is one entry: tag them (`tags=["products"]`) to drop
+  them all when the data changes. For short lists, caching the whole list with `get_or_set` and
+  slicing every page from it keeps a single entry. The
+  [pagination example](https://github.com/nonodev96/fastapi-alcazaba/blob/main/examples/pagination/main.py)
+  does it three ways, with the database session left out of the key (`exclude_params`).
 
-### By cursor
+<!-- --8<-- [end:pagination] -->
+
+### PaginationPageNumber
+<!-- --8<-- [start:pagination-page-number] -->
+
+Numbered pages, with the total: `GET /products?page=2&page_size=20` answers
+`{"items": [...], "total": 245, "page": 2, "page_size": 20, "pages": 13}`. For lists that people
+browse page by page, jump through, and want to know the size of.
+
+- **From a database:** query only the page, with `params.offset` and `params.limit`, and count:
+  `pages.paginate(rows, params, total=count)`. Without `total`, `paginate` slices the page from
+  the whole list.
+- **Links:** first, previous, next and last.
+- **Its cost:** counting the whole list on every page, and the shifting of pages by position.
+
+<!-- --8<-- [end:pagination-page-number] -->
+
+### PaginationLimitOffset
+<!-- --8<-- [start:pagination-limit-offset] -->
+
+Slices, with the total: `GET /products?limit=20&offset=40` answers
+`{"items": [...], "total": 245, "limit": 20, "offset": 40}`. The same as page numbers for clients
+that count in items rather than pages, and can ask for any slice.
+
+```python
+from fastapi_alcazaba.pagination.limit_offset import (
+    LimitOffsetPage,
+    LimitOffsetParams,
+    PaginationLimitOffset,
+)
+
+slices = PaginationLimitOffset(default_limit=20, max_limit=100)
+
+
+@app.get("/products")
+async def products(
+    params: Annotated[LimitOffsetParams, Depends(slices)],
+) -> LimitOffsetPage[Product]:
+    rows = await session.scalars(select(Product).limit(params.limit).offset(params.offset))
+    return slices.paginate(rows.all(), params, total=await count_products())
+```
+
+- **Links:** first, previous, next and last, on the grid of `limit` from 0, where clients that
+  start at the first page walk.
+- **Without the total:** `PaginationOffset` skips the count.
+
+<!-- --8<-- [end:pagination-limit-offset] -->
+
+### PaginationOffset
+<!-- --8<-- [start:pagination-offset] -->
+
+Slices without the total: `GET /logs?offset=40&limit=20` answers `{"items": [...], "offset": 40,
+"limit": 20, "has_more": true}`. The database is asked for one row more than the page
+(`params.fetch`), which isn't returned but tells whether there's a next one, so the list is never
+counted. For lists whose count is slow (big tables, searches, joins) or outdated as soon as it's
+made, and for clients that only ever go to the next page:
+
+```python
+from fastapi_alcazaba.pagination.offset import OffsetPage, OffsetParams, PaginationOffset
+
+offsets = PaginationOffset(default_limit=20, max_limit=100)
+
+
+@app.get("/logs")
+@cache(expire=10)
+async def logs(params: Annotated[OffsetParams, Depends(offsets)]) -> OffsetPage[Line]:
+    query = select(Line).order_by(Line.id.desc()).limit(params.fetch).offset(params.offset)
+    rows = (await session.scalars(query)).all()
+    return offsets.paginate(rows, params, queried=True)
+```
+
+- **Queried or sliced:** with `queried=True`, the rows are those of
+  `LIMIT params.fetch OFFSET params.offset`, one more than `limit` when there's a next page.
+  Without it, `paginate` slices the page from the whole list.
+- **Links:** first, previous and, while `has_more`, next. There's no last page, nor a number of
+  pages: for those, `PaginationLimitOffset` counts.
+- **By position:** a row added or deleted before the page shifts it, so an item may be skipped
+  or seen twice, and a database still walks past every row before the offset: deep pages get
+  slower. For lists that grow while they're read, page by key (`PaginationIdBased`,
+  `PaginationCursor`).
+- **Limits:** `limit` up to `max_limit` and `offset` from 0, a 422 otherwise.
+
+<!-- --8<-- [end:pagination-offset] -->
+
+### PaginationRange
+<!-- --8<-- [start:pagination-range] -->
+
+Ranges of items by the indexes of the first and the last, from 0 and both included:
+`GET /contacts?start=0&end=24` answers `{"items": [...], "start": 0, "end": 24, "total": 319,
+"limit": 25}` with `Content-Range: items 0-24/319`. For data grids and tables that ask for the
+rows they show, and read from the header which ones they got and how many there are:
+
+```python
+from fastapi_alcazaba.pagination.ranges import PaginationRange, RangePage, RangeParams
+
+ranges = PaginationRange(default_items=25, max_items=100)
+
+
+@app.get("/contacts")
+@cache(expire=60, tags=["contacts"])
+async def contacts(params: Annotated[RangeParams, Depends(ranges)]) -> RangePage[Contact]:
+    query = select(Contact).order_by(Contact.name).limit(params.limit).offset(params.offset)
+    rows = (await session.scalars(query)).all()
+    return ranges.paginate(rows, params, total=await count_contacts())
+```
+
+- **The range returned:** `end` is the index of the last item in the response, which is short of
+  the one asked for at the end of the list; `null`, and `Content-Range: items */319`, when there
+  are none. `limit` is the size asked for, which the links keep.
+- **From a database:** query the range with `params.offset` and `params.limit`, and count:
+  `ranges.paginate(rows, params, total=count)`. Without `total`, `paginate` slices the range from
+  the whole list.
+- **Errors:** without `end`, a range holds `default_items`. One whose `end` is before its `start`,
+  or that holds more than `max_items` items, is a 400 before the endpoint runs; one that starts
+  past the last item of a list that isn't empty, a 416 with `Content-Range: items */<total>`.
+- **Links:** first, previous, next and last ranges of the same size, the first and last on the
+  grid of that size from 0. Pages served from the cache get their `Content-Range` too.
+- **Its cost:** like page numbers, a count on every range, and pages that shift when rows are
+  added or deleted before them.
+
+<!-- --8<-- [end:pagination-range] -->
+
+### PaginationCursor
+<!-- --8<-- [start:pagination-cursor] -->
 
 A cursor points at the last item of a page by its sort key, not by its position: rows added or
 deleted meanwhile don't shift the pages (no item skipped or seen twice), and a database finds any
@@ -1807,31 +2314,30 @@ page through an index, as fast as the first. For infinite scroll, feeds and clie
 everything:
 
 ```python
-from fastapi_alcazaba import FastAPIPaginationCursor
-from fastapi_alcazaba.pagination import CursorPage, CursorParams
+from fastapi_alcazaba.pagination.cursor import CursorPage, CursorParams, PaginationCursor
 
-cursors = FastAPIPaginationCursor(secret=settings.cursor_secret)  # secrets.token_urlsafe(32)
+cursors = PaginationCursor(secret=settings.cursor_secret)  # secrets.token_urlsafe(32)
 
 
 @app.get("/events")
 @cache(expire=60)
 async def events(params: Annotated[CursorParams, Depends(cursors)]) -> CursorPage[Event]:
-    query = select(Event).order_by(Event.created_at, Event.id).limit(params.limit)
+    query = select(Event).order_by(Event.created_at, Event.id).limit(params.fetch)
     if params.after is not None:  # (created_at, id) of the last event seen
         query = query.where(tuple_(Event.created_at, Event.id) > params.after)
     rows = (await session.scalars(query)).all()
     return cursors.paginate(rows, params, key=lambda e: (e.created_at, e.id), queried=True)
 ```
 
-`GET /events?size=20` answers `{"items": [...], "size": 20, "next_cursor": "WyIyMDI2..."}`, and
-`?cursor=<next_cursor>` the next page; `next_cursor` is null on the last one. The `Link` header
-has the first page and, except on the last page, the next one.
+`GET /events?limit=20` answers `{"items": [...], "limit": 20, "next_cursor": "WyIyMDI2..."}`,
+and `?cursor=<next_cursor>` the next page; `next_cursor` is null on the last one. The `Link`
+header has the first page and, except on the last page, the next one.
 
 - **The sort key** (`key`) must be unique: `(created_at, id)`, not `created_at` alone, which two
   items may share. Its values can be strings, integers (up to 64 bits), floats, booleans,
   datetimes, dates, UUIDs and decimals, and `params.after` has them back as such.
 - **Queried or sliced:** with `queried=True`, the rows are those of the page, queried with a key
-  past `params.after` and `params.limit` (one more than `size`: it tells whether there's a next
+  past `params.after` and `params.fetch` (one more than `limit`: it tells whether there's a next
   page). Without it, `paginate` finds the page in the whole sorted list. `descending=True` for
   newest first.
 - **Signed:** with a `secret`, cursors carry an HMAC-SHA256 and a client can't make one up or
@@ -1839,15 +2345,374 @@ has the first page and, except on the last page, the next one.
   types. Either way an invalid cursor is a 400, and one longer than 1024 characters or malformed a
   422, before the endpoint runs. Cursors are base64, not encrypted: clients can read the sort key,
   so sort by what they may see.
-- **Forward only:** to go back, clients keep the cursors they've used.
+- **Forward only:** to go back, clients keep the cursors they've used, or use
+  `PaginationKeyset`, which goes both ways.
 
-Every page, size and filter is one entry: tag them (`tags=["products"]`) to drop them all when the
-data changes. For short lists, caching the whole list with `get_or_set` and slicing every page
-from it keeps a single entry. The
-[pagination example](https://github.com/nonodev96/fastapi-alcazaba/blob/main/examples/pagination/main.py)
-does all three, with the database session left out of the key (`exclude_params`).
+<!-- --8<-- [end:pagination-cursor] -->
 
-<!-- --8<-- [end:pagination] -->
+### PaginationKeyset
+<!-- --8<-- [start:pagination-keyset] -->
+
+Keyset pagination in both directions: `?after=<after>` gives the page after a key and
+`?before=<before>` the page before one, a key being the sort key of the item at the edge of a
+page. Each page is a query through an index, from either side, as fast on the last page as on
+the first, and rows added or deleted meanwhile don't shift the pages. For lists with "Previous"
+and "Next", and histories scrolled both ways:
+
+```python
+from fastapi_alcazaba.pagination.keyset import KeysetPage, KeysetParams, PaginationKeyset
+
+keyset = PaginationKeyset(secret=settings.keyset_secret)  # secrets.token_urlsafe(32)
+
+
+@app.get("/products")
+@cache(expire=60, tags=["products"])
+async def products(params: Annotated[KeysetParams, Depends(keyset)]) -> KeysetPage[Product]:
+    key = tuple_(Product.price, Product.id)
+    if params.before is not None:  # the page before: the nearest rows first
+        query = select(Product).where(key < params.before)
+        query = query.order_by(Product.price.desc(), Product.id.desc())
+    else:
+        query = select(Product).order_by(Product.price, Product.id)
+        if params.after is not None:
+            query = query.where(key > params.after)
+    rows = (await session.scalars(query.limit(params.fetch))).all()
+    return keyset.paginate(rows, params, key=lambda p: (p.price, p.id), queried=True)
+```
+
+`GET /products?limit=20` answers `{"items": [...], "limit": 20, "before": null, "after":
+"WzQuMiwxMl0..."}`: `after` is the key of the last item (null on the last page), and `before`
+the key of the first (null on the first page). The `Link` header has the first page and, when
+there's one, the page before (`before=...`) and the next (`after=...`).
+
+- **The key** must be unique: `(price, id)`, not `price` alone, which two items may share. Its
+  values can be strings, integers (up to 64 bits), floats, booleans, datetimes, dates, UUIDs
+  and decimals, and `params.after` and `params.before` have them back as such.
+- **Queried or sliced:** with `queried=True`, the rows are those the database returned, up to
+  `params.fetch` (the limit and one more, which tells whether there's another page that way):
+  past `params.after` in order, or with `params.before`, before it in the reverse order, nearest
+  first, which `paginate` puts back in order. The other way there's always a page, the one the
+  key came from. Without it, `paginate` finds the page in the whole sorted list.
+  `descending=True` for newest first, where `after` reads `key < :after` and `before`
+  `key > :before ORDER BY key`.
+- **Signed:** with a `secret`, keys carry an HMAC-SHA256 and a client can't make one up or
+  change it; a list rotates secrets. An invalid key is a 400 (`Invalid after`,
+  `Invalid before`), and so are `after` and `before` together. Keys are base64, not encrypted:
+  clients can read the sort key, so sort by what they may see.
+- **Limits:** no total and no page numbers, only the first, previous and next pages. Going back
+  from a page that didn't start where the first page's walk would have, the first page can be
+  shorter than the limit.
+
+<!-- --8<-- [end:pagination-keyset] -->
+
+### PaginationIdBased
+<!-- --8<-- [start:pagination-id-based] -->
+
+The items after the last one seen, by id: `GET /messages?last_id=42&limit=20` answers
+`{"items": [...], "limit": 20, "last_id": 62, "has_more": true}`, and `?last_id=62` the next page.
+The id travels as it is, neither encoded nor signed, since ids are public: a client that keeps the
+last one it has asks for whatever came after it. Rows added or deleted meanwhile don't shift the
+pages, and the primary key finds any page as fast as the first. For syncing, chats, and lists
+sorted by id:
+
+```python
+from fastapi_alcazaba.pagination.id_based import IdBasedPage, IdBasedParams, PaginationIdBased
+
+ids = PaginationIdBased(default_limit=20, max_limit=100)  # PaginationIdBased(UUID) for UUIDs
+
+
+@app.get("/messages")
+@cache(expire=60, tags=["messages"])
+async def messages(params: Annotated[IdBasedParams, Depends(ids)]) -> IdBasedPage[Message]:
+    query = select(Message).order_by(Message.id).limit(params.fetch)
+    if params.last_id is not None:
+        query = query.where(Message.id > params.last_id)
+    rows = (await session.scalars(query)).all()
+    return ids.paginate(rows, params, key=lambda m: m.id, queried=True)
+```
+
+- **The id's type:** `int` by default, or `str` or `UUID` (`PaginationIdBased(UUID)`), which is
+  the query parameter's type: a `last_id` of another type is a 422, and integers are kept to 64
+  bits, as databases store them. The ids must be unique, and sort as the database sorts them.
+- **Queried or sliced:** with `queried=True`, the rows are those of
+  `WHERE id > :last_id ORDER BY id LIMIT :fetch`, one more than `limit` when there's a next page.
+  Without it, `paginate` finds the page in the whole list, sorted by id. `descending=True` for
+  newest first: the next page holds the ids smaller than `last_id`
+  (`WHERE id < :last_id ORDER BY id DESC`).
+- **`last_id` and `has_more`:** `last_id` is the id of the page's last item, null when it's empty
+  (a client that has caught up keeps its own); `has_more` says whether there's a next page. The
+  `Link` header has the first page and, while `has_more`, the next one.
+- **Forward only, by one column:** to go back, clients keep the ids they've used. To sort by
+  other columns, or by several, or to keep the sort key from clients, use `PaginationCursor`,
+  whose cursors are opaque and can be signed.
+
+<!-- --8<-- [end:pagination-id-based] -->
+
+### PaginationTimeBased
+<!-- --8<-- [start:pagination-time-based] -->
+
+Pages by time: `?timestamp=2026-10-29T10:00:00Z&limit=20` gives the items older than the
+timestamp, newest first (`direction="older"`, for feeds), or newer than it, oldest first
+(`"newer"`, for syncing). The timestamp is plain ISO 8601, which clients can read and write,
+and each page is a query through an index on the time:
+
+```python
+from fastapi_alcazaba.pagination.time_based import (
+    PaginationTimeBased,
+    TimeBasedPage,
+    TimeBasedParams,
+)
+
+feed = PaginationTimeBased("older")
+
+
+@app.get("/posts")
+@cache(expire=60, tags=["posts"])
+async def posts(params: Annotated[TimeBasedParams, Depends(feed)]) -> TimeBasedPage[Post]:
+    query = select(Post).order_by(Post.posted_at.desc()).limit(params.fetch)
+    if params.timestamp is not None:
+        query = query.where(Post.posted_at < params.timestamp)
+    rows = (await session.scalars(query)).all()
+    return feed.paginate(rows, params, time=lambda p: p.posted_at, queried=True)
+```
+
+`GET /posts?limit=20` answers `{"items": [...], "limit": 20, "next_timestamp":
+"2026-10-29T10:00:00Z"}`, the time of the page's last item, and `?timestamp=<next_timestamp>`
+the next page; `next_timestamp` is null on the last one. The `Link` header has the first page
+and, except on the last, the next one.
+
+- **Ties:** the next page starts strictly past the last time, so a page never splits the items
+  that share a time, or the next one would skip some. With `queried=True`, when the extra row of
+  `params.fetch` (the limit and one) shares its time with the page's last items, they're left to
+  the next page, which can make this one shorter; if that leaves nothing, more than `limit`
+  items share one time, and `paginate` raises ValueError. Without it, `paginate` takes the rest
+  of them from the whole list, past `limit` if need be.
+- **Time zones:** a timestamp without one is a 422, and the parameters hold it in UTC, so the
+  same instant from another zone is the same cache entry. `time` must give datetimes with one
+  too.
+- **Syncing:** with `"newer"`, a client keeps the time of the last item it got (at the end,
+  `next_timestamp` is null) and asks for the ones after it later.
+- **Limits:** when many items can share a time (imports, timestamps to the second), or rows can
+  be written with a time already passed, paginate by a unique key with `PaginationKeyset`
+  (the time and the id) instead.
+
+<!-- --8<-- [end:pagination-time-based] -->
+
+### PaginationSearchAfter
+<!-- --8<-- [start:pagination-search-after] -->
+
+The page after the sort values of the last item seen, given as a JSON array:
+`?search_after=["2026-10-29T10:00:00Z",42]`. The values are plain, neither encoded nor signed:
+clients read them, and may write their own to start anywhere (the events since a date). Like a
+cursor, each page is a query through an index, and rows added or deleted meanwhile don't shift
+the pages. For exports, logs and searches that clients drive themselves:
+
+```python
+from fastapi_alcazaba.pagination.search_after import (
+    PaginationSearchAfter,
+    SearchAfterPage,
+    SearchAfterParams,
+)
+
+events_after = PaginationSearchAfter(sort=(datetime, int))
+
+
+@app.get("/events")
+@cache(expire=60)
+async def events(
+    params: Annotated[SearchAfterParams, Depends(events_after)],
+) -> SearchAfterPage[Event]:
+    query = select(Event).order_by(Event.at, Event.id).limit(params.fetch)
+    if params.search_after is not None:  # (at, id) of the last event seen
+        query = query.where(tuple_(Event.at, Event.id) > params.search_after)
+    rows = (await session.scalars(query)).all()
+    return events_after.paginate(rows, params, key=lambda e: (e.at, e.id), queried=True)
+```
+
+`GET /events?limit=20` answers `{"items": [...], "limit": 20, "search_after":
+["2026-10-29T09:58:30Z", 3]}`, and `?search_after=["2026-10-29T09:58:30Z",3]` (percent-encoded
+in the URL) the next page; `search_after` is null on the last one. The `Link` header has the
+first page and, except on the last, the next one.
+
+- **Declared types:** `sort` gives the types of the values, in order: `int`, `float`, `str`,
+  `bool`, `datetime` (with a time zone), `date`, `UUID` and `Decimal`. `params.search_after`
+  has them converted, and the page gives them as the items show them: datetimes and dates in
+  ISO 8601, UUIDs and decimals as strings. A value of another type, another number of them or
+  JSON that doesn't parse is a 400, and more than 1024 characters a 422, before the endpoint
+  runs.
+- **The key** must be unique together: `(e.at, e.id)`, not the time alone. `key` returns a
+  tuple of the types of `sort`, and a value that isn't one is a TypeError.
+- **Queried or sliced:** with `queried=True`, the rows are those of the page, queried past
+  `params.search_after` up to `params.fetch` (the limit and one more: it tells whether there's a
+  next page). Without it, `paginate` finds the page in the whole sorted list. `descending=True`
+  for newest first.
+- **Readable and writable:** nothing stops a client from asking for any position, so sort by
+  what they may see. For a position they can't change, `PaginationCursor` seals the same key.
+- **Forward only:** to go back, clients keep the values they've used.
+
+<!-- --8<-- [end:pagination-search-after] -->
+
+### PaginationToken
+<!-- --8<-- [start:pagination-token] -->
+
+A page token is the way to the next page and nothing else: opaque, signed, bound to the query it
+was issued for, and short-lived. Clients send back what the last page gave them and never build a
+page parameter of their own. For public APIs whose pagination may change behind the token without
+breaking anybody, and for lists whose filters must not be swapped halfway through:
+
+```python
+from fastapi_alcazaba.pagination.page_token import PaginationToken, TokenPage, TokenParams
+
+tokens = PaginationToken(settings.page_token_secret, ttl=600)  # secrets.token_urlsafe(32)
+
+
+@app.get("/books")
+@cache(expire=60)
+async def books(
+    params: Annotated[TokenParams, Depends(tokens)],
+    genre: Genre | None = None,
+) -> TokenPage[Book]:
+    query = select(Book).order_by(Book.id).offset(params.offset).limit(params.fetch)
+    if genre is not None:
+        query = query.where(Book.genre == genre)
+    rows = (await session.scalars(query)).all()
+    return tokens.paginate(rows, params, queried=True)
+```
+
+`GET /books?genre=poetry&page_size=20` answers `{"items": [...], "next_page_token": "WzIwLC..."}`,
+and `?genre=poetry&page_size=20&page_token=<next_page_token>` the next page; `next_page_token` is
+null on the last one. The `Link` header has the next page.
+
+- **What a token holds:** the offset of the next page, a digest of the request's other query
+  parameters (all but `page_token` and `page_size`, in any order) and when it was issued, signed
+  with HMAC-SHA256 (`secret` is required; a list rotates secrets). A token that a client made or
+  changed, that comes with other query parameters than its own, or that is older than `ttl`
+  (3600 seconds by default) is a 400 before the endpoint runs. It's base64, not encrypted:
+  clients can read the offset.
+- **From a database:** with `queried=True`, the rows are those of
+  `LIMIT params.fetch OFFSET params.offset`, where `fetch` is `page_size` plus one: the extra row
+  tells whether there's a next page. Without it, `paginate` slices the page from the whole list.
+- **Limits:** `default_page_size=50, max_page_size=100`; beyond the maximum, or a malformed
+  token, is a 422. `page_size` may change from one page to the next.
+- **Cached apart:** the query's digest is part of `TokenParams`, so `@cache` keeps the pages of
+  each query apart, even for parameters the endpoint doesn't read. A page served from the cache
+  hands out the token issued when it was stored: keep `expire` well under `ttl`.
+- **Its limits:** forward only, with no total and no way to jump to a page. Underneath it's an
+  offset, so rows added or deleted meanwhile shift the pages, and deep pages cost what
+  `OFFSET` costs; for big lists that change, sort by key with `PaginationCursor`.
+
+<!-- --8<-- [end:pagination-token] -->
+
+### PaginationScroll
+<!-- --8<-- [start:pagination-scroll] -->
+
+A scroll runs the query once and keeps what it found as a snapshot in the cache's backend, which
+the client reads in batches: what was there when the scroll started, whatever is written
+meanwhile. For exports, reports and jobs that read a whole result set while it changes, and for
+queries too costly to run once per page:
+
+```python
+from fastapi_alcazaba.pagination.scroll import PaginationScroll, ScrollPage, ScrollParams
+
+scroll = PaginationScroll(Order, secret=settings.scroll_secret)  # secrets.token_urlsafe(32)
+
+
+@app.get("/orders/export")
+async def export(params: Annotated[ScrollParams, Depends(scroll)]) -> ScrollPage[Order]:
+    if params.scroll_id is None:  # a new scroll: query once, one row more than it keeps
+        query = select(Order).where(Order.status == "paid").order_by(Order.id)
+        rows = await session.scalars(query.limit(scroll.max_items + 1))
+        return await scroll.start(rows.all(), params)
+    return await scroll.next(params)
+
+
+@app.delete("/orders/export", status_code=204)
+async def stop(scroll_id: str) -> None:
+    await scroll.clear(scroll_id)
+```
+
+`GET /orders/export?batch_size=100` answers the first batch,
+`{"items": [...], "scroll_id": "WyJsR3Nq...", "total": 2450}`, and `?scroll_id=<scroll_id>` the
+next one; `scroll_id` is null after the last. The `Link` header has the next batch.
+
+- **A snapshot:** `start` writes the items into one entry of the backend, as JSON through their
+  type (`PaginationScroll(Order, ...)`), and `next` reads them back as such. Rows added, changed
+  or deleted meanwhile don't show, and no item is skipped or seen twice.
+- **Kept alive while it's read:** the snapshot lasts `keep_alive` seconds (60 by default) after
+  each batch; a `scroll_id` whose snapshot has expired is a 404, and the client starts again.
+  `clear` deletes it as soon as the client is done. The cache's own `clear()` leaves snapshots
+  alone, and with a TieredBackend they're in the shared tier only.
+- **Retries are safe:** a `scroll_id` holds the snapshot's id and where the next batch starts,
+  signed with HMAC-SHA256: the same request gets the same batch, and one made up or changed is a
+  400 before the endpoint runs. Each request may ask for its own `batch_size`, up to
+  `max_batch_size` (1000 by default; a 422 beyond).
+- **Who may read it:** a `scroll_id` reads the rest of the snapshot without the endpoint's query
+  running again, so whoever has one gets the results it was given for. When they depend on who
+  asks, pass `owner=str(user.id)` to `start`, `next` and `clear`: a `scroll_id` is then only good
+  for that user.
+- **Sealed:** the snapshot is sealed with the cache's `signing_key`, or `encryption_key` when it
+  holds personal data, and one that someone planted in the backend is ignored.
+- **Its limits:** each batch reads the whole snapshot from the backend and writes it back to keep
+  it alive, and each start keeps a new one, so `start` refuses more than `max_items` items (10,000
+  by default; query one more than that and it raises ValueError) and a
+  rate limit on the endpoint keeps clients from starting scrolls without end.
+  The snapshot is one entry: mind the backend's limit on the size of an entry (1 MB in Memcached,
+  400 KB in DynamoDB). A backend that fails is a 503, and the client retries. Don't put `@cache`
+  on a scroll: each start must keep a snapshot of its own. To read a big table without keeping
+  it anywhere, `PaginationStreaming` sends every row as it comes.
+
+<!-- --8<-- [end:pagination-scroll] -->
+
+### PaginationStreaming
+<!-- --8<-- [start:pagination-streaming] -->
+
+Every item in one response, as they come, without pages: NDJSON (`application/x-ndjson`), one
+JSON value per line, which a client reads while the rest is still being queried. For exports,
+for syncing everything to another system, and for scripts that would otherwise walk hundreds of
+pages. It isn't a dependency: it makes the response.
+
+```python
+from fastapi.responses import StreamingResponse
+from fastapi_alcazaba.pagination.streaming import PaginationStreaming
+
+stream = PaginationStreaming(batch_size=100)
+
+
+@app.get("/events")
+async def events() -> StreamingResponse:
+    async def fetch(after: int | None, limit: int) -> list[Event]:
+        query = select(Event).order_by(Event.id).limit(limit)
+        if after is not None:
+            query = query.where(Event.id > after)
+        return list((await session.scalars(query)).all())
+
+    return stream.response(stream.batches(fetch, key=lambda e: e.id))
+```
+
+`GET /events` answers one event per line, `{"id":1,...}`, `{"id":2,...}`..., each hundred sent
+as soon as it's read, before the next hundred are queried, until the last event.
+
+- **`response(items)`** takes a list, a generator or an async iterable, and sends it in chunks of
+  `batch_size` lines, models serialised with pydantic as FastAPI would. A synchronous generator
+  is read in the thread pool, `batch_size` items at a time, so a blocking driver doesn't stop
+  the event loop.
+- **`batches(fetch, key=...)`** reads a big table without loading it: `fetch(None, batch_size)`,
+  then `fetch(key(last row), batch_size)`, until a batch comes back shorter than `batch_size`.
+  Each query finds its batch through an index, as fast as the first. `fetch` can be sync or
+  async, and `key` must be unique (`(e.created_at, e.id)` rather than `e.created_at`). It
+  yields the rows one by one, ready for `response()`.
+- **`max_items`** ends the response there, whatever is left (None, the default, for no end).
+  The source is closed then, or at its end: a generator's `finally` runs.
+- **A client that disconnects** stops the stream: nothing more is read from the source, and no
+  more queries are made.
+- **Not cached:** `@cache` doesn't keep streams, so each request reads the database again; don't
+  put it on these endpoints.
+- **Its limits:** the status and headers go out before the first item, so an error halfway
+  through can only cut the stream short; clients should check that they got what they expected
+  (a count in another endpoint, or the last id). There's no resuming in the middle: a client
+  that needs it pages by cursor instead.
+
+<!-- --8<-- [end:pagination-streaming] -->
 
 ## Security model
 <!-- --8<-- [start:security-model] -->

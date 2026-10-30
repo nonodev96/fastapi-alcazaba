@@ -3,7 +3,7 @@
 What a cookie-based app needs: server-side sessions, CSRF protection, headers and body limits.
 In `fastapi_alcazaba.security`.
 
-In the guide: [Server-side sessions](../guide/browser.md#server-side-sessions) · [CSRF protection](../guide/browser.md#csrf-protection) · [Security headers and body size](../guide/browser.md#security-headers-and-body-size). In an app: [the example](../examples/browser_app.md).
+In the guide: [Server-side sessions](../guide/browser.md#server-side-sessions), [CSRF protection](../guide/browser.md#csrf-protection), [Security headers and body size](../guide/browser.md#security-headers-and-body-size). In an app: [the example](../examples/browser_app.md).
 
 ::: fastapi_alcazaba.security.ServerSessionMiddleware
 

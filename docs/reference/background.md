@@ -3,7 +3,7 @@
 Scheduled jobs, the task queue, leader election and locks shared by every process.
 In `fastapi_alcazaba.background`.
 
-In the guide: [Scheduled jobs](../guide/background.md#scheduled-jobs) · [Task queue](../guide/background.md#task-queue) · [Leader election](../guide/background.md#leader-election) · [Locks](../guide/background.md#locks). In an app: [the example](../examples/background.md).
+In the guide: [Scheduled jobs](../guide/background.md#scheduled-jobs), [Task queue](../guide/background.md#task-queue), [Leader election](../guide/background.md#leader-election), [Locks](../guide/background.md#locks). In an app: [the example](../examples/background.md).
 
 ::: fastapi_alcazaba.background.FastAPIScheduler
 

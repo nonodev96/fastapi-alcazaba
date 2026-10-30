@@ -1,7 +1,8 @@
 # Response cache
 
 `@cache` for endpoints and functions, and `Cache` behind it: what each entry is stored under, for
-how long, and how it's kept safe. The [quick start](index.md#quick-start) sets one up.
+how long, and how it's kept safe. The [quick start](index.md#step-1-cache-an-endpoint) sets
+one up.
 
 In an app: [the example](../examples/cache.md). Every class and function: [the API reference](../reference/cache.md).
 

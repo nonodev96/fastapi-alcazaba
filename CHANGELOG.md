@@ -7,6 +7,97 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-30
+
+### Added
+
+- `fastapi_alcazaba.authz`: authorization with [Casbin](https://casbin.org), with the new
+  `casbin` extra (`pip install "fastapi-alcazaba[casbin]"`, which installs PyCasbin).
+  `FastAPICasbin` is a dependency that lets a request through only when the policy allows it:
+  `Depends(authz)` asks about the route's path and method, `Depends(authz.require("articles",
+  "publish"))` about your own objects and actions, with `{name}` taking a path parameter. Who
+  makes the request comes from a dependency of your own (`subject=`), or from Starlette's
+  `AuthenticationMiddleware`. A request without a subject gets a 401 (or is checked as
+  `anonymous=`), one that the policy refuses a 403; WebSockets are closed with 1008. Paths with
+  control characters (`%0A`...) get a 400 without asking the policy, as Starlette routes
+  `/users/%0A` to `/users/` while the policy would read the newline. Decisions are counted in the
+  `fastapi_alcazaba.authz` metric.
+- Authentication by strategies: `FastAPIAuth` in `fastapi_alcazaba.auth`.
+  `auth.use(strategy)` adds one, and `Depends(auth.authenticate("session", "jwt"))` tries those
+  named in order, returning the first user found: otherwise a 401 with their challenges (None with
+  `optional=True`). A `Strategy` returns the user, None without its credentials, or raises
+  `AuthenticationFailed`; writing one takes a method. Strategies: `SessionStrategy`, the user id
+  kept by `login()` in the session (rotated against session fixation); `JWTStrategy`, with the
+  new `auth-strategy-jwt` extra (PyJWT): bearer or cookie tokens, HMAC secrets that rotate, public
+  keys or an identity provider's JWKS (with the `audience` and `issuer` it requires), a
+  `TokenBlocklist`, and `issue()`; tokens with an `aud` are refused when no `audience` is set; `OAuth2Strategy`, with
+  the new `auth-strategy-oauth2` extra (httpx2): the authorization code flow with PKCE and a state
+  cookie, for GitHub, Google, Keycloak or any OAuth2 provider; `HTTPBearerStrategy`, opaque bearer
+  tokens that your function looks up (the `auth-strategy-http-bearer` extra installs nothing
+  more); `SAMLStrategy`, with the new `auth-strategy-saml` extra (signxml): SAML 2.0 single sign-on
+  started by the app, with the XML signature verified against the IdP's certificate and the
+  issuer, audience, recipient, request and validity checked on what it covers, each assertion
+  accepted once, and the app's metadata. Outcomes are counted in the `fastapi_alcazaba.auth`
+  metric.
+- `CasbinMiddleware`, which checks every request with the user of Starlette's
+  `AuthenticationMiddleware`: `{"detail": ...}` errors (problem details with
+  `FastAPIProblemDetails`), WebSockets checked, `OPTIONS` requests checked like the others, and the
+  path the app routes, without its `root_path`.
+- Nine pagination strategies, each in a module of `fastapi_alcazaba.pagination` with its
+  parameters and its page, linked to the pages around it and cached page by page:
+  - `PaginationOffset` (`offset`): `?offset=40&limit=20` without the total; `has_more` comes from
+    one row more than the page (`params.fetch`), so the list is never counted.
+  - `PaginationRange` (`ranges`): `?start=0&end=24`, both ends included, with
+    `Content-Range: items 0-24/319`, also on pages served from the cache. A backwards or oversized
+    range is a 400, a start past the end a 416 with `items */<total>`.
+  - `PaginationKeyset` (`keyset`): keyset pagination in both directions, `?after=` and `?before=`,
+    with keys that can be signed; both at once is a 400.
+  - `PaginationIdBased` (`id_based`): `?last_id=42&limit=20`, the items after the last id seen,
+    oldest or newest first; ids are `int`, `str` or `UUID`, sent as they are.
+  - `PaginationTimeBased` (`time_based`): items older or newer than an ISO 8601 timestamp with its
+    time zone, for feeds and syncing; a page never splits the items that share a time.
+  - `PaginationSearchAfter` (`search_after`): the sort values of the last item, a JSON array that
+    clients can read, converted to the types declared in `sort=(...)`; wrong values are a 400.
+  - `PaginationToken` (`page_token`): `?page_size=20&page_token=...`, opaque tokens signed with
+    HMAC-SHA256, bound to the request's other query parameters and expiring after `ttl`.
+  - `PaginationScroll` (`scroll`): a snapshot of the results kept in the cache's backend and read in
+    batches with `scroll_id`, whatever is written meanwhile; retries get the same batch, each batch
+    renews it, `clear()` drops it, and an `owner` keeps one client's scroll from another.
+  - `PaginationStreaming` (`streaming`): every item as NDJSON in chunks of `batch_size`, from sync
+    or async sources, up to `max_items`; `batches(fetch, key=...)` reads a big table by key a batch
+    at a time.
+
+### Changed
+
+- Pagination: each strategy is in a module of its own, with its parameters and page, and
+  `fastapi_alcazaba.pagination` keeps what they share (`PaginationParams`, `LinkedPage`,
+  `PageLinks`, `Position`); `fastapi_alcazaba` no longer exports them. The strategies are named after
+  what they read, and so are their query parameters: `FastAPIPagination` is
+  `pagination.page_number.PaginationPageNumber` (`page`, `page_size`, which was `size`; `Page` and
+  `PageParams` are `PageNumberPage` and `PageNumberParams`, with `page_size`),
+  `FastAPIPaginationLimitOffset` is `pagination.limit_offset.PaginationLimitOffset`, and
+  `FastAPIPaginationCursor` is `pagination.cursor.PaginationCursor` (`cursor` and `limit`, which was
+  `size`; `CursorPage.size` is `limit`, and the rows to query are `CursorParams.fetch`, which was
+  `limit`). `fastapi_alcazaba.pagination.paginators` is gone.
+- `FastAPIAuth.use()` returns the strategy with its own type, so that `github.redirect()` or
+  `sessions.login()` type-check.
+- The documentation is organised like FastAPI's, in its tabs: Features, Learn, Reference, Resources,
+  About and Release Notes. Learn holds the Tutorial - User Guide, which starts at `/guide/` with a
+  quick start (an app built in three steps, a cache, a rate limit and authorization, each run and
+  checked) and goes on with a page per tool and the production setup, and the examples. The home
+  page follows FastAPI's: the key features, an example to create, run and check, and the optional
+  dependencies. Features tells what sets Alcazaba apart and lists the tools, and About its design,
+  license and credits. Authentication strategies open in the menu on a page per strategy, in the
+  guide and in the examples, where each strategy has an app of its own (JWTs, GitHub logins,
+  sessions, bearer tokens, SAML with Mock SAML, API keys), tested like the others. Every example
+  starts with an animation of what its tool is for, a sequence diagram whose steps appear one by
+  one, in the theme's colours; `scripts/docs_animations.py` draws them.
+
+### Fixed
+
+- `@cache` on an endpoint that returns a `StreamingResponse` logged a warning with a traceback on
+  every request, trying to encode the stream: streams go through uncached.
+
 ## [0.3.1] - 2026-10-27
 
 0.3.0's release was cancelled before it reached PyPI: 0.3.1 is the first release with the changes
@@ -92,11 +183,11 @@ of 0.3.0, below.
 - Rate limiting: `FastAPIRateLimiter` (`fastapi_alcazaba.limiter`), a FastAPI dependency that lets
   each client make `times` requests per sliding window to a route, with a 429 and `Retry-After`
   beyond. The counters live in the cache's backend, shared by every process, behind its timeout
-  and circuit breaker (`fail_open`). A port of fastapi-limiter without its weaknesses: clients are
-  told apart by the address the ASGI server reports, not by `X-Forwarded-For` (which any client
-  can set), and IPv6 addresses by their /64 network (`client_network` for other sizes); the
-  budget is per route, not per URL (`/items/1`, `/items/2`… had one each); requests over the
-  limit don't count, checked and counted atomically. `name` shares a budget across routes, `cost`
+  and circuit breaker (`fail_open`). Clients are told apart by the address the ASGI server
+  reports, not by `X-Forwarded-For` (which any client can set), and IPv6 addresses by their /64
+  network (`client_network` for other sizes); the budget is per route, not per URL (`/items/1`
+  and `/items/2` share one); requests over the limit don't count, checked and counted
+  atomically. `name` shares a budget across routes, `cost`
   makes a route take more of it, `identifier` counts per user, and `hit()` limits anything else
   (WebSocket messages, login attempts). Responses carry the `RateLimit` and `RateLimit-Policy`
   headers of the IETF draft. Each process refuses a client with nothing left without asking the
@@ -109,8 +200,7 @@ of 0.3.0, below.
 - Pagination without another library (`fastapi_alcazaba.pagination`): `FastAPIPagination` (page
   and size), `FastAPIPaginationLimitOffset` and `FastAPIPaginationCursor`, each configured once
   with its limits and used as a dependency that checks the query parameters, and with a
-  `paginate` for a whole list or a page already queried. `Page` and `LimitOffsetPage` have the
-  JSON of fastapi-pagination's. Cursors are keyset pagination on a unique sort key that keeps its
+  `paginate` for a whole list or a page already queried. Cursors are keyset pagination on a unique sort key that keeps its
   types (datetimes, UUIDs, decimals…), optionally signed (HMAC-SHA256, rotation), with a 400 for
   invalid ones. The page parameters are arguments of the endpoint, so `@cache` keeps each page
   under its own key. An example (`examples/pagination`): a catalogue cached page by page, whole,

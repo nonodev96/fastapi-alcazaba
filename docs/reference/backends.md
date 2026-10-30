@@ -3,7 +3,7 @@
 Where entries and state live: in memory, Redis, Valkey, GLIDE, memcached, DynamoDB, two levels.
 In `fastapi_alcazaba.backends`.
 
-In the guide: [Backends](../guide/backends.md) · [Two-level cache](../guide/backends.md#two-level-cache).
+In the guide: [Backends](../guide/backends.md), [Two-level cache](../guide/backends.md#two-level-cache).
 
 ::: fastapi_alcazaba.backends.Backend
 

@@ -1,5 +1,7 @@
 # A browser app: sessions, CSRF and security headers
 
+--8<-- "docs/examples/animations/browser_app.svg"
+
 A small shop rendered on the server, with plain HTML and a few lines of JavaScript. Who signed in
 and the cart live in a server-side session
 ([`ServerSessionMiddleware`](../guide/browser.md#server-side-sessions)): the cookie only carries a random

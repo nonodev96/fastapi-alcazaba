@@ -6,3 +6,7 @@ This product includes software derived from fastapi-cache
 contributors, and from fastapi-limiter (https://github.com/long2ice/fastapi-limiter), Copyright
 2020 long2ice, both licensed under the Apache License, Version 2.0. Those files have been
 modified.
+
+`fastapi_alcazaba.authz.CasbinMiddleware` is based on the middleware of fastapi-authz
+(https://github.com/pycasbin/fastapi-authz), by Zxilly and the fastapi-authz contributors, licensed
+under the Apache License, Version 2.0, and has been modified.

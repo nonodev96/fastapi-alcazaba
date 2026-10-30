@@ -1,5 +1,7 @@
 # Errors and observability
 
+--8<-- "docs/examples/animations/observability.svg"
+
 An orders API that is easy to operate. Its errors are RFC 9457 problem details, from
 [`FastAPIProblemDetails`](../guide/observability.md#problem-details): a validation error says where and what
 without echoing what was sent, running out of stock is a [`Problem`](../guide/observability.md#problem-details)

@@ -1,5 +1,7 @@
 # Background work
 
+--8<-- "docs/examples/animations/background.svg"
+
 A sign-up service whose work goes on after the response. `POST /users` saves the user and hands
 the welcome e-mail to [`FastAPITaskQueue`](../guide/background.md#task-queue), which runs it in the background,
 in whichever process takes it, and retries it while the e-mail provider is down. Out of retries, it

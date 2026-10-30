@@ -3,7 +3,7 @@
 Requests per window and requests at a time, per client or shared, across processes.
 In `fastapi_alcazaba.rate_limit`.
 
-In the guide: [Rate limiting](../guide/limits.md#rate-limiting) · [Concurrency limits](../guide/limits.md#concurrency-limits). In an app: [the example](../examples/limits.md).
+In the guide: [Rate limiting](../guide/limits.md#rate-limiting), [Concurrency limits](../guide/limits.md#concurrency-limits). In an app: [the example](../examples/limits.md).
 
 ::: fastapi_alcazaba.rate_limit.FastAPIRateLimiter
 

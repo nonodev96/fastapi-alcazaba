@@ -11,7 +11,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.11"
 authors = [{ name = "Antonio Mudarra Machuca", email = "nonodev96@gmail.com" }]
-keywords = ["fastapi", "toolkit", "cache", "caching", "rate-limiting", "pagination", "scheduler", "cron", "circuit-breaker", "redis", "valkey", "security"]
+keywords = ["fastapi", "toolkit", "cache", "caching", "rate-limiting", "pagination", "scheduler", "cron", "circuit-breaker", "redis", "valkey", "security", "authorization", "casbin", "rbac", "authentication", "jwt", "oauth2", "saml"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: FastAPI",
@@ -42,7 +42,16 @@ crypto = ["cryptography>=44"]
 zstd = ["backports.zstd>=1.0; python_version < '3.14'"]
 memcache = ["aiomcache>=0.8.2"]
 dynamodb = ["aiobotocore>=2.13.1"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd]"]
+# Casbin's maintained distribution: the old `casbin` one stopped at 1.43, under the same module.
+casbin = ["pycasbin>=2.0"]
+# Authentication strategies: JWTs (PyJWT, with cryptography for RS256, ES256...) and OAuth2 logins.
+auth-strategy-jwt = ["pyjwt[crypto]>=2.10"]
+auth-strategy-oauth2 = ["httpx2>=2.15.1"]
+# Nothing more: HTTPBearerStrategy only needs FastAPI. There for every strategy to have its extra.
+auth-strategy-http-bearer = []
+# SAML 2.0 single sign-on: signxml verifies the XML signatures (with lxml and cryptography).
+auth-strategy-saml = ["signxml>=5.2"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-http-bearer,auth-strategy-saml]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"
@@ -134,6 +143,8 @@ known-first-party = ["examples", "fastapi_alcazaba", "fuzz"]
 [tool.pylint.main]
 py-version = "3.11"
 jobs = 0
+# C extensions pylint may import to see their members.
+extension-pkg-allow-list = ["lxml"]
 
 [tool.pylint.format]
 max-line-length = 100
@@ -188,7 +199,7 @@ strict = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["aiomcache.*", "atheris", "fakeredis.*"]
+module = ["aiomcache.*", "atheris", "casbin.*", "fakeredis.*", "lxml.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

@@ -15,14 +15,14 @@ from typing import Any, ParamSpec, Protocol, TypeVar, cast, overload
 from fastapi.concurrency import run_in_threadpool
 from fastapi.dependencies.utils import get_typed_return_annotation, get_typed_signature
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, StreamingResponse
 from starlette.status import HTTP_200_OK, HTTP_304_NOT_MODIFIED
 
 from fastapi_alcazaba.backends.base import Backend
 from fastapi_alcazaba.core.errors import BackendUnavailable, CircuitOpen, UnstableCacheKeyWarning
 from fastapi_alcazaba.core.integrity import EntryProtector
 from fastapi_alcazaba.core.resilience import BackendGuard
-from fastapi_alcazaba.pagination.paginators import CursorParams, LimitOffsetParams, PageParams
+from fastapi_alcazaba.pagination.common import PaginationParams
 from fastapi_alcazaba.response_cache.caches import (
     Cache,
     CacheOptions,
@@ -195,7 +195,9 @@ def _forbids_storing(target: Response | None) -> bool:
 def _is_cacheable(result: object, response: Response | None) -> bool:
     """Only successful responses that don't say no-store. A Response returned with another
     status, or a status set on the injected response, would come back from the cache as a 200
-    with the error body."""
+    with the error body. Streams aren't kept: reading one to store it would use it up."""
+    if isinstance(result, StreamingResponse):
+        return False
     if isinstance(result, Response) and (
         result.status_code != HTTP_200_OK or _forbids_storing(result)
     ):
@@ -262,9 +264,7 @@ def _add_page_links(result: object, args: tuple[Any, ...], kwargs: dict[str, Any
     endpoint runs. The links are made from this request, never stored with the entry: the first
     request's Host header or query parameters would reach everybody else."""
     for value in (*args, *kwargs.values()):
-        if isinstance(value, PageParams | LimitOffsetParams | CursorParams) and (
-            value.links is not None
-        ):
+        if isinstance(value, PaginationParams) and value.links is not None:
             value.links.add(result)
 
 

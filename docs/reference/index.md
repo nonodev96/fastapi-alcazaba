@@ -1,8 +1,8 @@
-# API reference
+# Reference
 
-Every public class and function, by tool, with its parameters and what it raises. The
-[guide](../guide/index.md) tells how to use them, and the [examples](../examples/index.md) show
-them in complete apps.
+Here's the reference, or code API: every public class and function, by tool, with its parameters
+and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to use them, and the
+[examples](../examples/index.md) show them in complete apps.
 
 <div class="grid cards" markdown>
 
@@ -24,8 +24,7 @@ them in complete apps.
 
     ---
 
-    Pages, limit and offset, and signed cursors, with their parameters and responses.
-    In `fastapi_alcazaba.pagination`.
+    The twelve strategies, with their parameters and pages. In `fastapi_alcazaba.pagination`.
 
 -   :material-speedometer:{ .lg .middle } __[Rate and concurrency limits](limits.md)__
 
@@ -41,12 +40,26 @@ them in complete apps.
     The middleware that replays the first response to a retried request.
     In `fastapi_alcazaba.idempotency`.
 
+-   :material-account-check:{ .lg .middle } __[Authentication strategies](authentication.md)__
+
+    ---
+
+    `FastAPIAuth`, `Strategy`, and the JWT, bearer, OAuth2, SAML and session strategies.
+    In `fastapi_alcazaba.auth`.
+
 -   :material-key-chain:{ .lg .middle } __[API keys, tokens and codes](auth.md)__
 
     ---
 
     API keys stored as digests, revoked tokens and one-time codes.
     In `fastapi_alcazaba.auth`.
+
+-   :material-account-key:{ .lg .middle } __[Authorization with Casbin](authz.md)__
+
+    ---
+
+    A Casbin policy per route or for every request: `FastAPICasbin` and `CasbinMiddleware`.
+    In `fastapi_alcazaba.authz`.
 
 -   :material-shield-lock:{ .lg .middle } __[Sessions, CSRF and security headers](browser.md)__
 

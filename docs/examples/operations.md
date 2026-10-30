@@ -1,5 +1,7 @@
 # Operations
 
+--8<-- "docs/examples/animations/operations.svg"
+
 An app operated at runtime, without a deploy, through a small admin API that takes a bearer token.
 It closes and reopens the app with [`FastAPIMaintenance`](../guide/operations.md#maintenance-mode), whose
 middleware answers 503 with `Retry-After` to everything but the health check and the admin routes.

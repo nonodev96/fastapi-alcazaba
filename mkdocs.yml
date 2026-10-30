@@ -6,7 +6,7 @@ site_description: >-
 site_url: !ENV [SITE_URL, "https://nonodev96.github.io/fastapi-alcazaba/"]
 repo_url: !ENV [REPO_URL, "https://github.com/nonodev96/fastapi-alcazaba"]
 edit_uri: ""
-copyright: Copyright © 2026 Antonio Mudarra Machuca · Apache License 2.0
+copyright: Copyright © 2026 Antonio Mudarra Machuca. Apache License 2.0
 strict: true
 
 theme:
@@ -18,10 +18,16 @@ theme:
     repo: fontawesome/brands/github
   features:
     - content.code.copy
+    # The tabs of one name (pip, uv) switch together, all over the site.
+    - content.tabs.link
     - navigation.footer
     - navigation.indexes
-    - navigation.sections
+    # Where a page is, above its title: Learn > Tutorial - User Guide.
+    - navigation.path
+    # No navigation.sections: the sections of a tab (Tutorial - User Guide, Examples) open and
+    # close in the menu on the left, as in FastAPI's documentation.
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.top
     - search.highlight
     # No search.suggest: Material 9.7.1's has an XSS (GHSA-xvg9-69gf-fjrf).
@@ -31,21 +37,28 @@ theme:
       scheme: default
       primary: custom
       accent: custom
-      toggle: {icon: material/weather-night, name: Dark mode}
+      toggle: { icon: material/weather-night, name: Dark mode }
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: custom
       accent: custom
-      toggle: {icon: material/weather-sunny, name: Light mode}
+      toggle: { icon: material/weather-sunny, name: Light mode }
 
 extra_css:
   - stylesheets/brand.css
+  - stylesheets/animations.css
+
+# The examples' animations are drawn into their pages (pymdownx.snippets), not served apart.
+exclude_docs: |
+  examples/animations/
 
 extra:
   # A site per version (dev, 0.3, 0.4...), which the docs workflow publishes with mike; the
   # selector lists them, and the others than the latest release say so (overrides/main.html).
+  # The workflow turns it on (DOCS_VERSIONS=mike): `mkdocs serve` has one version, and no
+  # versions.json to list them in.
   version:
-    provider: mike
+    provider: !ENV [DOCS_VERSIONS, ""]
     default: latest
     alias: true
   social:
@@ -57,69 +70,131 @@ extra:
       name: fastapi-alcazaba on PyPI
 
 nav:
-  - Home: index.md
-  - Guide:
-    - guide/index.md
-    - Response cache: guide/cache.md
-    - Backends: guide/backends.md
-    - Pagination: guide/pagination.md
-    - Rate and concurrency limits: guide/limits.md
-    - Idempotency keys: guide/idempotency.md
-    - API keys, tokens and codes: guide/auth.md
-    - Sessions, CSRF and security headers: guide/browser.md
-    - Audit trail: guide/audit.md
-    - Checking uploads: guide/uploads.md
-    - Webhooks and outbound calls: guide/webhooks.md
-    - Errors and observability: guide/observability.md
-    - Background work: guide/background.md
-    - Operations: guide/operations.md
-    - Security model and resilience: guide/security-model.md
-  - Examples:
-    - examples/index.md
-    - Response cache: examples/cache.md
-    - Pagination: examples/pagination.md
-    - Rate and concurrency limits: examples/limits.md
-    - Idempotency keys: examples/idempotency.md
-    - API keys, tokens and codes: examples/auth.md
-    - A browser app: examples/browser_app.md
-    - Audit trail: examples/audit.md
-    - Checking uploads: examples/uploads.md
-    - Webhooks in and out: examples/webhooks.md
-    - Errors and observability: examples/observability.md
-    - Background work: examples/background.md
-    - Operations: examples/operations.md
-  - API reference:
-    - reference/index.md
-    - Response cache: reference/cache.md
-    - Backends: reference/backends.md
-    - Pagination: reference/pagination.md
-    - Rate and concurrency limits: reference/limits.md
-    - Idempotency keys: reference/idempotency.md
-    - API keys, tokens and codes: reference/auth.md
-    - Sessions, CSRF and security headers: reference/browser.md
-    - Audit trail: reference/audit.md
-    - Checking uploads: reference/uploads.md
-    - Webhooks and outbound calls: reference/webhooks.md
-    - Errors and observability: reference/observability.md
-    - Background work: reference/background.md
-    - Operations: reference/operations.md
-    - Integrity, resilience and errors: reference/integrity.md
-  - Project:
-    - Security policy: security.md
-    - Deployment and releases: releasing.md
-    - Verifying releases: verifying.md
-    - Development: development.md
-    - Changelog: changelog.md
+  # The tabs of FastAPI's documentation: the project, its features, learning it, the reference,
+  # resources, about it and the release notes.
+  - Alcazaba: index.md
+  - Features:
+      - features/index.md
+      - The tools: features/tools.md
+  - Learn:
+      - learn/index.md
+      - Tutorial - User Guide:
+          - guide/index.md
+          - Authentication strategies:
+              - guide/authentication/index.md
+              - HTTPBearerStrategy: guide/authentication/http-bearer.md
+              - JWTStrategy: guide/authentication/jwt.md
+              - OAuth2Strategy: guide/authentication/oauth2.md
+              - SAMLStrategy: guide/authentication/saml.md
+              - SessionStrategy: guide/authentication/session.md
+              - Your own strategy: guide/authentication/your-own.md
+          - API keys, tokens and codes: guide/auth.md
+          - Audit trail: guide/audit.md
+          - Authorization with Casbin: guide/authz.md
+          - Backends: guide/backends.md
+          - Background work: guide/background.md
+          - Checking uploads: guide/uploads.md
+          - Errors and observability: guide/observability.md
+          - Idempotency keys: guide/idempotency.md
+          - Operations: guide/operations.md
+          - Pagination:
+              - guide/pagination/index.md
+              - PaginationCursor: guide/pagination/cursor.md
+              - PaginationIdBased: guide/pagination/id-based.md
+              - PaginationKeyset: guide/pagination/keyset.md
+              - PaginationLimitOffset: guide/pagination/limit-offset.md
+              - PaginationOffset: guide/pagination/offset.md
+              - PaginationPageNumber: guide/pagination/page-number.md
+              - PaginationRange: guide/pagination/range.md
+              - PaginationScroll: guide/pagination/scroll.md
+              - PaginationSearchAfter: guide/pagination/search-after.md
+              - PaginationStreaming: guide/pagination/streaming.md
+              - PaginationTimeBased: guide/pagination/time-based.md
+              - PaginationToken: guide/pagination/token.md
+          - Production setup: guide/production.md
+          - Rate and concurrency limits: guide/limits.md
+          - Response cache: guide/cache.md
+          - Security model and resilience: guide/security-model.md
+          - Sessions, CSRF and security headers: guide/browser.md
+          - Webhooks and outbound calls: guide/webhooks.md
+      - Examples:
+          - examples/index.md
+          - A browser app: examples/browser_app.md
+          - API keys, tokens and codes: examples/auth.md
+          - Audit trail: examples/audit.md
+          - Authentication strategies:
+              - examples/auth_strategies/index.md
+              - JWTStrategy: examples/auth_strategies/jwt.md
+              - OAuth2Strategy: examples/auth_strategies/oauth2.md
+              - SessionStrategy: examples/auth_strategies/session.md
+              - HTTPBearerStrategy: examples/auth_strategies/http-bearer.md
+              - SAMLStrategy: examples/auth_strategies/saml.md
+              - Your own strategy: examples/auth_strategies/your-own.md
+          - Authorization with Casbin: examples/authz.md
+          - Background work: examples/background.md
+          - Checking uploads: examples/uploads.md
+          - Errors and observability: examples/observability.md
+          - Idempotency keys: examples/idempotency.md
+          - Operations: examples/operations.md
+          - Pagination:
+              - examples/pagination/index.md
+              - PaginationPageNumber: examples/pagination/page-number.md
+              - PaginationLimitOffset: examples/pagination/limit-offset.md
+              - PaginationOffset: examples/pagination/offset.md
+              - PaginationRange: examples/pagination/range.md
+              - PaginationCursor: examples/pagination/cursor.md
+              - PaginationKeyset: examples/pagination/keyset.md
+              - PaginationIdBased: examples/pagination/id-based.md
+              - PaginationTimeBased: examples/pagination/time-based.md
+              - PaginationSearchAfter: examples/pagination/search-after.md
+              - PaginationToken: examples/pagination/token.md
+              - PaginationScroll: examples/pagination/scroll.md
+              - PaginationStreaming: examples/pagination/streaming.md
+          - Rate and concurrency limits: examples/limits.md
+          - Response cache: examples/cache.md
+          - Webhooks in and out: examples/webhooks.md
+  - Reference:
+      - reference/index.md
+      - Response cache: reference/cache.md
+      - Backends: reference/backends.md
+      - Pagination: reference/pagination.md
+      - Rate and concurrency limits: reference/limits.md
+      - Idempotency keys: reference/idempotency.md
+      - Authentication strategies: reference/authentication.md
+      - API keys, tokens and codes: reference/auth.md
+      - Authorization with Casbin: reference/authz.md
+      - Sessions, CSRF and security headers: reference/browser.md
+      - Audit trail: reference/audit.md
+      - Checking uploads: reference/uploads.md
+      - Webhooks and outbound calls: reference/webhooks.md
+      - Errors and observability: reference/observability.md
+      - Background work: reference/background.md
+      - Operations: reference/operations.md
+      - Integrity, resilience and errors: reference/integrity.md
+  - Resources:
+      - resources/index.md
+      - Help Alcazaba - Get help: resources/help.md
+      - Development - Contributing: development.md
+      - Security policy: security.md
+      - Deployment and releases: releasing.md
+      - Verifying releases: verifying.md
+  - About:
+      - about/index.md
+  - Release Notes: changelog.md
 
 markdown_extensions:
   - admonition
   - attr_list
+  # Admonitions that open on a click (??? tip).
+  - pymdownx.details
+  # Content tabs (=== "pip"), with Material's look.
+  - pymdownx.tabbed: { alternate_style: true }
   - md_in_html
   - tables
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - toc: {permalink: true}
+  - toc: { permalink: true }
   - pymdownx.highlight:
       # Each line in a span of its own: the output of a terminal session is left out of copies
       # whole, its line break included (stylesheets/brand.css).
@@ -127,7 +202,7 @@ markdown_extensions:
       # A class per language (language-console), for the rules of terminal sessions.
       pygments_lang_class: true
   - pymdownx.superfences
-  - pymdownx.snippets: {check_paths: true}
+  - pymdownx.snippets: { check_paths: true }
 
 plugins:
   - search

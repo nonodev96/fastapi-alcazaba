@@ -1,5 +1,7 @@
 # Checking uploads
 
+--8<-- "docs/examples/animations/uploads.svg"
+
 An app where users upload an avatar and documents, then download them again. Every file is
 judged by its bytes, not by its name or the `Content-Type` the client sent:
 [`FastAPIUploads`](../guide/uploads.md) checks avatars (PNG, JPEG, GIF or WebP, at most

@@ -2,115 +2,157 @@
 
 --8<-- "README.md:badges"
 
-Alcazaba (`fastapi-alcazaba`) gathers the pieces most FastAPI apps end up writing themselves,
-built with security in mind and tested against real servers. The guide has a page per tool, the
-examples show them at work in complete apps, and the API reference lists every class and
-function.
+---
+
+**Documentation**: <https://nonodev96.github.io/fastapi-alcazaba/>
+
+**Source code**: <https://github.com/nonodev96/fastapi-alcazaba>
+
+---
+
+Alcazaba (`fastapi-alcazaba`) gathers the pieces most FastAPI apps end up writing themselves: a
+response cache, rate limits, authorization, sessions, CSRF protection, webhooks, a task queue and
+more, built with security in mind.
+
+The key features are:
+
+- **Secure by default:** users never get each other's cached responses, nothing that opens a
+  door (keys, codes, tokens) is stored in clear, and whatever could leak data is opt-in.
+- **Shared by every process:** rate limits, locks, sessions, revoked tokens, feature flags and
+  maintenance mode live in Redis, Valkey, memcached or DynamoDB, so that every process and
+  container sees them at once.
+- **Resilient:** every call to the backend has a timeout and a circuit breaker. A backend that
+  fails doesn't take the app down.
+- **The FastAPI way:** dependencies, decorators and middlewares that show in the OpenAPI docs,
+  with types your editor completes.
+- **Standards:** problem details (RFC 9457), `Cache-Status` (RFC 9211), the IETF's `RateLimit`
+  headers, Standard Webhooks, Casbin policies and OpenTelemetry.
+- **Tested hard:** against real servers on Python 3.11 to 3.14, with fuzzing and mutation
+  testing.
+- **Many tools, one package:** a response cache, rate and concurrency limits, idempotency keys,
+  authentication strategies, API keys and tokens, authorization, sessions and CSRF, an audit
+  trail, upload checks, webhooks, scheduled jobs, a task queue, circuit breakers, maintenance
+  mode and feature flags. [See them all](features/tools.md).
 
 [Get started](guide/index.md){ .md-button .md-button--primary }
-[Examples](examples/index.md){ .md-button }
-[API reference](reference/index.md){ .md-button }
+[Features](features/index.md){ .md-button }
 
-## The tools
+## Requirements
 
-<div class="grid cards" markdown>
+Python 3.11 or later, FastAPI 0.115 or later and Pydantic v2. Everything else is optional: each
+backend and integration comes with an [extra](#optional-dependencies).
 
--   :material-cached:{ .lg .middle } __[Response cache](guide/cache.md)__
+## Installation
 
-    ---
+```console
+$ pip install fastapi-alcazaba
+```
 
-    `@cache` for endpoints and functions: one entry for everybody or one per user, invalidation
-    by tag, signed or encrypted entries.
+That's enough for an app in a single process, with everything kept in memory.
 
--   :material-database:{ .lg .middle } __[Backends](guide/backends.md)__
+## Example
 
-    ---
+### Create it
 
-    In memory, Redis, Valkey, GLIDE, memcached or DynamoDB, and a copy in each process in front
-    of them.
+Create a file `main.py` with:
 
--   :material-book-open-page-variant:{ .lg .middle } __[Pagination](guide/pagination.md)__
+<!-- fmt: off -->
+```python title="main.py"
+--8<-- "examples/quickstart/step1_cache.py"
+```
+<!-- fmt: on -->
 
-    ---
+### Run it
 
-    Pages, limit and offset, and signed cursors, each page cached under its own key.
+Run it with `fastapi dev`, which comes with `pip install "fastapi[standard]"` (or
+`uvicorn main:app --reload`):
 
--   :material-speedometer:{ .lg .middle } __[Rate and concurrency limits](guide/limits.md)__
+```console
+$ fastapi dev main.py
 
-    ---
+ ⚡️ Starting FastAPI in development mode
 
-    Requests per window and requests at a time, per client or shared, across processes.
+ 🌐 Server started at http://127.0.0.1:8000
+    Documentation at http://127.0.0.1:8000/docs
+```
 
--   :material-repeat-once:{ .lg .middle } __[Idempotency keys](guide/idempotency.md)__
+### Check it
 
-    ---
+Ask for the product twice:
 
-    A retried POST gets the first response instead of running twice.
+```console
+$ curl -i http://127.0.0.1:8000/products/1
+HTTP/1.1 200 OK
+cache-status: Alcazaba; fwd=miss; stored
+cache-control: max-age=60
 
--   :material-key-chain:{ .lg .middle } __[API keys, tokens and codes](guide/auth.md)__
+{"name":"Olive oil","price":9.5}
 
-    ---
+$ curl -i http://127.0.0.1:8000/products/1
+HTTP/1.1 200 OK
+cache-status: Alcazaba; hit; ttl=60
+cache-control: max-age=60
 
-    API keys with scopes and expiry, a blocklist of tokens and one-time codes, nothing stored in
-    clear.
+{"name":"Olive oil","price":9.5}
+```
 
--   :material-shield-lock:{ .lg .middle } __[Sessions, CSRF and security headers](guide/browser.md)__
+The first request ran `read_product`; the second one came from the cache, which keeps the
+response for 60 seconds. Requests with an `Authorization` or `Cookie` header get entries of
+their own: users never see each other's responses.
 
-    ---
+### Interactive API docs
 
-    Sessions you can revoke, requests from other sites refused, the OWASP headers and a body size
-    limit.
+Open <http://127.0.0.1:8000/docs>: the endpoint is there as FastAPI documents it, with its
+parameters and response model.
 
--   :material-clipboard-text-clock:{ .lg .middle } __[Audit trail](guide/audit.md)__
+### Example upgrade
 
-    ---
+The [Tutorial - User Guide](guide/index.md) takes this app further, a step at a time: five
+requests a minute for each client, then prices that only the staff may change, as a Casbin policy
+says:
 
-    Who did what to which resource, and whether it worked: no secrets, signed and chained.
+<!-- fmt: off -->
+```python
+--8<-- "examples/quickstart/step3_authz.py:58:64"
+```
+<!-- fmt: on -->
 
--   :material-file-upload:{ .lg .middle } __[Checking uploads](guide/uploads.md)__
+### Recap
 
-    ---
+In summary, you add Alcazaba's tools the way FastAPI already works: a decorator caches an
+endpoint, a dependency limits it or checks who may call it, and the lifespan sets up where their
+state lives. The app keeps its OpenAPI schema and its types, and moving from memory to Redis
+changes one line.
 
-    The real type from the bytes, the size, image dimensions and safe file names.
+For a more complete example, with more tools, see the [Tutorial - User Guide](guide/index.md).
 
--   :material-webhook:{ .lg .middle } __[Webhooks and outbound calls](guide/webhooks.md)__
+## Optional dependencies
 
-    ---
+Each backend and integration needs a library of its own, which an extra installs:
 
-    Standard Webhooks signing and verification, and calls out with a deadline, a breaker and SSRF
-    protection.
+| Extra | Installs | For |
+| --- | --- | --- |
+| `redis` | redis-py | `RedisBackend` |
+| `valkey` | valkey-py | `ValkeyBackend` |
+| `glide` | Valkey GLIDE | `GlideBackend` |
+| `memcache` | aiomcache | `MemcachedBackend` |
+| `dynamodb` | aiobotocore | `DynamoBackend` |
+| `otel` | the OpenTelemetry API | [metrics and traces](guide/observability.md#metrics-and-traces) |
+| `crypto` | cryptography | [encrypted entries](guide/cache.md#encrypted-entries) |
+| `zstd` | backports.zstd, before Python 3.14 | [zstd compression](guide/cache.md#compression) |
+| `casbin` | PyCasbin | the enforcers of [`FastAPICasbin`](guide/authz.md) |
+| `auth-strategy-jwt` | PyJWT, with cryptography | [`JWTStrategy`](guide/authentication/jwt.md) |
+| `auth-strategy-oauth2` | httpx2 | [`OAuth2Strategy`](guide/authentication/oauth2.md) |
+| `auth-strategy-saml` | signxml | [`SAMLStrategy`](guide/authentication/saml.md) |
+| `auth-strategy-http-bearer` | nothing more | [`HTTPBearerStrategy`](guide/authentication/http-bearer.md) |
+| `all` | all of the above | |
 
--   :material-chart-timeline-variant:{ .lg .middle } __[Errors and observability](guide/observability.md)__
+```console
+$ pip install "fastapi-alcazaba[redis,casbin]"
+```
 
-    ---
+## License
 
-    RFC 9457 problem details, request IDs, timeouts, health checks, metrics and traces.
-
--   :material-calendar-clock:{ .lg .middle } __[Background work](guide/background.md)__
-
-    ---
-
-    Scheduled jobs, a task queue, a leader and locks, shared by every process.
-
--   :material-toggle-switch:{ .lg .middle } __[Operations](guide/operations.md)__
-
-    ---
-
-    Circuit breakers, maintenance mode and feature flags that every process sees at once.
-
--   :material-shield-check-outline:{ .lg .middle } __[Security model and resilience](guide/security-model.md)__
-
-    ---
-
-    What gets cached and for whom, what the backend is trusted with, and what happens when it
-    fails.
-
-</div>
-
-## Safe by default
-
---8<-- "README.md:safe-by-default"
-
-## License and credits
-
---8<-- "README.md:license-and-credits"
+This project is licensed under the terms of the
+[Apache License 2.0](https://github.com/nonodev96/fastapi-alcazaba/blob/main/LICENSE). Its
+credits, and where its name comes from, are in [About](about/index.md#license-and-credits).

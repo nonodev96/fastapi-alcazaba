@@ -1,5 +1,7 @@
 # Rate and concurrency limits
 
+--8<-- "docs/examples/animations/limits.svg"
+
 An API with a public search limited per client address, routes for signed-in users that share
 one budget per user (a report takes ten times as much of it as a list of orders), and a slow
 report endpoint that renders at most two reports at a time across every process.

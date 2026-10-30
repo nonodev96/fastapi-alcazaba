@@ -87,6 +87,16 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "API keys checked, by outcome: accepted, malformed, unknown, wrong_secret, expired, "
         "insufficient_scope",
     ),
+    "auth": (
+        "{request}",
+        "Authentications of FastAPIAuth, by strategy and outcome: success, failure (credentials "
+        "there but refused), unauthenticated (no strategy found a user; the strategies tried)",
+    ),
+    "authz": (
+        "{request}",
+        "Casbin decisions of FastAPICasbin and CasbinMiddleware, by outcome: allowed, denied, "
+        "unauthenticated (no subject, refused without asking the policy)",
+    ),
     "csrf.refused": (
         "{request}",
         "Requests refused by CSRFMiddleware, by kind (http, websocket) and reason: fetch_site "

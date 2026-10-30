@@ -3,7 +3,7 @@
 API keys stored as digests, revoked tokens and one-time codes.
 In `fastapi_alcazaba.auth`.
 
-In the guide: [API keys](../guide/auth.md#api-keys) · [Revoked tokens and one-time codes](../guide/auth.md#revoked-tokens-and-one-time-codes). In an app: [the example](../examples/auth.md).
+In the guide: [API keys](../guide/auth.md#api-keys), [Revoked tokens and one-time codes](../guide/auth.md#revoked-tokens-and-one-time-codes). In an app: [the example](../examples/auth.md).
 
 ::: fastapi_alcazaba.auth.FastAPIAPIKeys
 

@@ -1,0 +1,13 @@
+p, anonymous, /articles, GET
+p, anonymous, /articles/:id, GET
+p, writer, /articles, POST
+p, writer, /articles/:id, PUT
+p, writer, drafts, read
+p, editor, articles, edit
+p, editor, articles, publish
+p, admin, roles, grant
+g, editor, writer
+g, admin, editor
+g, ana, admin
+g, ben, editor
+g, cris, writer

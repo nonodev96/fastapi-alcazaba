@@ -1,0 +1,2 @@
+p, staff, /products/:id, PUT
+g, ana, staff

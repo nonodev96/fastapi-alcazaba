@@ -47,16 +47,24 @@ ACCESS_FORMAT = '%(asctime)s %(levelname)s [%(request_id)s] "%(request_line)s" %
 LOGGING: dict[str, Any] = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {"request_id": {"()": "fastapi_alcazaba.observability.RequestIDLogFilter"}},
+    "filters": {
+        "request_id": {"()": "fastapi_alcazaba.observability.RequestIDLogFilter"},
+    },
     "formatters": {
         "default": {"format": LOG_FORMAT},
         "access": {"()": "uvicorn.logging.AccessFormatter", "fmt": ACCESS_FORMAT},
     },
     "handlers": {
-        name: {"class": "logging.StreamHandler", "formatter": name, "filters": ["request_id"]}
+        name: {
+            "class": "logging.StreamHandler",
+            "formatter": name,
+            "filters": ["request_id"],
+        }
         for name in ("default", "access")
     },
-    "loggers": {"uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False}},
+    "loggers": {
+        "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": False},
+    },
     "root": {"handlers": ["default"], "level": "INFO"},
 }
 
@@ -104,7 +112,10 @@ router = APIRouter()
 @router.post("/orders", status_code=status.HTTP_201_CREATED)
 async def place_order(new: NewOrder, db: DB) -> Order:
     if new.product_id not in db.stock:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such product")  # a 4xx's detail is sent
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "No such product",
+        )  # a 4xx's detail is sent
     available = db.stock[new.product_id]
     if new.quantity > available:
         raise Problem(
@@ -173,7 +184,9 @@ def create_app(*, request_timeout: float = 10.0) -> FastAPI:
     # that the 504 it answers carries the ID too. (A 500 is answered outside every middleware;
     # FastAPIProblemDetails adds the ID to it itself.)
     application.add_middleware(
-        RequestTimeoutMiddleware, timeout=request_timeout, paths={"/orders/export": None}
+        RequestTimeoutMiddleware,
+        timeout=request_timeout,
+        paths={"/orders/export": None},
     )
     # Keeps a safe X-Request-ID set by the proxy (or the client); trust_incoming=False if clients
     # reach the application directly and shouldn't choose their IDs.

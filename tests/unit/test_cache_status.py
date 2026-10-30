@@ -9,6 +9,7 @@ import random
 import httpx2 as httpx
 import pytest
 from fastapi import FastAPI, Response
+from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
 
 from fastapi_alcazaba import FastAPICache
@@ -78,3 +79,23 @@ def test_after_the_endpoint_s_own_caches() -> None:
     with TestClient(app) as client:
         response = client.get("/inner")
     assert response.headers["Cache-Status"] == "Database; hit, Alcazaba; fwd=miss; stored"
+
+
+def test_streams_go_through_uncached(caplog: pytest.LogCaptureFixture) -> None:
+    """A stream isn't encoded (it would be used up): forwarded every time, without a warning."""
+    FastAPICache.init(InMemoryBackend())
+    app = FastAPI()
+    calls: list[int] = []
+
+    @app.get("/lines")
+    @cache(expire=100)
+    async def lines() -> StreamingResponse:
+        calls.append(1)
+        return StreamingResponse(iter([b"one\n", b"two\n"]), media_type="text/plain")
+
+    with TestClient(app) as client:
+        first, second = client.get("/lines"), client.get("/lines")
+    assert (first.text, second.text) == ("one\ntwo\n", "one\ntwo\n")
+    assert cache_status(second.headers) == "fwd=miss"  # never "stored"
+    assert len(calls) == 2
+    assert not [record for record in caplog.records if record.levelname == "WARNING"]

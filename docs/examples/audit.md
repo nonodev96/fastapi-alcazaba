@@ -1,5 +1,7 @@
 # Audit trail
 
+--8<-- "docs/examples/animations/audit.svg"
+
 An admin API whose sensitive actions leave an audit trail: who changed which account's role or
 deleted it, whether they were allowed to, and the request it came from.
 [`FastAPIAudit`](../guide/audit.md) writes each event when the endpoint ends, as a line of

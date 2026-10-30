@@ -1,0 +1,27 @@
+<figure class="alc-anim">
+<svg viewBox="0 0 640 382" role="img" aria-labelledby="alc-auth_saml-title alc-auth_saml-desc" xmlns="http://www.w3.org/2000/svg">
+<title id="alc-auth_saml-title">SAMLStrategy</title>
+<desc id="alc-auth_saml-desc">Browser to Your app: GET /saml/login. Your app to Browser: 302 → IdP, SAML request. Browser to Identity provider: log in at the IdP, once for every app. Identity provider to Browser: a signed assertion, in a form. Browser to Your app: POST /saml/acs, assertion. Your app: ✓ signature, audience, request, once. Your app to Browser: session cookie, 303 /me. One login at the identity provider opens every app.</desc>
+<line class="alc-life" x1="100" y1="52" x2="100" y2="330"/>
+<g class="alc-actor"><rect x="18" y="10" width="164" height="42" rx="8"/><text x="100" y="36">Browser</text></g>
+<line class="alc-life" x1="320" y1="52" x2="320" y2="330"/>
+<g class="alc-actor"><rect x="238" y="10" width="164" height="42" rx="8"/><text x="320" y="36">Your app</text></g>
+<line class="alc-life" x1="540" y1="52" x2="540" y2="330"/>
+<g class="alc-actor"><rect x="458" y="10" width="164" height="42" rx="8"/><text x="540" y="36">Identity provider</text></g>
+<g class="alc-step alc-request alc-s1"><line x1="106" y1="92" x2="306" y2="92"/><polygon points="314,92 304,87 304,97"/><text class="alc-label" x="210" y="84">GET /saml/login</text></g>
+<circle class="alc-dot alc-request alc-m1" cx="106" cy="92" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-reply alc-s2"><line x1="314" y1="128" x2="114" y2="128"/><polygon points="106,128 116,123 116,133"/><text class="alc-label" x="210" y="120">302 → IdP, SAML request</text></g>
+<circle class="alc-dot alc-reply alc-m2" cx="314" cy="128" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-request alc-s3"><line x1="106" y1="164" x2="526" y2="164"/><polygon points="534,164 524,159 524,169"/><text class="alc-label" x="320" y="156">log in at the IdP, once for every app</text></g>
+<circle class="alc-dot alc-request alc-m3" cx="106" cy="164" r="5" style="--dx: 428px"/>
+<g class="alc-step alc-reply alc-s4"><line x1="534" y1="200" x2="114" y2="200"/><polygon points="106,200 116,195 116,205"/><text class="alc-label" x="320" y="192">a signed assertion, in a form</text></g>
+<circle class="alc-dot alc-reply alc-m4" cx="534" cy="200" r="5" style="--dx: -428px"/>
+<g class="alc-step alc-request alc-s5"><line x1="106" y1="236" x2="306" y2="236"/><polygon points="314,236 304,231 304,241"/><text class="alc-label" x="210" y="228">POST /saml/acs, assertion</text></g>
+<circle class="alc-dot alc-request alc-m5" cx="106" cy="236" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-note alc-s6"><rect x="170" y="258" width="300" height="26" rx="13"/><text class="alc-label" x="320" y="276">✓ signature, audience, request, once</text></g>
+<g class="alc-step alc-reply alc-s7"><line x1="314" y1="308" x2="114" y2="308"/><polygon points="106,308 116,303 116,313"/><text class="alc-label" x="210" y="300">session cookie, 303 /me</text></g>
+<circle class="alc-dot alc-reply alc-m7" cx="314" cy="308" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-banner alc-s8"><rect x="20" y="338" width="600" height="34" rx="17"/><text x="320" y="360">One login at the identity provider opens every app</text></g>
+</svg>
+<figcaption>What it&#x27;s for: single sign-on with the company&#x27;s identity provider: one login there opens every app.</figcaption>
+</figure>

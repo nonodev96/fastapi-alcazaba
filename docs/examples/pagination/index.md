@@ -1,7 +1,10 @@
 # Pagination
 
-A product catalogue paginated with [`FastAPIPagination`](../guide/pagination.md) and
-[`FastAPIPaginationCursor`](../guide/pagination.md#by-cursor), and cached three ways: one entry per page,
+--8<-- "docs/examples/animations/pagination.svg"
+
+Each pagination strategy has an example of its own, in the menu. This one is a product catalogue
+paginated with [`PaginationPageNumber`](../../guide/pagination/page-number.md) and
+[`PaginationCursor`](../../guide/pagination/cursor.md), and cached three ways: one entry per page,
 one entry for a whole short list sliced into pages, and one entry per cursor. Every list is
 tagged, so adding a product drops every page at once.
 
@@ -24,37 +27,37 @@ A page, computed once and then served from the cache, which links to the pages a
 [`Link`](https://www.rfc-editor.org/rfc/rfc8288) header:
 
 ```console
-$ curl -i "http://127.0.0.1:8000/products?page=2&size=3"
+$ curl -i "http://127.0.0.1:8000/products?page=2&page_size=3"
 HTTP/1.1 200 OK
-link: </products?page=1&size=3>; rel="first", </products?page=1&size=3>; rel="prev", </products?page=3&size=3>; rel="next", </products?page=20&size=3>; rel="last"
+link: </products?page=1&page_size=3>; rel="first", </products?page=1&page_size=3>; rel="prev", </products?page=3&page_size=3>; rel="next", </products?page=20&page_size=3>; rel="last"
 cache-status: Alcazaba; fwd=miss; stored
 cache-control: max-age=300
 
-{"items":[{"name":"Product 4","category":"vegetables","price":1.4,"id":4},{"name":"Product 5","category":"oil","price":1.5,"id":5},{"name":"Product 6","category":"fruit","price":1.6,"id":6}],"total":60,"page":2,"size":3,"pages":20}
+{"items":[{"name":"Product 4","category":"vegetables","price":1.4,"id":4},{"name":"Product 5","category":"oil","price":1.5,"id":5},{"name":"Product 6","category":"fruit","price":1.6,"id":6}],"total":60,"page":2,"page_size":3,"pages":20}
 
-$ curl -si "http://127.0.0.1:8000/products?page=2&size=3" | grep cache-status
+$ curl -si "http://127.0.0.1:8000/products?page=2&page_size=3" | grep cache-status
 cache-status: Alcazaba; hit; ttl=300
 ```
 
 Pages have a maximum size, checked before anything is queried:
 
 ```console
-$ curl "http://127.0.0.1:8000/products?size=1000"
-{"detail":[{"type":"less_than_equal","loc":["query","size"],"msg":"Input should be less than or equal to 100","input":"1000","ctx":{"le":100}}]}
+$ curl "http://127.0.0.1:8000/products?page_size=1000"
+{"detail":[{"type":"less_than_equal","loc":["query","page_size"],"msg":"Input should be less than or equal to 100","input":"1000","ctx":{"le":100}}]}
 ```
 
 By cursor, newest first: each `next_cursor` gives the products right after the last one seen,
 however many are added meanwhile. Cursors are signed, so a made-up one is refused:
 
 ```console
-$ curl "http://127.0.0.1:8000/products/newest?size=2"
-{"items":[{"name":"Product 60",...,"id":60},{"name":"Product 59",...,"id":59}],"size":2,"next_cursor":"NTk.fYIHDRFKRMk2AgxgOKB_Xw"}
+$ curl "http://127.0.0.1:8000/products/newest?limit=2"
+{"items":[{"name":"Product 60",...,"id":60},{"name":"Product 59",...,"id":59}],"limit":2,"next_cursor":"NTk.no4JNGGfm0sctVoPGwGmLw"}
 
-$ curl "http://127.0.0.1:8000/products/newest?size=2&cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw"
-{"items":[{"name":"Product 58",...,"id":58},{"name":"Product 57",...,"id":57}],"size":2,"next_cursor":"NTc.Vp3GtrQxFhsATIf18CX4aA"}
+$ curl "http://127.0.0.1:8000/products/newest?limit=2&cursor=NTk.no4JNGGfm0sctVoPGwGmLw"
+{"items":[{"name":"Product 58",...,"id":58},{"name":"Product 57",...,"id":57}],"limit":2,"next_cursor":"NTc.9b4V9vy4_r7fsd3atc6TWQ"}
 
-$ curl -si "http://127.0.0.1:8000/products/newest?size=2" | grep link
-link: </products/newest?size=2>; rel="first", </products/newest?cursor=NTk.fYIHDRFKRMk2AgxgOKB_Xw&size=2>; rel="next"
+$ curl -si "http://127.0.0.1:8000/products/newest?limit=2" | grep link
+link: </products/newest?limit=2>; rel="first", </products/newest?cursor=NTk.no4JNGGfm0sctVoPGwGmLw&limit=2>; rel="next"
 
 $ curl -i "http://127.0.0.1:8000/products/newest?cursor=abc"
 HTTP/1.1 400 Bad Request
@@ -69,7 +72,7 @@ $ curl -X POST http://127.0.0.1:8000/products -H "Content-Type: application/json
     -d '{"name": "Capers", "category": "vegetables", "price": 2.5}'
 {"name":"Capers","category":"vegetables","price":2.5,"id":61}
 
-$ curl -si "http://127.0.0.1:8000/products?page=2&size=3" | grep cache-status
+$ curl -si "http://127.0.0.1:8000/products?page=2&page_size=3" | grep cache-status
 cache-status: Alcazaba; fwd=miss; stored
 ```
 

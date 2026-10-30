@@ -132,13 +132,13 @@ class TestLimit:
 @pytest.mark.usefixtures("backend", "clock")
 class TestWhoAndWhere:
     def test_path_parameters_share_the_budget(self) -> None:
-        """fastapi-limiter counted each URL apart: /items/1, /items/2... had a budget each."""
+        """/items/1, /items/2... share the route's budget, rather than having one each."""
         client = limited_app(FastAPIRateLimiter(times=2, minutes=1), path="/items/{item_id}")
         assert [client.get(f"/items/{i}").status_code for i in range(3)] == [200, 200, 429]
 
     def test_x_forwarded_for_doesnt_change_who_you_are(self) -> None:
-        """fastapi-limiter read the client's address from X-Forwarded-For: changing it gave a new
-        budget on every request."""
+        """Any client can set X-Forwarded-For: changing it must not give a new budget on every
+        request."""
         client = limited_app(FastAPIRateLimiter(times=1, minutes=1))
         assert statuses(client) == [200]
         for address in ("10.0.0.1", "10.0.0.2", "10.0.0.3"):

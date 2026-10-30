@@ -1,13 +1,15 @@
 """Alcazaba: the pieces most FastAPI apps end up writing themselves, a folder per tool.
 
 The main class of each tool is importable from here; the rest of a tool, from its folder
-(`fastapi_alcazaba.pagination`, `fastapi_alcazaba.rate_limit`...).
+(`fastapi_alcazaba.rate_limit`...). The pagination strategies are each in a module of their own
+(`fastapi_alcazaba.pagination.cursor`...).
 """
 
 from importlib.metadata import PackageNotFoundError, version
 
 from fastapi_alcazaba.audit import FastAPIAudit
-from fastapi_alcazaba.auth import FastAPIAPIKeys
+from fastapi_alcazaba.auth import FastAPIAPIKeys, FastAPIAuth
+from fastapi_alcazaba.authz import FastAPICasbin
 from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.background import FastAPILeader, FastAPIScheduler, FastAPITaskQueue
 from fastapi_alcazaba.core import (
@@ -21,11 +23,6 @@ from fastapi_alcazaba.operations import (
     FastAPIBreaker,
     FastAPIFeatureFlags,
     FastAPIMaintenance,
-)
-from fastapi_alcazaba.pagination import (
-    FastAPIPagination,
-    FastAPIPaginationCursor,
-    FastAPIPaginationLimitOffset,
 )
 from fastapi_alcazaba.rate_limit import FastAPIConcurrencyLimiter, FastAPIRateLimiter
 from fastapi_alcazaba.response_cache import (
@@ -49,24 +46,23 @@ except PackageNotFoundError:  # running from a source checkout that isn't instal
     __version__ = "0.0.0"
 
 __all__ = [
-    "DEFAULT_VARY_HEADERS",
     "Backend",
     "BackendUnavailable",
     "BreakerOpen",
     "Cache",
     "CacheOptions",
     "Coder",
+    "DEFAULT_VARY_HEADERS",
     "FastAPIAPIKeys",
     "FastAPIAudit",
+    "FastAPIAuth",
     "FastAPIBreaker",
     "FastAPICache",
+    "FastAPICasbin",
     "FastAPIConcurrencyLimiter",
     "FastAPIFeatureFlags",
     "FastAPILeader",
     "FastAPIMaintenance",
-    "FastAPIPagination",
-    "FastAPIPaginationCursor",
-    "FastAPIPaginationLimitOffset",
     "FastAPIProblemDetails",
     "FastAPIRateLimiter",
     "FastAPIScheduler",

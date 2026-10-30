@@ -1,5 +1,5 @@
-"""Alcazaba's pagination: FastAPIPagination, FastAPIPaginationLimitOffset and
-FastAPIPaginationCursor, whose page parameters the cache keeps apart, page by page."""
+"""Alcazaba's pagination: PaginationPageNumber, PaginationLimitOffset and
+PaginationCursor, whose page parameters the cache keeps apart, page by page."""
 
 import base64
 import json
@@ -14,21 +14,19 @@ from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from fastapi_alcazaba import (
-    FastAPICache,
-    FastAPIPagination,
-    FastAPIPaginationCursor,
-    FastAPIPaginationLimitOffset,
-)
+from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.pagination import (
-    CursorPage,
-    CursorParams,
+from fastapi_alcazaba.pagination import Position
+from fastapi_alcazaba.pagination.cursor import CursorPage, CursorParams, PaginationCursor
+from fastapi_alcazaba.pagination.limit_offset import (
     LimitOffsetPage,
     LimitOffsetParams,
-    Page,
-    PageParams,
-    Position,
+    PaginationLimitOffset,
+)
+from fastapi_alcazaba.pagination.page_number import (
+    PageNumberPage,
+    PageNumberParams,
+    PaginationPageNumber,
 )
 from fastapi_alcazaba.response_cache import cache
 from tests.cache_status import served
@@ -47,25 +45,25 @@ def ids(body: dict[str, Any]) -> list[int]:
 
 class TestByPage:
     def test_pages_of_a_list(self) -> None:
-        pages = FastAPIPagination()
-        page = pages.paginate(ITEMS, pages.params(page=3, size=10))
+        pages = PaginationPageNumber()
+        page = pages.paginate(ITEMS, pages.params(page=3, page_size=10))
         assert [item.id for item in page.items] == [20, 21, 22, 23, 24]
-        assert (page.total, page.page, page.size, page.pages) == (25, 3, 10, 3)
+        assert (page.total, page.page, page.page_size, page.pages) == (25, 3, 10, 3)
 
     def test_past_the_last_page(self) -> None:
-        pages = FastAPIPagination()
-        assert pages.paginate(ITEMS, pages.params(page=9, size=10)).items == []
+        pages = PaginationPageNumber()
+        assert pages.paginate(ITEMS, pages.params(page=9, page_size=10)).items == []
         assert pages.paginate([], pages.params()).model_dump() == {
             "items": [],
             "total": 0,
             "page": 1,
-            "size": 50,
+            "page_size": 50,
             "pages": 0,
         }
 
     def test_a_page_queried_from_a_database(self) -> None:
-        pages = FastAPIPagination()
-        params = pages.params(page=2, size=10)
+        pages = PaginationPageNumber()
+        params = pages.params(page=2, page_size=10)
         assert (params.offset, params.limit) == (10, 10)
         rows = ITEMS[params.offset : params.offset + params.limit]
         page = pages.paginate(rows, params, total=245)
@@ -74,29 +72,29 @@ class TestByPage:
             pages.paginate(rows, params, total=-1)
 
     def test_limits(self) -> None:
-        pages = FastAPIPagination(default_size=20, max_size=500)
-        assert pages.params() == PageParams(page=1, size=20)
-        assert pages.params(size=500).limit == 500
+        pages = PaginationPageNumber(default_page_size=20, max_page_size=500)
+        assert pages.params() == PageNumberParams(page=1, page_size=20)
+        assert pages.params(page_size=500).limit == 500
         with pytest.raises(ValueError, match="over 500"):
-            pages.params(size=501)
-        for wrong in ({"default_size": 0}, {"default_size": 101}):
-            with pytest.raises(ValueError, match="default size"):
-                FastAPIPagination(**wrong)
+            pages.params(page_size=501)
+        for wrong in ({"default_page_size": 0}, {"default_page_size": 101}):
+            with pytest.raises(ValueError, match="default page_size"):
+                PaginationPageNumber(**wrong)
 
     def test_params_are_checked_immutable_and_stable(self) -> None:
-        for page, size in ((0, 50), (1, 0)):
+        for page, page_size in ((0, 50), (1, 0)):
             with pytest.raises(ValueError, match="start at 1"):
-                PageParams(page=page, size=size)
-        params = PageParams(page=2)
+                PageNumberParams(page=page, page_size=page_size)
+        params = PageNumberParams(page=2)
         with pytest.raises(AttributeError):
             params.page = 3  # type: ignore[misc]
-        assert repr(params) == "PageParams(page=2, size=50)"  # part of the cache key
-        assert hash(params) == hash(PageParams(page=2))
+        assert repr(params) == "PageNumberParams(page=2, page_size=50)"  # part of the cache key
+        assert hash(params) == hash(PageNumberParams(page=2))
 
 
 class TestByLimitAndOffset:
     def test_pages(self) -> None:
-        pages = FastAPIPaginationLimitOffset()
+        pages = PaginationLimitOffset()
         page = pages.paginate(ITEMS, pages.params(limit=3, offset=22))
         assert isinstance(page, LimitOffsetPage)
         assert page.model_dump() == {
@@ -109,12 +107,12 @@ class TestByLimitAndOffset:
         assert (len(queried.items), queried.total) == (2, 41)
 
     def test_limits(self) -> None:
-        pages = FastAPIPaginationLimitOffset(default_limit=10, max_limit=20)
+        pages = PaginationLimitOffset(default_limit=10, max_limit=20)
         assert pages.params() == LimitOffsetParams(limit=10, offset=0)
         with pytest.raises(ValueError, match="over 20"):
             pages.params(limit=21)
         with pytest.raises(ValueError, match="default limit"):
-            FastAPIPaginationLimitOffset(default_limit=30, max_limit=20)
+            PaginationLimitOffset(default_limit=30, max_limit=20)
         for limit, offset in ((0, 0), (10, -1)):
             with pytest.raises(ValueError, match="limit starts at 1"):
                 LimitOffsetParams(limit=limit, offset=offset)
@@ -139,40 +137,40 @@ def event_ids(page: CursorPage[Event]) -> list[int]:
 
 class TestByCursor:
     def test_walking_a_list(self) -> None:
-        cursors, seen, cursor = FastAPIPaginationCursor(), [], None
+        cursors, seen, cursor = PaginationCursor(), [], None
         while True:
-            page = cursors.paginate(EVENTS, cursors.params(cursor=cursor, size=4), key=by_time)
+            page = cursors.paginate(EVENTS, cursors.params(cursor=cursor, limit=4), key=by_time)
             seen.append(event_ids(page))
             if (cursor := page.next_cursor) is None:
                 break
         assert seen == [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11]]
 
     def test_newest_first(self) -> None:
-        cursors, newest = FastAPIPaginationCursor(), EVENTS[::-1]
-        first = cursors.paginate(newest, cursors.params(size=5), key=by_time, descending=True)
-        params = cursors.params(cursor=first.next_cursor, size=5)
+        cursors, newest = PaginationCursor(), EVENTS[::-1]
+        first = cursors.paginate(newest, cursors.params(limit=5), key=by_time, descending=True)
+        params = cursors.params(cursor=first.next_cursor, limit=5)
         second = cursors.paginate(newest, params, key=by_time, descending=True)
         assert (event_ids(first), event_ids(second)) == ([11, 10, 9, 8, 7], [6, 5, 4, 3, 2])
 
     def test_rows_added_or_deleted_meanwhile_dont_shift_the_pages(self) -> None:
-        cursors = FastAPIPaginationCursor()
-        first = cursors.paginate(EVENTS, cursors.params(size=4), key=by_time)
+        cursors = PaginationCursor()
+        first = cursors.paginate(EVENTS, cursors.params(limit=4), key=by_time)
         changed = [e for e in EVENTS if e.id != 4] + [Event(id=0, at=T0 - timedelta(days=1))]
         changed.sort(key=by_time)
-        params = cursors.params(cursor=first.next_cursor, size=4)
+        params = cursors.params(cursor=first.next_cursor, limit=4)
         assert event_ids(cursors.paginate(changed, params, key=by_time)) == [5, 6, 7, 8]
 
     def test_rows_queried_from_a_database(self) -> None:
-        cursors = FastAPIPaginationCursor()
-        params = cursors.params(size=3)
-        assert (params.after, params.limit) == (None, 4)
-        first = cursors.paginate(EVENTS[: params.limit], params, key=by_time, queried=True)
+        cursors = PaginationCursor()
+        params = cursors.params(limit=3)
+        assert (params.after, params.fetch) == (None, 4)
+        first = cursors.paginate(EVENTS[: params.fetch], params, key=by_time, queried=True)
         assert event_ids(first) == [1, 2, 3]
-        params = cursors.params(cursor=first.next_cursor, size=3)
+        params = cursors.params(cursor=first.next_cursor, limit=3)
         after = params.after
         assert after == (EVENTS[2].at, 3)  # the datetime comes back as a datetime
         assert isinstance(after, tuple)
-        rows = [e for e in EVENTS if by_time(e) > after][: params.limit]  # WHERE … > … LIMIT 4
+        rows = [e for e in EVENTS if by_time(e) > after][: params.fetch]  # WHERE … > … LIMIT 4
         assert event_ids(cursors.paginate(rows, params, key=by_time, queried=True)) == [4, 5, 6]
         last = cursors.paginate(EVENTS[9:], params, key=by_time, queried=True)
         assert (event_ids(last), last.next_cursor) == ([10, 11], None)
@@ -192,7 +190,7 @@ class TestByCursor:
         ],
     )
     def test_the_values_a_sort_key_can_have(self, position: Position) -> None:
-        cursors = FastAPIPaginationCursor()
+        cursors = PaginationCursor()
         decoded = cursors.decode(cursors.encode(position))
         assert (decoded, type(decoded)) == (position, type(position))
 
@@ -210,27 +208,27 @@ class TestByCursor:
     )
     def test_what_a_cursor_cant_hold(self, position: Any, error: type[Exception]) -> None:
         with pytest.raises(error):
-            FastAPIPaginationCursor().encode(position)
+            PaginationCursor().encode(position)
 
     def test_end_of_the_list(self) -> None:
-        cursors = FastAPIPaginationCursor()
-        page = cursors.paginate(EVENTS, cursors.params(size=11), key=by_time)
+        cursors = PaginationCursor()
+        page = cursors.paginate(EVENTS, cursors.params(limit=11), key=by_time)
         assert (len(page.items), page.next_cursor) == (11, None)
         assert cursors.paginate([], cursors.params(), key=by_time).model_dump() == {
             "items": [],
-            "size": 50,
+            "limit": 50,
             "next_cursor": None,
         }
 
     def test_limits(self) -> None:
-        cursors = FastAPIPaginationCursor(default_size=10, max_size=20)
-        assert cursors.params() == CursorParams(size=10)
+        cursors = PaginationCursor(default_limit=10, max_limit=20)
+        assert cursors.params() == CursorParams(limit=10)
         with pytest.raises(ValueError, match="over 20"):
-            cursors.params(size=21)
-        with pytest.raises(ValueError, match="default size"):
-            FastAPIPaginationCursor(default_size=0)
-        with pytest.raises(ValueError, match="size starts at 1"):
-            CursorParams(size=0)
+            cursors.params(limit=21)
+        with pytest.raises(ValueError, match="default limit"):
+            PaginationCursor(default_limit=0)
+        with pytest.raises(ValueError, match="limit starts at 1"):
+            CursorParams(limit=0)
 
 
 def raw(payload: object) -> str:
@@ -262,22 +260,22 @@ class TestInvalidCursors:
     )
     def test_are_a_400(self, cursor: str) -> None:
         with pytest.raises(HTTPException) as refused:
-            FastAPIPaginationCursor().params(cursor=cursor)
+            PaginationCursor().params(cursor=cursor)
         assert (refused.value.status_code, refused.value.detail) == (400, "Invalid cursor")
 
     def test_a_cursor_with_another_kind_of_key(self) -> None:
-        cursors = FastAPIPaginationCursor()
+        cursors = PaginationCursor()
         params = cursors.params(cursor=cursors.encode("a string"))
         with pytest.raises(HTTPException) as refused:
             cursors.paginate(EVENTS, params, key=by_time)
         assert refused.value.status_code == 400
 
     def test_signed_cursors(self) -> None:
-        signed = FastAPIPaginationCursor(secret="s" * 32)
+        signed = PaginationCursor(secret="s" * 32)
         cursor = signed.encode(("a", 1))
         payload, tag = cursor.split(".")
         assert signed.decode(cursor) == ("a", 1)
-        assert FastAPIPaginationCursor().decode(cursor) == ("a", 1)  # readable, not secret
+        assert PaginationCursor().decode(cursor) == ("a", 1)  # readable, not secret
         for forged in (raw(["b", 1]), f"{raw(['b', 1])}.{tag}", payload, f"{payload}.{'A' * 22}"):
             with pytest.raises(HTTPException):
                 signed.decode(forged)
@@ -286,18 +284,18 @@ class TestInvalidCursors:
                 signed.decode(not_ascii)
 
     def test_rotating_the_secret(self) -> None:
-        old = FastAPIPaginationCursor(secret="o" * 32).encode(5)
-        rotated = FastAPIPaginationCursor(secret=["n" * 32, "o" * 32])
+        old = PaginationCursor(secret="o" * 32).encode(5)
+        rotated = PaginationCursor(secret=["n" * 32, "o" * 32])
         assert rotated.decode(old) == 5
         assert rotated.encode(5) != old  # signed with the new one
         too_short = "k" * 31
         with pytest.raises(ValueError, match="32 bytes"):
-            FastAPIPaginationCursor(secret=too_short)
+            PaginationCursor(secret=too_short)
 
 
-app_pages = FastAPIPagination(default_size=10, max_size=30)
-app_offsets = FastAPIPaginationLimitOffset()
-app_cursors = FastAPIPaginationCursor(secret="c" * 32, default_size=4)
+app_pages = PaginationPageNumber(default_page_size=10, max_page_size=30)
+app_offsets = PaginationLimitOffset()
+app_cursors = PaginationCursor(secret="c" * 32, default_limit=4)
 
 
 @pytest.fixture(name="calls")
@@ -313,9 +311,9 @@ def fixture_client(calls: list[str]) -> TestClient:
     @app.get("/items")
     @cache(expire=60)
     async def items(
-        params: Annotated[PageParams, Depends(app_pages)],
+        params: Annotated[PageNumberParams, Depends(app_pages)],
         q: str | None = None,
-    ) -> Page[Item]:
+    ) -> PageNumberPage[Item]:
         calls.append("items")
         found = [item for item in ITEMS if q is None or str(item.id).startswith(q)]
         return app_pages.paginate(found, params)
@@ -339,18 +337,18 @@ def fixture_client(calls: list[str]) -> TestClient:
 
 class TestWithTheCache:
     def test_each_page_has_its_entry(self, client: TestClient, calls: list[str]) -> None:
-        assert ids(client.get("/items?size=5").json()) == [0, 1, 2, 3, 4]
-        second = client.get("/items?page=2&size=5")
+        assert ids(client.get("/items?page_size=5").json()) == [0, 1, 2, 3, 4]
+        second = client.get("/items?page=2&page_size=5")
         assert (served(second.headers), ids(second.json())) == ("miss", [5, 6, 7, 8, 9])
-        again = client.get("/items?page=2&size=5")
+        again = client.get("/items?page=2&page_size=5")
         assert (served(again.headers), ids(again.json())) == ("hit", [5, 6, 7, 8, 9])
-        assert ids(client.get("/items?page=2&size=6").json()) == [6, 7, 8, 9, 10, 11]
+        assert ids(client.get("/items?page=2&page_size=6").json()) == [6, 7, 8, 9, 10, 11]
         assert len(calls) == 3
 
     def test_with_other_parameters(self, client: TestClient, calls: list[str]) -> None:
-        body = client.get("/items?q=1&size=3").json()
+        body = client.get("/items?q=1&page_size=3").json()
         assert (ids(body), body["total"]) == ([1, 10, 11], 11)
-        assert ids(client.get("/items?q=2&size=3").json()) == [2, 20, 21]
+        assert ids(client.get("/items?q=2&page_size=3").json()) == [2, 20, 21]
         assert len(calls) == 2
 
     def test_limit_and_offset(self, client: TestClient, calls: list[str]) -> None:
@@ -371,11 +369,11 @@ class TestWithTheCache:
         ("path", "status"),
         [
             ("/items?page=0", 422),
-            ("/items?size=31", 422),  # this tool's maximum
-            ("/items?size=lots", 422),
+            ("/items?page_size=31", 422),  # this tool's maximum
+            ("/items?page_size=lots", 422),
             ("/app_offsets?limit=101", 422),
             ("/app_offsets?offset=-1", 422),
-            ("/events?size=101", 422),
+            ("/events?limit=101", 422),
             ("/events?cursor=has%20spaces", 422),
             ("/events?cursor=a.b.c", 422),
             (f"/events?cursor={'x' * 2000}", 422),
@@ -396,9 +394,9 @@ class TestWithTheCache:
     @pytest.mark.parametrize(
         ("path", "names"),
         [
-            ("/items", {"page", "size", "q"}),
+            ("/items", {"page", "page_size", "q"}),
             ("/app_offsets", {"limit", "offset"}),
-            ("/events", {"cursor", "size"}),
+            ("/events", {"cursor", "limit"}),
         ],
     )
     def test_the_parameters_are_documented(
@@ -410,7 +408,7 @@ class TestWithTheCache:
         operation = client.get("/openapi.json").json()["paths"][path]["get"]
         assert {parameter["name"] for parameter in operation["parameters"]} == names
         if path == "/items":  # with this tool's limits
-            size = next(p for p in operation["parameters"] if p["name"] == "size")
+            size = next(p for p in operation["parameters"] if p["name"] == "page_size")
             assert (size["schema"]["maximum"], size["schema"]["default"]) == (30, 10)
 
 
@@ -421,29 +419,29 @@ def links(response: httpx.Response) -> dict[str, str]:
 
 class TestLinks:
     def test_to_the_pages_around(self, client: TestClient) -> None:
-        response = client.get("/items?page=2&size=5")
+        response = client.get("/items?page=2&page_size=5")
         assert response.headers["Link"] == (
-            '</items?page=1&size=5>; rel="first", </items?page=1&size=5>; rel="prev", '
-            '</items?page=3&size=5>; rel="next", </items?page=5&size=5>; rel="last"'
+            '</items?page=1&page_size=5>; rel="first", </items?page=1&page_size=5>; rel="prev", '
+            '</items?page=3&page_size=5>; rel="next", </items?page=5&page_size=5>; rel="last"'
         )
-        assert links(client.get("/items?size=5")) == {
-            "first": "/items?page=1&size=5",
-            "next": "/items?page=2&size=5",
-            "last": "/items?page=5&size=5",
+        assert links(client.get("/items?page_size=5")) == {
+            "first": "/items?page=1&page_size=5",
+            "next": "/items?page=2&page_size=5",
+            "last": "/items?page=5&page_size=5",
         }
 
     def test_at_and_past_the_end(self, client: TestClient) -> None:
         assert links(client.get("/items?page=3")) == {
-            "first": "/items?page=1&size=10",
-            "prev": "/items?page=2&size=10",
-            "last": "/items?page=3&size=10",
+            "first": "/items?page=1&page_size=10",
+            "prev": "/items?page=2&page_size=10",
+            "last": "/items?page=3&page_size=10",
         }
         past = links(client.get("/items?page=9"))
-        assert (past["prev"], "next" in past) == ("/items?page=3&size=10", False)
+        assert (past["prev"], "next" in past) == ("/items?page=3&page_size=10", False)
         empty = links(client.get("/items?q=99"))
         assert empty == {
-            "first": "/items?q=99&page=1&size=10",
-            "last": "/items?q=99&page=1&size=10",
+            "first": "/items?q=99&page=1&page_size=10",
+            "last": "/items?q=99&page=1&page_size=10",
         }
 
     def test_by_limit_and_offset(self, client: TestClient) -> None:
@@ -468,14 +466,17 @@ class TestLinks:
         first = client.get("/events")
         cursor = first.json()["next_cursor"]
         assert links(first) == {
-            "first": "/events?size=4",
-            "next": f"/events?cursor={cursor}&size=4",
+            "first": "/events?limit=4",
+            "next": f"/events?cursor={cursor}&limit=4",
         }
-        last = client.get("/events?size=50")
-        assert links(last) == {"first": "/events?size=50"}
+        last = client.get("/events?limit=50")
+        assert links(last) == {"first": "/events?limit=50"}
 
     def test_keep_the_other_parameters(self, client: TestClient) -> None:
-        assert links(client.get("/items?q=1&size=3&page=2"))["next"] == "/items?q=1&page=3&size=3"
+        assert (
+            links(client.get("/items?q=1&page_size=3&page=2"))["next"]
+            == "/items?q=1&page=3&page_size=3"
+        )
 
     def test_hits_get_the_links_of_their_own_request(
         self,
@@ -484,11 +485,11 @@ class TestLinks:
     ) -> None:
         """The entry is shared by requests that differ in what the endpoint doesn't read: the
         links are made for each request, not stored with the entry."""
-        first = client.get("/items?page=2&size=5&ref=mail")
-        again = client.get("/items?page=2&size=5&ref=feed")
+        first = client.get("/items?page=2&page_size=5&ref=mail")
+        again = client.get("/items?page=2&page_size=5&ref=feed")
         assert (served(again.headers), len(calls)) == ("hit", 1)
-        assert links(first)["next"] == "/items?ref=mail&page=3&size=5"
-        assert links(again)["next"] == "/items?ref=feed&page=3&size=5"
+        assert links(first)["next"] == "/items?ref=mail&page=3&page_size=5"
+        assert links(again)["next"] == "/items?ref=feed&page=3&page_size=5"
         cursor = client.get("/events").json()["next_cursor"]
         assert served(client.get(f"/events?cursor={cursor}").headers) == "miss"
         hit = client.get(f"/events?cursor={cursor}")
@@ -496,29 +497,31 @@ class TestLinks:
 
     def test_nothing_from_the_client_ends_a_link(self) -> None:
         app = FastAPI()
-        pages = FastAPIPagination()
+        pages = PaginationPageNumber()
 
         @app.get("/shops/{name}/items")
-        async def items(params: Annotated[PageParams, Depends(pages)]) -> Page[Item]:
+        async def items(
+            params: Annotated[PageNumberParams, Depends(pages)],
+        ) -> PageNumberPage[Item]:
             return pages.paginate(ITEMS, params)
 
         with TestClient(app) as client:
             response = client.get('/shops/a%3E%2C%3B%22b/items?q=x>,y;"z')
         assert response.headers["Link"].startswith(
-            '</shops/a%3E%2C%3B%22b/items?q=x%3E%2Cy%3B%22z&page=1&size=50>; rel="first", '
+            '</shops/a%3E%2C%3B%22b/items?q=x%3E%2Cy%3B%22z&page=1&page_size=50>; rel="first", '
         )
-        last = "/shops/a%3E%2C%3B%22b/items?q=x%3E%2Cy%3B%22z&page=1&size=50"
+        last = "/shops/a%3E%2C%3B%22b/items?q=x%3E%2Cy%3B%22z&page=1&page_size=50"
         assert links(response) == {"first": last, "last": last}
 
     def test_after_the_endpoint_s_own(self) -> None:
         app = FastAPI()
-        pages = FastAPIPagination()
+        pages = PaginationPageNumber()
 
         @app.get("/items")
         async def items(
-            params: Annotated[PageParams, Depends(pages)],
+            params: Annotated[PageNumberParams, Depends(pages)],
             response: Response,
-        ) -> Page[Item]:
+        ) -> PageNumberPage[Item]:
             response.headers["Link"] = '</help>; rel="help"'
             return pages.paginate(ITEMS, params)
 
@@ -527,15 +530,17 @@ class TestLinks:
 
     def test_only_for_pages(self) -> None:
         app = FastAPI()
-        pages = FastAPIPagination()
+        pages = PaginationPageNumber()
 
         @app.get("/count")
-        async def count(params: Annotated[PageParams, Depends(pages)]) -> dict[str, int]:
+        async def count(params: Annotated[PageNumberParams, Depends(pages)]) -> dict[str, int]:
             return {"count": len(pages.paginate(ITEMS, params).items)}
 
         @app.get("/cached-count")
         @cache(expire=60)
-        async def cached_count(params: Annotated[PageParams, Depends(pages)]) -> dict[str, int]:
+        async def cached_count(
+            params: Annotated[PageNumberParams, Depends(pages)],
+        ) -> dict[str, int]:
             return {"offset": params.offset}
 
         FastAPICache.init(InMemoryBackend())
@@ -545,7 +550,7 @@ class TestLinks:
                 assert "link" not in client.get("/cached-count").headers
 
     def test_none_outside_a_request(self) -> None:
-        pages = FastAPIPagination()
+        pages = PaginationPageNumber()
         params = pages.params(page=2)
         assert params.links is None
         assert pages.paginate(ITEMS, params).page == 2

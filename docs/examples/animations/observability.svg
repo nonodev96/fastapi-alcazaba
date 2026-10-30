@@ -1,0 +1,28 @@
+<figure class="alc-anim">
+<svg viewBox="0 0 640 382" role="img" aria-labelledby="alc-observability-title alc-observability-desc" xmlns="http://www.w3.org/2000/svg">
+<title id="alc-observability-title">Errors and observability</title>
+<desc id="alc-observability-desc">Client to Your app: POST /orders, invalid. Your app to Client: 422, problem details. Client to Your app: GET /orders/3/invoice. Your app to Logs: traceback, request_id. Your app to Client: 500, nothing about it. Client to Your app: GET /reports/sales. Your app to Client: 504 at the deadline. Clear errors, nothing leaked, one ID in every log line.</desc>
+<line class="alc-life" x1="100" y1="52" x2="100" y2="330"/>
+<g class="alc-actor"><rect x="18" y="10" width="164" height="42" rx="8"/><text x="100" y="36">Client</text></g>
+<line class="alc-life" x1="320" y1="52" x2="320" y2="330"/>
+<g class="alc-actor"><rect x="238" y="10" width="164" height="42" rx="8"/><text x="320" y="36">Your app</text></g>
+<line class="alc-life" x1="540" y1="52" x2="540" y2="330"/>
+<g class="alc-actor"><rect x="458" y="10" width="164" height="42" rx="8"/><text x="540" y="36">Logs</text></g>
+<g class="alc-step alc-request alc-s1"><line x1="106" y1="92" x2="306" y2="92"/><polygon points="314,92 304,87 304,97"/><text class="alc-label" x="210" y="84">POST /orders, invalid</text></g>
+<circle class="alc-dot alc-request alc-m1" cx="106" cy="92" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-refused alc-s2"><line x1="314" y1="128" x2="114" y2="128"/><polygon points="106,128 116,123 116,133"/><text class="alc-label" x="210" y="120">422, problem details</text></g>
+<circle class="alc-dot alc-refused alc-m2" cx="314" cy="128" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-request alc-s3"><line x1="106" y1="164" x2="306" y2="164"/><polygon points="314,164 304,159 304,169"/><text class="alc-label" x="210" y="156">GET /orders/3/invoice</text></g>
+<circle class="alc-dot alc-request alc-m3" cx="106" cy="164" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-request alc-s4"><line x1="326" y1="200" x2="526" y2="200"/><polygon points="534,200 524,195 524,205"/><text class="alc-label" x="430" y="192">traceback, request_id</text></g>
+<circle class="alc-dot alc-request alc-m4" cx="326" cy="200" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-refused alc-s5"><line x1="314" y1="236" x2="114" y2="236"/><polygon points="106,236 116,231 116,241"/><text class="alc-label" x="210" y="228">500, nothing about it</text></g>
+<circle class="alc-dot alc-refused alc-m5" cx="314" cy="236" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-request alc-s6"><line x1="106" y1="272" x2="306" y2="272"/><polygon points="314,272 304,267 304,277"/><text class="alc-label" x="210" y="264">GET /reports/sales</text></g>
+<circle class="alc-dot alc-request alc-m6" cx="106" cy="272" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-refused alc-s7"><line x1="314" y1="308" x2="114" y2="308"/><polygon points="106,308 116,303 116,313"/><text class="alc-label" x="210" y="300">504 at the deadline</text></g>
+<circle class="alc-dot alc-refused alc-m7" cx="314" cy="308" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-banner alc-s8"><rect x="20" y="338" width="600" height="34" rx="17"/><text x="320" y="360">Clear errors, nothing leaked, one ID in every log line</text></g>
+</svg>
+<figcaption>What it&#x27;s for: errors that clients can act on without learning anything about the server, a request ID that ties a complaint to its log lines, and a deadline for every request.</figcaption>
+</figure>

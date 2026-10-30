@@ -57,7 +57,9 @@ from `.clusterfuzzlite/requirements.txt`; when they change, `make fuzz-requireme
   of `README.md` by name. Every `## ` section of the README has its body between
   `<!-- --8<-- [start:anchor] -->` and `<!-- --8<-- [end:anchor] -->` (its GitHub anchor), which
   GitHub and PyPI don't show; a new section needs those markers and a place in a guide page.
-  `make docs` fails on a section or a link that isn't there.
+  Within a section, refer to another one by its name (see "Two-level cache"), not by its anchor:
+  in the documentation it may be on another page. `make docs` fails on a section or a link that
+  isn't there.
 - New dependencies: only when they're worth it, as optional extras where possible, and never a
   release younger than three days (pip enforces it: `make deps` and CI set
   `PIP_UPLOADED_PRIOR_TO=P3D`).

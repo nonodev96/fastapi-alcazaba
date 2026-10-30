@@ -1,6 +1,8 @@
 # Response cache
 
-A shop's catalogue and account pages behind [`@cache`](../guide/index.md#quick-start): product pages are
+--8<-- "docs/examples/animations/cache.svg"
+
+A shop's catalogue and account pages behind [`@cache`](../guide/index.md#step-1-cache-an-endpoint): product pages are
 the same for everybody and share one entry each, account pages depend on who asks and get entries
 of their own, an update drops the entries of a product by [tag](../guide/cache.md#invalidating-by-tag),
 and [`get_or_set`](../guide/cache.md#several-caches-dependency-injection-and-get_or_set) caches what

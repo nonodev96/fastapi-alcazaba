@@ -1,0 +1,27 @@
+<figure class="alc-anim">
+<svg viewBox="0 0 640 382" role="img" aria-labelledby="alc-idempotency-title alc-idempotency-desc" xmlns="http://www.w3.org/2000/svg">
+<title id="alc-idempotency-title">Idempotency keys</title>
+<desc id="alc-idempotency-desc">Client to Your app: POST /payments, key k1. Your app: charges the card. Your app to Cache: keep the 201 under k1. Your app to Client: 201, lost: timeout. Client to Your app: retry, the same key k1. Cache to Your app: the kept 201. Your app to Client: 201, Idempotent-Replayed. A retry gets the first response: the card is charged once.</desc>
+<line class="alc-life" x1="100" y1="52" x2="100" y2="330"/>
+<g class="alc-actor"><rect x="18" y="10" width="164" height="42" rx="8"/><text x="100" y="36">Client</text></g>
+<line class="alc-life" x1="320" y1="52" x2="320" y2="330"/>
+<g class="alc-actor"><rect x="238" y="10" width="164" height="42" rx="8"/><text x="320" y="36">Your app</text></g>
+<line class="alc-life" x1="540" y1="52" x2="540" y2="330"/>
+<g class="alc-actor"><rect x="458" y="10" width="164" height="42" rx="8"/><text x="540" y="36">Cache</text></g>
+<g class="alc-step alc-request alc-s1"><line x1="106" y1="92" x2="306" y2="92"/><polygon points="314,92 304,87 304,97"/><text class="alc-label" x="210" y="84">POST /payments, key k1</text></g>
+<circle class="alc-dot alc-request alc-m1" cx="106" cy="92" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-note alc-s2"><rect x="246" y="114" width="148" height="26" rx="13"/><text class="alc-label" x="320" y="132">charges the card</text></g>
+<g class="alc-step alc-request alc-s3"><line x1="326" y1="164" x2="526" y2="164"/><polygon points="534,164 524,159 524,169"/><text class="alc-label" x="430" y="156">keep the 201 under k1</text></g>
+<circle class="alc-dot alc-request alc-m3" cx="326" cy="164" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-refused alc-s4"><line x1="314" y1="200" x2="114" y2="200"/><polygon points="106,200 116,195 116,205"/><text class="alc-label" x="210" y="192">201, lost: timeout</text></g>
+<circle class="alc-dot alc-refused alc-m4" cx="314" cy="200" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-request alc-s5"><line x1="106" y1="236" x2="306" y2="236"/><polygon points="314,236 304,231 304,241"/><text class="alc-label" x="210" y="228">retry, the same key k1</text></g>
+<circle class="alc-dot alc-request alc-m5" cx="106" cy="236" r="5" style="--dx: 208px"/>
+<g class="alc-step alc-reply alc-s6"><line x1="534" y1="272" x2="334" y2="272"/><polygon points="326,272 336,267 336,277"/><text class="alc-label" x="430" y="264">the kept 201</text></g>
+<circle class="alc-dot alc-reply alc-m6" cx="534" cy="272" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-reply alc-s7"><line x1="314" y1="308" x2="114" y2="308"/><polygon points="106,308 116,303 116,313"/><text class="alc-label" x="210" y="300">201, Idempotent-Replayed</text></g>
+<circle class="alc-dot alc-reply alc-m7" cx="314" cy="308" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-banner alc-s8"><rect x="20" y="338" width="600" height="34" rx="17"/><text x="320" y="360">A retry gets the first response: the card is charged once</text></g>
+</svg>
+<figcaption>What it&#x27;s for: a client that retries after a timeout or a dropped connection gets the first response again, instead of doing it twice.</figcaption>
+</figure>

@@ -1,5 +1,7 @@
 # Webhooks in and out
 
+--8<-- "docs/examples/animations/webhooks.svg"
+
 A shop that takes webhooks from its payment provider and sends webhooks of its own to the URLs
 its users register. [`FastAPIWebhooks`](../guide/webhooks.md#signed-webhooks) accepts only the provider's
 events signed with its secret, and each delivery once. When an order is paid, the shop signs an

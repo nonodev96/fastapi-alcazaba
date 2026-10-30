@@ -1,5 +1,7 @@
 # Idempotency keys
 
+--8<-- "docs/examples/animations/idempotency.svg"
+
 A payments API where a client that retries after a timeout or a dropped connection gets the first
 response again, instead of charging the card twice.
 [`IdempotencyMiddleware`](../guide/idempotency.md) keeps each response under the client's

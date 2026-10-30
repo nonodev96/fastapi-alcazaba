@@ -1,5 +1,7 @@
 # API keys, revoked tokens and one-time codes
 
+--8<-- "docs/examples/animations/auth.svg"
+
 An orders API for machine clients. Their owners sign in with a code sent by e-mail
 ([`OneTimeCodes`](../guide/auth.md#revoked-tokens-and-one-time-codes)), rate-limited per address with
 a [`FastAPIRateLimiter`](../guide/limits.md#rate-limiting), and get an access token that logging out

@@ -7,7 +7,7 @@ Three ways to cache paginated lists:
 - `/products`: `@cache` on the endpoint, one entry per page. Each response is served straight from
   the cache. Best for big lists, where most clients only read the first pages.
 - `/categories/{category}/products`: the whole list cached once with `get_or_set`, and every page
-  sliced from it. One entry, whatever the page and size. Best for short lists.
+  sliced from it. One entry, whatever the page and page size. Best for short lists.
 - `/products/newest`: by cursor, newest first, one entry per cursor. Products added meanwhile
   don't shift the pages, which suits infinite scroll and clients that sync everything.
 
@@ -28,12 +28,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from fastapi_alcazaba import (
     Cache,
     FastAPICache,
-    FastAPIPagination,
-    FastAPIPaginationCursor,
     get_cache,
 )
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.pagination import CursorPage, CursorParams, Page, PageParams
+from fastapi_alcazaba.pagination.cursor import CursorPage, CursorParams, PaginationCursor
+from fastapi_alcazaba.pagination.page_number import (
+    PageNumberPage,
+    PageNumberParams,
+    PaginationPageNumber,
+)
 from fastapi_alcazaba.response_cache import cache
 
 
@@ -69,19 +72,23 @@ class Catalog:
         self.queries += 1
         return [p for p in self.products if category is None or p.category == category]
 
-    def page(self, params: PageParams, category: Category | None = None) -> Page[Product]:
+    def page(
+        self,
+        params: PageNumberParams,
+        category: Category | None = None,
+    ) -> PageNumberPage[Product]:
         """What a database does: count, and fetch only the page (OFFSET/LIMIT)."""
         found = self.find(category)
         rows = found[params.offset : params.offset + params.limit]
         return pages.paginate(rows, params, total=len(found))
 
     def newest(self, params: CursorParams) -> CursorPage[Product]:
-        """What a database does: WHERE id < :after ORDER BY id DESC LIMIT :limit."""
+        """What a database does: WHERE id < :after ORDER BY id DESC LIMIT :fetch."""
         self.queries += 1
         newest = sorted(self.products, key=lambda p: p.id, reverse=True)
         if isinstance(params.after, int):  # the id of the last product of the page before
             newest = [p for p in newest if p.id < params.after]
-        rows = newest[: params.limit]
+        rows = newest[: params.fetch]
         return cursors.paginate(rows, params, key=lambda p: p.id, queried=True)
 
     def add(self, product: NewProduct) -> Product:
@@ -124,20 +131,20 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-pages = FastAPIPagination(default_size=20, max_size=100)
+pages = PaginationPageNumber(default_page_size=20, max_page_size=100)
 # Signed: clients can't make cursors up. Every process must have the same secret, or a cursor
 # made by one is refused by the others: set CURSOR_SECRET (secrets.token_urlsafe(32)).
-cursors = FastAPIPaginationCursor(secret=settings.cursor_secret, default_size=20)
+cursors = PaginationCursor(secret=settings.cursor_secret, default_limit=20)
 
 
 @app.get("/products")
 @cache(expire=300, tags=["products"], exclude_params=["catalog"])
 async def products(
-    params: Annotated[PageParams, Depends(pages)],
+    params: Annotated[PageNumberParams, Depends(pages)],
     catalog: CatalogDep,
     category: Category | None = None,
-) -> Page[Product]:
-    """One entry per page, size and category: the page parameters are arguments, part of the
+) -> PageNumberPage[Product]:
+    """One entry per page, page size and category: the page parameters are arguments, part of the
     key. The session is left out of it, since it changes from one request to the next."""
     return catalog.page(params, category)
 
@@ -145,10 +152,10 @@ async def products(
 @app.get("/categories/{category}/products")
 async def category_products(
     category: Category,
-    params: Annotated[PageParams, Depends(pages)],
+    params: Annotated[PageNumberParams, Depends(pages)],
     catalog: CatalogDep,
     app_cache: Annotated[Cache, Depends(get_cache)],
-) -> Page[Product]:
+) -> PageNumberPage[Product]:
     """One entry for the whole category: every page is sliced from it."""
 
     async def load() -> list[Product]:  # annotated: the entry comes back as products

@@ -14,10 +14,10 @@ except ImportError:  # the unit tests run the target without it
 # Only Alcazaba's code is instrumented: its coverage is what guides the fuzzer, and instrumenting
 # every library imported takes longer than a short run lasts.
 with atheris.instrument_imports(include=["fastapi_alcazaba"]) if atheris else nullcontext():
-    from fastapi_alcazaba.pagination import FastAPIPaginationCursor
+    from fastapi_alcazaba.pagination.cursor import PaginationCursor
 
-_SIGNED = FastAPIPaginationCursor(secret="fuzz-only-secret-of-32-bytes-0123")  # noqa: S106
-_UNSIGNED = FastAPIPaginationCursor()
+_SIGNED = PaginationCursor(secret="fuzz-only-secret-of-32-bytes-0123")  # noqa: S106
+_UNSIGNED = PaginationCursor()
 
 
 def fuzz_one_input(data: bytes) -> None:

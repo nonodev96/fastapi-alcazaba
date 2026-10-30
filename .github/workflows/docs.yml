@@ -100,6 +100,8 @@ jobs:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           VERSION: ${{ steps.version.outputs.version }}
           ALIASES: ${{ steps.version.outputs.aliases }}
+          # The version selector: the other versions are beside this one in gh-pages.
+          DOCS_VERSIONS: mike
           GH_TOKEN: ${{ github.token }}
         run: |
           # The token for mike's pushes, in this step's environment only: none in .git/config.
