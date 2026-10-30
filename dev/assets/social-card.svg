@@ -57,7 +57,7 @@
   <g font-family="Lato" fill="#F7EFE6">
     <text x="500" y="290" font-size="128" font-weight="900" letter-spacing="-2">Alcazaba</text>
     <text x="504" y="356" font-size="42" font-weight="500" fill="#F4D0AE">Secure, maintained tools for FastAPI</text>
-    <text x="504" y="420" font-size="27" font-weight="600" fill="#9FB4C9">Cache · Rate limits · Sessions · CSRF · Webhooks · Task queue</text>
+    <text x="504" y="420" font-size="27" font-weight="600" fill="#9FB4C9">Cache, Rate limits, Sessions, CSRF, Webhooks, Task queue</text>
   </g>
   <rect x="500" y="460" width="476" height="56" rx="12" fill="#0B141D" stroke="#2A4157" stroke-width="2"/>
   <text x="524" y="497" font-family="DejaVu Sans Mono" font-size="25" fill="#45E0CA">pip install fastapi-alcazaba</text>

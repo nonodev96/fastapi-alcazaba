@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../learn/">
       
       
-        <link rel="next" href="cache/">
+        <link rel="next" href="authentication/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Getting started - Alcazaba</title>
+        <title>Tutorial - User Guide - Alcazaba</title>
       
     
     
@@ -57,6 +57,8 @@
     
       <link rel="stylesheet" href="../stylesheets/brand.css">
     
+      <link rel="stylesheet" href="../stylesheets/animations.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -66,7 +68,7 @@
   
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Alcazaba">
-  <meta property="og:title" content="Getting started - Alcazaba">
+  <meta property="og:title" content="Tutorial - User Guide - Alcazaba">
   <meta property="og:description" content="Secure, maintained tools for FastAPI: response cache, rate limits, sessions, CSRF, webhooks, a task queue and more">
   <meta property="og:image" content="https://nonodev96.github.io/fastapi-alcazaba/dev/assets/social-card.png">
   <meta property="og:image:width" content="1280">
@@ -93,7 +95,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#getting-started" class="md-skip">
+        <a href="#tutorial-user-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +121,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Alcazaba" class="md-header__button md-logo" aria-label="Alcazaba" data-md-component="logo">
       
@@ -140,7 +144,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Getting started
+              Tutorial - User Guide
             
           </span>
         </div>
@@ -233,14 +237,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -257,10 +255,32 @@
   
     
   
-  Home
+  Alcazaba
 
       </a>
     </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../features/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Features
+
+        </a>
+      </li>
+    
   
 
       
@@ -274,35 +294,13 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../learn/" class="md-tabs__link">
           
   
   
     
   
-  Guide
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../examples/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  Examples
+  Learn
 
         </a>
       </li>
@@ -324,7 +322,7 @@
   
     
   
-  API reference
+  Reference
 
         </a>
       </li>
@@ -340,13 +338,13 @@
     
     
       <li class="md-tabs__item">
-        <a href="../security/" class="md-tabs__link">
+        <a href="../resources/" class="md-tabs__link">
           
   
   
     
   
-  Project
+  Resources
 
         </a>
       </li>
@@ -354,10 +352,57 @@
   
 
       
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -412,7 +457,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Alcazaba
   
 
     
@@ -429,8 +474,6 @@
       
   
   
-    
-  
   
   
     
@@ -442,60 +485,29 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
       
-        
-        
-      
-      
-        
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../features/" class="md-nav__link ">
               
   
   
   <span class="md-ellipsis">
     
   
-    Guide
+    Features
   
 
     
@@ -506,18 +518,18 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Guide
+    Features
   
 
           </label>
@@ -532,14 +544,301 @@
   
   
     <li class="md-nav__item">
-      <a href="cache/" class="md-nav__link">
+      <a href="../features/tools/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Response cache
+    The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../learn/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Learn
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Learn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial - User Guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorial - User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="authentication/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication strategies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="authentication/http-bearer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTPBearerStrategy
   
 
     
@@ -560,14 +859,14 @@
   
   
     <li class="md-nav__item">
-      <a href="backends/" class="md-nav__link">
+      <a href="authentication/jwt/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Backends
+    JWTStrategy
   
 
     
@@ -588,14 +887,14 @@
   
   
     <li class="md-nav__item">
-      <a href="pagination/" class="md-nav__link">
+      <a href="authentication/oauth2/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Pagination
+    OAuth2Strategy
   
 
     
@@ -616,14 +915,14 @@
   
   
     <li class="md-nav__item">
-      <a href="limits/" class="md-nav__link">
+      <a href="authentication/saml/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Rate and concurrency limits
+    SAMLStrategy
   
 
     
@@ -644,14 +943,14 @@
   
   
     <li class="md-nav__item">
-      <a href="idempotency/" class="md-nav__link">
+      <a href="authentication/session/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Idempotency keys
+    SessionStrategy
   
 
     
@@ -660,6 +959,42 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="authentication/your-own/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your own strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -680,34 +1015,6 @@
     
   
     API keys, tokens and codes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="browser/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sessions, CSRF and security headers
   
 
     
@@ -756,14 +1063,14 @@
   
   
     <li class="md-nav__item">
-      <a href="uploads/" class="md-nav__link">
+      <a href="authz/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Checking uploads
+    Authorization with Casbin
   
 
     
@@ -784,42 +1091,14 @@
   
   
     <li class="md-nav__item">
-      <a href="webhooks/" class="md-nav__link">
+      <a href="backends/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Webhooks and outbound calls
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Errors and observability
+    Backends
   
 
     
@@ -868,6 +1147,90 @@
   
   
     <li class="md-nav__item">
+      <a href="uploads/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="idempotency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="operations/" class="md-nav__link">
         
   
@@ -876,6 +1239,523 @@
     
   
     Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_12" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="pagination/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pagination
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_12" id="__nav_3_2_12_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Pagination
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/cursor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationCursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/id-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationIdBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/keyset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationKeyset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/limit-offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationLimitOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/page-number/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationPageNumber
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/range/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationRange
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/scroll/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationScroll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/search-after/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationSearchAfter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationStreaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/time-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationTimeBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pagination/token/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationToken
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="production/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rate and concurrency limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Response cache
   
 
     
@@ -917,15 +1797,72 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions, CSRF and security headers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhooks and outbound calls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
@@ -961,12 +1898,14 @@
       
         
       
-    
-    
-    
-      
+        
       
         
+      
+    
+    
+    
+      
       
     
     
@@ -974,7 +1913,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -996,14 +1935,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1022,98 +1961,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/cache/" class="md-nav__link">
+      <a href="../examples/browser_app/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Response cache
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/pagination/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Pagination
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/limits/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate and concurrency limits
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/idempotency/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Idempotency keys
+    A browser app
   
 
     
@@ -1162,34 +2017,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/browser_app/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    A browser app
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../examples/audit/" class="md-nav__link">
         
   
@@ -1217,15 +2044,92 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../examples/auth_strategies/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_5" id="__nav_3_3_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication strategies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../examples/uploads/" class="md-nav__link">
+      <a href="../examples/auth_strategies/jwt/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Checking uploads
+    JWTStrategy
   
 
     
@@ -1246,14 +2150,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/webhooks/" class="md-nav__link">
+      <a href="../examples/auth_strategies/oauth2/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Webhooks in and out
+    OAuth2Strategy
   
 
     
@@ -1274,14 +2178,134 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/observability/" class="md-nav__link">
+      <a href="../examples/auth_strategies/session/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Errors and observability
+    SessionStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/auth_strategies/http-bearer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTPBearerStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/auth_strategies/saml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAMLStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/auth_strategies/your-own/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your own strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/authz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization with Casbin
   
 
     
@@ -1330,6 +2354,90 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/uploads/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/idempotency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/operations/" class="md-nav__link">
         
   
@@ -1346,6 +2454,531 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_12" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../examples/pagination/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pagination
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_12" id="__nav_3_3_12_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Pagination
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/page-number/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationPageNumber
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/limit-offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationLimitOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/range/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationRange
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/cursor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationCursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/keyset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationKeyset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/id-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationIdBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/time-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationTimeBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/search-after/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationSearchAfter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/token/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationToken
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/scroll/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationScroll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/pagination/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationStreaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rate and concurrency limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Response cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhooks in and out
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1399,12 +3032,14 @@
       
         
       
-    
-    
-    
-      
+        
       
         
+      
+    
+    
+    
+      
       
     
     
@@ -1423,7 +3058,7 @@
   <span class="md-ellipsis">
     
   
-    API reference
+    Reference
   
 
     
@@ -1445,7 +3080,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    API reference
+    Reference
   
 
           </label>
@@ -1600,6 +3235,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/auth/" class="md-nav__link">
         
   
@@ -1608,6 +3271,34 @@
     
   
     API keys, tokens and codes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/authz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization with Casbin
   
 
     
@@ -1862,6 +3553,10 @@
     
       
         
+          
+        
+      
+        
       
         
       
@@ -1875,8 +3570,6 @@
     
     
       
-      
-        
       
     
     
@@ -1887,14 +3580,15 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../resources/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Project
+    Resources
   
 
     
@@ -1902,19 +3596,83 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Project
+    Resources
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/help/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Help Alcazaba - Get help
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development - Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2000,21 +3758,49 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
   
-    <li class="md-nav__item">
-      <a href="../development/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../about/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Development
+    About
   
 
     
@@ -2022,14 +3808,32 @@
   
   
 
-      </a>
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
-              
-            
-              
-                
+    
+      
+      
   
   
   
@@ -2042,7 +3846,7 @@
   <span class="md-ellipsis">
     
   
-    Changelog
+    Release Notes
   
 
     
@@ -2051,14 +3855,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -2101,10 +3897,171 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#step-1-cache-an-endpoint" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick start
+        Step 1: cache an endpoint
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1: cache an endpoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-api-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive API docs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recap-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recap, step by step
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-limit-the-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: limit the rate
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2: limit the rate">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#check-it_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recap
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-authorize-with-casbin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: authorize with Casbin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: authorize with Casbin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#check-it_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recap_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recap
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recap_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recap
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next steps
       
     </span>
   </a>
@@ -2122,87 +4079,527 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href=".." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Alcazaba
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../learn/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Learn
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Tutorial - User Guide
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
 
 
 
-<h1 id="getting-started">Getting started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h1>
-<p>Install Alcazaba and cache a first endpoint. Then each tool has a page of its own in the guide,
-listed on the <a href="../">home page</a>.</p>
+<h1 id="tutorial-user-guide">Tutorial - User Guide<a class="headerlink" href="#tutorial-user-guide" title="Permanent link">&para;</a></h1>
+<p>This tutorial shows you how to use Alcazaba, step by step. It starts on this page with a quick
+start: a small shop API built in three steps, each adding one tool to the same <code>main.py</code> (a
+response cache, a rate limit and authorization with Casbin), each run and checked. The next pages
+take each tool in turn: read them in order, or go straight to the one you need.</p>
+<div class="admonition info">
+<p class="admonition-title">Before you start</p>
+<p>You need Python 3.11 or later, and to know FastAPI's basics: path operations, dependencies and
+the lifespan. If they're new to you, FastAPI's own
+<a href="https://fastapi.tiangolo.com/tutorial/first-steps/">tutorial</a> explains them first.</p>
+</div>
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1">pip<span class="w"> </span>install<span class="w"> </span>fastapi-alcazaba<span class="w">            </span><span class="c1"># in-memory backend only</span>
-</span><span id="__span-0-2">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[redis]"</span><span class="w">   </span><span class="c1"># or [valkey], [glide], [memcache], [dynamodb], [all]</span>
-</span><span id="__span-0-3">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[otel]"</span><span class="w">    </span><span class="c1"># OpenTelemetry metrics</span>
-</span><span id="__span-0-4">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[crypto]"</span><span class="w">  </span><span class="c1"># encrypted entries</span>
-</span><span id="__span-0-5">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[zstd]"</span><span class="w">    </span><span class="c1"># zstd compression before Python 3.14</span>
+<p>Make a folder for the project, with a virtual environment, and install FastAPI and Alcazaba:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">pip</label><label for="__tabbed_1_2">uv</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><span class="gp">$ </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+</span><span id="__span-0-2"><span class="gp">$ </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-0-3"><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi[standard]"</span><span class="w"> </span><span class="s2">"fastapi-alcazaba[casbin]"</span>
 </span></code></pre></div>
-<p>Python 3.11+, FastAPI 0.115+ and Pydantic v2.</p>
-<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
-</span><span id="__span-1-2"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-</span><span id="__span-1-3">
-</span><span id="__span-1-4"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Header</span>
-</span><span id="__span-1-5"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">SecretStr</span>
-</span><span id="__span-1-6"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">SettingsConfigDict</span>
-</span><span id="__span-1-7"><span class="kn">from</span><span class="w"> </span><span class="nn">redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">asyncio</span> <span class="k">as</span> <span class="n">aioredis</span>
-</span><span id="__span-1-8">
-</span><span id="__span-1-9"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPICache</span>
-</span><span id="__span-1-10"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisBackend</span>
-</span><span id="__span-1-11"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.response_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
-</span><span id="__span-1-12">
-</span><span id="__span-1-13">
-</span><span id="__span-1-14"><span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
-</span><span id="__span-1-15"><span class="w">    </span><span class="sd">"""From environment variables (REDIS_URL...) or a .env file."""</span>
-</span><span id="__span-1-16">
-</span><span id="__span-1-17">    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span><span class="n">env_file</span><span class="o">=</span><span class="s2">".env"</span><span class="p">,</span> <span class="n">env_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
-</span><span id="__span-1-18">
-</span><span id="__span-1-19">    <span class="n">redis_url</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-1-20">    <span class="n">cache_signing_key</span><span class="p">:</span> <span class="n">SecretStr</span>  <span class="c1"># secrets.token_urlsafe(32)</span>
-</span><span id="__span-1-21">
-</span><span id="__span-1-22">
-</span><span id="__span-1-23"><span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
-</span><span id="__span-1-24">
-</span><span id="__span-1-25">
-</span><span id="__span-1-26"><span class="nd">@asynccontextmanager</span>
-</span><span id="__span-1-27"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-</span><span id="__span-1-28">    <span class="n">redis</span> <span class="o">=</span> <span class="n">aioredis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">)</span>
-</span><span id="__span-1-29">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">RedisBackend</span><span class="p">(</span><span class="n">redis</span><span class="p">),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"myapp"</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">)</span>
-</span><span id="__span-1-30">    <span class="k">yield</span>
-</span><span id="__span-1-31">    <span class="k">await</span> <span class="n">redis</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
-</span><span id="__span-1-32">
-</span><span id="__span-1-33">
-</span><span id="__span-1-34"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-</span><span id="__span-1-35">
-</span><span id="__span-1-36">
-</span><span id="__span-1-37"><span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-1-38">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-1-39">    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
-</span><span id="__span-1-40">
-</span><span id="__span-1-41">
-</span><span id="__span-1-42"><span class="k">def</span><span class="w"> </span><span class="nf">current_user</span><span class="p">(</span><span class="n">authorization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Header</span><span class="p">())</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-1-43">    <span class="k">return</span> <span class="n">authorization</span>  <span class="c1"># validate the token here</span>
-</span><span id="__span-1-44">
-</span><span id="__span-1-45">
-</span><span id="__span-1-46"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products/</span><span class="si">{product_id}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-1-47"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">vary_headers</span><span class="o">=</span><span class="p">())</span>  <span class="c1"># same response for everybody: one shared entry</span>
-</span><span id="__span-1-48"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">product</span><span class="p">(</span><span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
-</span><span id="__span-1-49">    <span class="k">return</span> <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olive oil"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">9.5</span><span class="p">)</span>
-</span><span id="__span-1-50">
-</span><span id="__span-1-51">
-</span><span id="__span-1-52"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/me"</span><span class="p">)</span>
-</span><span id="__span-1-53"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>  <span class="c1"># one entry per Authorization/Cookie value, sent as private</span>
-</span><span id="__span-1-54"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">current_user</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-1-55">    <span class="k">return</span> <span class="p">{</span><span class="s2">"user"</span><span class="p">:</span> <span class="n">user</span><span class="p">}</span>
+</div>
+<div class="tabbed-block">
+<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><span class="gp">$ </span>uv<span class="w"> </span>venv
+</span><span id="__span-1-2"><span class="gp">$ </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</span><span id="__span-1-3"><span class="gp">$ </span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi[standard]"</span><span class="w"> </span><span class="s2">"fastapi-alcazaba[casbin]"</span>
 </span></code></pre></div>
-<p><code>@cache</code> goes between the route decorator and the function. It also caches plain functions,
-sync or async (sync ones run in the thread pool, like FastAPI does).</p>
-<p>The configuration comes from
-<a href="https://docs.pydantic.dev/latest/concepts/pydantic_settings/">pydantic-settings</a> (<code>pip install
-pydantic-settings</code>). Every parameter that takes a key or a secret also takes pydantic's
-<code>SecretStr</code> (or <code>SecretBytes</code>) as it is, so the value stays out of the settings' repr and of
-tracebacks until Alcazaba uses it. The other snippets read theirs from the same <code>settings</code>.</p>
+</div>
+</div>
+</div>
+<p><code>fastapi[standard]</code> brings the <code>fastapi</code> command and uvicorn, to run the app. Alcazaba itself
+only needs FastAPI; the <code>casbin</code> extra is for the third step.</p>
+<h2 id="step-1-cache-an-endpoint">Step 1: cache an endpoint<a class="headerlink" href="#step-1-cache-an-endpoint" title="Permanent link">&para;</a></h2>
+<h3 id="create-it">Create it<a class="headerlink" href="#create-it" title="Permanent link">&para;</a></h3>
+<p>Create a file <code>main.py</code> with:</p>
+<!-- fmt: off -->
+<div class="language-python highlight"><span class="filename">main.py</span><pre><span></span><code><span id="__span-2-1"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-2-2"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-2-3">
+</span><span id="__span-2-4"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
+</span><span id="__span-2-5"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+</span><span id="__span-2-6">
+</span><span id="__span-2-7"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPICache</span>
+</span></span><span id="__span-2-8"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
+</span></span><span id="__span-2-9"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.response_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+</span></span><span id="__span-2-10">
+</span><span id="__span-2-11">
+</span><span id="__span-2-12"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-2-13"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-2-14"><span class="hll">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"shop"</span><span class="p">)</span>
+</span></span><span id="__span-2-15">    <span class="k">yield</span>
+</span><span id="__span-2-16">
+</span><span id="__span-2-17">
+</span><span id="__span-2-18"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-2-19">
+</span><span id="__span-2-20">
+</span><span id="__span-2-21"><span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-2-22">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-2-23">    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-2-24">
+</span><span id="__span-2-25">
+</span><span id="__span-2-26"><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olive oil"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">9.5</span><span class="p">)}</span>
+</span><span id="__span-2-27">
+</span><span id="__span-2-28">
+</span><span id="__span-2-29"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products/</span><span class="si">{product_id}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-2-30"><span class="hll"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+</span></span><span id="__span-2-31"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_product</span><span class="p">(</span><span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
+</span><span id="__span-2-32">    <span class="k">if</span> <span class="n">product_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRODUCTS</span><span class="p">:</span>
+</span><span id="__span-2-33">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such product"</span><span class="p">)</span>
+</span><span id="__span-2-34">    <span class="k">return</span> <span class="n">PRODUCTS</span><span class="p">[</span><span class="n">product_id</span><span class="p">]</span>
+</span></code></pre></div>
+<!-- fmt: on -->
+
+<h3 id="run-it">Run it<a class="headerlink" href="#run-it" title="Permanent link">&para;</a></h3>
+<p>Run the development server:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">$ </span>fastapi<span class="w"> </span>dev<span class="w"> </span>main.py
+</span><span id="__span-3-2">
+</span><span id="__span-3-3"><span class="go"> ⚡️ Starting FastAPI in development mode</span>
+</span><span id="__span-3-4">
+</span><span id="__span-3-5"><span class="go"> 🐍 Using import string: main:app</span>
+</span><span id="__span-3-6">
+</span><span id="__span-3-7"><span class="go"> 🌐 Server started at http://127.0.0.1:8000</span>
+</span><span id="__span-3-8"><span class="go">    Documentation at http://127.0.0.1:8000/docs</span>
+</span><span id="__span-3-9">
+</span><span id="__span-3-10"><span class="go">  Logs:</span>
+</span><span id="__span-3-11">
+</span><span id="__span-3-12"><span class="go">INFO:     Will watch for changes in these directories: ['/home/user/shop']</span>
+</span><span id="__span-3-13"><span class="go">INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)</span>
+</span><span id="__span-3-14"><span class="go">INFO:     Started reloader process [213542] using WatchFiles</span>
+</span><span id="__span-3-15"><span class="go">INFO:     Started server process [213546]</span>
+</span><span id="__span-3-16"><span class="go">INFO:     Waiting for application startup.</span>
+</span><span id="__span-3-17"><span class="go">INFO:     Application startup complete.</span>
+</span></code></pre></div>
+<p>It reloads the app whenever you save <code>main.py</code>: leave it running through the next steps.</p>
+<details class="tip">
+<summary>With uvicorn</summary>
+<p><code>fastapi dev</code> runs uvicorn for you. You can also run it yourself:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><span class="gp">$ </span>uvicorn<span class="w"> </span>main:app<span class="w"> </span>--reload
+</span></code></pre></div>
+</details>
+<h3 id="check-it">Check it<a class="headerlink" href="#check-it" title="Permanent link">&para;</a></h3>
+<p>In another terminal, ask for the product twice:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/products/1
+</span><span id="__span-5-2"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-5-3"><span class="go">content-type: application/json</span>
+</span><span id="__span-5-4"><span class="go">etag: W/"d5c916899a1291fccfef605e3d4ede40"</span>
+</span><span id="__span-5-5"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
+</span><span id="__span-5-6"><span class="go">cache-control: max-age=60</span>
+</span><span id="__span-5-7"><span class="go">vary: Authorization, Cookie</span>
+</span><span id="__span-5-8">
+</span><span id="__span-5-9"><span class="go">{"name":"Olive oil","price":9.5}</span>
+</span><span id="__span-5-10">
+</span><span id="__span-5-11"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/products/1
+</span><span id="__span-5-12"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-5-13"><span class="go">content-type: application/json</span>
+</span><span id="__span-5-14"><span class="go">etag: W/"d5c916899a1291fccfef605e3d4ede40"</span>
+</span><span id="__span-5-15"><span class="go">cache-status: Alcazaba; hit; ttl=60</span>
+</span><span id="__span-5-16"><span class="go">cache-control: max-age=60</span>
+</span><span id="__span-5-17"><span class="go">vary: Authorization, Cookie</span>
+</span><span id="__span-5-18">
+</span><span id="__span-5-19"><span class="go">{"name":"Olive oil","price":9.5}</span>
+</span></code></pre></div>
+<p>The first request ran <code>read_product</code> and stored its response: <code>fwd=miss; stored</code>. The second one
+came from the cache, <code>hit</code>, with the seconds the entry has left. A product that isn't there gets
+its 404, which is never cached:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/products/2
+</span><span id="__span-6-2"><span class="go">{"detail":"No such product"}</span>
+</span></code></pre></div>
+<h3 id="interactive-api-docs">Interactive API docs<a class="headerlink" href="#interactive-api-docs" title="Permanent link">&para;</a></h3>
+<p>Open <a href="http://127.0.0.1:8000/docs">http://127.0.0.1:8000/docs</a>. FastAPI's interactive docs show the endpoint as usual: <code>@cache</code>
+keeps its parameters and its response model. Try it out twice, and look at the <code>cache-status</code>
+header of each response.</p>
+<h3 id="recap-step-by-step">Recap, step by step<a class="headerlink" href="#recap-step-by-step" title="Permanent link">&para;</a></h3>
+<p><strong><code>FastAPICache.init()</code></strong>, in the lifespan, says where the entries live:</p>
+<!-- fmt: off -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-7-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-7-3"><span class="hll">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"shop"</span><span class="p">)</span>
+</span></span><span id="__span-7-4">    <span class="k">yield</span>
+</span></code></pre></div>
+<!-- fmt: on -->
+
+<p><code>InMemoryBackend</code> keeps them in the process, which is enough to try things out. In production,
+<a href="backends/">Redis or Valkey</a> keeps them for every process at once.</p>
+<p><strong><code>@cache(expire=60)</code></strong> keeps each response for 60 seconds:</p>
+<!-- fmt: off -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products/</span><span class="si">{product_id}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-8-2"><span class="hll"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+</span></span><span id="__span-8-3"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_product</span><span class="p">(</span><span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
+</span><span id="__span-8-4">    <span class="k">if</span> <span class="n">product_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRODUCTS</span><span class="p">:</span>
+</span><span id="__span-8-5">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such product"</span><span class="p">)</span>
+</span><span id="__span-8-6">    <span class="k">return</span> <span class="n">PRODUCTS</span><span class="p">[</span><span class="n">product_id</span><span class="p">]</span>
+</span></code></pre></div>
+<!-- fmt: on -->
+
+<div class="admonition warning">
+<p class="admonition-title">Under the route's decorator</p>
+<p><code>@cache</code> goes between <code>@app.get(...)</code> and the function. FastAPI registers the function
+below its decorator: with <code>@cache</code> above <code>@app.get</code>, the route would serve the uncached
+function.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Technical details</p>
+<p>Each user gets entries of their own: requests with an <code>Authorization</code> or <code>Cookie</code> header
+have their own keys, and their responses are sent as <code>Cache-Control: private</code>. That's what
+<code>vary: Authorization, Cookie</code> tells browsers and proxies. <code>Cache-Status</code> is the header of
+<a href="https://www.rfc-editor.org/rfc/rfc9211">RFC 9211</a>, and the <code>ETag</code> lets clients revalidate
+with <code>If-None-Match</code> and get a <code>304 Not Modified</code>. The <a href="cache/">response cache</a> page
+has the rest: shared entries, keys, signed entries.</p>
+</div>
+<h2 id="step-2-limit-the-rate">Step 2: limit the rate<a class="headerlink" href="#step-2-limit-the-rate" title="Permanent link">&para;</a></h2>
+<p>Reading a product is cheap now, but nothing stops a single client from taking all the server's
+time. Give each client five requests a minute:</p>
+<!-- fmt: off -->
+<div class="language-python highlight"><span class="filename">main.py</span><pre><span></span><code><span id="__span-9-1"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-9-2"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-9-3">
+</span><span id="__span-9-4"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
+</span></span><span id="__span-9-5"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+</span><span id="__span-9-6">
+</span><span id="__span-9-7"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPICache</span><span class="p">,</span> <span class="n">FastAPIRateLimiter</span>
+</span></span><span id="__span-9-8"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
+</span><span id="__span-9-9"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.response_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+</span><span id="__span-9-10">
+</span><span id="__span-9-11">
+</span><span id="__span-9-12"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-9-13"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-9-14">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"shop"</span><span class="p">)</span>
+</span><span id="__span-9-15">    <span class="k">yield</span>
+</span><span id="__span-9-16">
+</span><span id="__span-9-17">
+</span><span id="__span-9-18"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-9-19">
+</span><span id="__span-9-20">
+</span><span id="__span-9-21"><span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-9-22">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-9-23">    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-9-24">
+</span><span id="__span-9-25">
+</span><span id="__span-9-26"><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olive oil"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">9.5</span><span class="p">)}</span>
+</span><span id="__span-9-27">
+</span><span id="__span-9-28">
+</span><span id="__span-9-29"><span class="hll"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span></span><span id="__span-9-30"><span class="hll">    <span class="s2">"/products/</span><span class="si">{product_id}</span><span class="s2">"</span><span class="p">,</span>
+</span></span><span id="__span-9-31"><span class="hll">    <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">))],</span>
+</span></span><span id="__span-9-32"><span class="hll"><span class="p">)</span>
+</span></span><span id="__span-9-33"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+</span><span id="__span-9-34"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_product</span><span class="p">(</span><span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
+</span><span id="__span-9-35">    <span class="k">if</span> <span class="n">product_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRODUCTS</span><span class="p">:</span>
+</span><span id="__span-9-36">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such product"</span><span class="p">)</span>
+</span><span id="__span-9-37">    <span class="k">return</span> <span class="n">PRODUCTS</span><span class="p">[</span><span class="n">product_id</span><span class="p">]</span>
+</span></code></pre></div>
+<!-- fmt: on -->
+
+<h3 id="check-it_1">Check it<a class="headerlink" href="#check-it_1" title="Permanent link">&para;</a></h3>
+<p><code>fastapi dev</code> has reloaded the app. Make six requests:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-10-1"><span class="gp">$ </span><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="m">6</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"%{http_code} "</span><span class="w"> </span>http://127.0.0.1:8000/products/1<span class="p">;</span><span class="w"> </span><span class="k">done</span><span class="p">;</span><span class="w"> </span><span class="nb">echo</span>
+</span><span id="__span-10-2"><span class="go">200 200 200 200 200 429</span>
+</span><span id="__span-10-3">
+</span><span id="__span-10-4"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/products/1
+</span><span id="__span-10-5"><span class="go">HTTP/1.1 429 Too Many Requests</span>
+</span><span id="__span-10-6"><span class="go">ratelimit: "5/60s";r=0;t=15</span>
+</span><span id="__span-10-7"><span class="go">ratelimit-policy: "5/60s";q=5;w=60</span>
+</span><span id="__span-10-8"><span class="go">retry-after: 15</span>
+</span><span id="__span-10-9"><span class="go">content-type: application/json</span>
+</span><span id="__span-10-10">
+</span><span id="__span-10-11"><span class="go">{"detail":"Too Many Requests"}</span>
+</span></code></pre></div>
+<p>The sixth request and those after it get a <code>429 Too Many Requests</code>, with <code>Retry-After</code>: the
+seconds to wait. Every response carries the <code>RateLimit</code> header, so that clients can slow down
+before they get there: <code>r</code> is what's left, <code>t</code> the seconds until there's more.</p>
+<h3 id="recap">Recap<a class="headerlink" href="#recap" title="Permanent link">&para;</a></h3>
+<p><strong><code>FastAPIRateLimiter</code></strong> is a FastAPI dependency: put it in <code>dependencies=[...]</code> of a route, of
+a router, or of the whole app. Dependencies run before the endpoint, so cached responses count
+too.</p>
+<div class="admonition tip">
+<p class="admonition-title">Behind a proxy</p>
+<p>The limiter counts per client address, the one the ASGI server reports. Behind a proxy or a
+load balancer, tell uvicorn to take it from the proxy's headers
+(<code>--forwarded-allow-ips</code>); <a href="limits/#rate-limiting">Rate limiting</a> tells how, and how
+to count per user or per API key instead.</p>
+</div>
+<h2 id="step-3-authorize-with-casbin">Step 3: authorize with Casbin<a class="headerlink" href="#step-3-authorize-with-casbin" title="Permanent link">&para;</a></h2>
+<p>Anybody may read the products, but only the staff may change their prices. Who's staff isn't
+written in the code: it's in a <a href="https://casbin.org">Casbin</a> policy. Create these two files next to
+<code>main.py</code>:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">model.conf</label><label for="__tabbed_2_2">policy.csv</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-ini highlight"><span class="filename">model.conf</span><pre><span></span><code><span id="__span-11-1"><span class="k">[request_definition]</span>
+</span><span id="__span-11-2"><span class="na">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
+</span><span id="__span-11-3">
+</span><span id="__span-11-4"><span class="k">[policy_definition]</span>
+</span><span id="__span-11-5"><span class="na">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
+</span><span id="__span-11-6">
+</span><span id="__span-11-7"><span class="k">[role_definition]</span>
+</span><span id="__span-11-8"><span class="na">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">_, _</span>
+</span><span id="__span-11-9">
+</span><span id="__span-11-10"><span class="k">[policy_effect]</span>
+</span><span id="__span-11-11"><span class="na">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">some(where (p.eft == allow))</span>
+</span><span id="__span-11-12">
+</span><span id="__span-11-13"><span class="k">[matchers]</span>
+</span><span id="__span-11-14"><span class="na">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">g(r.sub, p.sub) &amp;&amp; keyMatch2(r.obj, p.obj) &amp;&amp; r.act == p.act</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-text highlight"><span class="filename">policy.csv</span><pre><span></span><code><span id="__span-12-1">p, staff, /products/:id, PUT
+</span><span id="__span-12-2">g, ana, staff
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<p>The model says what a request is, (user, object, action), and when the policy allows it: when
+one of the user's roles (<code>g</code>) has a rule (<code>p</code>) whose path pattern matches the request's
+(<code>keyMatch2</code>, which takes <code>:id</code> for any value) and whose action is the request's. The policy
+says that the staff may <code>PUT</code> any product, and that Ana is staff.</p>
+<p>Then use it in <code>main.py</code>:</p>
+<!-- fmt: off -->
+<div class="language-python highlight"><span class="filename">main.py</span><pre><span></span><code><span id="__span-13-1"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
+</span><span id="__span-13-2"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+</span><span id="__span-13-3"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span></span><span id="__span-13-4"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
+</span></span><span id="__span-13-5">
+</span><span id="__span-13-6"><span class="hll"><span class="kn">import</span><span class="w"> </span><span class="nn">casbin</span>
+</span></span><span id="__span-13-7"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
+</span><span id="__span-13-8"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPAuthorizationCredentials</span><span class="p">,</span> <span class="n">HTTPBearer</span>
+</span></span><span id="__span-13-9"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+</span><span id="__span-13-10">
+</span><span id="__span-13-11"><span class="hll"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPICache</span><span class="p">,</span> <span class="n">FastAPICasbin</span><span class="p">,</span> <span class="n">FastAPIRateLimiter</span>
+</span></span><span id="__span-13-12"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.backends.inmemory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryBackend</span>
+</span><span id="__span-13-13"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.response_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+</span><span id="__span-13-14">
+</span><span id="__span-13-15">
+</span><span id="__span-13-16"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-13-17"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-13-18">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">InMemoryBackend</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"shop"</span><span class="p">)</span>
+</span><span id="__span-13-19">    <span class="k">yield</span>
+</span><span id="__span-13-20">
+</span><span id="__span-13-21">
+</span><span id="__span-13-22"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
+</span><span id="__span-13-23">
+</span><span id="__span-13-24">
+</span><span id="__span-13-25"><span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-13-26">    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+</span><span id="__span-13-27">    <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
+</span><span id="__span-13-28">
+</span><span id="__span-13-29">
+</span><span id="__span-13-30"><span class="n">PRODUCTS</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">Product</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Olive oil"</span><span class="p">,</span> <span class="n">price</span><span class="o">=</span><span class="mf">9.5</span><span class="p">)}</span>
+</span><span id="__span-13-31"><span class="hll"><span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ana-token"</span><span class="p">:</span> <span class="s2">"ana"</span><span class="p">,</span> <span class="s2">"ben-token"</span><span class="p">:</span> <span class="s2">"ben"</span><span class="p">}</span>  <span class="c1"># stands in for your authentication</span>
+</span></span><span id="__span-13-32">
+</span><span id="__span-13-33">
+</span><span id="__span-13-34"><span class="hll"><span class="k">def</span><span class="w"> </span><span class="nf">current_user</span><span class="p">(</span>
+</span></span><span id="__span-13-35"><span class="hll">    <span class="n">credentials</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">HTTPAuthorizationCredentials</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">HTTPBearer</span><span class="p">())],</span>
+</span></span><span id="__span-13-36"><span class="hll"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span></span><span id="__span-13-37"><span class="hll">    <span class="k">if</span> <span class="n">credentials</span><span class="o">.</span><span class="n">credentials</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">TOKENS</span><span class="p">:</span>
+</span></span><span id="__span-13-38"><span class="hll">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Invalid token"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
+</span></span><span id="__span-13-39"><span class="hll">    <span class="k">return</span> <span class="n">TOKENS</span><span class="p">[</span><span class="n">credentials</span><span class="o">.</span><span class="n">credentials</span><span class="p">]</span>
+</span></span><span id="__span-13-40">
+</span><span id="__span-13-41">
+</span><span id="__span-13-42"><span class="hll"><span class="n">here</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+</span></span><span id="__span-13-43"><span class="hll"><span class="n">enforcer</span> <span class="o">=</span> <span class="n">casbin</span><span class="o">.</span><span class="n">Enforcer</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">here</span> <span class="o">/</span> <span class="s2">"model.conf"</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">here</span> <span class="o">/</span> <span class="s2">"policy.csv"</span><span class="p">))</span>
+</span></span><span id="__span-13-44"><span class="hll"><span class="n">authz</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">)</span>
+</span></span><span id="__span-13-45">
+</span><span id="__span-13-46">
+</span><span id="__span-13-47"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+</span><span id="__span-13-48">    <span class="s2">"/products/</span><span class="si">{product_id}</span><span class="s2">"</span><span class="p">,</span>
+</span><span id="__span-13-49">    <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">))],</span>
+</span><span id="__span-13-50"><span class="p">)</span>
+</span><span id="__span-13-51"><span class="hll"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="k">lambda</span> <span class="n">product_id</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"product:</span><span class="si">{</span><span class="n">product_id</span><span class="si">}</span><span class="s2">"</span><span class="p">])</span>
+</span></span><span id="__span-13-52"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_product</span><span class="p">(</span><span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
+</span><span id="__span-13-53">    <span class="k">if</span> <span class="n">product_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRODUCTS</span><span class="p">:</span>
+</span><span id="__span-13-54">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such product"</span><span class="p">)</span>
+</span><span id="__span-13-55">    <span class="k">return</span> <span class="n">PRODUCTS</span><span class="p">[</span><span class="n">product_id</span><span class="p">]</span>
+</span><span id="__span-13-56">
+</span><span id="__span-13-57">
+</span><span id="__span-13-58"><span class="hll"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/products/</span><span class="si">{product_id}</span><span class="s2">"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">authz</span><span class="p">)])</span>
+</span></span><span id="__span-13-59"><span class="hll"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_product</span><span class="p">(</span><span class="n">product_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">product</span><span class="p">:</span> <span class="n">Product</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
+</span></span><span id="__span-13-60"><span class="hll">    <span class="k">if</span> <span class="n">product_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRODUCTS</span><span class="p">:</span>
+</span></span><span id="__span-13-61"><span class="hll">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such product"</span><span class="p">)</span>
+</span></span><span id="__span-13-62"><span class="hll">    <span class="n">PRODUCTS</span><span class="p">[</span><span class="n">product_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">product</span>
+</span></span><span id="__span-13-63"><span class="hll">    <span class="k">await</span> <span class="n">FastAPICache</span><span class="o">.</span><span class="n">invalidate_tags</span><span class="p">(</span><span class="sa">f</span><span class="s2">"product:</span><span class="si">{</span><span class="n">product_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span></span><span id="__span-13-64"><span class="hll">    <span class="k">return</span> <span class="n">product</span>
+</span></span></code></pre></div>
+<!-- fmt: on -->
+
+<h3 id="check-it_2">Check it<a class="headerlink" href="#check-it_2" title="Permanent link">&para;</a></h3>
+<p>Read the product, which caches it:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-14-1"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/products/1
+</span><span id="__span-14-2"><span class="go">{"name":"Olive oil","price":9.5}</span>
+</span></code></pre></div>
+<p>Then change its price without a token, as Ben, and as Ana:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-15-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/products/1<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-2"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"name": "Olive oil", "price": 8.0}'</span>
+</span><span id="__span-15-3"><span class="go">HTTP/1.1 401 Unauthorized</span>
+</span><span id="__span-15-4"><span class="go">www-authenticate: Bearer</span>
+</span><span id="__span-15-5">
+</span><span id="__span-15-6"><span class="go">{"detail":"Not authenticated"}</span>
+</span><span id="__span-15-7">
+</span><span id="__span-15-8"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/products/1<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ben-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-9"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"name": "Olive oil", "price": 8.0}'</span>
+</span><span id="__span-15-10"><span class="go">HTTP/1.1 403 Forbidden</span>
+</span><span id="__span-15-11">
+</span><span id="__span-15-12"><span class="go">{"detail":"Forbidden"}</span>
+</span><span id="__span-15-13">
+</span><span id="__span-15-14"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/products/1<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ana-token"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-15"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"name": "Olive oil", "price": 8.0}'</span>
+</span><span id="__span-15-16"><span class="go">{"name":"Olive oil","price":8.0}</span>
+</span></code></pre></div>
+<p>And the product has its new price at once, although its old one was cached:</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-16-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/products/1
+</span><span id="__span-16-2"><span class="go">HTTP/1.1 200 OK</span>
+</span><span id="__span-16-3"><span class="go">content-type: application/json</span>
+</span><span id="__span-16-4"><span class="go">ratelimit: "5/60s";r=3;t=2</span>
+</span><span id="__span-16-5"><span class="go">ratelimit-policy: "5/60s";q=5;w=60</span>
+</span><span id="__span-16-6"><span class="go">etag: W/"615d43a0044f76d19c5f354c5be3a495"</span>
+</span><span id="__span-16-7"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
+</span><span id="__span-16-8"><span class="go">cache-control: max-age=60</span>
+</span><span id="__span-16-9"><span class="go">vary: Authorization, Cookie</span>
+</span><span id="__span-16-10">
+</span><span id="__span-16-11"><span class="go">{"name":"Olive oil","price":8.0}</span>
+</span></code></pre></div>
+<p>In the <a href="http://127.0.0.1:8000/docs">interactive docs</a>, the <code>PUT</code> endpoint now has a lock: click
+<strong>Authorize</strong>, give <code>ana-token</code>, and try it out.</p>
+<h3 id="recap_1">Recap<a class="headerlink" href="#recap_1" title="Permanent link">&para;</a></h3>
+<p><strong><code>FastAPICasbin</code></strong> takes the enforcer, which reads the model and the policy, and <code>subject</code>: a
+dependency that says who makes the request. <code>current_user</code> stands in for your authentication
+here; with yours, it decodes a JWT or reads a session.</p>
+<!-- fmt: off -->
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><span class="n">here</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+</span><span id="__span-17-2"><span class="n">enforcer</span> <span class="o">=</span> <span class="n">casbin</span><span class="o">.</span><span class="n">Enforcer</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">here</span> <span class="o">/</span> <span class="s2">"model.conf"</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">here</span> <span class="o">/</span> <span class="s2">"policy.csv"</span><span class="p">))</span>
+</span><span id="__span-17-3"><span class="hll"><span class="n">authz</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">)</span>
+</span></span></code></pre></div>
+<!-- fmt: on -->
+
+<p><strong><code>Depends(authz)</code></strong> asks the policy about the request: may <code>ana</code> <code>PUT</code> <code>/products/1</code>? A
+request without a token gets a 401 before the policy is asked; one that the policy refuses, a
+403.</p>
+<p><strong>Tags</strong> drop cached entries when the data changes: <code>tags=</code> names the product's entry, and
+<code>FastAPICache.invalidate_tags()</code> drops it after the update.</p>
+<div class="admonition tip">
+<p class="admonition-title">Your own actions</p>
+<p>The path and the method aren't the only things to ask about: <code>authz.require("prices",
+"change")</code> asks whether the user may change prices, whatever the route.
+<a href="authz/#casbin-policies">Authorization with Casbin</a> tells how, and how to open routes
+to visitors without an account.</p>
+</div>
+<h2 id="recap_2">Recap<a class="headerlink" href="#recap_2" title="Permanent link">&para;</a></h2>
+<p>You have an app whose product pages are cached and refreshed when they change, whose clients
+can't flood it, and whose prices only the staff can change:</p>
+<ul>
+<li><code>FastAPICache.init()</code> in the lifespan, and <code>@cache(...)</code> under the route's decorator.</li>
+<li><code>FastAPIRateLimiter(...)</code> in a route's dependencies.</li>
+<li><code>FastAPICasbin(enforcer, subject=...)</code> in a route's dependencies, with a Casbin model and
+  policy.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">In production</p>
+<p>So far everything lives in the process: each process has its own cache and counters. With
+Redis or Valkey every process shares them, and a signing key keeps whoever can write to the
+backend from planting entries: see the <a href="production/">production setup</a>.</p>
+</div>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>The next pages take each tool in turn, starting with the <a href="cache/">response cache</a>. Each one
+says what the tool does, its options and what it protects against, and links to an example app
+and to the reference.</p>
+<div class="grid cards">
+<ul>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19 8-4 4h3a6 6 0 0 1-6 6c-1 0-1.97-.25-2.8-.7l-1.46 1.46A7.93 7.93 0 0 0 12 20a8 8 0 0 0 8-8h3M6 12a6 6 0 0 1 6-6c1 0 1.97.25 2.8.7l1.46-1.46A7.93 7.93 0 0 0 12 4a8 8 0 0 0-8 8H1l4 4 4-4"/></svg></span> <strong><a href="cache/">Each tool</a></strong></p>
+<hr />
+<p>The cache, the backends, pagination, limits, authentication and authorization, sessions,
+webhooks, background work and operations.</p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 19h1a1 1 0 0 1 1 1h7v2h-7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1H2v-2h7a1 1 0 0 1 1-1h1v-2H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-7zM4 3h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1m5 4h1V5H9zm0 8h1v-2H9zM5 5v2h2V5zm0 8v2h2v-2z"/></svg></span> <strong><a href="production/">Production setup</a></strong></p>
+<hr />
+<p>The configuration from the environment, and the state in Redis, shared by every process.</p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 2H3a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M11 17.5 9.5 19 5 14.5 9.5 10l1.5 1.5-3 3zm3.5 1.5L13 17.5l3-3-3-3 1.5-1.5 4.5 4.5zM21 7H3V4h18z"/></svg></span> <strong><a href="../examples/">Examples</a></strong></p>
+<hr />
+<p>Complete apps, each with a tool at work as it's meant to be used in production.</p>
+</li>
+<li>
+<p><span class="twemoji lg middle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 7H5a2 2 0 0 0-2 2v8h2v-4h2v4h2V9a2 2 0 0 0-2-2m0 4H5V9h2m7-2h-4v10h2v-4h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2m0 4h-2V9h2m6 0v6h1v2h-4v-2h1V9h-1V7h4v2Z"/></svg></span> <strong><a href="../reference/">Reference</a></strong></p>
+<hr />
+<p>Every class and function, with its parameters.</p>
+</li>
+</ul>
+</div>
 
 
 
@@ -2220,6 +4617,8 @@ tracebacks until Alcazaba uses it. The other snippets read theirs from the same 
             </div>
           
           
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
@@ -2238,7 +4637,7 @@ tracebacks until Alcazaba uses it. The other snippets read theirs from the same 
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home">
+          <a href="../learn/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Learn">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2248,20 +4647,20 @@ tracebacks until Alcazaba uses it. The other snippets read theirs from the same 
                 Previous
               </span>
               <div class="md-ellipsis">
-                Home
+                Learn
               </div>
             </div>
           </a>
         
         
           
-          <a href="cache/" class="md-footer__link md-footer__link--next" aria-label="Next: Response cache">
+          <a href="authentication/" class="md-footer__link md-footer__link--next" aria-label="Next: Authentication strategies">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Response cache
+                Authentication strategies
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2278,7 +4677,7 @@ tracebacks until Alcazaba uses it. The other snippets read theirs from the same 
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright © 2026 Antonio Mudarra Machuca · Apache License 2.0
+      Copyright © 2026 Antonio Mudarra Machuca. Apache License 2.0
     </div>
   
   
@@ -2323,7 +4722,7 @@ tracebacks until Alcazaba uses it. The other snippets read theirs from the same 
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.tabs.link", "navigation.footer", "navigation.indexes", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

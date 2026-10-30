@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/pagination/">
       
       
-        <link rel="prev" href="../backends/">
+        <link rel="prev" href="../operations/">
       
       
-        <link rel="next" href="../limits/">
+        <link rel="next" href="cursor/">
       
       
         
@@ -56,6 +56,8 @@
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
       <link rel="stylesheet" href="../../stylesheets/brand.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/animations.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -119,7 +121,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Alcazaba" class="md-header__button md-logo" aria-label="Alcazaba" data-md-component="logo">
       
@@ -233,14 +237,8 @@
     
   </nav>
   
-</header>
     
-    <div class="md-container" data-md-component="container">
       
-      
-        
-          
-            
 <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
   <div class="md-grid">
     <ul class="md-tabs__list">
@@ -257,10 +255,32 @@
   
     
   
-  Home
+  Alcazaba
 
       </a>
     </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../features/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Features
+
+        </a>
+      </li>
+    
   
 
       
@@ -274,35 +294,13 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+        <a href="../../learn/" class="md-tabs__link">
           
   
   
     
   
-  Guide
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../examples/" class="md-tabs__link">
-          
-  
-  
-    
-  
-  Examples
+  Learn
 
         </a>
       </li>
@@ -324,7 +322,7 @@
   
     
   
-  API reference
+  Reference
 
         </a>
       </li>
@@ -340,13 +338,13 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../security/" class="md-tabs__link">
+        <a href="../../resources/" class="md-tabs__link">
           
   
   
     
   
-  Project
+  Resources
 
         </a>
       </li>
@@ -354,10 +352,57 @@
   
 
       
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release Notes
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
-          
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
         
       
       <main class="md-main" data-md-component="main">
@@ -412,7 +457,7 @@
   <span class="md-ellipsis">
     
   
-    Home
+    Alcazaba
   
 
     
@@ -429,8 +474,6 @@
       
   
   
-    
-  
   
   
     
@@ -442,60 +485,29 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
       
-        
-        
-      
-      
-        
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../features/" class="md-nav__link ">
               
   
   
   <span class="md-ellipsis">
     
   
-    Guide
+    Features
   
 
     
@@ -506,18 +518,18 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Guide
+    Features
   
 
           </label>
@@ -532,14 +544,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../cache/" class="md-nav__link">
+      <a href="../../features/tools/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Response cache
+    The tools
   
 
     
@@ -553,58 +565,58 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../backends/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backends
-  
-
-    
-  </span>
-  
-  
-
-      </a>
+          </ul>
+        </nav>
+      
     </li>
   
 
-              
-            
-              
-                
+    
+      
+      
   
   
     
   
   
   
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+    
+    
       
         
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
           
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../learn/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Pagination
+    Learn
   
 
     
@@ -612,17 +624,221 @@
   
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Learn
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
       
-      <a href="./" class="md-nav__link md-nav__link--active">
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial - User Guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorial - User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../authentication/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication strategies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/http-bearer/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Pagination
+    HTTPBearerStrategy
   
 
     
@@ -631,37 +847,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#by-cursor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        By cursor
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -674,14 +859,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../limits/" class="md-nav__link">
+      <a href="../authentication/jwt/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Rate and concurrency limits
+    JWTStrategy
   
 
     
@@ -702,14 +887,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../idempotency/" class="md-nav__link">
+      <a href="../authentication/oauth2/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Idempotency keys
+    OAuth2Strategy
   
 
     
@@ -718,6 +903,98 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/saml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAMLStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/session/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SessionStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/your-own/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your own strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -738,34 +1015,6 @@
     
   
     API keys, tokens and codes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../browser/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Sessions, CSRF and security headers
   
 
     
@@ -814,14 +1063,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../uploads/" class="md-nav__link">
+      <a href="../authz/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Checking uploads
+    Authorization with Casbin
   
 
     
@@ -842,42 +1091,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../webhooks/" class="md-nav__link">
+      <a href="../backends/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Webhooks and outbound calls
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Errors and observability
+    Backends
   
 
     
@@ -926,6 +1147,90 @@
   
   
     <li class="md-nav__item">
+      <a href="../uploads/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../idempotency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../operations/" class="md-nav__link">
         
   
@@ -934,6 +1239,525 @@
     
   
     Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_12" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pagination
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_3_2_12" id="__nav_3_2_12_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_12_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Pagination
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cursor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationCursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="id-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationIdBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="keyset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationKeyset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="limit-offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationLimitOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="page-number/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationPageNumber
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="range/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationRange
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="scroll/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationScroll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="search-after/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationSearchAfter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationStreaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="time-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationTimeBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="token/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationToken
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../production/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rate and concurrency limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Response cache
   
 
     
@@ -975,15 +1799,72 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../browser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions, CSRF and security headers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhooks and outbound calls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
@@ -1019,12 +1900,14 @@
       
         
       
-    
-    
-    
-      
+        
       
         
+      
+    
+    
+    
+      
       
     
     
@@ -1032,7 +1915,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1054,14 +1937,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1080,98 +1963,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/cache/" class="md-nav__link">
+      <a href="../../examples/browser_app/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Response cache
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Pagination
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/limits/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate and concurrency limits
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/idempotency/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Idempotency keys
+    A browser app
   
 
     
@@ -1220,34 +2019,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/browser_app/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    A browser app
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../examples/audit/" class="md-nav__link">
         
   
@@ -1275,15 +2046,92 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/auth_strategies/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_5" id="__nav_3_3_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication strategies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../../examples/uploads/" class="md-nav__link">
+      <a href="../../examples/auth_strategies/jwt/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Checking uploads
+    JWTStrategy
   
 
     
@@ -1304,14 +2152,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/webhooks/" class="md-nav__link">
+      <a href="../../examples/auth_strategies/oauth2/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Webhooks in and out
+    OAuth2Strategy
   
 
     
@@ -1332,14 +2180,134 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/observability/" class="md-nav__link">
+      <a href="../../examples/auth_strategies/session/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Errors and observability
+    SessionStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/http-bearer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTPBearerStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/saml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAMLStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/your-own/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your own strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/authz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization with Casbin
   
 
     
@@ -1388,6 +2356,90 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/uploads/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/idempotency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/operations/" class="md-nav__link">
         
   
@@ -1404,6 +2456,531 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_12" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/pagination/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pagination
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_12" id="__nav_3_3_12_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Pagination
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/page-number/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationPageNumber
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationLimitOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/offset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationOffset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/range/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationRange
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/cursor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationCursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/keyset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationKeyset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/id-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationIdBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/time-based/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationTimeBased
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/search-after/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationSearchAfter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/token/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationToken
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/scroll/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationScroll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/pagination/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationStreaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/limits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rate and concurrency limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/cache/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Response cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhooks in and out
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1457,12 +3034,14 @@
       
         
       
-    
-    
-    
-      
+        
       
         
+      
+    
+    
+    
+      
       
     
     
@@ -1481,7 +3060,7 @@
   <span class="md-ellipsis">
     
   
-    API reference
+    Reference
   
 
     
@@ -1503,7 +3082,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    API reference
+    Reference
   
 
           </label>
@@ -1658,6 +3237,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/auth/" class="md-nav__link">
         
   
@@ -1666,6 +3273,34 @@
     
   
     API keys, tokens and codes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/authz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization with Casbin
   
 
     
@@ -1920,6 +3555,10 @@
     
       
         
+          
+        
+      
+        
       
         
       
@@ -1933,8 +3572,6 @@
     
     
       
-      
-        
       
     
     
@@ -1945,14 +3582,15 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../../resources/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Project
+    Resources
   
 
     
@@ -1960,19 +3598,83 @@
   
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Project
+    Resources
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resources/help/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Help Alcazaba - Get help
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development - Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -2058,21 +3760,49 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
   
   
   
   
-    <li class="md-nav__item">
-      <a href="../../development/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../about/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Development
+    About
   
 
     
@@ -2080,14 +3810,32 @@
   
   
 
-      </a>
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
-              
-            
-              
-                
+    
+      
+      
   
   
   
@@ -2100,7 +3848,7 @@
   <span class="md-ellipsis">
     
   
-    Changelog
+    Release Notes
   
 
     
@@ -2109,14 +3857,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -2148,10 +3888,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#by-cursor" class="md-nav__link">
+  <a href="#strategies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        By cursor
+        Strategies
       
     </span>
   </a>
@@ -2169,6 +3909,90 @@
           
             <div class="md-content" data-md-component="content">
               
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="Navigation" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  <span class="md-ellipsis">
+    Alcazaba
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../../learn/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Learn
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Tutorial - User Guide
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Pagination
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -2176,87 +4000,136 @@
 
 
 <h1 id="pagination">Pagination<a class="headerlink" href="#pagination" title="Permanent link">&para;</a></h1>
-<p>In an app: <a href="../../examples/pagination/">the example</a>. Every class and function: <a href="../../reference/pagination/">the API reference</a>.</p>
-<p>Three tools, with nothing but FastAPI and pydantic: <code>FastAPIPagination</code> (<code>?page=2&amp;size=20</code>),
-<code>FastAPIPaginationLimitOffset</code> (<code>?limit=20&amp;offset=40</code>) and <code>FastAPIPaginationCursor</code>
-(<code>?size=20&amp;cursor=...</code>). Each is configured once and used as a dependency, which reads and checks
-the query parameters; the endpoint gets them as an argument, so <code>@cache</code> keeps each page under a
-key of its own:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIPagination</span>
-</span><span id="__span-0-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination</span><span class="w"> </span><span class="kn">import</span> <span class="n">Page</span><span class="p">,</span> <span class="n">PageParams</span>
-</span><span id="__span-0-3">
-</span><span id="__span-0-4"><span class="n">pages</span> <span class="o">=</span> <span class="n">FastAPIPagination</span><span class="p">(</span><span class="n">default_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-</span><span id="__span-0-5">
+<p>In an app: <a href="../../examples/pagination/">the examples</a>. Every class and function: <a href="../../reference/pagination/">the API reference</a>.</p>
+<h2 id="strategies">Strategies<a class="headerlink" href="#strategies" title="Permanent link">&para;</a></h2>
+<p>Twelve strategies, with nothing but FastAPI and pydantic. Each is configured once and used as a
+dependency, which reads and checks its query parameters; the endpoint gets them as an argument, so
+<code>@cache</code> keeps each page under a key of its own:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Query parameters</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PaginationPageNumber</code></td>
+<td><code>page</code>, <code>page_size</code></td>
+<td>Numbered pages, with the total</td>
+</tr>
+<tr>
+<td><code>PaginationLimitOffset</code></td>
+<td><code>limit</code>, <code>offset</code></td>
+<td>Slices, with the total</td>
+</tr>
+<tr>
+<td><code>PaginationOffset</code></td>
+<td><code>offset</code>, <code>limit</code></td>
+<td>Slices, without counting the whole list</td>
+</tr>
+<tr>
+<td><code>PaginationRange</code></td>
+<td><code>start</code>, <code>end</code></td>
+<td>Ranges of items, with <code>Content-Range</code></td>
+</tr>
+<tr>
+<td><code>PaginationCursor</code></td>
+<td><code>cursor</code>, <code>limit</code></td>
+<td>An opaque, signed cursor: infinite scroll, feeds</td>
+</tr>
+<tr>
+<td><code>PaginationKeyset</code></td>
+<td><code>after</code>, <code>before</code>, <code>limit</code></td>
+<td>Keyset pagination, both ways</td>
+</tr>
+<tr>
+<td><code>PaginationIdBased</code></td>
+<td><code>last_id</code>, <code>limit</code></td>
+<td>The id of the last item seen</td>
+</tr>
+<tr>
+<td><code>PaginationTimeBased</code></td>
+<td><code>timestamp</code>, <code>limit</code></td>
+<td>Before or after a time: feeds, syncing</td>
+</tr>
+<tr>
+<td><code>PaginationSearchAfter</code></td>
+<td><code>search_after</code>, <code>limit</code></td>
+<td>The sort values of the last item, readable</td>
+</tr>
+<tr>
+<td><code>PaginationToken</code></td>
+<td><code>page_token</code>, <code>page_size</code></td>
+<td>An opaque token, bound to the query, that expires</td>
+</tr>
+<tr>
+<td><code>PaginationScroll</code></td>
+<td><code>scroll_id</code>, <code>batch_size</code></td>
+<td>A snapshot kept in the backend, read in batches</td>
+</tr>
+<tr>
+<td><code>PaginationStreaming</code></td>
+<td>none</td>
+<td>Every item as it comes, as NDJSON</td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination.page_number</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-0-2">    <span class="n">PageNumberPage</span><span class="p">,</span>
+</span><span id="__span-0-3">    <span class="n">PageNumberParams</span><span class="p">,</span>
+</span><span id="__span-0-4">    <span class="n">PaginationPageNumber</span><span class="p">,</span>
+</span><span id="__span-0-5"><span class="p">)</span>
 </span><span id="__span-0-6">
-</span><span id="__span-0-7"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">)</span>
-</span><span id="__span-0-8"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">])</span>
-</span><span id="__span-0-9"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">PageParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">pages</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-</span><span id="__span-0-10">    <span class="k">return</span> <span class="n">pages</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="k">await</span> <span class="n">load_products</span><span class="p">(),</span> <span class="n">params</span><span class="p">)</span>
+</span><span id="__span-0-7"><span class="n">pages</span> <span class="o">=</span> <span class="n">PaginationPageNumber</span><span class="p">(</span><span class="n">default_page_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_page_size</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</span><span id="__span-0-8">
+</span><span id="__span-0-9">
+</span><span id="__span-0-10"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">)</span>
+</span><span id="__span-0-11"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">])</span>
+</span><span id="__span-0-12"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span>
+</span><span id="__span-0-13">    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">PageNumberParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">pages</span><span class="p">)],</span>
+</span><span id="__span-0-14"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PageNumberPage</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-0-15">    <span class="k">return</span> <span class="n">pages</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="k">await</span> <span class="n">load_products</span><span class="p">(),</span> <span class="n">params</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>GET /products?page=2&amp;size=20</code> answers <code>{"items": [...], "total": 245, "page": 2, "size": 20,
-"pages": 13}</code>.</p>
 <ul>
-<li><strong>Links:</strong> the response links to the first, previous, next and last pages in the <code>Link</code> header
+<li><strong>By position or by key:</strong> page numbers, offsets and ranges count items, so a row added or
+  deleted meanwhile shifts the pages (an item skipped or seen twice), and a database walks past
+  every row before the page. Cursors, keysets, ids, timestamps and sort values point at the last
+  item instead: the pages don't shift, and an index finds any of them as fast as the first.</li>
+<li><strong>Links:</strong> the response links to the pages around it in the <code>Link</code> header
   (<a href="https://www.rfc-editor.org/rfc/rfc8288">RFC 8288</a>), as GitHub's API does:
-  <code>&lt;/products?page=3&amp;size=20&gt;; rel="next"</code>. The links keep the request's other query parameters
-  and leave out the host, so they don't depend on the <code>Host</code> header nor on a proxy in front.
-  Pages served from the cache get them too, made for the request they answer.</li>
-<li><strong>From a database:</strong> query only the page and give the total:
-  <code>pages.paginate(rows, params, total=count)</code>, with <code>params.offset</code> and <code>params.limit</code> in the
-  query. Without <code>total</code>, <code>paginate</code> slices the page from the whole list.</li>
-<li><strong>Limit and offset:</strong> <code>FastAPIPaginationLimitOffset(default_limit=..., max_limit=...)</code> gives
-  <code>LimitOffsetParams</code> and makes <code>LimitOffsetPage</code>s, the same way.</li>
-<li><strong>Limits:</strong> each tool has its own (<code>max_size</code>, <code>max_limit</code>; 100 by default), so that nobody asks
-  for a million rows at once: anything beyond, or malformed, is a 422 before the endpoint runs.
-  They're in the OpenAPI schema too.</li>
-<li><strong>Coming from fastapi-pagination:</strong> the JSON is that of its <code>Page</code> and <code>LimitOffsetPage</code>, so
-  clients don't change. Its <code>add_pagination</code> keeps the page parameters out of the endpoint's
-  arguments, in a context variable: a cache that only sees the arguments can't tell the pages
-  apart, and would serve page 1 for every page.</li>
+  <code>&lt;/products?page=3&amp;page_size=20&gt;; rel="next"</code>. The links keep the request's other query
+  parameters and leave out the host, so they don't depend on the <code>Host</code> header nor on a proxy in
+  front. Pages served from the cache get them too, made for the request they answer.</li>
+<li><strong>From a database:</strong> <code>paginate</code> takes the whole list and finds the page in it, or the rows the
+  database returned for the page: with their <code>total</code> for the strategies that count, or
+  <code>queried=True</code> for the others, which fetch one row more (<code>params.fetch</code>) to tell whether
+  there's a next page.</li>
+<li><strong>Limits:</strong> each strategy has its own maximum (100 items by default), so that nobody asks for a
+  million rows at once: anything beyond, or malformed, is a 422 before the endpoint runs. They're
+  in the OpenAPI schema too.</li>
+<li><strong>Cached:</strong> every page, size and filter is one entry: tag them (<code>tags=["products"]</code>) to drop
+  them all when the data changes. For short lists, caching the whole list with <code>get_or_set</code> and
+  slicing every page from it keeps a single entry. The
+  <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/examples/pagination/main.py">pagination example</a>
+  does it three ways, with the database session left out of the key (<code>exclude_params</code>).</li>
 </ul>
-<h3 id="by-cursor">By cursor<a class="headerlink" href="#by-cursor" title="Permanent link">&para;</a></h3>
-<p>A cursor points at the last item of a page by its sort key, not by its position: rows added or
-deleted meanwhile don't shift the pages (no item skipped or seen twice), and a database finds any
-page through an index, as fast as the first. For infinite scroll, feeds and clients that sync
-everything:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIPaginationCursor</span>
-</span><span id="__span-1-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorPage</span><span class="p">,</span> <span class="n">CursorParams</span>
-</span><span id="__span-1-3">
-</span><span id="__span-1-4"><span class="n">cursors</span> <span class="o">=</span> <span class="n">FastAPIPaginationCursor</span><span class="p">(</span><span class="n">secret</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cursor_secret</span><span class="p">)</span>  <span class="c1"># secrets.token_urlsafe(32)</span>
-</span><span id="__span-1-5">
-</span><span id="__span-1-6">
-</span><span id="__span-1-7"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/events"</span><span class="p">)</span>
-</span><span id="__span-1-8"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-</span><span id="__span-1-9"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">CursorParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">cursors</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
-</span><span id="__span-1-10">    <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Event</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">limit</span><span class="p">)</span>
-</span><span id="__span-1-11">    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># (created_at, id) of the last event seen</span>
-</span><span id="__span-1-12">        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tuple_</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">)</span>
-</span><span id="__span-1-13">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
-</span><span id="__span-1-14">    <span class="k">return</span> <span class="n">cursors</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span></code></pre></div>
-<p><code>GET /events?size=20</code> answers <code>{"items": [...], "size": 20, "next_cursor": "WyIyMDI2..."}</code>, and
-<code>?cursor=&lt;next_cursor&gt;</code> the next page; <code>next_cursor</code> is null on the last one. The <code>Link</code> header
-has the first page and, except on the last page, the next one.</p>
+<p>Each strategy has its page:</p>
 <ul>
-<li><strong>The sort key</strong> (<code>key</code>) must be unique: <code>(created_at, id)</code>, not <code>created_at</code> alone, which two
-  items may share. Its values can be strings, integers (up to 64 bits), floats, booleans,
-  datetimes, dates, UUIDs and decimals, and <code>params.after</code> has them back as such.</li>
-<li><strong>Queried or sliced:</strong> with <code>queried=True</code>, the rows are those of the page, queried with a key
-  past <code>params.after</code> and <code>params.limit</code> (one more than <code>size</code>: it tells whether there's a next
-  page). Without it, <code>paginate</code> finds the page in the whole sorted list. <code>descending=True</code> for
-  newest first.</li>
-<li><strong>Signed:</strong> with a <code>secret</code>, cursors carry an HMAC-SHA256 and a client can't make one up or
-  change it; a list rotates secrets. Without it, a cursor's values are checked to be of those
-  types. Either way an invalid cursor is a 400, and one longer than 1024 characters or malformed a
-  422, before the endpoint runs. Cursors are base64, not encrypted: clients can read the sort key,
-  so sort by what they may see.</li>
-<li><strong>Forward only:</strong> to go back, clients keep the cursors they've used.</li>
+<li><a href="page-number/"><code>PaginationPageNumber</code></a>: numbered pages, with the total: <code>?page=2&amp;page_size=20</code>.</li>
+<li><a href="limit-offset/"><code>PaginationLimitOffset</code></a>: slices, with the total: <code>?limit=20&amp;offset=40</code>.</li>
+<li><a href="offset/"><code>PaginationOffset</code></a>: slices without counting the whole list: <code>?offset=40&amp;limit=20</code>.</li>
+<li><a href="range/"><code>PaginationRange</code></a>: ranges of items, with <code>Content-Range</code>: <code>?start=0&amp;end=24</code>.</li>
+<li><a href="cursor/"><code>PaginationCursor</code></a>: an opaque, signed cursor: <code>?limit=20&amp;cursor=...</code>.</li>
+<li><a href="keyset/"><code>PaginationKeyset</code></a>: keyset pagination, both ways: <code>?after=...</code> or <code>?before=...</code>.</li>
+<li><a href="id-based/"><code>PaginationIdBased</code></a>: the id of the last item seen: <code>?last_id=42&amp;limit=20</code>.</li>
+<li><a href="time-based/"><code>PaginationTimeBased</code></a>: before or after a time: <code>?timestamp=2026-10-29T10:00:00Z&amp;limit=20</code>.</li>
+<li><a href="search-after/"><code>PaginationSearchAfter</code></a>: the sort values of the last item: <code>?search_after=["...",42]&amp;limit=20</code>.</li>
+<li><a href="token/"><code>PaginationToken</code></a>: an opaque token, bound to the query, that expires: <code>?page_token=...&amp;page_size=20</code>.</li>
+<li><a href="scroll/"><code>PaginationScroll</code></a>: a snapshot kept in the backend, read in batches: <code>?scroll_id=...</code>.</li>
+<li><a href="streaming/"><code>PaginationStreaming</code></a>: every item as it comes, as NDJSON, without pages.</li>
 </ul>
-<p>Every page, size and filter is one entry: tag them (<code>tags=["products"]</code>) to drop them all when the
-data changes. For short lists, caching the whole list with <code>get_or_set</code> and slicing every page
-from it keeps a single entry. The
-<a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/examples/pagination/main.py">pagination example</a>
-does all three, with the database session left out of the key (<code>exclude_params</code>).</p>
 
 
 
@@ -2274,6 +4147,8 @@ does all three, with the database session left out of the key (<code>exclude_par
             </div>
           
           
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
@@ -2292,7 +4167,7 @@ does all three, with the database session left out of the key (<code>exclude_par
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../backends/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Backends">
+          <a href="../operations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Operations">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2302,20 +4177,20 @@ does all three, with the database session left out of the key (<code>exclude_par
                 Previous
               </span>
               <div class="md-ellipsis">
-                Backends
+                Operations
               </div>
             </div>
           </a>
         
         
           
-          <a href="../limits/" class="md-footer__link md-footer__link--next" aria-label="Next: Rate and concurrency limits">
+          <a href="cursor/" class="md-footer__link md-footer__link--next" aria-label="Next: PaginationCursor">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Rate and concurrency limits
+                PaginationCursor
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2332,7 +4207,7 @@ does all three, with the database session left out of the key (<code>exclude_par
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright © 2026 Antonio Mudarra Machuca · Apache License 2.0
+      Copyright © 2026 Antonio Mudarra Machuca. Apache License 2.0
     </div>
   
   
@@ -2377,7 +4252,7 @@ does all three, with the database session left out of the key (<code>exclude_par
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.tabs.link", "navigation.footer", "navigation.indexes", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
