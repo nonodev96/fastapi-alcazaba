@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Alcazaba</title>
+  <defs>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D86C40"/>
+      <stop offset="1" stop-color="#A3432A"/>
+    </linearGradient>
+    <linearGradient id="gate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1D2C3C"/>
+      <stop offset="1" stop-color="#0D1620"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#45E0CA"/>
+      <stop offset="1" stop-color="#0E9E8E"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(256 256) scale(1.12) translate(-256 -280)">
+    <!-- The wall, crowned with pointed merlons as in Andalusian fortresses. -->
+    <path fill="url(#stone)" d="M80 428 V136 L104 108 L128 136 V166 H156 V136 L180 108 L204 136 V166
+      H232 V136 L256 108 L280 136 V166 H308 V136 L332 108 L356 136 V166 H384 V136 L408 108
+      L432 136 V428 Q432 452 408 452 H104 Q80 452 80 428 Z"/>
+    <!-- Courses of stone. -->
+    <path stroke="#8F3A24" stroke-width="5" stroke-linecap="round" opacity=".5"
+      d="M98 228 H414 M98 290 H160 M352 290 H414 M98 352 H160 M352 352 H414 M98 414 H160 M352 414 H414"/>
+    <!-- The alfiz, the frame around the arch. -->
+    <path fill="none" stroke="#F4D0AE" stroke-width="8" d="M170 452 V190 H342 V452"/>
+    <!-- A horseshoe arch, its gate open on a bolt. -->
+    <path fill="url(#gate)" d="M192 452 V331 A76 76 0 1 1 320 331 V452 Z"/>
+    <path fill="url(#bolt)" d="M272 250 L220 362 H251 L234 440 L293 326 H262 Z"/>
+  </g>
+</svg>
