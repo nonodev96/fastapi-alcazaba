@@ -30,7 +30,7 @@ def ids(body: dict[str, Any]) -> list[int]:
 class TestOffsetExample:
     def test_newest_first_without_a_total(self, client: TestClient) -> None:
         body = client.get("/logs?limit=3").json()
-        assert (ids(body), body["has_more"], "total" in body) == ([1000, 999, 998], True, False)
+        assert (ids(body), body["has_more"], body["total"]) == ([1000, 999, 998], True, None)
         assert ids(client.get("/logs?offset=3&limit=3").json()) == [997, 996, 995]
 
     def test_the_last_page(self, client: TestClient) -> None:

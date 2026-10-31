@@ -78,8 +78,9 @@ async def current_user(
     return user
 
 
-# Routes open to visitors when the policy says so: the policy knows them as "anonymous".
-authz = FastAPICasbin(enforcer, subject=current_user, anonymous="anonymous")
+# Routes open to visitors when the policy says so: the policy knows them as "*anonymous", a name
+# no user can have (the * isn't allowed in user names), so nobody signs up to get its rules.
+authz = FastAPICasbin(enforcer, subject=current_user, anonymous="*anonymous")
 # Routes for people with an account: a 401 without one, before asking the policy.
 members = FastAPICasbin(enforcer, subject=current_user)
 Visitor = Annotated[str | None, Depends(authz)]

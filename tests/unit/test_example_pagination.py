@@ -95,6 +95,12 @@ class TestByCursor:
         assert ids(second) == [57, 56, 55]
         assert ids(client.get("/products/newest?limit=3").json()) == [61, 60, 59]
 
+    def test_back_by_prev_cursor(self, client: TestClient) -> None:
+        first = client.get("/products/newest?limit=3").json()
+        second = client.get(f"/products/newest?limit=3&cursor={first['next_cursor']}").json()
+        back = client.get(f"/products/newest?limit=3&cursor={second['prev_cursor']}").json()
+        assert (ids(back), back["prev_cursor"]) == ([60, 59, 58], None)
+
     def test_made_up_cursors_are_refused(self, client: TestClient) -> None:
         assert client.get("/products/newest?cursor=MTA").status_code == 400
 

@@ -76,6 +76,7 @@ nav:
   - Features:
       - features/index.md
       - The tools: features/tools.md
+      - Performance: features/performance.md
   - Learn:
       - learn/index.md
       - Tutorial - User Guide:
@@ -100,17 +101,13 @@ nav:
           - Pagination:
               - guide/pagination/index.md
               - PaginationCursor: guide/pagination/cursor.md
-              - PaginationIdBased: guide/pagination/id-based.md
               - PaginationKeyset: guide/pagination/keyset.md
-              - PaginationLimitOffset: guide/pagination/limit-offset.md
               - PaginationOffset: guide/pagination/offset.md
               - PaginationPageNumber: guide/pagination/page-number.md
               - PaginationRange: guide/pagination/range.md
               - PaginationScroll: guide/pagination/scroll.md
-              - PaginationSearchAfter: guide/pagination/search-after.md
               - PaginationStreaming: guide/pagination/streaming.md
-              - PaginationTimeBased: guide/pagination/time-based.md
-              - PaginationToken: guide/pagination/token.md
+              - With SQLAlchemy: guide/pagination/sqlalchemy.md
           - Production setup: guide/production.md
           - Rate and concurrency limits: guide/limits.md
           - Response cache: guide/cache.md
@@ -139,15 +136,10 @@ nav:
           - Pagination:
               - examples/pagination/index.md
               - PaginationPageNumber: examples/pagination/page-number.md
-              - PaginationLimitOffset: examples/pagination/limit-offset.md
               - PaginationOffset: examples/pagination/offset.md
               - PaginationRange: examples/pagination/range.md
               - PaginationCursor: examples/pagination/cursor.md
               - PaginationKeyset: examples/pagination/keyset.md
-              - PaginationIdBased: examples/pagination/id-based.md
-              - PaginationTimeBased: examples/pagination/time-based.md
-              - PaginationSearchAfter: examples/pagination/search-after.md
-              - PaginationToken: examples/pagination/token.md
               - PaginationScroll: examples/pagination/scroll.md
               - PaginationStreaming: examples/pagination/streaming.md
           - Rate and concurrency limits: examples/limits.md

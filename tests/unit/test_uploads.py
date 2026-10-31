@@ -58,6 +58,22 @@ def gif(width: int = 32, height: int = 16, version: bytes = b"89a") -> bytes:
     return b"GIF" + version + struct.pack("<HH", width, height) + b"\0\0\0;"
 
 
+def frame_gif(
+    width: int,
+    height: int,
+    frame_width: int,
+    frame_height: int,
+    left: int = 0,
+) -> bytes:
+    """A GIF whose one frame may go past its logical screen, after a global color table and a
+    comment, with its data in sub-blocks."""
+    screen = struct.pack("<HHBBB", width, height, 0x80, 0, 0) + b"\0" * 6  # 2-color table
+    comment = b"\x21\xfe\x05hello\x00"
+    frame = b"\x2c" + struct.pack("<HHHHB", left, 0, frame_width, frame_height, 0)
+    data = b"\x02" + b"\xff" + b"\x00" * 255 + b"\x03abc" + b"\x00"
+    return b"GIF89a" + screen + comment + frame + data + b";"
+
+
 def webp(chunk: bytes, payload: bytes) -> bytes:
     body = b"WEBP" + chunk + struct.pack("<I", len(payload)) + payload
     return b"RIFF" + struct.pack("<I", len(body)) + body
@@ -292,6 +308,9 @@ class TestImageSize:
         [
             (png(640, 480), (640, 480)),
             (gif(32, 16), (32, 16)),
+            pytest.param(frame_gif(1, 1, 12000, 12000), (12000, 12000), id="frame past the screen"),
+            pytest.param(frame_gif(64, 64, 16, 16, left=60), (76, 64), id="frame off the edge"),
+            pytest.param(frame_gif(64, 64, 16, 16), (64, 64), id="frame within the screen"),
             (webp_extended(4000, 3000), (4000, 3000)),
             (webp_lossless(1024, 768), (1024, 768)),
             (webp_lossy(320, 240), (320, 240)),
@@ -470,6 +489,8 @@ class TestFastAPIUploads:
         assert (await uploads.check(upload(png(1000, 1000)))).width == 1000
         assert await refused(uploads, png(1001, 1000)) == (413, "Image too large")
         assert await refused(uploads, gif(65535, 65535)) == (413, "Image too large")
+        # A 1x1 screen with a 12000x12000 frame: decoders grow the canvas to the frame.
+        assert await refused(uploads, frame_gif(1, 1, 12000, 12000)) == (413, "Image too large")
         unlimited = FastAPIUploads(IMAGES, max_pixels=None)
         assert (await unlimited.check(upload(gif(65535, 65535)))).height == 65535
 

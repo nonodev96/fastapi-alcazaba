@@ -21,6 +21,7 @@ from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.background.scheduler import _Cron, _Every
+from tests.memory import state
 from tests.unit.test_metrics import points
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -265,7 +266,7 @@ class TestScheduling:
         (scheduler,) = processes(backend, n=1)
         scheduler.every(seconds=TICK, name="job")(noop)
         await run_for(1.5 * TICK, scheduler)
-        assert all(key.startswith("app!") for key in backend._state)
+        assert all(key.startswith("app!") for key in state(backend))
         assert await Cache(backend, prefix="app").clear() == 0
 
 

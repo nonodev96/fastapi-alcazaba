@@ -29,6 +29,7 @@ from fastapi_alcazaba.pagination.scroll import (
     ScrollParams,
 )
 from fastapi_alcazaba.pagination.values import Sealer
+from tests.memory import state as state_entries
 
 SECRET = "s" * 32
 SIGNING_KEY = "k" * 32
@@ -78,7 +79,7 @@ def fixture_scroll(cache: Cache) -> PaginationScroll[Order]:
 
 
 def state(backend: InMemoryBackend) -> dict[str, bytes]:
-    return {key: value.data for key, value in backend._state.items()}
+    return {key: value.data for key, value in state_entries(backend).items()}
 
 
 async def read_all(scroll: PaginationScroll[Order], first: ScrollPage[Order]) -> list[list[int]]:
@@ -148,7 +149,7 @@ class TestScroll:
         assert (len(page.items), page.scroll_id, page.total) == (100, None, 100)
         empty = await scroll.start([], scroll.params())
         assert empty.model_dump() == {"items": [], "scroll_id": None, "total": 0}
-        assert not backend._state
+        assert not state_entries(backend)
         assert not backend._store
 
     async def test_the_global_cache(self) -> None:
@@ -200,7 +201,7 @@ class TestLifetime:
         first = await scroll.start(orders(25), scroll.params())
         assert first.scroll_id is not None
         assert await scroll.clear(first.scroll_id)
-        assert not state(backend)
+        assert not state_entries(backend)
         with pytest.raises(HTTPException) as gone:
             await scroll.next(scroll.params(scroll_id=first.scroll_id))
         assert gone.value.status_code == 404
@@ -223,7 +224,7 @@ class TestLifetime:
         first = await scroll.start(orders(8), scroll.params())
         await scroll.next(scroll.params(scroll_id=first.scroll_id))
         assert [key.split(":")[0] for key in state(remote)] == ["!scroll"]
-        assert not tiered.local._state
+        assert not state_entries(tiered.local)
         assert not tiered.local._store
 
 
@@ -348,7 +349,7 @@ class TestInvalidScrollIds:
             raw([SNAPSHOT, 10]),  # unsigned
             Sealer("o" * 32, b"fastapi_alcazaba.scroll").seal([SNAPSHOT, 10]),  # another secret
             Sealer(SECRET, b"fastapi_alcazaba.cursor").seal([SNAPSHOT, 10]),  # a cursor
-            PaginationCursor(secret=SECRET).encode((SNAPSHOT, 10)),
+            PaginationCursor(SECRET).encode((SNAPSHOT, 10)),
             OURS.seal([SNAPSHOT, 0]),
             OURS.seal([SNAPSHOT, -1]),
             OURS.seal([SNAPSHOT, 101]),  # past max_items

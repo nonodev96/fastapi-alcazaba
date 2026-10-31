@@ -30,7 +30,7 @@ class TestSessionExample:
         logged_in = client.post("/login", json=DEMO, headers=SAME_SITE)
         assert (logged_in.status_code, logged_in.json()) == (200, OCTOCAT)
         cookie = logged_in.headers["set-cookie"]
-        assert cookie.startswith("session=")
+        assert cookie.startswith("__Host-session=")
         assert all(attribute in cookie for attribute in ("HttpOnly", "Secure", "SameSite=Lax"))
         assert client.get("/me").json() == OCTOCAT
 
@@ -41,19 +41,19 @@ class TestSessionExample:
 
     def test_a_new_session_id_at_login(self, client: TestClient) -> None:
         client.post("/login", json=DEMO, headers=SAME_SITE)
-        before = client.cookies["session"]
+        before = client.cookies["__Host-session"]
         client.post("/login", json=DEMO, headers=SAME_SITE)  # again, with that session
-        assert client.cookies["session"] != before
-        client.cookies.set("session", before, domain="testserver.local")
+        assert client.cookies["__Host-session"] != before
+        client.cookies.set("__Host-session", before, domain="testserver.local")
         assert client.get("/me").status_code == 401  # the old id is gone
 
     def test_logging_out(self, client: TestClient) -> None:
         client.post("/login", json=DEMO, headers=SAME_SITE)
-        copy = client.cookies["session"]
+        copy = client.cookies["__Host-session"]
         assert client.post("/logout", headers=SAME_SITE).status_code == 204
         assert client.get("/me").status_code == 401
         # The session is gone from the backend: a copy of the cookie is refused too.
-        client.cookies.set("session", copy, domain="testserver.local")
+        client.cookies.set("__Host-session", copy, domain="testserver.local")
         assert client.get("/me").status_code == 401
 
     def test_other_sites_cant_log_you_in_or_out(self, client: TestClient) -> None:

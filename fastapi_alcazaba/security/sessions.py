@@ -153,7 +153,9 @@ class ServerSessionMiddleware:
       (anonymous: fail closed) and a warning; a change to it, or any failure to save, rotate or
       clear, replaces the response with a 503 and leaves the cookie alone, since what the
       response says (logged in, logged out) wouldn't be true. Several requests of the same
-      session at once: the last one to save wins.
+      session at once: the last one to save wins, but never against a logout or a rotation: the
+      old id leaves a mark for the rest of its life, and a request still running with it can't
+      bring it back.
     - **Sealed** with the cache's `signing_key` or `encryption_key` (use the latter when sessions
       hold personal data). Without either, whoever can write to the backend can forge sessions: a
       warning is logged.
@@ -161,8 +163,9 @@ class ServerSessionMiddleware:
 
     :param cache: where sessions are kept; the app's (`Cache.install`) or FastAPICache's by
         default. With a TieredBackend, only its shared (remote) tier is used.
-    :param cookie_name: the cookie. `__Host-session` keeps sibling subdomains from setting one
-        (cookie tossing); it needs `secure`, path `/` and no domain.
+    :param cookie_name: the cookie. `__Host-` keeps sibling subdomains from setting one (cookie
+        tossing); it needs `secure`, path `/` and no domain: name it otherwise for plain HTTP in
+        development.
     :param max_age: seconds a session lasts from its creation; also the cookie's `Max-Age`.
     :param idle_timeout: seconds without requests after which it's over; None for no limit.
     :param secure: only send the cookie over HTTPS.
@@ -178,7 +181,7 @@ class ServerSessionMiddleware:
         app: ASGIApp,
         *,
         cache: Cache | None = None,
-        cookie_name: str = "session",
+        cookie_name: str = "__Host-session",
         max_age: int = 14 * 24 * 3600,
         idle_timeout: int | None = None,
         secure: bool = True,
@@ -324,7 +327,7 @@ class ServerSessionMiddleware:
         if data == loaded.original and not renew:
             if loaded.key is not None and self._touch_due(loaded, now):
                 try:
-                    await self._write(cache, loaded.key, data, loaded.created, now)
+                    await self._rewrite(cache, loaded.key, data, loaded.created, now)
                 except BackendUnavailable as exc:
                     logger.debug("Couldn't refresh the session's idle timeout: %s", exc)
                 else:
@@ -335,14 +338,18 @@ class ServerSessionMiddleware:
         backend = shared_backend(cache.backend)
         old_key = loaded.key
         if old_key is not None and (renew or not session):
-            # Deleted first: if what follows fails, the old id (maybe planted) is gone anyway.
+            # Marked and deleted first: if what follows fails, the old id (maybe planted) is gone
+            # anyway, and the mark keeps requests still running with it from saving it again.
+            gone = _gone(old_key)
+            ttl = max(1, self.max_age - (now - loaded.created))
+            await cache.guard.run("set", lambda: backend.set(gone, b"1", ttl))
             await cache.guard.run("delete", lambda: backend.clear(key=old_key))
             if session.cleared or not session:
                 _count(cache, "deleted")
         if not session:
             return self.cookie.expired() if loaded.cookie_sent else None
         if old_key is not None and not renew:
-            await self._write(cache, old_key, data, loaded.created, now)
+            await self._rewrite(cache, old_key, data, loaded.created, now)
             _count(cache, "updated")
             return None
         session_id = secrets.token_urlsafe(32)
@@ -353,6 +360,23 @@ class ServerSessionMiddleware:
     def _touch_due(self, loaded: _Loaded, now: int) -> bool:
         return self._touch_after is not None and now - loaded.seen >= self._touch_after
 
+    async def _rewrite(
+        self,
+        cache: Cache,
+        key: str,
+        data: bytes,
+        created: int,
+        now: int,
+    ) -> None:
+        """`_write` of a session that was loaded, unless a logout or a rotation ended it
+        meanwhile. Checked after writing: the logout marks before it deletes, so either it
+        deletes this write, or this check sees its mark and deletes it."""
+        await self._write(cache, key, data, created, now)
+        backend = shared_backend(cache.backend)
+        if await cache.guard.run("get", lambda: backend.get(_gone(key))) is not None:
+            await cache.guard.run("delete", lambda: backend.clear(key=key))
+            logger.debug("Not saving a session that ended meanwhile")
+
     async def _write(self, cache: Cache, key: str, data: bytes, created: int, now: int) -> None:
         record = b'{"created":%d,"seen":%d,"data":%s}' % (created, now, data)
         ttl = self.max_age - (now - created)
@@ -362,3 +386,8 @@ class ServerSessionMiddleware:
         stored = protector.seal(key, record) if protector is not None else record
         backend = shared_backend(cache.backend)
         await cache.guard.run("set", lambda: backend.set(key, stored, max(1, ttl)))
+
+
+def _gone(key: str) -> str:
+    """Where a logout or a rotation marks the session of `key` as ended."""
+    return f"{key}:gone"

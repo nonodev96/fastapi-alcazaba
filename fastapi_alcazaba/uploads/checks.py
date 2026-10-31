@@ -107,6 +107,7 @@ _HTML_TAGS = re.compile(
 _SOF = frozenset(range(0xC0, 0xD0)) - {0xC4, 0xC8, 0xCC}  # JPEG start-of-frame markers
 _STANDALONE = frozenset({0x01, *range(0xD0, 0xD8)})  # JPEG markers without a length
 _MAX_JPEG_STEPS = 1024
+_GIF_CHUNK = 65_536  # read at a time while walking a GIF's blocks
 _EOCD = b"PK\x05\x06"  # end of a ZIP's central directory
 _MAX_ZIP_ENTRIES = 10_000
 _MAX_DIRECTORY = 2 * 1024 * 1024
@@ -318,11 +319,43 @@ def _png_size() -> Probe[tuple[int, int] | None]:
 
 
 def _gif_size() -> Probe[tuple[int, int] | None]:
-    """The logical screen: the canvas every frame is drawn on."""
-    header = yield 0, 10
-    if len(header) < 10:
+    """The logical screen, grown to fit every frame: decoders draw a frame that goes past the
+    screen on a canvas as large as the frame, so a 1x1 screen may hold a 12000x12000 image. The
+    blocks are walked to the end, skipping the image data."""
+    buffer = yield 0, _GIF_CHUNK
+    if len(buffer) < 13:
         return None
-    width, height = struct.unpack_from("<HH", header, 6)
+    base, last = 0, len(buffer) < _GIF_CHUNK
+    width, height, flags = struct.unpack_from("<HHB", buffer, 6)
+    position = 13 + (3 << ((flags & 7) + 1) if flags & 0x80 else 0)  # after the color table
+    in_data = False  # among the sub-blocks of an image or an extension
+    while True:
+        if position + 10 > base + len(buffer) and not last:
+            buffer = yield position, _GIF_CHUNK
+            base, last = position, len(buffer) < _GIF_CHUNK
+        at = position - base
+        if at >= len(buffer):
+            break  # the end of the file
+        if in_data:
+            size = buffer[at]
+            position += 1 + size
+            in_data = size != 0
+            continue
+        block = buffer[at]
+        if block == 0x2C:  # an image: where it goes, and its size
+            if at + 10 > len(buffer):
+                break
+            left, top, frame_width, frame_height, frame_flags = struct.unpack_from(
+                "<HHHHB", buffer, at + 1
+            )
+            width, height = max(width, left + frame_width), max(height, top + frame_height)
+            table = 3 << ((frame_flags & 7) + 1) if frame_flags & 0x80 else 0
+            position += 10 + table + 1  # the descriptor, its color table, the LZW code size
+        elif block == 0x21:  # an extension: its label, then its sub-blocks
+            position += 2
+        else:  # the trailer, or what isn't a GIF any more
+            break
+        in_data = True
     return _dimensions(width, height)
 
 

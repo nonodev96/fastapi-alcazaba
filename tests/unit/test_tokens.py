@@ -16,6 +16,7 @@ from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.tiered import TieredBackend
+from tests.memory import state
 
 NOW = 1_800_000_000.0
 SECRET = "s" * 32
@@ -54,7 +55,7 @@ def fixture_global_cache() -> Iterator[InMemoryBackend]:
 async def stored(backend: Backend) -> list[tuple[str, bytes]]:
     """Every key and value in the backend."""
     if isinstance(backend, InMemoryBackend):
-        entries = [*backend._store.items(), *backend._state.items()]
+        entries = [*backend._store.items(), *state(backend).items()]
         return [(key, value.data) for key, value in entries]
     client = backend._client  # type: ignore[attr-defined]
     return [(key.decode(), await client.get(key)) for key in await client.keys()]
@@ -202,7 +203,7 @@ class TestBlocklistStorage:
         try:
             await blocklist.revoke("jti", ttl=60)
             assert await blocklist.is_revoked("jti")
-            assert len(backend._state) == 1
+            assert len(state(backend)) == 1
         finally:
             FastAPICache.reset()
 
@@ -331,7 +332,7 @@ class TestCodeStorage:
     async def test_the_global_cache_once_initialised(self, global_cache: InMemoryBackend) -> None:
         codes = OneTimeCodes(SECRET)
         code = await codes.issue("alice")
-        assert global_cache._state
+        assert state(global_cache)
         assert await codes.verify("alice", code)
 
     @pytest.mark.parametrize(

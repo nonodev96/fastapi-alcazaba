@@ -7,7 +7,34 @@
 What could serve one user's data to another, trust data from outside, or let a client get
 around a protection is off unless you turn it on, and the documentation says what it costs.
 
---8<-- "README.md:safe-by-default"
+The response cache is safe by default:
+
+- **Users never get each other's responses.** Requests carrying `Authorization` or `Cookie` get
+  their own cache entries and the response is sent as `Cache-Control: private`, also when the
+  endpoint authenticates through a router dependency.
+- **No Redis script injection.** `FastAPICache.clear(namespace=...)` deletes with `SCAN` +
+  `UNLINK`: a namespace from user input never reaches a Lua script, and the server isn't blocked
+  by `KEYS`.
+- **Signed or encrypted entries.** With a `signing_key`, every entry carries an HMAC bound to its
+  key: whoever can write to Redis can't plant data, move one user's entry under another user's
+  key, or get a pickle executed. With an `encryption_key` they're also encrypted (AES-256-GCM): a
+  dump or a backup of Redis doesn't reveal the cached responses.
+- **Bounded memory.** `InMemoryBackend` evicts the least recently used entries instead of
+  growing forever with every new query string.
+- **Clients can't bypass the cache** with `Cache-Control: no-cache` unless you allow it.
+- **Only successful responses are cached**, never a 404 or a 500 replayed as a 200.
+- **Cache stampede protection**: concurrent misses for one key compute once, in each process
+  and, with `distributed_lock`, across processes.
+- **A broken backend doesn't take the app down**: every backend call has a timeout, and a circuit
+  breaker stops calling it while it fails.
+- **Keys that never repeat are reported**: an argument whose `repr()` changes on every call (a
+  database session, a service) makes every request a miss; Alcazaba warns about it.
+
+And more: early refresh of popular entries, Valkey through valkey-py or Valkey GLIDE, cache
+hits that return the annotated type (Pydantic models, not dicts), deterministic `ETag`s, the
+[`Cache-Status`](https://www.rfc-editor.org/rfc/rfc9211) header (`Alcazaba; hit; ttl=42`,
+`Alcazaba; fwd=miss; stored`), the response model in OpenAPI, `exclude_params` and
+`stale-while-revalidate`.
 
 The other tools follow the same rules. Nothing that opens a door is stored in clear: API keys,
 one-time codes and revoked tokens are kept as digests or HMACs. Sessions keep only a random id in

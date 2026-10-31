@@ -53,13 +53,10 @@ from `.clusterfuzzlite/requirements.txt`; when they change, `make fuzz-requireme
   `make lint` checks it with `scripts/check_signatures.py`.
 - Write commit messages in English: a short summary line, then what changed and why.
 - Note user-visible changes in `CHANGELOG.md` under "Unreleased".
-- The guide of the documentation is the README's: each page of `docs/guide/` includes sections
-  of `README.md` by name. Every `## ` section of the README has its body between
-  `<!-- --8<-- [start:anchor] -->` and `<!-- --8<-- [end:anchor] -->` (its GitHub anchor), which
-  GitHub and PyPI don't show; a new section needs those markers and a place in a guide page.
-  Within a section, refer to another one by its name (see "Two-level cache"), not by its anchor:
-  in the documentation it may be on another page. `make docs` fails on a section or a link that
-  isn't there.
+- The guide lives in `docs/guide/`, a page per tool; the README only presents the package and
+  links to it. A new tool needs its page there, its example in `examples/` (tested, and shown in
+  `docs/examples/`) and a line in the README's table. `make docs` fails on a link that isn't
+  there.
 - New dependencies: only when they're worth it, as optional extras where possible, and never a
   release younger than three days (pip enforces it: `make deps` and CI set
   `PIP_UPLOADED_PRIOR_TO=P3D`).

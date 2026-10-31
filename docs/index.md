@@ -1,6 +1,21 @@
---8<-- "README.md:header"
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nonodev96/fastapi-alcazaba/main/docs/assets/logo.png" alt="Alcazaba's logo: a fortress wall whose horseshoe-arch gate opens on a bolt" width="150">
+</p>
 
---8<-- "README.md:badges"
+<h1 align="center">Alcazaba</h1>
+
+<p align="center">
+  <strong>Secure, maintained tools for FastAPI</strong><br>
+  Response cache, rate limits, sessions, CSRF, webhooks, a task queue and more, in one package.
+</p>
+
+<p align="center">
+  <a href="https://github.com/nonodev96/fastapi-alcazaba/actions/workflows/ci.yml"><img src="https://github.com/nonodev96/fastapi-alcazaba/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://pypi.org/project/fastapi-alcazaba/"><img src="https://img.shields.io/pypi/v/fastapi-alcazaba?label=PyPI&color=c2552f" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/fastapi-alcazaba/"><img src="https://img.shields.io/pypi/pyversions/fastapi-alcazaba?label=Python&color=1b2e42" alt="Python versions"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/nonodev96/fastapi-alcazaba"><img src="https://api.scorecard.dev/projects/github.com/nonodev96/fastapi-alcazaba/badge" alt="OpenSSF Scorecard"></a>
+  <a href="https://github.com/nonodev96/fastapi-alcazaba/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-0e9e8e" alt="License: Apache 2.0"></a>
+</p>
 
 ---
 

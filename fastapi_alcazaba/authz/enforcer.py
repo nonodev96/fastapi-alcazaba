@@ -69,15 +69,15 @@ Subject = Callable[..., Any]
 
 
 def starlette_user(connection: HTTPConnection) -> str | None:
-    """The subject of Starlette's AuthenticationMiddleware: its user's `display_name`, None when
-    it isn't authenticated."""
+    """The subject of Starlette's AuthenticationMiddleware: its user's `identity` (not the
+    `display_name`, which users may choose), None when it isn't authenticated."""
     if "user" not in connection.scope:
         raise RuntimeError(
             "the user comes from Starlette's AuthenticationMiddleware, which isn't installed: "
             "add it, or give FastAPICasbin a subject="
         )
     user = connection.scope["user"]
-    return user.display_name if user.is_authenticated else None
+    return user.identity if user.is_authenticated else None
 
 
 def _template(value: str) -> tuple[str, tuple[str, ...]]:
@@ -132,6 +132,8 @@ class FastAPICasbin:
         Starlette's AuthenticationMiddleware (`starlette_user`).
     :param anonymous: the subject of requests without one, for policies that open some routes to
         everybody (`p, anonymous, /catalog, GET`); None refuses them without asking the policy.
+        A name no user can have (`*anonymous`), or a user who takes it gets its rules, and every
+        anonymous request that user's.
     :param challenge: the `WWW-Authenticate` of the 401s: the scheme your users log in with.
     :param metrics: where to count the decisions (`fastapi_alcazaba.authz`); FastAPICache's by
         default.
@@ -213,13 +215,15 @@ class FastAPICasbin:
 
     def path_refusal(self, subject: Any, scope: Scope) -> int | None:
         """`refusal` of (subject, path, method): the path the app routes and the HTTP method
-        (`WEBSOCKET` for WebSockets). A 400 for paths with control characters, without asking the
-        policy: the app could route them elsewhere than the policy reads them."""
+        (`WEBSOCKET` for WebSockets; GET for HEAD, which runs the GET route). A 400 for paths with
+        control characters, without asking the policy: the app could route them elsewhere than
+        the policy reads them."""
         path = route_path(scope)
         if _CONTROL.search(path):
             self._count("denied")
             return HTTP_400_BAD_REQUEST
-        return self.refusal(subject, path, scope.get("method", WEBSOCKET))
+        method = scope.get("method", WEBSOCKET)
+        return self.refusal(subject, path, "GET" if method == "HEAD" else method)
 
     def _check(self, connection: HTTPConnection, subject: Any, *values: Any) -> Any:
         status = self.refusal(subject, *values)
@@ -250,18 +254,18 @@ class CasbinMiddleware:
         app.add_middleware(CasbinMiddleware, enforcer=enforcer)
         app.add_middleware(AuthenticationMiddleware, backend=BasicAuth())
 
-    Each request is checked as (user, path, method): the user's `display_name` (`anonymous` when
-    it isn't authenticated), the path the app routes (without the `root_path` a proxy or a mount
-    adds in front) and the method, `WEBSOCKET` for WebSockets. Refused requests get a 403, or a
-    401 (with `WWW-Authenticate: <challenge>`) when they have no user; WebSockets are closed with
-    1008 (policy violation). Paths with control characters (`%0A`...) get a 400 without asking
-    the policy, as the app could route them elsewhere than the policy reads them. Every request is
-    checked, OPTIONS too: add CORSMiddleware after this
-    one (outside it), and it answers the preflights before they get here.
+    Each request is checked as (user, path, method): the user's `identity` (`anonymous` when it
+    isn't authenticated), the path the app routes (without the `root_path` a proxy or a mount
+    adds in front) and the method, GET for HEAD and `WEBSOCKET` for WebSockets. Refused requests
+    get a 403, or a 401 (with `WWW-Authenticate: <challenge>`) when they have no user; WebSockets
+    are closed with 1008 (policy violation). Paths with control characters (`%0A`...) get a 400
+    without asking the policy, as the app could route them elsewhere than the policy reads them.
+    Every request is checked, OPTIONS too: add CORSMiddleware after this one (outside it), and it
+    answers the preflights before they get here.
 
     :param enforcer: a Casbin enforcer, or anything with its `enforce`, with its policy loaded.
-    :param anonymous: the subject of requests without a user; None refuses them without asking
-        the policy.
+    :param anonymous: the subject of requests without a user, a name no user can have
+        (`*anonymous`); None refuses them without asking the policy.
     :param challenge: the `WWW-Authenticate` of the 401s.
     :param metrics: where to count the decisions (`fastapi_alcazaba.authz`); FastAPICache's by
         default.
@@ -272,7 +276,7 @@ class CasbinMiddleware:
         app: ASGIApp,
         enforcer: Enforcer,
         *,
-        anonymous: str | None = "anonymous",
+        anonymous: str | None = None,
         challenge: str = "Bearer",
         metrics: Metrics | None = None,
     ) -> None:

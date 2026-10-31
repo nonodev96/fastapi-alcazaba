@@ -80,7 +80,13 @@ class IdempotencyMiddleware:
 
     Requests without the header go through untouched (`require_idempotency_key` makes it
     mandatory on a route). The stored responses go through the cache's signing or encryption:
-    use an `encryption_key` when they carry personal data.
+    use an `encryption_key` when they carry personal data. They're kept without `Set-Cookie`.
+
+    A retry gets the stored response before the route's dependencies run: authentication
+    included. With the default identifier, whoever has a copy of the request (its token, its key)
+    gets the response again until it expires, even after the token is revoked; an identifier
+    that checks the credentials (async, returning the user's id, raising a 401 otherwise) closes
+    that.
 
     :param cache: where responses and locks are kept; the app's (`Cache.install`) or
         FastAPICache's by default. Its backend must support locks.
@@ -284,9 +290,11 @@ class IdempotencyMiddleware:
         record = {
             "fingerprint": fingerprint,
             "status": response.status,
+            # Without its cookies: a replay never hands out a session, whoever sends it.
             "headers": [
                 [name.decode("latin-1"), value.decode("latin-1")]
                 for name, value in response.headers
+                if name.lower() != b"set-cookie"
             ],
             "body": base64.b64encode(b"".join(response.body)).decode(),
         }

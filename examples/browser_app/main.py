@@ -127,7 +127,6 @@ app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None
 # Each middleware added wraps the ones before it: the first is the innermost.
 app.add_middleware(
     ServerSessionMiddleware,
-    cookie_name="__Host-session",  # a sibling subdomain can't plant one
     max_age=8 * 3600,
     idle_timeout=30 * 60,
 )

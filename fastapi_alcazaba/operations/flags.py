@@ -103,12 +103,13 @@ class FeatureFlag:
         return 0.0 if self.allow else 100.0
 
     def is_on(self, subject: str | None = None) -> bool:
-        """Whether the flag is on for `subject`. Without a subject, a partial rollout is off."""
+        """Whether the flag is on for `subject`. Without a subject, a partial rollout is off, and
+        so is a flag with a deny list: who is denied mustn't get it by not saying who they are."""
         if not self.enabled:
             return False
         share = self.share
         if subject is None:
-            return share >= 100
+            return share >= 100 and not self.deny
         digest = _digest(self.name, subject)
         if digest in self.deny:
             return False

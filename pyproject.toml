@@ -51,7 +51,9 @@ auth-strategy-oauth2 = ["httpx2>=2.15.1"]
 auth-strategy-http-bearer = []
 # SAML 2.0 single sign-on: signxml verifies the XML signatures (with lxml and cryptography).
 auth-strategy-saml = ["signxml>=5.2"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-http-bearer,auth-strategy-saml]"]
+# The queries of the pagination strategies, for SQLAlchemy 2 (fastapi_alcazaba.pagination.sqlalchemy).
+sqlalchemy = ["sqlalchemy>=2.0"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-http-bearer,auth-strategy-saml,sqlalchemy]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"

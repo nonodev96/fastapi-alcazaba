@@ -7,6 +7,63 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-31
+
+### Changed
+
+- Pagination has seven strategies, one per way of paging, instead of twelve:
+  `PaginationLimitOffset` is part of `PaginationOffset`, whose pages have the total (and a link to
+  the last page) when `paginate` gets `total=`, and `total: null` with `queried=True`.
+  `PaginationCursor` takes `PaginationKeyset`'s two directions and `PaginationToken`'s binding to
+  the query: one `cursor` parameter for the next page (`next_cursor`) and the one before
+  (`prev_cursor`), signed (`secret` is required), bound to the request's other query parameters,
+  and expiring with `ttl=`; `encode()` makes the cursor of any position. `PaginationKeyset` is
+  now the key in plain sight, which takes `PaginationIdBased`, `PaginationTimeBased` and
+  `PaginationSearchAfter`'s place: `?after=42` for a key of one value (`sort=int`), a JSON array
+  for several (`sort=(datetime, int)`), with `after` and `has_more` on every page, the last one
+  too, for clients that sync. The modules `limit_offset`, `id_based`, `time_based`,
+  `search_after` and `page_token` are gone.
+- `ServerSessionMiddleware`'s cookie is `__Host-session` by default, which a sibling subdomain
+  can't set; plain HTTP in development needs `secure=False` and another `cookie_name`.
+- `CasbinMiddleware` refuses requests without a user by default (`anonymous=None`); the subject
+  of `starlette_user` is the user's `identity`, not its `display_name`, which users may choose;
+  HEAD is checked as GET, the route it runs. The examples call visitors `*anonymous`, a name no
+  user can have.
+- `JWTStrategy` refuses a `blocklist` whose `leeway` is shorter than its own: the revocation
+  would expire while the token is still accepted.
+- `InMemoryBackend` never evicts live state (sessions, revocations, one-time codes, idempotency
+  records...): each kind has its own store of `max_size` live entries, and a full one refuses new
+  entries with `BackendUnavailable`, as Redis with `noeviction`. A flood of idempotency keys used
+  to evict revocations, and accept revoked tokens again.
+- The rate and concurrency limiters keep a budget per route template and endpoint, not per
+  `root_path`: under `Mount("/tenants/{tenant}")`, each made-up tenant got a budget of its own.
+- The task queue gives each delivery a run id that only one entry may claim, and a deadline
+  (`replay_window`, 7 days after it was due): a copy of a sealed task written back to the queue is
+  refused as `replayed`, and an older one as `stale`. Tasks queued by 0.4.0 aren't read.
+- Idempotency records are kept without `Set-Cookie`: a replay never hands out a session.
+- A feature flag with a deny list is off for requests without a subject.
+- The README presents the package and links to the guide, where the content of its sections
+  moved; the security model says, tool by tool, what each one protects against and what it needs
+  from the app.
+
+### Added
+
+- `fastapi_alcazaba.pagination.sqlalchemy`, with the new `sqlalchemy` extra: `page_query()`
+  limits a `select()` to the page of any strategy's parameters (the sort key compared as a row
+  value, its order, backwards for a previous page, and the extra row), `count_query()` counts
+  it, and `sort_key()` gives `paginate` its `key`.
+- A Performance page with the benchmarks' numbers.
+
+### Fixed
+
+- A session ended by a logout or a rotation came back when a request still running with its
+  cookie saved it afterwards; the old id is now marked for the rest of its life.
+- `FastAPIUploads` counted only the logical screen of a GIF: a 1x1 GIF with a 12000x12000 frame
+  passed `max_pixels`, and decoders allocated the whole frame. The frames' extents count now.
+- The README's login limiter keyed attempts on the username as typed: each spelling (`Alice@`,
+  `alice@ `) got five more. It normalises the account and adds a limit per IP; the feature flags
+  example took its subject from a header the client writes.
+
 ## [0.4.0] - 2026-10-30
 
 ### Added

@@ -854,7 +854,7 @@ class TestBrowserMetrics:
         cache = Cache(backend)
         key = cache.state_key("session", hashlib.sha256(forged.encode()).hexdigest())
         asyncio.run(backend.set(key, b"not a session", 60))
-        client.cookies.set("session", forged)
+        client.cookies.set("__Host-session", forged)
         client.post("/set?value=c")
         assert counts(reader, "sessions", "event") == {
             ("created",): 2,
@@ -878,7 +878,7 @@ class TestBrowserMetrics:
             request.session["value"] = "a"
 
         client = TestClient(app, base_url="https://testserver")
-        client.cookies.set("session", "s" * 43)
+        client.cookies.set("__Host-session", "s" * 43)
         assert client.post("/set").status_code == 503
         assert counts(reader, "sessions", "event") == {("unreadable",): 1, ("unavailable",): 1}
 

@@ -107,11 +107,11 @@ www-authenticate: Bearer
   `keyMatch2` takes `/articles/:id` as a pattern. `members.require("articles", "publish")` asks
   about a named action, the same on whatever route it guards.
 - **Visitors and members:** `authz` has the policy check visitors without a token as
-  `anonymous`, so that the policy opens the reading routes to them. `members` refuses them with
+  `*anonymous`, a name no user can have, so that the policy opens the reading routes to them. `members` refuses them with
   a 401 before asking the policy, and so always returns a user name: the routes for members
   don't deal with None.
-- **What anonymous may do, everybody may:** the matcher grants the rules of `anonymous` to every
-  subject (`p.sub == "anonymous" || g(r.sub, p.sub)`), so Dan, without a role, isn't worse off
+- **What visitors may do, everybody may:** the matcher grants the rules of `*anonymous` to every
+  subject (`p.sub == "*anonymous" || g(r.sub, p.sub)`), so Dan, without a role, isn't worse off
   than a visitor.
 - **Checks that depend on the data** go in the route, with `authz.enforce()`: everybody may list
   the articles, but only those who may read the drafts see them. A draft is a 404 for the others,

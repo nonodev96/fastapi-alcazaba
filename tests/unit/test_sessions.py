@@ -2,6 +2,7 @@
 
 # pylint: disable=protected-access  # tests look at the internals they check
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -9,6 +10,7 @@ import re
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 
+import httpx2 as httpx
 import pytest
 from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.responses import StreamingResponse
@@ -24,13 +26,14 @@ from fastapi_alcazaba.security import (
     clear_session,
     rotate_session,
 )
+from tests.memory import state
 
 SIGNING_KEY = "s" * 32
 COOKIE = re.compile(
-    r"session=([A-Za-z0-9_-]{43}); Max-Age=(\d+); Path=/; HttpOnly; Secure; SameSite=Lax"
+    r"__Host-session=([A-Za-z0-9_-]{43}); Max-Age=(\d+); Path=/; HttpOnly; Secure; SameSite=Lax"
 )
 EXPIRED = (
-    "session=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; Secure; "
+    "__Host-session=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; Secure; "
     "SameSite=Lax"
 )
 UNKNOWN_ID = "u" * 43
@@ -72,7 +75,11 @@ class Spy(InMemoryBackend):
         return await super().clear(namespace, key)
 
     def sessions(self) -> dict[str, bytes]:
-        return {key: value.data for key, value in self._state.items() if "!session:" in key}
+        return {
+            key: value.data
+            for key, value in state(self).items()
+            if "!session:" in key and not key.endswith(":gone")
+        }
 
 
 class App:
@@ -263,7 +270,8 @@ class TestSessions:
         client.post("/set?key=user&value=alice")
         assert app.backend.calls == ["get", "get"]  # the same value: no change
         client.post("/set?key=user&value=bob")
-        assert app.backend.calls == ["get", "get", "get", "set"]
+        # The write, and the look for a logout that came meanwhile.
+        assert app.backend.calls == ["get", "get", "get", "set", "get"]
         assert client.get("/session").json() == {"user": "bob"}
 
     def test_nested_changes_are_saved(self) -> None:
@@ -305,7 +313,7 @@ class TestSessions:
         client = App(tiered).client()
         client.post("/set?key=user&value=alice")
         assert remote.sessions()
-        assert not [key for key in tiered.local._state if "!session:" in key]
+        assert not [key for key in state(tiered.local) if "!session:" in key]
         assert client.get("/session").json() == {"user": "alice"}
 
     def test_lifespan_goes_through(self) -> None:
@@ -318,7 +326,7 @@ class TestIds:
         """Session fixation: an id the client made up is never adopted."""
         app = App()
         response = app.client().post(
-            "/set?key=user&value=alice", headers={"Cookie": f"session={UNKNOWN_ID}"}
+            "/set?key=user&value=alice", headers={"Cookie": f"__Host-session={UNKNOWN_ID}"}
         )
         assert issued(response) != UNKNOWN_ID
         assert app.key(UNKNOWN_ID) not in app.backend.sessions()
@@ -326,7 +334,7 @@ class TestIds:
     @pytest.mark.parametrize("value", ["short", "a" * 44, "a" * 42 + "!"])
     def test_malformed_ids_dont_reach_the_backend(self, value: str) -> None:
         app = App()
-        response = app.client().get("/session", headers={"Cookie": f"session={value}"})
+        response = app.client().get("/session", headers={"Cookie": f"__Host-session={value}"})
         assert response.json() == {}
         assert app.backend.calls == []
 
@@ -335,7 +343,7 @@ class TestIds:
         client = app.client()
         session_id = issued(client.post("/set?key=user&value=alice"))
         client.cookies.clear()
-        cookie = f"session=bad; session={session_id}; session={UNKNOWN_ID}"
+        cookie = f"__Host-session=bad; __Host-session={session_id}; __Host-session={UNKNOWN_ID}"
         assert client.get("/session", headers={"Cookie": cookie}).json() == {"user": "alice"}
 
     def test_rotation_gives_a_new_id_with_the_same_data(self) -> None:
@@ -346,12 +354,12 @@ class TestIds:
         assert after != before
         assert list(app.backend.sessions()) == [app.key(after)]
         assert client.get("/session").json() == {"cart": "olive", "user": "alice"}
-        stale = client.get("/session", headers={"Cookie": f"session={before}"})
+        stale = client.get("/session", headers={"Cookie": f"__Host-session={before}"})
         assert stale.json() == {}
 
     def test_rotating_an_empty_session(self) -> None:
         app = App()
-        response = app.client().post("/rotate", headers={"Cookie": f"session={UNKNOWN_ID}"})
+        response = app.client().post("/rotate", headers={"Cookie": f"__Host-session={UNKNOWN_ID}"})
         assert response.headers["set-cookie"] == EXPIRED
         assert "set-cookie" not in app.client().post("/rotate").headers
 
@@ -364,7 +372,7 @@ class TestClearing:
         response = client.post("/logout")
         assert response.headers["set-cookie"] == EXPIRED
         assert not app.backend.sessions()
-        stolen = app.client().get("/session", headers={"Cookie": f"session={session_id}"})
+        stolen = app.client().get("/session", headers={"Cookie": f"__Host-session={session_id}"})
         assert stolen.json() == {}
 
     def test_data_after_logging_out_goes_to_a_new_session(self) -> None:
@@ -385,6 +393,33 @@ class TestClearing:
 
     def test_logging_out_without_a_session(self) -> None:
         assert "set-cookie" not in App().client().post("/logout").headers
+
+    @pytest.mark.parametrize("ending", ["/logout", "/rotate"])
+    async def test_a_request_still_running_cant_bring_it_back(self, ending: str) -> None:
+        """A copied cookie in a slow request: whatever it saves after the logout (or the
+        rotation at login) is dropped, and the old id stays dead."""
+        app = App()
+        started, release = asyncio.Event(), asyncio.Event()
+
+        @app.app.post("/slow")
+        async def slow(request: Request) -> None:
+            assert request.session["user"] == "alice"
+            started.set()
+            await release.wait()
+            request.session["cart"] = ["olive"]
+
+        transport = httpx.ASGITransport(app=app.app)
+        async with httpx.AsyncClient(transport=transport, base_url="https://testserver") as client:
+            session_id = issued(await client.post("/set?key=user&value=alice"))
+            client.cookies.clear()
+            cookie = {"Cookie": f"__Host-session={session_id}"}
+            copied = asyncio.create_task(client.post("/slow", headers=cookie))
+            await started.wait()
+            await client.post(ending, headers=cookie)
+            release.set()
+            assert (await copied).status_code == 200
+            assert (await client.get("/session", headers=cookie)).json() == {}
+        assert app.key(session_id) not in app.backend.sessions()
 
 
 class TestExpiry:
@@ -425,10 +460,10 @@ class TestExpiry:
         assert app.backend.calls == ["get"]
         clock.now += 1
         client.get("/session")
-        assert app.backend.calls == ["get", "get", "set"]
+        assert app.backend.calls == ["get", "get", "set", "get"]
         ((key, stored),) = app.backend.sessions().items()
         assert json.loads(stored)["seen"] == int(clock.now)
-        assert app.backend._state[key].expires_at is not None
+        assert state(app.backend)[key].expires_at is not None
 
     def test_a_failed_refresh_isnt_an_error(self, clock: Clock) -> None:
         app = App(max_age=3600, idle_timeout=600)
@@ -536,7 +571,7 @@ class TestIntegrity:
         issued(client.post("/set?key=user&value=alice"))
         ((key, _),) = app.backend.sessions().items()
         forged = {"created": 1, "seen": 1, "data": {"user": "admin"}}
-        app.backend._state[key].data = json.dumps(forged).encode()
+        state(app.backend)[key].data = json.dumps(forged).encode()
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.security.sessions"):
             assert client.get("/session").json() == {}
         assert "isn't ours" in caplog.text
@@ -558,7 +593,7 @@ class TestIntegrity:
         client = app.client()
         client.post("/set?key=user&value=alice")
         ((key, _),) = app.backend.sessions().items()
-        app.backend._state[key].data = garbage
+        state(app.backend)[key].data = garbage
         assert client.get("/session").json() == {}
 
 
@@ -567,7 +602,7 @@ class TestWebSockets:
         app = App()
         client = app.client()
         session_id = issued(client.post("/set?key=user&value=alice"))
-        headers = {"Cookie": f"session={session_id}"}
+        headers = {"Cookie": f"__Host-session={session_id}"}
         with client.websocket_connect("/ws", headers=headers) as ws:
             assert ws.receive_json() == {"user": "alice"}
         assert client.get("/session").json() == {"user": "alice"}

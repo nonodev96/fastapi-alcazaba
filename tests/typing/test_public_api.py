@@ -12,7 +12,8 @@ from starlette.responses import Response
 from fastapi_alcazaba import Cache, FastAPIBreaker, FastAPICache, FastAPIScheduler
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.pagination.cursor import CursorPage, PaginationCursor
-from fastapi_alcazaba.pagination.limit_offset import LimitOffsetPage, PaginationLimitOffset
+from fastapi_alcazaba.pagination.keyset import KeysetPage, PaginationKeyset
+from fastapi_alcazaba.pagination.offset import OffsetPage, PaginationOffset
 from fastapi_alcazaba.pagination.page_number import PageNumberPage, PaginationPageNumber
 from fastapi_alcazaba.rate_limit import FastAPIRateLimiter, client_network
 from fastapi_alcazaba.response_cache import cache
@@ -74,14 +75,16 @@ async def test_breaker_and_scheduler_types() -> None:
 
 
 def test_pagination_types() -> None:
-    pages, offsets, cursors = (
+    pages, offsets, cursors, keyset = (
         PaginationPageNumber(),
-        PaginationLimitOffset(),
-        PaginationCursor(),
+        PaginationOffset(),
+        PaginationCursor("s" * 32),
+        PaginationKeyset(sort=str),
     )
     assert_type(pages.paginate([1, 2, 3], pages.params()), PageNumberPage[int])
-    assert_type(offsets.paginate(["a"], offsets.params(), total=10), LimitOffsetPage[str])
+    assert_type(offsets.paginate(["a"], offsets.params(), total=10), OffsetPage[str])
     assert_type(cursors.paginate(["a"], cursors.params(), key=str.upper), CursorPage[str])
+    assert_type(keyset.paginate(["a"], keyset.params(), key=str.upper), KeysetPage[str])
     assert pages.paginate([1, 2, 3], pages.params(page_size=2)).items == [1, 2]
 
 
@@ -97,4 +100,5 @@ async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checke
     guarded_sync(1).upper()  # type: ignore[attr-defined]
     scheduler.every(minutes="5")  # type: ignore[arg-type]
     PaginationPageNumber().paginate([1], {"page": 1})  # type: ignore[arg-type]
-    PaginationCursor().paginate([1], PaginationPageNumber().params(), key=str)  # type: ignore[arg-type]
+    PaginationCursor("s" * 32).paginate([1], PaginationPageNumber().params(), key=str)  # type: ignore[arg-type]
+    PaginationCursor()  # type: ignore[call-arg]  # pylint: disable=no-value-for-parameter

@@ -102,6 +102,8 @@ class TestEvaluation:
         assert everybody.share == 100.0
         assert await flags.enabled("beta", subject="carol")
         assert not await flags.enabled("beta", subject="bob")
+        # Bob mustn't get it by not saying who he is.
+        assert not await flags.enabled("beta")
 
     async def test_partial_rollouts_need_a_subject(self, cache: Cache) -> None:
         flags = FastAPIFeatureFlags(cache)

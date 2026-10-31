@@ -2,7 +2,7 @@
 
 Alcazaba is released from GitHub Actions: a `vX.Y.Z` tag builds the distributions, generates the
 SBOM, signs everything with Sigstore (no keys to keep), publishes to TestPyPI, checks that
-version installs, and publishes to PyPI after a manual approval. The repository is
+version installs, and publishes to PyPI, each index after a manual approval. The repository is
 [nonodev96/fastapi-alcazaba](https://github.com/nonodev96/fastapi-alcazaba).
 
 ## One-time setup
@@ -29,7 +29,8 @@ The project URLs in `pyproject.toml` already point to it.
       repository's admins create them (a second ruleset, so that their bypass is for creating
       only).
 - **Environments:**
-    - `testpypi`: deployment tags `v*`.
+    - `testpypi`: deployment tags `v*`, **required reviewer: you** (nothing is published, not
+      even to TestPyPI, until you say so).
     - `pypi`: deployment tags `v*`, **required reviewer: you** (the approval before PyPI).
     - `github-pages`: created when Pages is enabled; deployment branch `main`, from which the
       *Docs* workflow deploys every version.
@@ -74,7 +75,8 @@ No API token is created or stored anywhere: the workflow proves its identity wit
     3. generates the CycloneDX SBOM and validates it;
     4. signs: GitHub attestations of build provenance (SLSA) and of the SBOM, plus a Sigstore
        bundle per file;
-    5. publishes to TestPyPI and installs that version in a clean environment (smoke test);
+    5. waits for your approval in the `testpypi` environment, publishes to TestPyPI and
+       installs that version in a clean environment (smoke test);
     6. waits for your approval in the `pypi` environment, then publishes to PyPI with PEP 740
        attestations;
     7. creates the GitHub release with the distributions, the SBOM, the provenance, the Sigstore

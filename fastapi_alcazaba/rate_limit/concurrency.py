@@ -194,9 +194,9 @@ class FastAPIConcurrencyLimiter:
 
     async def _take(self, connection: HTTPConnection | None, key: str) -> _Slot | None:
         if self.name is not None:
-            scope = self.name
+            scope = budget = self.name
         elif connection is not None:
-            scope = _route_scope(connection)
+            scope, budget = _route_scope(connection)
         else:
             raise ValueError("outside requests, slot() needs a limiter with a name")
         identity = ""
@@ -210,7 +210,7 @@ class FastAPIConcurrencyLimiter:
                     found = await found
                 identity = str(found)
         _check_locks(cache)
-        parts = [scope, self.limit, identity, key]
+        parts = [budget, self.limit, identity, key]
         base = hashlib.sha256(json.dumps(parts).encode()).hexdigest()[:32]
         return await self._acquire(cache, base, scope)
 

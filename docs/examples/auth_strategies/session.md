@@ -27,7 +27,7 @@ cookie in `cookies.txt`, as a browser would:
 ```console
 $ curl -i -c cookies.txt -X POST http://localhost:8000/login -H "Content-Type: application/json" -d '{"login": "octocat", "password": "correct horse battery staple"}'
 HTTP/1.1 200 OK
-set-cookie: session=NZ4ZNmaZUVX7u7ZU4LB4AA4T8QDdE91BoXMzbXLKmJc; Max-Age=1209600; Path=/; HttpOnly; Secure; SameSite=Lax
+set-cookie: __Host-session=NZ4ZNmaZUVX7u7ZU4LB4AA4T8QDdE91BoXMzbXLKmJc; Max-Age=1209600; Path=/; HttpOnly; Secure; SameSite=Lax
 cache-control: no-store
 
 {"id":"1","login":"octocat","name":"The Octocat"}
@@ -48,7 +48,7 @@ HTTP/1.1 403 Forbidden
 
 $ curl -i -b cookies.txt -X POST http://localhost:8000/logout -H "Origin: http://localhost:8000"
 HTTP/1.1 204 No Content
-set-cookie: session=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; Secure; SameSite=Lax
+set-cookie: __Host-session=; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; HttpOnly; Secure; SameSite=Lax
 cache-control: no-store
 ```
 

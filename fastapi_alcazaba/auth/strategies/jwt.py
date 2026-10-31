@@ -51,7 +51,8 @@ class JWTStrategy(Strategy):
     :param algorithms: those accepted; the first one signs what `issue` makes.
     :param audience: the `aud` the tokens must have.
     :param issuer: the `iss` the tokens must have.
-    :param leeway: seconds of tolerance on `exp` and `nbf`, for clocks out of step.
+    :param leeway: seconds of tolerance on `exp` and `nbf`, for clocks out of step; the
+        blocklist's `leeway` must be at least as long.
     :param required: claims a token must have.
     :param verify: `verify(claims)`: the user, or None to refuse the token. Async, or a plain
         function, which runs in a thread. By default the user is the claims themselves.
@@ -96,6 +97,12 @@ class JWTStrategy(Strategy):
         if hmac and len(hmac) != len(algorithms):
             # A public key accepted as an HMAC secret would let anyone sign tokens.
             raise ValueError("don't mix HMAC algorithms (HS256...) with asymmetric ones")
+        if blocklist is not None and blocklist.leeway < leeway:
+            # Its marks would expire while the strategy still accepts the token.
+            raise ValueError(
+                f"the blocklist keeps revocations {blocklist.leeway} s past exp, less than the "
+                f"leeway ({leeway} s): give it TokenBlocklist(leeway={leeway}) at least"
+            )
         self.algorithms = list(algorithms)
         self.audience = audience
         self.issuer = issuer

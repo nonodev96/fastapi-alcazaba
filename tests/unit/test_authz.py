@@ -3,6 +3,7 @@
 import base64
 import binascii
 import logging
+from pathlib import Path
 from typing import Annotated, Any
 
 import casbin
@@ -20,6 +21,7 @@ from starlette.authentication import (
 )
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.requests import HTTPConnection
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from fastapi_alcazaba import FastAPICasbin, FastAPIProblemDetails
@@ -49,7 +51,7 @@ POLICY = [
     ["editor", "/articles/:id", "PUT"],
     ["editor", "articles", "publish"],
     ["alice", "/ws", WEBSOCKET],
-    ["anonymous", "/catalog", "GET"],
+    ["*anonymous", "/catalog", "GET"],
 ]
 ROLES = [["alice", "editor"], ["editor", "reader"], ["bob", "reader"]]
 
@@ -126,7 +128,7 @@ class TestPathAndMethod:
         assert client.get("/articles", headers=as_user("mallory")).status_code == 403
 
     def test_without_a_subject_a_401_without_asking_the_policy(self, client: TestClient) -> None:
-        refused = client.get("/catalog")  # open to "anonymous", which isn't set
+        refused = client.get("/catalog")  # open to "*anonymous", which isn't set
         assert (refused.status_code, refused.json()) == (401, {"detail": "Not authenticated"})
         assert refused.headers["www-authenticate"] == "Bearer"
 
@@ -171,7 +173,9 @@ class TestPathAndMethod:
 
 class TestAnonymous:
     def test_requests_without_a_subject_are_checked_as_anonymous(self) -> None:
-        authz = FastAPICasbin(rbac(), subject=user_header, anonymous="anonymous", challenge="Basic")
+        authz = FastAPICasbin(
+            rbac(), subject=user_header, anonymous="*anonymous", challenge="Basic"
+        )
         client = TestClient(articles_app(authz))
         assert client.get("/catalog").json() == ["olive oil"]
         refused = client.get("/articles")
@@ -193,8 +197,8 @@ class TestRequire:
 
     def test_returns_none_for_anonymous_requests_let_through(self) -> None:
         enforcer = rbac()
-        enforcer.add_policy("anonymous", "articles", "read")
-        authz = FastAPICasbin(enforcer, subject=user_header, anonymous="anonymous")
+        enforcer.add_policy("*anonymous", "articles", "read")
+        authz = FastAPICasbin(enforcer, subject=user_header, anonymous="*anonymous")
         app = FastAPI()
 
         @app.get("/articles")
@@ -421,14 +425,43 @@ class TestMiddleware:
         assert (refused.status_code, refused.json()) == (403, {"detail": "Forbidden"})
 
     def test_unauthenticated_requests_are_anonymous(self) -> None:
-        client = TestClient(middleware_app(challenge="Basic"))
+        client = TestClient(middleware_app(anonymous="*anonymous", challenge="Basic"))
         assert client.get("/catalog").json() == ["olive oil"]
         refused = client.get("/articles")
         assert (refused.status_code, refused.json()) == (401, {"detail": "Not authenticated"})
         assert refused.headers["www-authenticate"] == "Basic"
 
-    def test_or_refused_without_asking_the_policy(self) -> None:
-        assert TestClient(middleware_app(anonymous=None)).get("/catalog").status_code == 401
+    def test_by_default_refused_without_asking_the_policy(self) -> None:
+        assert TestClient(middleware_app()).get("/catalog").status_code == 401
+
+    def test_head_is_checked_as_get(self) -> None:
+        """HEAD runs the GET route: a rule that refuses GET refuses it too."""
+        enforcer = rbac()
+        enforcer.add_policies([["bob", "/files/*", "HEAD"], ["alice", "/files/*", "GET"]])
+        app = middleware_app(enforcer=enforcer)
+        app.mount("/files", StaticFiles(directory=Path(__file__).parent))
+        client = TestClient(app)
+        name = Path(__file__).name
+        assert client.head(f"/files/{name}", auth=("bob", "secret")).status_code == 403
+        assert client.head(f"/files/{name}", auth=("alice", "secret")).status_code == 200
+
+    def test_the_subject_is_the_identity(self) -> None:
+        """Not the display name, which users may choose: calling yourself "alice" gets nothing."""
+
+        class Named(SimpleUser):
+            @property
+            def display_name(self) -> str:
+                return "alice"
+
+        class NamedAuth(AuthenticationBackend):
+            async def authenticate(self, conn: HTTPConnection) -> tuple[AuthCredentials, Named]:
+                return AuthCredentials(["authenticated"]), Named("bob")
+
+        app = FastAPI()
+        app.put("/articles/{article_id}")(lambda article_id: article_id)
+        app.add_middleware(CasbinMiddleware, enforcer=rbac())
+        app.add_middleware(AuthenticationMiddleware, backend=NamedAuth())
+        assert TestClient(app).put("/articles/1").status_code == 403
 
     def test_options_are_checked_too(self) -> None:
         client = TestClient(middleware_app())
@@ -472,7 +505,7 @@ class TestMiddleware:
             TestClient(app).get("/articles")
 
     def test_lifespan_goes_through(self) -> None:
-        with TestClient(middleware_app()) as client:
+        with TestClient(middleware_app(anonymous="*anonymous")) as client:
             assert client.get("/catalog").status_code == 200
 
 

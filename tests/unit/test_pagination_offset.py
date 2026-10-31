@@ -1,5 +1,5 @@
-"""PaginationOffset: pages by offset and limit, without the total, that one more row tells apart
-from the last."""
+"""PaginationOffset: pages by offset and limit, with the total or without it, when one more row
+tells a page apart from the last."""
 
 from typing import Annotated, Any
 
@@ -41,6 +41,7 @@ class TestByOffset:
             "offset": 10,
             "limit": 5,
             "has_more": True,
+            "total": 25,  # a whole list is counted
         }
 
     def test_the_last_page(self) -> None:
@@ -56,6 +57,7 @@ class TestByOffset:
             "offset": 0,
             "limit": 50,
             "has_more": False,
+            "total": 0,
         }
 
     def test_rows_queried_from_a_database(self) -> None:
@@ -117,7 +119,8 @@ def fixture_client(calls: list[str]) -> TestClient:
     ) -> OffsetPage[Item]:
         calls.append("items")
         found = [item for item in ITEMS if q is None or str(item.id).startswith(q)]
-        return app_offsets.paginate(found, params)
+        rows = found[params.offset : params.offset + params.fetch]  # LIMIT :fetch OFFSET :offset
+        return app_offsets.paginate(rows, params, queried=True)
 
     return TestClient(app)
 
@@ -140,7 +143,7 @@ class TestInAnApp:
     def test_the_page_as_clients_see_it(self, client: TestClient) -> None:
         body = client.get("/items?offset=20&limit=10").json()
         assert (ids(body), body["has_more"]) == ([20, 21, 22, 23, 24], False)
-        assert set(body) == {"items", "offset", "limit", "has_more"}  # nothing counted
+        assert body["total"] is None  # nothing counted
 
     @pytest.mark.parametrize(
         "path",

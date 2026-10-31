@@ -46,8 +46,16 @@ class TestCursorExample:
         response = client.get("/events?limit=5")
         next_cursor = response.json()["next_cursor"]
         assert response.links["next"]["url"] == f"/events?cursor={next_cursor}&limit=5"
+        assert "prev" not in response.links
+
+    def test_back_to_newer_events(self, client: TestClient) -> None:
+        first = client.get("/events").json()
+        second = client.get(f"/events?cursor={first['next_cursor']}")
+        assert ids(second.json()) == [25, 24, 23, 22, 21]
+        back = client.get(second.links["prev"]["url"]).json()
+        assert (ids(back), back["prev_cursor"]) == ([30, 29, 28, 27, 26], None)
 
     def test_made_up_cursors_are_refused(self, client: TestClient) -> None:
-        cursor_of_mine = PaginationCursor().encode(("2026-10-29", 1))
+        cursor_of_mine = PaginationCursor("m" * 32).encode(("2026-10-29", 1))
         assert client.get(f"/events?cursor={cursor_of_mine}").status_code == 400
         assert client.get("/events?limit=21").status_code == 422

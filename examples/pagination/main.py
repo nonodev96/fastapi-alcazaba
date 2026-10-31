@@ -83,13 +83,17 @@ class Catalog:
         return pages.paginate(rows, params, total=len(found))
 
     def newest(self, params: CursorParams) -> CursorPage[Product]:
-        """What a database does: WHERE id < :after ORDER BY id DESC LIMIT :fetch."""
+        """What a database does: WHERE id < :after ORDER BY id DESC LIMIT :fetch; for the page
+        before, WHERE id > :before ORDER BY id LIMIT :fetch, nearest first."""
         self.queries += 1
-        newest = sorted(self.products, key=lambda p: p.id, reverse=True)
-        if isinstance(params.after, int):  # the id of the last product of the page before
-            newest = [p for p in newest if p.id < params.after]
-        rows = newest[: params.fetch]
-        return cursors.paginate(rows, params, key=lambda p: p.id, queried=True)
+        if isinstance(params.before, int):  # the id of the first product of the page after
+            rows = sorted((p for p in self.products if p.id > params.before), key=lambda p: p.id)
+        else:
+            rows = sorted(self.products, key=lambda p: p.id, reverse=True)
+            if isinstance(params.after, int):  # the id of the last product of the page before
+                rows = [p for p in rows if p.id < params.after]
+        page = rows[: params.fetch]
+        return cursors.paginate(page, params, key=lambda p: p.id, descending=True, queried=True)
 
     def add(self, product: NewProduct) -> Product:
         saved = Product(id=len(self.products) + 1, **product.model_dump())
@@ -134,7 +138,7 @@ settings = Settings()
 pages = PaginationPageNumber(default_page_size=20, max_page_size=100)
 # Signed: clients can't make cursors up. Every process must have the same secret, or a cursor
 # made by one is refused by the others: set CURSOR_SECRET (secrets.token_urlsafe(32)).
-cursors = PaginationCursor(secret=settings.cursor_secret, default_limit=20)
+cursors = PaginationCursor(settings.cursor_secret, default_limit=20)
 
 
 @app.get("/products")

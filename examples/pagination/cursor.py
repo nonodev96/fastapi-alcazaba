@@ -1,12 +1,13 @@
 """An activity feed by cursor, newest first: each `next_cursor` gives the events right after the
-last one seen, however many were added since.
+last one seen, however many were added since, and `prev_cursor` the ones before the first.
 
     uvicorn examples.pagination.cursor:app
 
-`PaginationCursor` hides the sort key of the last event, `(created_at, id)`, in a signed cursor:
-clients can't make one up or change it. The database fetches one row more than the page, which
-tells whether there's a next one. Set CURSOR_SECRET (secrets.token_urlsafe(32)), the same in
-every process, in the environment or a .env file.
+`PaginationCursor` hides the sort key of the event at each edge of a page, `(created_at, id)`, in
+a signed cursor: clients can't make one up, change it or use it with other filters. The database
+fetches one row more than the page, which tells whether there's another one that way. Set
+CURSOR_SECRET (secrets.token_urlsafe(32)), the same in every process, in the environment or a
+.env file.
 """
 
 import secrets
@@ -22,7 +23,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.pagination import Position
 from fastapi_alcazaba.pagination.cursor import CursorPage, CursorParams, PaginationCursor
 from fastapi_alcazaba.response_cache import cache
 
@@ -70,13 +70,18 @@ class Database:
             for n in range(1, 31)
         ]
 
-    def newest(self, before: Position | None, fetch: int) -> list[Event]:
-        """SELECT * FROM events WHERE (created_at, id) < :before
-        ORDER BY created_at DESC, id DESC LIMIT :fetch"""
-        found = sorted(self.events, key=sort_key, reverse=True)
-        if isinstance(before, tuple):  # the key of the last event of the page before
-            found = [event for event in found if sort_key(event) < before]
-        return found[:fetch]
+    def page(self, params: CursorParams) -> list[Event]:
+        """Newest first: SELECT * FROM events WHERE (created_at, id) < :after
+        ORDER BY created_at DESC, id DESC LIMIT :fetch. For the page before:
+        WHERE (created_at, id) > :before ORDER BY created_at, id LIMIT :fetch, nearest first."""
+        if isinstance(params.before, tuple):  # the key of the first event of the page after
+            found = sorted(self.events, key=sort_key)
+            found = [event for event in found if sort_key(event) > params.before]
+        else:
+            found = sorted(self.events, key=sort_key, reverse=True)
+            if isinstance(params.after, tuple):  # the key of the last event of the page before
+                found = [event for event in found if sort_key(event) < params.after]
+        return found[: params.fetch]
 
     def add(self, event: NewEvent) -> Event:
         saved = Event(id=len(self.events) + 1, created_at=datetime.now(UTC), text=event.text)
@@ -87,7 +92,7 @@ class Database:
 db = Database()
 # Signed: clients can't make cursors up. Every process must have the same secret, or a cursor
 # made by one is refused by the others.
-cursors = PaginationCursor(secret=settings.cursor_secret, default_limit=5, max_limit=20)
+cursors = PaginationCursor(settings.cursor_secret, default_limit=5, max_limit=20)
 
 
 @asynccontextmanager
@@ -104,8 +109,7 @@ app = FastAPI(lifespan=lifespan)
 @cache(expire=60)
 async def events(params: Annotated[CursorParams, Depends(cursors)]) -> CursorPage[Event]:
     """One entry per cursor: the first page is renewed every minute, the others never change."""
-    rows = db.newest(params.after, params.fetch)
-    return cursors.paginate(rows, params, key=sort_key, descending=True, queried=True)
+    return cursors.paginate(db.page(params), params, key=sort_key, descending=True, queried=True)
 
 
 @app.post("/events", status_code=status.HTTP_201_CREATED)

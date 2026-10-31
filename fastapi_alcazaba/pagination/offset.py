@@ -1,6 +1,6 @@
-"""Pagination by offset, without the total: `?offset=40&limit=20`. One row more than the page tells
-whether there's a next one, so the list is never counted: for lists whose count is slow, or that
-change while they're read."""
+"""Pagination by offset: `?offset=40&limit=20`, with the total when the endpoint counts the list,
+or without it, when one row more than the page tells whether there's a next one: for lists whose
+count is slow, or that change while they're read."""
 
 import inspect
 from collections.abc import Sequence
@@ -37,42 +37,50 @@ class OffsetParams(PaginationParams):
 
     @property
     def fetch(self) -> int:
-        """Rows to query from the database: `limit` and one more, which tells whether there's a
-        next page."""
+        """Rows to query from the database without counting the list: `limit` and one more,
+        which tells whether there's a next page."""
         return self.limit + 1
 
 
 class OffsetPage(LinkedPage, Generic[T]):
-    """A page of `items` by offset, without the total; `has_more` is False on the last one."""
+    """A page of `items` by offset; `has_more` is False on the last one, and `total` is None when
+    the list wasn't counted."""
 
     items: list[T]
     offset: int = Field(description="Items before the page")
     limit: int = Field(description="Items per page")
     has_more: bool = Field(description="Whether there's a page after this one")
+    total: int | None = Field(description="Items in every page together; None if not counted")
 
     def relations(self) -> list[Relation]:
         offsets = [("first", 0)]
+        # prev and last on the grid of `limit` from 0, where clients that start at first walk.
+        last = None if self.total is None else (max(self.total, 1) - 1) // self.limit * self.limit
         if self.offset > 0:
-            offsets.append(("prev", max(self.offset - self.limit, 0)))
+            before = max(self.offset - self.limit, 0)
+            offsets.append(("prev", before if last is None else min(before, last)))
         if self.has_more:
             offsets.append(("next", self.offset + self.limit))
+        if last is not None:
+            offsets.append(("last", last))
         return [(rel, {"offset": offset, "limit": self.limit}) for rel, offset in offsets]
 
 
 class PaginationOffset:
-    """Pagination by offset, without the total: `?offset=40&limit=20`.
+    """Pagination by offset: `?offset=40&limit=20`.
 
         offsets = PaginationOffset()
 
-        @app.get("/logs")
+        @app.get("/products")
         @cache(expire=60)
-        async def logs(params: Annotated[OffsetParams, Depends(offsets)]) -> OffsetPage[Line]:
-            rows = ...  # ORDER BY id LIMIT params.fetch OFFSET params.offset
-            return offsets.paginate(rows, params, queried=True)
+        async def products(params: Annotated[OffsetParams, Depends(offsets)]) -> OffsetPage[Item]:
+            rows = ...  # ORDER BY id LIMIT params.limit OFFSET params.offset
+            return offsets.paginate(rows, params, total=...)  # SELECT count(*)
 
-    The page says whether there's a next one (`has_more`), from one row more than it holds,
-    instead of counting the whole list: no `COUNT(*)`, which is slow on big tables and outdated
-    as soon as rows are written. With the total and the last page: `PaginationLimitOffset`.
+    With `total`, the page has it and links to the last page too. Without it, query
+    `params.fetch` rows (one more than the page) and pass `queried=True`: the extra row says
+    whether there's a next page, without a `COUNT(*)`, slow on big tables and outdated as soon as
+    rows are written.
 
     :param default_limit: items per page when the request doesn't say.
     :param max_limit: the most a request may ask for (a 422 beyond).
@@ -131,25 +139,39 @@ class PaginationOffset:
         items: Sequence[T],
         params: OffsetParams,
         *,
+        total: int | None = None,
         queried: bool = False,
     ) -> OffsetPage[T]:
         """The page of `items` that `params` asks for, linked to the first, previous and next
-        pages.
+        pages, and to the last one when the total is known.
 
-        :param queried: `items` is what the database returned for this page: the rows of
-            `LIMIT params.fetch OFFSET params.offset`, one more than the page when there's a
-            next one. Otherwise `items` is the whole list, and the page is sliced from it.
+        :param total: the count of the whole list: `items` is then the page, as the database
+            returned it (`LIMIT params.limit OFFSET params.offset`).
+        :param queried: without a total, `items` is what the database returned for this page:
+            the rows of `LIMIT params.fetch OFFSET params.offset`, one more than the page when
+            there's a next one.
+
+        With neither, `items` is the whole list: the page is sliced from it, and counted.
         """
-        if queried:
+        if total is not None:
+            if total < 0:
+                raise ValueError("total can't be negative")
             rows = list(items)
+            more = params.offset + params.limit < total
+        elif queried:
+            rows = list(items)
+            more = len(rows) > params.limit
         else:
-            rows = list(items[params.offset : params.offset + params.fetch])
+            total = len(items)
+            rows = list(items[params.offset : params.offset + params.limit])
+            more = params.offset + params.limit < total
         return linked(
             OffsetPage(
                 items=rows[: params.limit],
                 offset=params.offset,
                 limit=params.limit,
-                has_more=len(rows) > params.limit,
+                has_more=more,
+                total=total,
             ),
             params.links,
         )

@@ -17,6 +17,7 @@ from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.backends.memcached import MemcachedBackend, memcached_key
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.valkey import ValkeyBackend
+from fastapi_alcazaba.core.errors import BackendUnavailable
 
 
 async def check_incr_window(backend: Backend) -> None:
@@ -570,36 +571,55 @@ class TestInMemoryState:
         assert await backend.get("app!revoked:token:x") == b"1"
         assert list(backend._store) == ["app:responses:8", "app:responses:9"]
 
-    async def test_expired_state_goes_first(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_live_state_is_never_evicted(self) -> None:
+        """A forgotten revocation would accept the token again: a full kind refuses writes."""
+        backend = InMemoryBackend(max_size=2)
+        await backend.set("app!otp:0", b"1", 600)
+        await backend.set("app!otp:1", b"1", 600)
+        with pytest.raises(BackendUnavailable, match="'otp' is full"):
+            await backend.set("app!otp:2", b"1", 600)
+        with pytest.raises(BackendUnavailable):
+            await backend.incr("app!otp:3", 1, 600)
+        assert list(backend._state["otp"]) == ["app!otp:0", "app!otp:1"]
+        await backend.set("app!otp:1", b"2", 600)  # rewriting a key takes no room
+        assert await backend.get("app!otp:1") == b"2"
+
+    async def test_a_flood_of_one_kind_leaves_the_others(self) -> None:
+        backend = InMemoryBackend(max_size=2)
+        await backend.set("app!revoked:token:x", b"1", 600)
+        for i in range(2):
+            await backend.set(f"app!idempotency:{{{i}}}", b"1", 600)
+        with pytest.raises(BackendUnavailable):
+            await backend.set("app!idempotency:{2}", b"1", 600)
+        assert await backend.get("app!revoked:token:x") == b"1"
+        await backend.set("app!revoked:token:y", b"1", 600)
+
+    async def test_expired_state_makes_room(self, monkeypatch: pytest.MonkeyPatch) -> None:
         backend = InMemoryBackend(max_size=2)
         await backend.set("app!otp:short", b"1", 1)
         await backend.set("app!otp:long", b"1", 600)
         later = time.monotonic() + 5
         monkeypatch.setattr(time, "monotonic", lambda: later)
         await backend.set("app!otp:new", b"1", 600)
-        assert list(backend._state) == ["app!otp:long", "app!otp:new"]
+        assert list(backend._state["otp"]) == ["app!otp:long", "app!otp:new"]
 
     async def test_expired_state_is_looked_for_once_a_second(
         self,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        backend, clock = InMemoryBackend(max_size=3), [time.monotonic()]
+        backend, clock = InMemoryBackend(max_size=2), [time.monotonic()]
         monkeypatch.setattr(time, "monotonic", lambda: clock[0])
-        await backend.set("app!otp:x", b"1", 600)
         await backend.set("app!otp:a", b"1", 1)
-        await backend.set("app!otp:y", b"1", 600)
+        await backend.set("app!otp:x", b"1", 600)
         clock[0] += 0.5
-        await backend.set("app!otp:b", b"1", 600)  # looks for expired keys: none, x goes
-        await backend.get("app!otp:a")  # not the least recently used any more
-        clock[0] += 0.6  # a has expired
-        await backend.set("app!otp:c", b"1", 600)  # too soon to look again: y goes
-        assert list(backend._state) == ["app!otp:b", "app!otp:a", "app!otp:c"]
-
-    async def test_live_state_is_bounded_too(self) -> None:
-        backend = InMemoryBackend(max_size=2)
-        for i in range(3):
-            await backend.set(f"app!otp:{i}", b"1", 600)
-        assert list(backend._state) == ["app!otp:1", "app!otp:2"]
+        with pytest.raises(BackendUnavailable):
+            await backend.set("app!otp:b", b"1", 600)  # looks for expired keys: none
+        clock[0] += 0.7  # a has expired, but they were looked for 0.7 s ago
+        with pytest.raises(BackendUnavailable):
+            await backend.set("app!otp:c", b"1", 600)
+        clock[0] += 0.4
+        await backend.set("app!otp:c", b"1", 600)
+        assert list(backend._state["otp"]) == ["app!otp:x", "app!otp:c"]
 
     async def test_clearing_a_namespace(self) -> None:
         backend = InMemoryBackend()

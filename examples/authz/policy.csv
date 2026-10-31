@@ -1,5 +1,5 @@
-p, anonymous, /articles, GET
-p, anonymous, /articles/:id, GET
+p, *anonymous, /articles, GET
+p, *anonymous, /articles/:id, GET
 p, writer, /articles, POST
 p, writer, /articles/:id, PUT
 p, writer, drafts, read

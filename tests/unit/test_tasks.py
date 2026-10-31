@@ -10,6 +10,7 @@ import json
 import logging
 import threading
 import time
+import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -113,12 +114,14 @@ def fixture_world() -> World:
 
 def body(task: str, *args: Any, attempt: int = 0, **kwargs: Any) -> dict[str, Any]:
     return {
-        "v": 1,
+        "v": 2,
         "id": "t" * 32,
         "task": task,
         "args": list(args),
         "kwargs": kwargs,
         "attempt": attempt,
+        "run": uuid.uuid4().hex,
+        "until": time.time() + 3600,
     }
 
 
@@ -593,6 +596,46 @@ class TestRefusedTasks:
         await self.run(queue)
         assert not ran
         assert [dead.reason for dead in await queue.dead_letters()] == ["tampered"]
+
+    @pytest.mark.parametrize("keys", [{}, {"signing_key": None, "encryption_key": "e" * 32}])
+    async def test_copies_of_a_task_are_refused(
+        self,
+        world: World,
+        keys: dict[str, Any],
+    ) -> None:
+        """Whoever can write to the backend, without the key, can't run a captured task again."""
+        queue = world.queue(world.cache(**keys))
+        ran = []
+
+        @queue.task("refund")
+        async def refund(order_id: int) -> None:
+            ran.append(order_id)
+
+        captured = sealed(queue, body("refund", 42))
+        await world.plant(queue, {"p": captured})
+        await self.run(queue)
+        for _ in range(3):
+            await world.plant(queue, {"p": captured})
+        await self.run(queue)
+        assert ran == [42]
+        assert [dead.reason for dead in await queue.dead_letters()] == ["replayed"] * 3
+
+    async def test_stale_tasks_are_refused(self, world: World) -> None:
+        queue = world.queue()
+        ran = []
+
+        @queue.task("job")
+        async def job() -> None:
+            ran.append(1)
+
+        await world.plant(queue, {"p": sealed(queue, {**body("job"), "until": time.time() - 1})})
+        await self.run(queue)
+        assert not ran
+        (dead,) = await queue.dead_letters()
+        assert dead.reason == "stale"
+        assert await queue.requeue_dead_letters() == 1  # with a new deadline
+        await self.run(queue)
+        assert ran == [1]
 
     async def test_encrypted_tasks(self, world: World) -> None:
         queue = world.queue(world.cache(signing_key=None, encryption_key="e" * 32))

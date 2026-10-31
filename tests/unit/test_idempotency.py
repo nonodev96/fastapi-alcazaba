@@ -19,6 +19,7 @@ from starlette.types import Message
 from fastapi_alcazaba import BackendUnavailable, Cache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.idempotency import IdempotencyMiddleware, require_idempotency_key
+from tests.memory import state
 
 KEY = {"Idempotency-Key": '"8e03978e-40d5-43e8-bc93-6894a57f9324"'}
 
@@ -99,6 +100,23 @@ class TestRetries:
         assert "idempotent-replayed" not in first.headers
         assert app.runs == 1
 
+    def test_a_retry_gets_no_cookies(self) -> None:
+        """A replay never hands out a session: whoever sends it may not be who logged in."""
+        app = App()
+
+        @app.app.post("/sessions")
+        async def log_in(response: Response) -> dict[str, bool]:
+            app.runs += 1
+            response.set_cookie("session", "s3cret")
+            return {"logged_in": True}
+
+        client = app.client()
+        assert client.post("/sessions", headers=KEY).headers["set-cookie"].startswith("session=")
+        retry = client.post("/sessions", headers=KEY)
+        assert retry.json() == {"logged_in": True}
+        assert "set-cookie" not in retry.headers
+        assert app.runs == 1
+
     def test_quoted_and_bare_keys_are_the_same_key(self) -> None:
         app = App()
         client = app.client()
@@ -130,7 +148,7 @@ class TestRetries:
     def test_records_expire(self) -> None:
         app = App(expire=120)
         app.client().post("/orders", json={"item": "a"}, headers=KEY)
-        (record,) = (value for key, value in app.backend._state.items() if "idempotency" in key)
+        (record,) = (value for value in app.backend._state["idempotency"].values())
         assert record.expires_at is not None
 
 
@@ -221,7 +239,7 @@ class TestWhatIsKept:
         for _ in range(2):
             refused = client.post("/orders", json={"wrong": "x" * 1000}, headers=KEY)
             assert refused.status_code == 422
-        assert not [key for key in app.backend._state if "idempotency" in key]
+        assert not [*app.backend._state.get("idempotency", ())]
 
     def test_an_exception_lets_the_retry_run(self) -> None:
         app = App()
@@ -259,7 +277,7 @@ class TestClients:
     def test_keys_and_identities_never_reach_the_backend_in_clear(self) -> None:
         app = App()
         app.client().post("/orders", json={"item": "a"}, headers={**KEY, "Authorization": "secret"})
-        keys = " ".join([*app.backend._store, *app.backend._state])
+        keys = " ".join([*app.backend._store, *app.backend._state.get("idempotency", ())])
         assert "8e03978e" not in keys
         assert "secret" not in keys
 
@@ -268,16 +286,16 @@ class TestProtectedRecords:
     def test_records_are_sealed(self) -> None:
         app = App(cache_options={"encryption_key": "e" * 32})
         app.client().post("/orders", json={"item": "olive oil"}, headers=KEY)
-        (record,) = (value for key, value in app.backend._state.items() if "idempotency" in key)
+        (record,) = (value for value in app.backend._state["idempotency"].values())
         assert b"olive" not in record.data
 
     def test_planted_records_are_ignored(self, caplog: pytest.LogCaptureFixture) -> None:
         app = App(cache_options={"signing_key": "s" * 32})
         client = app.client()
         client.post("/orders", json={"item": "a"}, headers=KEY)
-        (key,) = (key for key in app.backend._state if "idempotency" in key)
+        (key,) = (key for key in state(app.backend) if "idempotency" in key)
         forged = {"fingerprint": "x", "status": 200, "headers": [], "body": ""}
-        app.backend._state[key].data = json.dumps(forged).encode()
+        state(app.backend)[key].data = json.dumps(forged).encode()
         with caplog.at_level(logging.WARNING, "fastapi_alcazaba.idempotency.middleware"):
             assert client.post("/orders", json={"item": "a"}, headers=KEY).status_code == 201
         assert app.runs == 2
@@ -299,8 +317,8 @@ class TestProtectedRecords:
         app = App()
         client = app.client()
         client.post("/orders", json={"item": "a"}, headers=KEY)
-        (key,) = (key for key in app.backend._state if "idempotency" in key)
-        app.backend._state[key].data = garbage
+        (key,) = (key for key in state(app.backend) if "idempotency" in key)
+        state(app.backend)[key].data = garbage
         assert client.post("/orders", json={"item": "a"}, headers=KEY).status_code == 201
         assert app.runs == 2
 
@@ -445,7 +463,7 @@ class TestASGI:
         }
         await middleware(scope, receive, send)
         assert not ran
-        assert not backend._state
+        assert not state(backend)
         assert not backend._locks
 
     async def test_a_body_too_large_in_several_chunks(self) -> None:

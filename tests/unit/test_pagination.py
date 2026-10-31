@@ -1,28 +1,21 @@
-"""Alcazaba's pagination: PaginationPageNumber, PaginationLimitOffset and
+"""Alcazaba's pagination: PaginationPageNumber, PaginationOffset with the total and
 PaginationCursor, whose page parameters the cache keeps apart, page by page."""
 
 import base64
 import json
-from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
-from uuid import UUID
 
 import httpx2 as httpx
 import pytest
-from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, Response
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.pagination import Position
 from fastapi_alcazaba.pagination.cursor import CursorPage, CursorParams, PaginationCursor
-from fastapi_alcazaba.pagination.limit_offset import (
-    LimitOffsetPage,
-    LimitOffsetParams,
-    PaginationLimitOffset,
-)
+from fastapi_alcazaba.pagination.offset import OffsetPage, OffsetParams, PaginationOffset
 from fastapi_alcazaba.pagination.page_number import (
     PageNumberPage,
     PageNumberParams,
@@ -92,30 +85,33 @@ class TestByPage:
         assert hash(params) == hash(PageNumberParams(page=2))
 
 
-class TestByLimitAndOffset:
+class TestByOffsetWithTheTotal:
     def test_pages(self) -> None:
-        pages = PaginationLimitOffset()
+        pages = PaginationOffset()
         page = pages.paginate(ITEMS, pages.params(limit=3, offset=22))
-        assert isinstance(page, LimitOffsetPage)
+        assert isinstance(page, OffsetPage)
         assert page.model_dump() == {
             "items": [{"id": 22}, {"id": 23}, {"id": 24}],
-            "total": 25,
-            "limit": 3,
             "offset": 22,
+            "limit": 3,
+            "has_more": False,
+            "total": 25,
         }
-        queried = pages.paginate(ITEMS[:2], pages.params(limit=2, offset=40), total=41)
-        assert (len(queried.items), queried.total) == (2, 41)
+        queried = pages.paginate(ITEMS[:2], pages.params(limit=2, offset=38), total=41)
+        assert (len(queried.items), queried.total, queried.has_more) == (2, 41, True)
+        with pytest.raises(ValueError, match="negative"):
+            pages.paginate(ITEMS[:2], pages.params(), total=-1)
 
     def test_limits(self) -> None:
-        pages = PaginationLimitOffset(default_limit=10, max_limit=20)
-        assert pages.params() == LimitOffsetParams(limit=10, offset=0)
+        pages = PaginationOffset(default_limit=10, max_limit=20)
+        assert pages.params() == OffsetParams(offset=0, limit=10)
         with pytest.raises(ValueError, match="over 20"):
             pages.params(limit=21)
         with pytest.raises(ValueError, match="default limit"):
-            PaginationLimitOffset(default_limit=30, max_limit=20)
-        for limit, offset in ((0, 0), (10, -1)):
-            with pytest.raises(ValueError, match="limit starts at 1"):
-                LimitOffsetParams(limit=limit, offset=offset)
+            PaginationOffset(default_limit=30, max_limit=20)
+        for offset, limit in ((0, 0), (-1, 10)):
+            with pytest.raises(ValueError, match="offset starts at 0"):
+                OffsetParams(offset=offset, limit=limit)
 
 
 class Event(BaseModel):
@@ -135,167 +131,14 @@ def event_ids(page: CursorPage[Event]) -> list[int]:
     return [event.id for event in page.items]
 
 
-class TestByCursor:
-    def test_walking_a_list(self) -> None:
-        cursors, seen, cursor = PaginationCursor(), [], None
-        while True:
-            page = cursors.paginate(EVENTS, cursors.params(cursor=cursor, limit=4), key=by_time)
-            seen.append(event_ids(page))
-            if (cursor := page.next_cursor) is None:
-                break
-        assert seen == [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11]]
-
-    def test_newest_first(self) -> None:
-        cursors, newest = PaginationCursor(), EVENTS[::-1]
-        first = cursors.paginate(newest, cursors.params(limit=5), key=by_time, descending=True)
-        params = cursors.params(cursor=first.next_cursor, limit=5)
-        second = cursors.paginate(newest, params, key=by_time, descending=True)
-        assert (event_ids(first), event_ids(second)) == ([11, 10, 9, 8, 7], [6, 5, 4, 3, 2])
-
-    def test_rows_added_or_deleted_meanwhile_dont_shift_the_pages(self) -> None:
-        cursors = PaginationCursor()
-        first = cursors.paginate(EVENTS, cursors.params(limit=4), key=by_time)
-        changed = [e for e in EVENTS if e.id != 4] + [Event(id=0, at=T0 - timedelta(days=1))]
-        changed.sort(key=by_time)
-        params = cursors.params(cursor=first.next_cursor, limit=4)
-        assert event_ids(cursors.paginate(changed, params, key=by_time)) == [5, 6, 7, 8]
-
-    def test_rows_queried_from_a_database(self) -> None:
-        cursors = PaginationCursor()
-        params = cursors.params(limit=3)
-        assert (params.after, params.fetch) == (None, 4)
-        first = cursors.paginate(EVENTS[: params.fetch], params, key=by_time, queried=True)
-        assert event_ids(first) == [1, 2, 3]
-        params = cursors.params(cursor=first.next_cursor, limit=3)
-        after = params.after
-        assert after == (EVENTS[2].at, 3)  # the datetime comes back as a datetime
-        assert isinstance(after, tuple)
-        rows = [e for e in EVENTS if by_time(e) > after][: params.fetch]  # WHERE … > … LIMIT 4
-        assert event_ids(cursors.paginate(rows, params, key=by_time, queried=True)) == [4, 5, 6]
-        last = cursors.paginate(EVENTS[9:], params, key=by_time, queried=True)
-        assert (event_ids(last), last.next_cursor) == ([10, 11], None)
-
-    @pytest.mark.parametrize(
-        "position",
-        [
-            7,
-            "b",
-            1.5,
-            True,
-            Decimal("12.50"),
-            UUID("8e03978e-40d5-43e8-bc93-6894a57f9324"),
-            date(2026, 10, 25),
-            T0,
-            ("x", 1, T0),
-        ],
-    )
-    def test_the_values_a_sort_key_can_have(self, position: Position) -> None:
-        cursors = PaginationCursor()
-        decoded = cursors.decode(cursors.encode(position))
-        assert (decoded, type(decoded)) == (position, type(position))
-
-    @pytest.mark.parametrize(
-        ("position", "error"),
-        [
-            (float("nan"), ValueError),
-            (Decimal("Infinity"), ValueError),
-            ((), ValueError),
-            (tuple(range(9)), ValueError),
-            (2**63, ValueError),
-            (None, TypeError),
-            ([1], TypeError),
-        ],
-    )
-    def test_what_a_cursor_cant_hold(self, position: Any, error: type[Exception]) -> None:
-        with pytest.raises(error):
-            PaginationCursor().encode(position)
-
-    def test_end_of_the_list(self) -> None:
-        cursors = PaginationCursor()
-        page = cursors.paginate(EVENTS, cursors.params(limit=11), key=by_time)
-        assert (len(page.items), page.next_cursor) == (11, None)
-        assert cursors.paginate([], cursors.params(), key=by_time).model_dump() == {
-            "items": [],
-            "limit": 50,
-            "next_cursor": None,
-        }
-
-    def test_limits(self) -> None:
-        cursors = PaginationCursor(default_limit=10, max_limit=20)
-        assert cursors.params() == CursorParams(limit=10)
-        with pytest.raises(ValueError, match="over 20"):
-            cursors.params(limit=21)
-        with pytest.raises(ValueError, match="default limit"):
-            PaginationCursor(default_limit=0)
-        with pytest.raises(ValueError, match="limit starts at 1"):
-            CursorParams(limit=0)
-
-
 def raw(payload: object) -> str:
     """An unsigned cursor holding `payload`, as a client could write it."""
     return base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
 
 
-class TestInvalidCursors:
-    @pytest.mark.parametrize(
-        "cursor",
-        [
-            "not-base64-json",
-            raw({"t": "datetime", "v": "yesterday"}),
-            raw({"t": "decimal", "v": "lots"}),
-            raw({"t": "decimal", "v": "NaN"}),
-            raw({"t": "pickle", "v": "x"}),
-            raw({"t": ["datetime"], "v": "x"}),
-            raw({"a": 1}),
-            raw([[1, 2]]),
-            raw([]),
-            raw(list(range(9))),
-            raw(None),
-            raw(2**63),
-            raw([-(2**63) - 1]),
-            base64.urlsafe_b64encode(b"[NaN]").decode().rstrip("="),
-            base64.urlsafe_b64encode(b"\xff\xfe").decode().rstrip("="),
-            "x" * 1025,
-        ],
-    )
-    def test_are_a_400(self, cursor: str) -> None:
-        with pytest.raises(HTTPException) as refused:
-            PaginationCursor().params(cursor=cursor)
-        assert (refused.value.status_code, refused.value.detail) == (400, "Invalid cursor")
-
-    def test_a_cursor_with_another_kind_of_key(self) -> None:
-        cursors = PaginationCursor()
-        params = cursors.params(cursor=cursors.encode("a string"))
-        with pytest.raises(HTTPException) as refused:
-            cursors.paginate(EVENTS, params, key=by_time)
-        assert refused.value.status_code == 400
-
-    def test_signed_cursors(self) -> None:
-        signed = PaginationCursor(secret="s" * 32)
-        cursor = signed.encode(("a", 1))
-        payload, tag = cursor.split(".")
-        assert signed.decode(cursor) == ("a", 1)
-        assert PaginationCursor().decode(cursor) == ("a", 1)  # readable, not secret
-        for forged in (raw(["b", 1]), f"{raw(['b', 1])}.{tag}", payload, f"{payload}.{'A' * 22}"):
-            with pytest.raises(HTTPException):
-                signed.decode(forged)
-        for not_ascii in (f"{payload}.{tag[:-1]}é", "é", f"{payload}é.{tag}"):  # not a TypeError
-            with pytest.raises(HTTPException):
-                signed.decode(not_ascii)
-
-    def test_rotating_the_secret(self) -> None:
-        old = PaginationCursor(secret="o" * 32).encode(5)
-        rotated = PaginationCursor(secret=["n" * 32, "o" * 32])
-        assert rotated.decode(old) == 5
-        assert rotated.encode(5) != old  # signed with the new one
-        too_short = "k" * 31
-        with pytest.raises(ValueError, match="32 bytes"):
-            PaginationCursor(secret=too_short)
-
-
 app_pages = PaginationPageNumber(default_page_size=10, max_page_size=30)
-app_offsets = PaginationLimitOffset()
-app_cursors = PaginationCursor(secret="c" * 32, default_limit=4)
+app_offsets = PaginationOffset()
+app_cursors = PaginationCursor("c" * 32, default_limit=4)
 
 
 @pytest.fixture(name="calls")
@@ -321,8 +164,8 @@ def fixture_client(calls: list[str]) -> TestClient:
     @app.get("/app_offsets")
     @cache(expire=60)
     async def by_offset(
-        params: Annotated[LimitOffsetParams, Depends(app_offsets)],
-    ) -> LimitOffsetPage[Item]:
+        params: Annotated[OffsetParams, Depends(app_offsets)],
+    ) -> OffsetPage[Item]:
         calls.append("app_offsets")
         return app_offsets.paginate(ITEMS, params)
 
@@ -395,7 +238,7 @@ class TestWithTheCache:
         ("path", "names"),
         [
             ("/items", {"page", "page_size", "q"}),
-            ("/app_offsets", {"limit", "offset"}),
+            ("/app_offsets", {"offset", "limit"}),
             ("/events", {"cursor", "limit"}),
         ],
     )
@@ -446,20 +289,20 @@ class TestLinks:
 
     def test_by_limit_and_offset(self, client: TestClient) -> None:
         assert links(client.get("/app_offsets?limit=2&offset=11")) == {
-            "first": "/app_offsets?limit=2&offset=0",
-            "prev": "/app_offsets?limit=2&offset=9",
-            "next": "/app_offsets?limit=2&offset=13",
-            "last": "/app_offsets?limit=2&offset=24",
+            "first": "/app_offsets?offset=0&limit=2",
+            "prev": "/app_offsets?offset=9&limit=2",
+            "next": "/app_offsets?offset=13&limit=2",
+            "last": "/app_offsets?offset=24&limit=2",
         }
         assert links(client.get("/app_offsets?limit=10")) == {
-            "first": "/app_offsets?limit=10&offset=0",
-            "next": "/app_offsets?limit=10&offset=10",
-            "last": "/app_offsets?limit=10&offset=20",
+            "first": "/app_offsets?offset=0&limit=10",
+            "next": "/app_offsets?offset=10&limit=10",
+            "last": "/app_offsets?offset=20&limit=10",
         }
         assert links(client.get("/app_offsets?limit=10&offset=90")) == {
-            "first": "/app_offsets?limit=10&offset=0",
-            "prev": "/app_offsets?limit=10&offset=20",
-            "last": "/app_offsets?limit=10&offset=20",
+            "first": "/app_offsets?offset=0&limit=10",
+            "prev": "/app_offsets?offset=20&limit=10",
+            "last": "/app_offsets?offset=20&limit=10",
         }
 
     def test_by_cursor(self, client: TestClient) -> None:
@@ -493,7 +336,7 @@ class TestLinks:
         cursor = client.get("/events").json()["next_cursor"]
         assert served(client.get(f"/events?cursor={cursor}").headers) == "miss"
         hit = client.get(f"/events?cursor={cursor}")
-        assert (served(hit.headers), set(links(hit))) == ("hit", {"first", "next"})
+        assert (served(hit.headers), set(links(hit))) == ("hit", {"first", "prev", "next"})
 
     def test_nothing_from_the_client_ends_a_link(self) -> None:
         app = FastAPI()

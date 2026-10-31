@@ -16,6 +16,7 @@ from pydantic import BaseModel, SecretBytes, SecretStr
 from fastapi_alcazaba import Cache, FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookMessage, WebhookSigner
+from tests.memory import state
 
 NOW = 1_800_000_000
 # The test vector of the Standard Webhooks reference libraries.
@@ -331,7 +332,7 @@ class TestDependency:
         backend: InMemoryBackend,
     ) -> None:
         assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
-        [key] = [key for key in backend._state if key.startswith("!webhook:")]
+        [key] = [key for key in state(backend) if key.startswith("!webhook:")]
         assert "msg_1" not in key
         ttl, count = asyncio.run(backend.get_with_ttl(key))
         assert (count, 600 < ttl <= 660) == (b"1", True)  # twice the tolerance, and a margin
@@ -390,7 +391,7 @@ class TestDependency:
         client = app_with(FastAPIWebhooks(SECRET))
         Cache(backend).install(client.app)
         assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
-        assert any(key.startswith("!webhook:") for key in backend._state)
+        assert any(key.startswith("!webhook:") for key in state(backend))
 
     @pytest.mark.usefixtures("clock")
     def test_fastapi_cache_otherwise(self) -> None:
@@ -398,4 +399,4 @@ class TestDependency:
         FastAPICache.init(backend, prefix="app")
         client = app_with(FastAPIWebhooks(SECRET, namespace="hooks"))
         assert client.post("/raw", content=BODY, headers=signed()).status_code == 200
-        assert any(key.startswith("app!hooks:") for key in backend._state)
+        assert any(key.startswith("app!hooks:") for key in state(backend))

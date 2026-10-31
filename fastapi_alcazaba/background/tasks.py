@@ -25,8 +25,10 @@ where `dead_letters()` lists them and `requeue_dead_letters()` puts them back.
 Only registered tasks run, with arguments that travel as JSON (never pickle). With a
 `signing_key` or `encryption_key` on the cache every task is signed or encrypted and bound to its
 queue: a task that someone planted in the backend or altered is refused, logged and sent to the
-dead letters, never run. Without a key, whoever can write to the backend can run the registered
-tasks with arguments of their choosing.
+dead letters, never run. Each delivery carries a run id that only one entry may claim, and a
+deadline (`replay_window` after it was due): a copy of a sealed task written back to the queue
+is refused as a replay, and one older than its deadline as stale. Without a key, whoever can
+write to the backend can run the registered tasks with arguments of their choosing.
 
 With tracing on, each run is the root of a trace of its own, linked to the span that enqueued the
 task (the request's, with FastAPI's instrumentation).
@@ -38,6 +40,7 @@ import hashlib
 import inspect
 import json
 import logging
+import math
 import os
 import random
 import re
@@ -64,7 +67,7 @@ logger.addHandler(logging.NullHandler())
 F = TypeVar("F", bound=Callable[..., Any])
 
 _GROUP = "workers"
-_FORMAT = 1
+_FORMAT = 2
 # Room for the signature or the encryption header and tag around a payload (67 bytes at most),
 # and for the attempt counter of a retry growing by a digit or two.
 _SEAL_OVERHEAD = 128
@@ -72,6 +75,7 @@ _PROMOTE_BATCH = 100
 _PAGE = 100
 _MAX_PAUSE = 30.0
 _STREAM_ID = re.compile(r"[0-9]+-[0-9]+")
+_RUN_ID = re.compile(r"[0-9a-f]{32}")
 
 _REASONS = {
     "malformed": "its payload isn't a task",
@@ -80,6 +84,8 @@ _REASONS = {
     "unknown_task": "no task of this process has its name",
     "invalid_arguments": "its arguments don't fit the task's signature",
     "abandoned": "its workers stopped answering while running it, too many times",
+    "stale": "it waited in the queue longer than replay_window",
+    "replayed": "another entry already claimed its run: a copy written back to the queue",
 }
 
 # Keys and payloads always travel as KEYS/ARGV, never inside the script source. Every key of a
@@ -170,6 +176,17 @@ return #due
 ACK_SCRIPT = """
 redis.call('XACK', KEYS[1], ARGV[1], ARGV[2])
 return redis.call('XDEL', KEYS[1], ARGV[2])
+"""
+
+# Whether the run KEYS[1] is the entry ARGV[1]'s: the first entry to ask claims it for ARGV[2]
+# ms; the same entry, taken over by another worker, still may; a copy may not.
+CLAIM_SCRIPT = """
+local holder = redis.call('GET', KEYS[1])
+if holder == false then
+    redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
+    return 1
+end
+return holder == ARGV[1] and 1 or 0
 """
 
 # A task to run again at ARGV[3] (a retry, or one cut short by a shutdown), unless another
@@ -288,6 +305,9 @@ def _is_task(body: Any) -> bool:
         and type(body.get("attempt")) is int
         and body["attempt"] >= 0
         and isinstance(body.get("trace", ""), str)
+        and isinstance(body.get("run"), str)
+        and _RUN_ID.fullmatch(body["run"]) is not None
+        and type(body.get("until")) in (int, float)
     )
 
 
@@ -369,6 +389,9 @@ class FastAPITaskQueue:
     :param max_length: most tasks the queue holds (waiting, running or delayed); `enqueue` raises
         QueueFull beyond, instead of dropping tasks.
     :param max_dead_letters: dead letters kept, about: the oldest go first.
+    :param replay_window: seconds a task may wait in the queue after it's due; later, it's
+        refused as stale and goes to the dead letters (`requeue_dead_letters()` sends it again).
+        Its run id is kept that long, so that a copy of it is refused.
     """
 
     def __init__(
@@ -384,6 +407,7 @@ class FastAPITaskQueue:
         max_payload_size: int = 65_536,
         max_length: int = 100_000,
         max_dead_letters: int = 10_000,
+        replay_window: float = 7 * 24 * 3600,
     ) -> None:
         if not name:
             raise ValueError("the queue needs a name")
@@ -391,8 +415,8 @@ class FastAPITaskQueue:
             raise ValueError("concurrency must be at least 1")
         if grace < 0:
             raise ValueError("grace can't be negative")
-        if poll_interval <= 0 or visibility_timeout <= 0:
-            raise ValueError("poll_interval and visibility_timeout must be positive")
+        if poll_interval <= 0 or visibility_timeout <= 0 or replay_window <= 0:
+            raise ValueError("poll_interval, visibility_timeout and replay_window must be positive")
         if min(max_deliveries, max_payload_size, max_length, max_dead_letters) < 1:
             raise ValueError(
                 "max_deliveries, max_payload_size, max_length and max_dead_letters must be at "
@@ -408,11 +432,12 @@ class FastAPITaskQueue:
         self.max_payload_size = max_payload_size
         self.max_length = max_length
         self.max_dead_letters = max_dead_letters
+        self.replay_window = replay_window
         self._tasks: dict[str, _Task] = {}
         self._names: dict[Callable[..., Any], str] = {}
         self._resolved: Cache | None = None
         self._client: Any = None
-        self._stream = self._delayed = self._dead = self._seal_key = ""
+        self._stream = self._delayed = self._dead = self._runs = self._seal_key = ""
         self._started = False
         self._stopping = False
         self._exiting = False  # the worker's own loop ends: stop() is done waiting for tasks
@@ -492,6 +517,7 @@ class FastAPITaskQueue:
             "args": list(args),
             "kwargs": kwargs,
             "attempt": 0,
+            **self._delivery(seconds),
         }
         if cache.tracer.enabled and (origin := traceparent()):
             body["trace"] = origin
@@ -521,6 +547,10 @@ class FastAPITaskQueue:
                 f"{task!r} isn't a task of the queue {self.name!r}: register it with @queue.task()"
             )
         return self._tasks[name]
+
+    def _delivery(self, delay: float) -> dict[str, Any]:
+        """A fresh run id and deadline, for each time a task goes (back) to the queue."""
+        return {"run": uuid.uuid4().hex, "until": time.time() + delay + self.replay_window}
 
     def _dump(self, body: dict[str, Any]) -> bytes:
         try:
@@ -571,10 +601,11 @@ class FastAPITaskQueue:
             )
         digest = hashlib.sha256(self.name.encode()).hexdigest()[:32]
         base = cache.state_key("tasks", f"{{{digest}}}")
-        self._stream, self._delayed, self._dead = (
+        self._stream, self._delayed, self._dead, self._runs = (
             f"{base}:stream",
             f"{base}:delayed",
             f"{base}:dead",
+            f"{base}:run:",
         )
         # What signatures bind tasks to: a task sealed for one queue doesn't open in another.
         self._seal_key = f"{base}:task"
@@ -833,6 +864,12 @@ class FastAPITaskQueue:
             # Too large: not copied to the dead letters, it couldn't be requeued anyway.
             await self._refuse(entry, body, b"" if body == "too_large" else entry.payload)
             return
+        if body["until"] < time.time():
+            await self._refuse(entry, "stale", entry.payload, body)
+            return
+        if not await self._claim(entry, body):
+            await self._refuse(entry, "replayed", entry.payload, body)
+            return
         task = self._tasks.get(body["task"])
         if task is None:
             await self._refuse(entry, "unknown_task", entry.payload, body)
@@ -842,6 +879,13 @@ class FastAPITaskQueue:
             await self._refuse(entry, "invalid_arguments", entry.payload, body)
         else:
             await self._run(entry, task, body)
+
+    async def _claim(self, entry: _Entry, body: dict[str, Any]) -> bool:
+        """Whether the run of `body` is this entry's: the first entry to carry it claims it until
+        its deadline, and only that entry (taken over by another worker, too) runs it."""
+        ttl = max(1, math.ceil((body["until"] - time.time()) * 1000))
+        key = f"{self._runs}{body['run']}"
+        return bool(await self._eval("task_claim", CLAIM_SCRIPT, [key], entry.id, str(ttl)))
 
     async def _run(self, entry: _Entry, task: _Task, body: dict[str, Any]) -> None:
         assert self._resolved is not None  # noqa: S101  # resolved by start()
@@ -859,7 +903,7 @@ class FastAPITaskQueue:
             except asyncio.CancelledError:
                 # stop() ran out of grace: back to the queue now, not after the visibility timeout.
                 self._ran(task, "interrupted", started)
-                await self._retry(entry, entry.payload, 0.0)
+                await self._retry(entry, self._seal(self._dump({**body, **self._delivery(0)})), 0)
                 raise
             except Exception as exc:
                 record_failure(span, exc)
@@ -901,7 +945,8 @@ class FastAPITaskQueue:
             delay,
             exc_info=exc,
         )
-        await self._retry(entry, self._seal(self._dump({**body, "attempt": failures})), delay)
+        retry = {**body, "attempt": failures, **self._delivery(delay)}
+        await self._retry(entry, self._seal(self._dump(retry)), delay)
 
     async def _retry(self, entry: _Entry, payload: bytes, delay: float) -> None:
         keys = [self._stream, self._delayed]
@@ -1009,7 +1054,7 @@ class FastAPITaskQueue:
         return int(await self._call("task_discard", "xdel", self._dead, *dead_ids))
 
     async def _requeue(self, dead_id: str, body: dict[str, Any]) -> int:
-        payload = self._seal(self._dump({**body, "attempt": 0}))
+        payload = self._seal(self._dump({**body, "attempt": 0, **self._delivery(0)}))
         keys = [self._dead, self._stream, self._delayed]
         result = int(
             await self._eval(

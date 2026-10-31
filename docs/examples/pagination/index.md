@@ -47,17 +47,18 @@ $ curl "http://127.0.0.1:8000/products?page_size=1000"
 ```
 
 By cursor, newest first: each `next_cursor` gives the products right after the last one seen,
-however many are added meanwhile. Cursors are signed, so a made-up one is refused:
+however many are added meanwhile, and `prev_cursor` the ones before the first. Cursors are
+signed, so a made-up one is refused:
 
 ```console
 $ curl "http://127.0.0.1:8000/products/newest?limit=2"
-{"items":[{"name":"Product 60",...,"id":60},{"name":"Product 59",...,"id":59}],"limit":2,"next_cursor":"NTk.no4JNGGfm0sctVoPGwGmLw"}
+{"items":[{"name":"Product 60",...,"id":60},{"name":"Product 59",...,"id":59}],"limit":2,"prev_cursor":null,"next_cursor":"WyJhIiw1OSwiNDdERVFwajhIQlNhLV9USW1XLTVKQSIsMF0.S2JSMl4UWMumn4AjE9_ghQ"}
 
-$ curl "http://127.0.0.1:8000/products/newest?limit=2&cursor=NTk.no4JNGGfm0sctVoPGwGmLw"
-{"items":[{"name":"Product 58",...,"id":58},{"name":"Product 57",...,"id":57}],"limit":2,"next_cursor":"NTc.9b4V9vy4_r7fsd3atc6TWQ"}
+$ curl "http://127.0.0.1:8000/products/newest?limit=2&cursor=WyJhIiw1OSwiNDdERVFwajhIQlNhLV9USW1XLTVKQSIsMF0.S2JSMl4UWMumn4AjE9_ghQ"
+{"items":[{"name":"Product 58",...,"id":58},{"name":"Product 57",...,"id":57}],"limit":2,"prev_cursor":"WyJiIiw1OCwiNDdERVFwajhIQlNhLV9USW1XLTVKQSIsMF0.hERhWzZZDoKBLL99aQKcgg","next_cursor":"WyJhIiw1NywiNDdERVFwajhIQlNhLV9USW1XLTVKQSIsMF0.A01Jk7K5khFEXQC2OO9uLw"}
 
 $ curl -si "http://127.0.0.1:8000/products/newest?limit=2" | grep link
-link: </products/newest?limit=2>; rel="first", </products/newest?cursor=NTk.no4JNGGfm0sctVoPGwGmLw&limit=2>; rel="next"
+link: </products/newest?limit=2>; rel="first", </products/newest?cursor=WyJhIiw1OSwiNDdERVFwajhIQlNhLV9USW1XLTVKQSIsMF0.S2JSMl4UWMumn4AjE9_ghQ&limit=2>; rel="next"
 
 $ curl -i "http://127.0.0.1:8000/products/newest?cursor=abc"
 HTTP/1.1 400 Bad Request

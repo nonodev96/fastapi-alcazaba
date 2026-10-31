@@ -103,16 +103,22 @@ def too_many_requests(
     )
 
 
-def _route_scope(connection: HTTPConnection) -> str:
-    """The route that matched: its methods and path template, so that `/items/1` and `/items/2`
-    share a budget. Without a route (called outside the routing), the path."""
+def _route_scope(connection: HTTPConnection) -> tuple[str, str]:
+    """The route that matched, as (its name in the metrics, what its budget is kept under): its
+    methods and path template, so that `/items/1` and `/items/2` share a budget, and for the
+    budget its endpoint too. Not the `root_path`: under `Mount("/tenants/{tenant}")` it holds the
+    tenant, and each made-up one would get a budget of its own; the endpoint keeps the routes of
+    two mounted apps apart. Without a route (called outside the routing), the path."""
     route = connection.scope.get("route")
     path = getattr(route, "path_format", None)
     if not isinstance(path, str):
-        return str(connection.scope.get("path", ""))
+        raw = str(connection.scope.get("path", ""))
+        return raw, raw
     methods = getattr(route, "methods", None)
-    verbs = ",".join(sorted(methods)) if methods else "WS"
-    return f"{verbs} {connection.scope.get('root_path', '')}{path}"
+    label = f"{','.join(sorted(methods)) if methods else 'WS'} {path}"
+    endpoint = getattr(route, "endpoint", None)
+    name = f"{getattr(endpoint, '__module__', '')}.{getattr(endpoint, '__qualname__', '')}"
+    return label, f"{label} {name}"
 
 
 def _wait(
@@ -299,11 +305,13 @@ class FastAPIRateLimiter:
             raise NotImplementedError(
                 f"{type(backend).__name__} can't keep counters, which the rate limiter needs"
             )
-        scope = self.name if self.name is not None else _route_scope(connection)
+        scope, budget = (
+            (self.name, self.name) if self.name is not None else _route_scope(connection)
+        )
         identity = self.identifier(connection)
         if isawaitable(identity):
             identity = await identity
-        parts = [scope, f"{self.times}/{self.window}", str(identity), key]
+        parts = [budget, f"{self.times}/{self.window}", str(identity), key]
         digest = hashlib.sha256(json.dumps(parts).encode()).hexdigest()[:32]
         # The {hash tag} puts both windows of a client in the same Redis Cluster slot.
         base = cache.state_key("ratelimit", f"{{{digest}}}")

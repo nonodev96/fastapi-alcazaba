@@ -19,4 +19,9 @@ About Alcazaba: what guides its design, its license, and where its name comes fr
 
 ## License and credits
 
---8<-- "README.md:license-and-credits"
+Apache License 2.0: see [LICENSE](https://github.com/nonodev96/fastapi-alcazaba/blob/main/LICENSE)
+and [NOTICE](https://github.com/nonodev96/fastapi-alcazaba/blob/main/NOTICE).
+
+An alcazaba is the walled citadel of an Andalusian city, like those of Almería, Málaga or the
+Alhambra: walls around what matters, and gates that only let the right things in. The logo is one
+of its walls, crowned with pointed merlons, whose horseshoe arch opens on a bolt: safe, and fast.

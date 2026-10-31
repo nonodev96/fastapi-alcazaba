@@ -23,8 +23,8 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
 
     ---
 
-    Twelve strategies: page numbers, offsets, ranges, cursors, keysets, ids, timestamps, sort
-    values, tokens, scrolls and streams, each page cached under its own key.
+    Seven strategies: page numbers, offsets, ranges, signed cursors, keysets, scrolls and
+    streams, each page cached under its own key.
 
 -   :material-speedometer:{ .lg .middle } __[Rate and concurrency limits](../guide/limits.md)__
 

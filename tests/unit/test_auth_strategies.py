@@ -245,9 +245,9 @@ class TestSessionStrategy:
     ) -> None:
         client, _ = sessions
         client.post("/login/ana")
-        before = client.cookies["session"]
+        before = client.cookies["__Host-session"]
         client.post("/login/ben")
-        assert client.cookies["session"] != before
+        assert client.cookies["__Host-session"] != before
         assert client.get("/me").json() == {"user": USERS["ben"]}
 
     def test_a_user_that_is_gone(self, sessions: tuple[TestClient, SessionStrategy]) -> None:
@@ -453,6 +453,7 @@ class TestJWTStrategy:
             ({"key": SECRET, "jwks_url": "https://idp/jwks"}, "key or jwks_url"),
             ({"jwks_url": "https://idp/jwks", "issuer": "https://idp/"}, "the audience"),
             ({"jwks_url": "https://idp/jwks", "audience": "api"}, "the issuer"),
+            ({"key": SECRET, "leeway": 120, "blocklist": TokenBlocklist()}, "leeway=120"),
             ({"key": SECRET, "algorithms": ["none"]}, "'none' is never"),
             ({"key": SECRET, "algorithms": []}, "algorithms"),
             ({"key": SECRET, "algorithms": ["HS256", "RS256"]}, "don't mix"),

@@ -83,7 +83,7 @@ def statuses(client: TestClient, path: str = "/", n: int = 1, **kwargs: Any) -> 
 
 
 def counters(backend: InMemoryBackend) -> list[int]:
-    return sorted(int(value.data) for key, value in backend._state.items() if "!ratelimit:" in key)
+    return sorted(int(value.data) for key, value in backend._state["ratelimit"].items())
 
 
 @pytest.mark.usefixtures("backend")
@@ -206,14 +206,34 @@ class TestWhoAndWhere:
         assert [client.get("/x").status_code, client.post("/x").status_code] == [429, 429]
 
     def test_mounted_apps_have_their_own_budget(self) -> None:
-        app = FastAPI()
-        for version in ("/v1", "/v2"):
-            sub = FastAPI()
-            sub.get("/items", dependencies=[Depends(FastAPIRateLimiter(times=1, minutes=1))])(ok)
-            app.mount(version, sub)
+        app, v1, v2 = FastAPI(), FastAPI(), FastAPI()
+
+        async def items_v1() -> str:
+            return "ok"
+
+        async def items_v2() -> str:
+            return "ok"
+
+        v1.get("/items", dependencies=[Depends(FastAPIRateLimiter(times=1, minutes=1))])(items_v1)
+        v2.get("/items", dependencies=[Depends(FastAPIRateLimiter(times=1, minutes=1))])(items_v2)
+        app.mount("/v1", v1)
+        app.mount("/v2", v2)
         client = TestClient(app)
         assert [client.get(p).status_code for p in ("/v1/items", "/v2/items")] == [200, 200]
         assert statuses(client, "/v1/items") == [429]
+
+    def test_a_mount_with_a_path_parameter_shares_one_budget(self) -> None:
+        """Under Mount("/tenants/{tenant}"), a made-up tenant doesn't get a budget of its own."""
+        app, sub = FastAPI(), FastAPI()
+        sub.get("/items", dependencies=[Depends(FastAPIRateLimiter(times=2, minutes=1))])(ok)
+        app.mount("/tenants/{tenant}", sub)
+        client = TestClient(app)
+        assert [client.get(f"/tenants/t{n}/items").status_code for n in range(4)] == [
+            200,
+            200,
+            429,
+            429,
+        ]
 
     def test_different_rates_count_apart(self) -> None:
         client = limited_app(
@@ -229,7 +249,7 @@ class TestBackend:
         Cache(backend, prefix="app").install(app := FastAPI())
         app.get("/", dependencies=[Depends(FastAPIRateLimiter(times=1, minutes=1))])(ok)
         TestClient(app).get("/")
-        (key,) = backend._state
+        (key,) = backend._state["ratelimit"]
         assert key.startswith("app!ratelimit:")
         assert "testclient" not in key
 

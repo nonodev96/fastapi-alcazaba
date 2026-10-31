@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from fastapi_alcazaba.backends.base import Backend, is_state_key
+from fastapi_alcazaba.core.errors import BackendUnavailable
 
 
 @dataclass(slots=True)
@@ -18,10 +19,14 @@ class InMemoryBackend(Backend):
 
     Each instance has its own store, bounded to `max_size` entries (the least recently used are
     evicted): a store that never evicted would grow with every new query string until the
-    process ran out of memory. State (rate-limit counters,
-    revoked tokens, one-time codes, idempotency records: `Cache.state_key`) has a store of its own
-    with the same bound, expired keys evicted first, so that caching many responses never evicts
-    it.
+    process ran out of memory.
+
+    State (rate-limit counters, revoked tokens, one-time codes, sessions, idempotency records:
+    `Cache.state_key`) is never evicted while it lives: forgetting a revocation would accept the
+    token again. Each kind of state has a store of its own, bounded to `max_size` live entries;
+    a write to a full one raises BackendUnavailable, like Redis with `noeviction`, and each tool
+    fails closed. So a flood of idempotency keys fills the idempotency records, never the
+    revocations or the sessions.
     """
 
     supports_locks = True  # within the process
@@ -33,15 +38,17 @@ class InMemoryBackend(Backend):
             raise ValueError("max_size must be at least 1 (or None for no limit)")
         self.max_size = max_size
         self._store: OrderedDict[str, Value] = OrderedDict()
-        self._state: OrderedDict[str, Value] = OrderedDict()
-        self._state_swept_at = 0.0  # monotonic time
+        self._state: dict[str, OrderedDict[str, Value]] = {}  # kind -> its state
+        self._swept_at: dict[str, float] = {}  # kind -> monotonic time of its last sweep
         self._tags: dict[str, set[str]] = {}
         self._tags_of: dict[str, set[str]] = {}  # entry key -> its tags
         # Apart from the entries, so that evicting the least recently used never frees a lock.
         self._locks: dict[str, tuple[str, float]] = {}  # key -> (token, expiry in monotonic time)
 
     def _place(self, key: str) -> OrderedDict[str, Value]:
-        return self._state if is_state_key(key) else self._store
+        if not is_state_key(key):
+            return self._store
+        return self._state.setdefault(_kind(key), OrderedDict())
 
     def _delete(self, key: str) -> bool:
         if self._place(key).pop(key, None) is None:
@@ -84,25 +91,32 @@ class InMemoryBackend(Backend):
         place.move_to_end(key)
         if self.max_size is None or len(place) <= self.max_size:
             return
-        if place is self._state:
-            self._sweep_state()
-        while len(place) > self.max_size:
-            self._delete(next(iter(place)))
-
-    def _sweep_state(self) -> None:
-        """Drop the expired state, at most once a second: it goes before anything still live."""
-        now = time.monotonic()
-        if now - self._state_swept_at < 1:
+        if place is self._store:
+            while len(place) > self.max_size:
+                self._delete(next(iter(place)))
             return
-        self._state_swept_at = now
-        expired = [k for k, v in self._state.items() if v.expires_at and v.expires_at <= now]
+        self._sweep(_kind(key), place)
+        if len(place) > self.max_size:
+            self._delete(key)
+            raise BackendUnavailable(
+                f"the in-memory state of {_kind(key)!r} is full: {self.max_size} live entries"
+            )
+
+    def _sweep(self, kind: str, place: OrderedDict[str, Value]) -> None:
+        """Drop the expired state of `kind`, at most once a second."""
+        now = time.monotonic()
+        if now - self._swept_at.get(kind, 0.0) < 1:
+            return
+        self._swept_at[kind] = now
+        expired = [k for k, v in place.items() if v.expires_at and v.expires_at <= now]
         for key in expired:
             self._delete(key)
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
         if namespace:
             prefix = f"{namespace}:"
-            matching = [k for k in (*self._store, *self._state) if k.startswith(prefix)]
+            state = (key for place in self._state.values() for key in place)
+            matching = [k for k in (*self._store, *state) if k.startswith(prefix)]
             for k in matching:
                 self._delete(k)
             return len(matching)
@@ -179,3 +193,8 @@ class InMemoryBackend(Backend):
         keys = set().union(*(self._tags.get(tag, set()) for tag in tags))
         deleted = [key for key in keys if self._delete(key)]
         return len(deleted), deleted
+
+
+def _kind(key: str) -> str:
+    """The kind of a state key, `{prefix}!{kind}:...`."""
+    return key[key.find("!") + 1 : key.find(":")]

@@ -1,4 +1,4 @@
-"""The keyset example: olive oils by price, browsed both ways."""
+"""The keyset example: a chat's messages after the last one seen, or back from the newest."""
 
 from collections.abc import Iterator
 from typing import Any
@@ -6,80 +6,73 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from examples.pagination.keyset import Database, app
+from examples.pagination import keyset
 from fastapi_alcazaba import FastAPICache
 from tests.cache_status import served
 
 
 @pytest.fixture(name="client")
 def fixture_client() -> Iterator[TestClient]:
-    with TestClient(app) as client:
+    with TestClient(keyset.app) as client:
         yield client
     FastAPICache.reset()
 
 
 def queries() -> int:
-    db: Database = app.state.db
+    db: keyset.Database = keyset.app.state.db
     return db.queries
 
 
 def ids(body: dict[str, Any]) -> list[int]:
-    return [item["id"] for item in body["items"]]
+    return [message["id"] for message in body["items"]]
 
 
-class TestBothWays:
-    def test_forwards_and_back(self, client: TestClient) -> None:
-        first = client.get("/products").json()
-        assert (ids(first), first["before"]) == ([7, 4, 12], None)
-        second = client.get(f"/products?after={first['after']}").json()
-        assert ids(second) == [6, 1, 3]
-        third = client.get(f"/products?after={second['after']}").json()
-        assert ids(third) == [10, 5, 2]  # 9.90 is shared by 2 and 9, on two pages
-        last = client.get(f"/products?after={third['after']}").json()
-        assert (ids(last), last["after"]) == ([9, 8, 11], None)
-        back = client.get(f"/products?before={last['before']}").json()
-        assert ids(back) == [10, 5, 2]
-        back = client.get(f"/products?before={back['before']}").json()
-        back = client.get(f"/products?before={back['before']}").json()
-        assert (ids(back), back["before"]) == ([7, 4, 12], None)
-        assert queries() == 7
+class TestKeysetExample:
+    def test_after_the_last_message_seen(self, client: TestClient) -> None:
+        first = client.get("/messages?limit=3").json()
+        assert (ids(first), first["after"], first["has_more"]) == ([1, 2, 3], "3", True)
+        second = client.get(f"/messages?after={first['after']}&limit=3").json()
+        assert ids(second) == [4, 5, 6]
 
-    def test_through_the_links(self, client: TestClient) -> None:
-        first = client.get("/products?limit=5")
-        assert set(first.links) == {"first", "next"}
-        second = client.get(first.links["next"]["url"])
-        assert ids(second.json()) == [3, 10, 5, 2, 9]
-        assert set(second.links) == {"first", "prev", "next"}
-        assert ids(client.get(second.links["prev"]["url"]).json()) == [7, 4, 12, 6, 1]
+    def test_the_last_page(self, client: TestClient) -> None:
+        response = client.get("/messages?after=58")
+        body = response.json()
+        assert (ids(body), body["after"], body["has_more"]) == ([59, 60], "60", False)
+        assert set(response.links) == {"first"}
 
-    def test_each_page_has_its_entry(self, client: TestClient) -> None:
-        key = client.get("/products").json()["after"]
-        assert served(client.get(f"/products?after={key}").headers) == "miss"
-        hit = client.get(f"/products?after={key}")
-        assert (served(hit.headers), ids(hit.json())) == ("hit", [6, 1, 3])
-        assert queries() == 2
+    def test_newest_first(self, client: TestClient) -> None:
+        first = client.get("/messages/newest?limit=3")
+        assert ids(first.json()) == [60, 59, 58]
+        assert first.links["next"]["url"] == "/messages/newest?after=58&limit=3"
+        assert ids(client.get("/messages/newest?after=58&limit=3").json()) == [57, 56, 55]
+        last = client.get("/messages/newest?after=3").json()
+        assert (ids(last), last["has_more"]) == ([2, 1], False)
 
+    def test_new_messages_reach_clients_that_sync(self, client: TestClient) -> None:
+        caught_up = client.get("/messages?after=60").json()
+        assert (caught_up["items"], caught_up["after"]) == ([], None)
+        message = {"author": "ana", "text": "¿Comemos?"}
+        assert client.post("/messages", json=message).json()["id"] == 61
+        response = client.get("/messages?after=60")
+        assert (served(response.headers), ids(response.json())) == ("miss", [61])
+        assert ids(client.get("/messages?after=58&limit=2").json()) == [59, 60]
 
-class TestWrites:
-    def test_a_new_product_doesnt_shift_the_pages(self, client: TestClient) -> None:
-        first = client.get("/products").json()
-        added = client.post("/products", json={"name": "Picual 250 ml", "price": 3.5})
-        assert (added.status_code, added.json()["id"]) == (201, 13)
-        assert ids(client.get(f"/products?after={first['after']}").json()) == [6, 1, 3]
-        assert ids(client.get("/products").json()) == [13, 7, 4]
-
-
-class TestRefused:
-    def test_made_up_keys(self, client: TestClient) -> None:
-        response = client.get("/products?after=WzMuOSw3XQ")  # [3.9,7], not signed
-        assert (response.status_code, response.json()) == (400, {"detail": "Invalid after"})
-
-    def test_both_ways_at_once(self, client: TestClient) -> None:
-        key = client.get("/products").json()["after"]
-        response = client.get(f"/products?after={key}&before={key}")
-        assert response.status_code == 400
+    def test_each_page_is_cached(self, client: TestClient) -> None:
+        client.get("/messages?after=20")
+        hit = client.get("/messages?after=20")
+        assert (served(hit.headers), ids(hit.json())[0]) == ("hit", 21)
+        assert hit.links["next"]["url"] == "/messages?after=40&limit=20"
         assert queries() == 1
 
-    def test_pages_are_at_most_50_items(self, client: TestClient) -> None:
-        assert client.get("/products?limit=51").status_code == 422
+    @pytest.mark.parametrize(
+        ("path", "status"),
+        [
+            ("/messages?after=abc", 400),
+            ("/messages/newest?after=1.5", 400),
+            ("/messages?limit=101", 422),
+        ],
+    )
+    def test_wrong_parameters(self, client: TestClient, path: str, status: int) -> None:
+        response = client.get(path)
+        assert response.status_code == status
         assert queries() == 0
