@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/production/">
       
       
-        <link rel="prev" href="../pagination/token/">
+        <link rel="prev" href="../pagination/sqlalchemy/">
       
       
         <link rel="next" href="../limits/">
@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1281,14 +1311,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1376,34 +1398,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../pagination/keyset/" class="md-nav__link">
         
   
@@ -1412,34 +1406,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1572,34 +1538,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../pagination/streaming/" class="md-nav__link">
         
   
@@ -1628,42 +1566,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/time-based/" class="md-nav__link">
+      <a href="../pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2566,16 +2476,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2643,34 +2543,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2783,118 +2655,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4096,6 +3856,7 @@ they share that state through a backend: Redis, Valkey, memcached or DynamoDB.</
 </span><span id="__span-0-7">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[auth-strategy-jwt]"</span><span class="w">     </span><span class="c1"># JWTStrategy</span>
 </span><span id="__span-0-8">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[auth-strategy-oauth2]"</span><span class="w">  </span><span class="c1"># OAuth2Strategy</span>
 </span><span id="__span-0-9">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[auth-strategy-saml]"</span><span class="w">    </span><span class="c1"># SAMLStrategy</span>
+</span><span id="__span-0-10">pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[sqlalchemy]"</span><span class="w">            </span><span class="c1"># pagination queries for SQLAlchemy</span>
 </span></code></pre></div>
 <p>Python 3.11+, FastAPI 0.115+ and Pydantic v2.</p>
 <h2 id="the-app">The app<a class="headerlink" href="#the-app" title="Permanent link">&para;</a></h2>
@@ -4210,7 +3971,7 @@ tracebacks until Alcazaba uses it. The other snippets read theirs from the same 
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../pagination/token/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PaginationToken">
+          <a href="../pagination/sqlalchemy/" class="md-footer__link md-footer__link--prev" aria-label="Previous: With SQLAlchemy">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4220,7 +3981,7 @@ tracebacks until Alcazaba uses it. The other snippets read theirs from the same 
                 Previous
               </span>
               <div class="md-ellipsis">
-                PaginationToken
+                With SQLAlchemy
               </div>
             </div>
           </a>

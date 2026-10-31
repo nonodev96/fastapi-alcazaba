@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1274,14 +1304,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1369,34 +1391,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/keyset/" class="md-nav__link">
         
   
@@ -1405,34 +1399,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1565,34 +1531,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/streaming/" class="md-nav__link">
         
   
@@ -1621,42 +1559,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/time-based/" class="md-nav__link">
+      <a href="../../guide/pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2479,16 +2389,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2556,34 +2456,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2696,118 +2568,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4088,7 +3848,12 @@ In <code>fastapi_alcazaba.idempotency</code>.</p>
 </code></pre></div>
 <p>Requests without the header go through untouched (<code>require_idempotency_key</code> makes it
 mandatory on a route). The stored responses go through the cache's signing or encryption:
-use an <code>encryption_key</code> when they carry personal data.</p>
+use an <code>encryption_key</code> when they carry personal data. They're kept without <code>Set-Cookie</code>.</p>
+<p>A retry gets the stored response before the route's dependencies run: authentication
+included. With the default identifier, whoever has a copy of the request (its token, its key)
+gets the response again until it expires, even after the token is revoked; an identifier
+that checks the credentials (async, returning the user's id, raising a 401 otherwise) closes
+that.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

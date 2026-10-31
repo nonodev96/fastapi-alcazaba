@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1274,14 +1304,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1369,34 +1391,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/keyset/" class="md-nav__link">
         
   
@@ -1405,34 +1399,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1565,34 +1531,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/streaming/" class="md-nav__link">
         
   
@@ -1621,42 +1559,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/time-based/" class="md-nav__link">
+      <a href="../../guide/pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2479,16 +2389,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2556,34 +2456,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2696,118 +2568,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4335,7 +4095,9 @@ Starlette's AuthenticationMiddleware (<code>starlette_user</code>).</p>
             <td>
               <div class="doc-md-description">
                 <p>the subject of requests without one, for policies that open some routes to
-everybody (<code>p, anonymous, /catalog, GET</code>); None refuses them without asking the policy.</p>
+everybody (<code>p, anonymous, /catalog, GET</code>); None refuses them without asking the policy.
+A name no user can have (<code>*anonymous</code>), or a user who takes it gets its rules, and every
+anonymous request that user's.</p>
               </div>
             </td>
             <td>
@@ -4477,8 +4239,9 @@ refuse it with: 401 without a subject, 403 with one.</p>
     <div class="doc doc-contents ">
 
         <p><code>refusal</code> of (subject, path, method): the path the app routes and the HTTP method
-(<code>WEBSOCKET</code> for WebSockets). A 400 for paths with control characters, without asking the
-policy: the app could route them elsewhere than the policy reads them.</p>
+(<code>WEBSOCKET</code> for WebSockets; GET for HEAD, which runs the GET route). A 400 for paths with
+control characters, without asking the policy: the app could route them elsewhere than
+the policy reads them.</p>
 
 
     </div>
@@ -4502,7 +4265,7 @@ policy: the app could route them elsewhere than the policy reads them.</p>
 
 
 <a href="#fastapi_alcazaba.authz.CasbinMiddleware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">CasbinMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="n">enforcer</span><span class="p">:</span> <span class="n">Enforcer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">anonymous</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s1">'anonymous'</span><span class="p">,</span> <span class="n">challenge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'Bearer'</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">CasbinMiddleware</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">ASGIApp</span><span class="p">,</span> <span class="n">enforcer</span><span class="p">:</span> <span class="n">Enforcer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">anonymous</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">challenge</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'Bearer'</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -4514,14 +4277,14 @@ AuthenticationMiddleware. Add it before AuthenticationMiddleware, so that it run
 <div class="language-text highlight"><pre><span></span><code>app.add_middleware(CasbinMiddleware, enforcer=enforcer)
 app.add_middleware(AuthenticationMiddleware, backend=BasicAuth())
 </code></pre></div>
-<p>Each request is checked as (user, path, method): the user's <code>display_name</code> (<code>anonymous</code> when
-it isn't authenticated), the path the app routes (without the <code>root_path</code> a proxy or a mount
-adds in front) and the method, <code>WEBSOCKET</code> for WebSockets. Refused requests get a 403, or a
-401 (with <code>WWW-Authenticate: &lt;challenge&gt;</code>) when they have no user; WebSockets are closed with
-1008 (policy violation). Paths with control characters (<code>%0A</code>...) get a 400 without asking
-the policy, as the app could route them elsewhere than the policy reads them. Every request is
-checked, OPTIONS too: add CORSMiddleware after this
-one (outside it), and it answers the preflights before they get here.</p>
+<p>Each request is checked as (user, path, method): the user's <code>identity</code> (<code>anonymous</code> when it
+isn't authenticated), the path the app routes (without the <code>root_path</code> a proxy or a mount
+adds in front) and the method, GET for HEAD and <code>WEBSOCKET</code> for WebSockets. Refused requests
+get a 403, or a 401 (with <code>WWW-Authenticate: &lt;challenge&gt;</code>) when they have no user; WebSockets
+are closed with 1008 (policy violation). Paths with control characters (<code>%0A</code>...) get a 400
+without asking the policy, as the app could route them elsewhere than the policy reads them.
+Every request is checked, OPTIONS too: add CORSMiddleware after this one (outside it), and it
+answers the preflights before they get here.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4560,12 +4323,12 @@ one (outside it), and it answers the preflights before they get here.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>the subject of requests without a user; None refuses them without asking
-the policy.</p>
+                <p>the subject of requests without a user, a name no user can have
+(<code>*anonymous</code>); None refuses them without asking the policy.</p>
               </div>
             </td>
             <td>
-                  <code>&#39;anonymous&#39;</code>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -4646,8 +4409,8 @@ default.</p>
 
     <div class="doc doc-contents first">
 
-        <p>The subject of Starlette's AuthenticationMiddleware: its user's <code>display_name</code>, None when
-it isn't authenticated.</p>
+        <p>The subject of Starlette's AuthenticationMiddleware: its user's <code>identity</code> (not the
+<code>display_name</code>, which users may choose), None when it isn't authenticated.</p>
 
 
     </div>

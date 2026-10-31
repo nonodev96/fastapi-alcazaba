@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1283,14 +1313,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1378,34 +1400,6 @@
   
   
     <li class="md-nav__item">
-      <a href="id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="keyset/" class="md-nav__link">
         
   
@@ -1414,34 +1408,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1574,34 +1540,6 @@
   
   
     <li class="md-nav__item">
-      <a href="search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="streaming/" class="md-nav__link">
         
   
@@ -1630,42 +1568,14 @@
   
   
     <li class="md-nav__item">
-      <a href="time-based/" class="md-nav__link">
+      <a href="sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2488,16 +2398,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2565,34 +2465,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2705,118 +2577,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4002,7 +3762,7 @@
 <h1 id="pagination">Pagination<a class="headerlink" href="#pagination" title="Permanent link">&para;</a></h1>
 <p>In an app: <a href="../../examples/pagination/">the examples</a>. Every class and function: <a href="../../reference/pagination/">the API reference</a>.</p>
 <h2 id="strategies">Strategies<a class="headerlink" href="#strategies" title="Permanent link">&para;</a></h2>
-<p>Twelve strategies, with nothing but FastAPI and pydantic. Each is configured once and used as a
+<p>Seven strategies, with nothing but FastAPI and pydantic. Each is configured once and used as a
 dependency, which reads and checks its query parameters; the endpoint gets them as an argument, so
 <code>@cache</code> keeps each page under a key of its own:</p>
 <table>
@@ -4020,14 +3780,9 @@ dependency, which reads and checks its query parameters; the endpoint gets them 
 <td>Numbered pages, with the total</td>
 </tr>
 <tr>
-<td><code>PaginationLimitOffset</code></td>
-<td><code>limit</code>, <code>offset</code></td>
-<td>Slices, with the total</td>
-</tr>
-<tr>
 <td><code>PaginationOffset</code></td>
 <td><code>offset</code>, <code>limit</code></td>
-<td>Slices, without counting the whole list</td>
+<td>Slices, with the total or without counting the list</td>
 </tr>
 <tr>
 <td><code>PaginationRange</code></td>
@@ -4037,32 +3792,12 @@ dependency, which reads and checks its query parameters; the endpoint gets them 
 <tr>
 <td><code>PaginationCursor</code></td>
 <td><code>cursor</code>, <code>limit</code></td>
-<td>An opaque, signed cursor: infinite scroll, feeds</td>
+<td>Opaque, signed cursors, both ways, bound to the query: feeds, infinite scroll</td>
 </tr>
 <tr>
 <td><code>PaginationKeyset</code></td>
-<td><code>after</code>, <code>before</code>, <code>limit</code></td>
-<td>Keyset pagination, both ways</td>
-</tr>
-<tr>
-<td><code>PaginationIdBased</code></td>
-<td><code>last_id</code>, <code>limit</code></td>
-<td>The id of the last item seen</td>
-</tr>
-<tr>
-<td><code>PaginationTimeBased</code></td>
-<td><code>timestamp</code>, <code>limit</code></td>
-<td>Before or after a time: feeds, syncing</td>
-</tr>
-<tr>
-<td><code>PaginationSearchAfter</code></td>
-<td><code>search_after</code>, <code>limit</code></td>
-<td>The sort values of the last item, readable</td>
-</tr>
-<tr>
-<td><code>PaginationToken</code></td>
-<td><code>page_token</code>, <code>page_size</code></td>
-<td>An opaque token, bound to the query, that expires</td>
+<td><code>after</code>, <code>limit</code></td>
+<td>The key of the last item in plain sight (an id, a time, several values): syncing, public APIs</td>
 </tr>
 <tr>
 <td><code>PaginationScroll</code></td>
@@ -4076,6 +3811,11 @@ dependency, which reads and checks its query parameters; the endpoint gets them 
 </tr>
 </tbody>
 </table>
+<p>Which one: numbered pages for people who jump to page 7, <code>PaginationOffset</code> for slices of a
+list that doesn't change much (without its total when counting it is slow),
+<code>PaginationCursor</code> for feeds and lists that change while they're read, <code>PaginationKeyset</code> when
+clients sync or write their own starting point (<code>?after=2026-10-29T10:00:00Z</code>), and a scroll or
+a stream to read everything: exports, reindexing.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination.page_number</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="__span-0-2">    <span class="n">PageNumberPage</span><span class="p">,</span>
 </span><span id="__span-0-3">    <span class="n">PageNumberParams</span><span class="p">,</span>
@@ -4095,8 +3835,7 @@ dependency, which reads and checks its query parameters; the endpoint gets them 
 <ul>
 <li><strong>By position or by key:</strong> page numbers, offsets and ranges count items, so a row added or
   deleted meanwhile shifts the pages (an item skipped or seen twice), and a database walks past
-  every row before the page. Cursors, keysets, ids, timestamps and sort values point at the last
-  item instead: the pages don't shift, and an index finds any of them as fast as the first.</li>
+  every row before the page. Cursors and keysets point at the last item instead: the pages don't shift, and an index finds any of them as fast as the first.</li>
 <li><strong>Links:</strong> the response links to the pages around it in the <code>Link</code> header
   (<a href="https://www.rfc-editor.org/rfc/rfc8288">RFC 8288</a>), as GitHub's API does:
   <code>&lt;/products?page=3&amp;page_size=20&gt;; rel="next"</code>. The links keep the request's other query
@@ -4118,18 +3857,15 @@ dependency, which reads and checks its query parameters; the endpoint gets them 
 <p>Each strategy has its page:</p>
 <ul>
 <li><a href="page-number/"><code>PaginationPageNumber</code></a>: numbered pages, with the total: <code>?page=2&amp;page_size=20</code>.</li>
-<li><a href="limit-offset/"><code>PaginationLimitOffset</code></a>: slices, with the total: <code>?limit=20&amp;offset=40</code>.</li>
-<li><a href="offset/"><code>PaginationOffset</code></a>: slices without counting the whole list: <code>?offset=40&amp;limit=20</code>.</li>
+<li><a href="offset/"><code>PaginationOffset</code></a>: slices, with the total or without it: <code>?offset=40&amp;limit=20</code>.</li>
 <li><a href="range/"><code>PaginationRange</code></a>: ranges of items, with <code>Content-Range</code>: <code>?start=0&amp;end=24</code>.</li>
-<li><a href="cursor/"><code>PaginationCursor</code></a>: an opaque, signed cursor: <code>?limit=20&amp;cursor=...</code>.</li>
-<li><a href="keyset/"><code>PaginationKeyset</code></a>: keyset pagination, both ways: <code>?after=...</code> or <code>?before=...</code>.</li>
-<li><a href="id-based/"><code>PaginationIdBased</code></a>: the id of the last item seen: <code>?last_id=42&amp;limit=20</code>.</li>
-<li><a href="time-based/"><code>PaginationTimeBased</code></a>: before or after a time: <code>?timestamp=2026-10-29T10:00:00Z&amp;limit=20</code>.</li>
-<li><a href="search-after/"><code>PaginationSearchAfter</code></a>: the sort values of the last item: <code>?search_after=["...",42]&amp;limit=20</code>.</li>
-<li><a href="token/"><code>PaginationToken</code></a>: an opaque token, bound to the query, that expires: <code>?page_token=...&amp;page_size=20</code>.</li>
+<li><a href="cursor/"><code>PaginationCursor</code></a>: opaque, signed cursors, both ways: <code>?cursor=...&amp;limit=20</code>.</li>
+<li><a href="keyset/"><code>PaginationKeyset</code></a>: the key of the last item, readable: <code>?after=42&amp;limit=20</code>.</li>
 <li><a href="scroll/"><code>PaginationScroll</code></a>: a snapshot kept in the backend, read in batches: <code>?scroll_id=...</code>.</li>
 <li><a href="streaming/"><code>PaginationStreaming</code></a>: every item as it comes, as NDJSON, without pages.</li>
 </ul>
+<p>And for the queries: <a href="sqlalchemy/">With SQLAlchemy</a>, <code>page_query</code> and <code>count_query</code> from the
+parameters of any strategy.</p>
 
 
 

@@ -16,7 +16,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../id-based/">
+        <link rel="next" href="../keyset/">
       
       
         
@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1283,14 +1313,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1388,34 +1410,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../keyset/" class="md-nav__link">
         
   
@@ -1424,34 +1418,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1584,34 +1550,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../streaming/" class="md-nav__link">
         
   
@@ -1640,42 +1578,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../time-based/" class="md-nav__link">
+      <a href="../sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2498,16 +2408,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2575,34 +2475,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2715,118 +2587,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -3991,44 +3751,70 @@
 
 
 <h1 id="paginationcursor">PaginationCursor<a class="headerlink" href="#paginationcursor" title="Permanent link">&para;</a></h1>
-<p>An opaque, signed cursor: <code>?limit=20&amp;cursor=...</code>.</p>
+<p>Opaque, signed cursors, both ways, bound to the query: <code>?cursor=...&amp;limit=20</code>.</p>
 <p>In an app: <a href="../../../examples/pagination/cursor/">the example</a>. How strategies work: <a href="../#strategies">Pagination</a>. Every argument: <a href="../../../reference/pagination/#fastapi_alcazaba.pagination.cursor.PaginationCursor">the API reference</a>.</p>
-<p>A cursor points at the last item of a page by its sort key, not by its position: rows added or
-deleted meanwhile don't shift the pages (no item skipped or seen twice), and a database finds any
-page through an index, as fast as the first. For infinite scroll, feeds and clients that sync
-everything:</p>
+<p>A cursor points at the item at the edge of a page by its sort key, not by its position: rows
+added or deleted meanwhile don't shift the pages (no item skipped or seen twice), and a database
+finds any page through an index, from either side, as fast as the first. Cursors are the way to
+the next and previous pages and nothing else: opaque, signed, bound to the query they were
+issued for and, with a <code>ttl</code>, short-lived. For feeds, infinite scroll, lists with "Previous" and
+"Next", and public APIs whose pagination may change behind the cursor without breaking anybody:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination.cursor</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorPage</span><span class="p">,</span> <span class="n">CursorParams</span><span class="p">,</span> <span class="n">PaginationCursor</span>
 </span><span id="__span-0-2">
-</span><span id="__span-0-3"><span class="n">cursors</span> <span class="o">=</span> <span class="n">PaginationCursor</span><span class="p">(</span><span class="n">secret</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cursor_secret</span><span class="p">)</span>  <span class="c1"># secrets.token_urlsafe(32)</span>
+</span><span id="__span-0-3"><span class="n">cursors</span> <span class="o">=</span> <span class="n">PaginationCursor</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">cursor_secret</span><span class="p">)</span>  <span class="c1"># secrets.token_urlsafe(32)</span>
 </span><span id="__span-0-4">
 </span><span id="__span-0-5">
 </span><span id="__span-0-6"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/events"</span><span class="p">)</span>
 </span><span id="__span-0-7"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-</span><span id="__span-0-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">CursorParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">cursors</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
-</span><span id="__span-0-9">    <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Event</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">fetch</span><span class="p">)</span>
-</span><span id="__span-0-10">    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># (created_at, id) of the last event seen</span>
-</span><span id="__span-0-11">        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tuple_</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">)</span>
-</span><span id="__span-0-12">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
-</span><span id="__span-0-13">    <span class="k">return</span> <span class="n">cursors</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">events</span><span class="p">(</span>
+</span><span id="__span-0-9">    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">CursorParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">cursors</span><span class="p">)],</span>
+</span><span id="__span-0-10">    <span class="n">kind</span><span class="p">:</span> <span class="n">Kind</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-11"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CursorPage</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+</span><span id="__span-0-12">    <span class="n">key</span> <span class="o">=</span> <span class="n">tuple_</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-0-13">    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># the page before: the nearest rows first</span>
+</span><span id="__span-0-14">        <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Event</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">key</span> <span class="o">&lt;</span> <span class="n">params</span><span class="o">.</span><span class="n">before</span><span class="p">)</span>
+</span><span id="__span-0-15">        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">desc</span><span class="p">(),</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+</span><span id="__span-0-16">    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-17">        <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Event</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-0-18">        <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-19">            <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">key</span> <span class="o">&gt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">)</span>
+</span><span id="__span-0-20">    <span class="k">if</span> <span class="n">kind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-21">        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">kind</span><span class="p">)</span>
+</span><span id="__span-0-22">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">fetch</span><span class="p">)))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</span><span id="__span-0-23">    <span class="k">return</span> <span class="n">cursors</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">created_at</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>GET /events?limit=20</code> answers <code>{"items": [...], "limit": 20, "next_cursor": "WyIyMDI2..."}</code>,
-and <code>?cursor=&lt;next_cursor&gt;</code> the next page; <code>next_cursor</code> is null on the last one. The <code>Link</code>
-header has the first page and, except on the last page, the next one.</p>
+<p><code>GET /events?kind=login&amp;limit=20</code> answers <code>{"items": [...], "limit": 20, "prev_cursor": null,
+"next_cursor": "WyJhIixb..."}</code>, and <code>?kind=login&amp;cursor=&lt;next_cursor&gt;</code> the next page:
+<code>next_cursor</code> is null on the last page, <code>prev_cursor</code> on the first. The <code>Link</code> header has the
+first page and, when there's one, the previous and the next.</p>
 <ul>
 <li><strong>The sort key</strong> (<code>key</code>) must be unique: <code>(created_at, id)</code>, not <code>created_at</code> alone, which two
   items may share. Its values can be strings, integers (up to 64 bits), floats, booleans,
-  datetimes, dates, UUIDs and decimals, and <code>params.after</code> has them back as such.</li>
-<li><strong>Queried or sliced:</strong> with <code>queried=True</code>, the rows are those of the page, queried with a key
-  past <code>params.after</code> and <code>params.fetch</code> (one more than <code>limit</code>: it tells whether there's a next
-  page). Without it, <code>paginate</code> finds the page in the whole sorted list. <code>descending=True</code> for
-  newest first.</li>
-<li><strong>Signed:</strong> with a <code>secret</code>, cursors carry an HMAC-SHA256 and a client can't make one up or
-  change it; a list rotates secrets. Without it, a cursor's values are checked to be of those
-  types. Either way an invalid cursor is a 400, and one longer than 1024 characters or malformed a
-  422, before the endpoint runs. Cursors are base64, not encrypted: clients can read the sort key,
-  so sort by what they may see.</li>
-<li><strong>Forward only:</strong> to go back, clients keep the cursors they've used, or use
-  <code>PaginationKeyset</code>, which goes both ways.</li>
+  datetimes, dates, UUIDs and decimals, and <code>params.after</code> and <code>params.before</code> have them back as
+  such: one of them is set, by the cursor's direction, neither on the first page.</li>
+<li><strong>Queried or sliced:</strong> with <code>queried=True</code>, the rows are those the database returned, up to
+  <code>params.fetch</code> (the limit and one more, which tells whether there's another page that way):
+  past <code>params.after</code> in order, or with <code>params.before</code>, before it in the reverse order, nearest
+  first, which <code>paginate</code> puts back in order. The other way there's always a page, the one the
+  cursor came from. Without it, <code>paginate</code> finds the page in the whole sorted list.
+  <code>descending=True</code> for newest first, where <code>after</code> reads <code>key &lt; :after</code> and <code>before</code>
+  <code>key &gt; :before ORDER BY key</code>.</li>
+<li><strong>What a cursor holds:</strong> its direction, the sort key, a digest of the request's other query
+  parameters (all but <code>cursor</code> and <code>limit</code>, in any order) and, with a <code>ttl</code>, when it was issued,
+  signed with HMAC-SHA256 (<code>secret</code> is required; a list rotates secrets). A cursor that a client
+  made or changed, that comes with other query parameters than its own (the next page of
+  <code>kind=login</code> asked with <code>kind=logout</code>), or older than <code>ttl</code> is a 400 before the endpoint runs;
+  one longer than 1024 characters or malformed is a 422. Cursors are base64, not encrypted:
+  clients can read the sort key, so sort by what they may see.</li>
+<li><strong>Cached apart:</strong> the query's digest is part of <code>CursorParams</code>, so <code>@cache</code> keeps the pages of
+  each query apart, even for parameters the endpoint doesn't read. With a <code>ttl</code>, a page served
+  from the cache hands out the cursors issued when it was stored: keep <code>expire</code> well under <code>ttl</code>.</li>
+<li><strong>Links of your own:</strong> <code>cursors.encode(position, before=False, query=[...])</code> makes the cursor
+  of the page after (or before) any position, such as the events after a date.</li>
+<li><strong>Its limits:</strong> no total and no page numbers, only the first, previous and next pages. Going
+  back from a page that didn't start where the first page's walk would have, the first page can
+  be shorter than the limit. For a key clients read and write themselves, use
+  <a href="../keyset/"><code>PaginationKeyset</code></a>.</li>
 </ul>
 
 
@@ -4084,13 +3870,13 @@ header has the first page and, except on the last page, the next one.</p>
         
         
           
-          <a href="../id-based/" class="md-footer__link md-footer__link--next" aria-label="Next: PaginationIdBased">
+          <a href="../keyset/" class="md-footer__link md-footer__link--next" aria-label="Next: PaginationKeyset">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                PaginationIdBased
+                PaginationKeyset
               </div>
             </div>
             <div class="md-footer__button md-icon">

@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1274,14 +1304,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1369,34 +1391,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/keyset/" class="md-nav__link">
         
   
@@ -1405,34 +1399,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1565,34 +1531,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/streaming/" class="md-nav__link">
         
   
@@ -1621,42 +1559,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/time-based/" class="md-nav__link">
+      <a href="../../guide/pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2479,16 +2389,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2556,34 +2456,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2696,118 +2568,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -5018,7 +4778,7 @@ with <code>*</code>, lists, ranges, steps and names (<code>*/15 9-17 * * mon-fri
 
 
 <a href="#fastapi_alcazaba.background.FastAPITaskQueue" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPITaskQueue</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">,</span> <span class="n">concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">grace</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">poll_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">visibility_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.0</span><span class="p">,</span> <span class="n">max_deliveries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">max_payload_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">65536</span><span class="p">,</span> <span class="n">max_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">,</span> <span class="n">max_dead_letters</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPITaskQueue</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">,</span> <span class="n">concurrency</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">grace</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">poll_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">visibility_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">60.0</span><span class="p">,</span> <span class="n">max_deliveries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">max_payload_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">65536</span><span class="p">,</span> <span class="n">max_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">,</span> <span class="n">max_dead_letters</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">replay_window</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5210,6 +4970,24 @@ QueueFull beyond, instead of dropping tasks.</p>
             </td>
             <td>
                   <code>10000</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>replay_window</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>seconds a task may wait in the queue after it's due; later, it's
+refused as stale and goes to the dead letters (<code>requeue_dead_letters()</code> sends it again).
+Its run id is kept that long, so that a copy of it is refused.</p>
+              </div>
+            </td>
+            <td>
+                  <code>7 * 24 * 3600</code>
             </td>
           </tr>
       </tbody>

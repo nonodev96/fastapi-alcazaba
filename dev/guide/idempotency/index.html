@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1291,14 +1321,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1386,34 +1408,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../pagination/keyset/" class="md-nav__link">
         
   
@@ -1422,34 +1416,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1582,34 +1548,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../pagination/streaming/" class="md-nav__link">
         
   
@@ -1638,42 +1576,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/time-based/" class="md-nav__link">
+      <a href="../pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2496,16 +2406,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2573,34 +2473,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2713,118 +2585,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -3986,8 +3746,8 @@ again, instead of creating a second order or paying twice
 <p>The client sends a fresh key with each new request, and the same one when it retries it:
 <code>Idempotency-Key: "8e03978e-40d5-43e8-bc93-6894a57f9324"</code>.</p>
 <ul>
-<li><strong>Retries get the first response</strong> (status, headers and body) with <code>Idempotent-Replayed: true</code>;
-  the endpoint runs once.</li>
+<li><strong>Retries get the first response</strong> (status, headers and body, but no <code>Set-Cookie</code>) with
+  <code>Idempotent-Replayed: true</code>; the endpoint runs once.</li>
 <li><strong>One at a time:</strong> a retry that arrives while the first request still runs gets a 409 with
   <code>Retry-After: 1</code>. A lock in the backend, renewed while the request runs, sees to it across
   processes.</li>
@@ -3999,6 +3759,10 @@ again, instead of creating a second order or paying twice
   tokens that get refreshed (a retry sent with a fresh token would run again), pass
   <code>identifier=</code> returning the user's id. Requests without credentials share one space of keys,
   safe as long as clients make their keys random (UUIDs).</li>
+<li><strong>Replays come before authentication:</strong> the route's dependencies don't run for a retry, so a
+  copy of the request (token, key and body, from a log) gets the response again until it
+  expires, even once the token is revoked. An async <code>identifier=</code> that checks the credentials,
+  returning the user's id or raising a 401, closes that; a shorter <code>expire</code> narrows it.</li>
 <li><strong>What's kept, and for how long:</strong> responses below 500 for <code>expire</code> seconds (24 hours), except
   those worth retrying (408, 409, 425, 429) and those about the request itself, given before the
   endpoint did anything (401, 403, 404, 405, 413, 415, 422 and the like): a retry gets them

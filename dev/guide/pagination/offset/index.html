@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/pagination/offset/">
       
       
-        <link rel="prev" href="../limit-offset/">
+        <link rel="prev" href="../keyset/">
       
       
         <link rel="next" href="../page-number/">
@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1283,14 +1313,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1378,34 +1400,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../keyset/" class="md-nav__link">
         
   
@@ -1414,34 +1408,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1584,34 +1550,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../streaming/" class="md-nav__link">
         
   
@@ -1640,42 +1578,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../time-based/" class="md-nav__link">
+      <a href="../sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2498,16 +2408,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2575,34 +2475,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2715,118 +2587,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -3991,35 +3751,44 @@
 
 
 <h1 id="paginationoffset">PaginationOffset<a class="headerlink" href="#paginationoffset" title="Permanent link">&para;</a></h1>
-<p>Slices without counting the whole list: <code>?offset=40&amp;limit=20</code>.</p>
+<p>Slices, with the total or without counting the list: <code>?offset=40&amp;limit=20</code>.</p>
 <p>In an app: <a href="../../../examples/pagination/offset/">the example</a>. How strategies work: <a href="../#strategies">Pagination</a>. Every argument: <a href="../../../reference/pagination/#fastapi_alcazaba.pagination.offset.PaginationOffset">the API reference</a>.</p>
-<p>Slices without the total: <code>GET /logs?offset=40&amp;limit=20</code> answers <code>{"items": [...], "offset": 40,
-"limit": 20, "has_more": true}</code>. The database is asked for one row more than the page
-(<code>params.fetch</code>), which isn't returned but tells whether there's a next one, so the list is never
-counted. For lists whose count is slow (big tables, searches, joins) or outdated as soon as it's
-made, and for clients that only ever go to the next page:</p>
+<p><code>GET /products?offset=40&amp;limit=20</code> answers <code>{"items": [...], "offset": 40, "limit": 20,
+"has_more": true, "total": 245}</code>: the same as page numbers for clients that count in items
+rather than pages, and can ask for any slice. When counting the list is slow (big tables,
+searches, joins) or outdated as soon as it's made, leave the total out: the database is asked for
+one row more than the page (<code>params.fetch</code>), which isn't returned but tells whether there's a
+next one, and <code>total</code> is <code>null</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination.offset</span><span class="w"> </span><span class="kn">import</span> <span class="n">OffsetPage</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">,</span> <span class="n">PaginationOffset</span>
 </span><span id="__span-0-2">
 </span><span id="__span-0-3"><span class="n">offsets</span> <span class="o">=</span> <span class="n">PaginationOffset</span><span class="p">(</span><span class="n">default_limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 </span><span id="__span-0-4">
 </span><span id="__span-0-5">
-</span><span id="__span-0-6"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/logs"</span><span class="p">)</span>
-</span><span id="__span-0-7"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-</span><span id="__span-0-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logs</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">OffsetParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">offsets</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">OffsetPage</span><span class="p">[</span><span class="n">Line</span><span class="p">]:</span>
-</span><span id="__span-0-9">    <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Line</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Line</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">fetch</span><span class="p">)</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
-</span><span id="__span-0-10">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
-</span><span id="__span-0-11">    <span class="k">return</span> <span class="n">offsets</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-6"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">)</span>
+</span><span id="__span-0-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">OffsetParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">offsets</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">OffsetPage</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
+</span><span id="__span-0-8">    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">Product</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">limit</span><span class="p">)</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">offset</span><span class="p">))</span>
+</span><span id="__span-0-9">    <span class="k">return</span> <span class="n">offsets</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="n">params</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="k">await</span> <span class="n">count_products</span><span class="p">())</span>
+</span><span id="__span-0-10">
+</span><span id="__span-0-11">
+</span><span id="__span-0-12"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/logs"</span><span class="p">)</span>
+</span><span id="__span-0-13"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</span><span id="__span-0-14"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logs</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">OffsetParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">offsets</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">OffsetPage</span><span class="p">[</span><span class="n">Line</span><span class="p">]:</span>
+</span><span id="__span-0-15">    <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Line</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Line</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">fetch</span><span class="p">)</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+</span><span id="__span-0-16">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</span><span id="__span-0-17">    <span class="k">return</span> <span class="n">offsets</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># no count</span>
 </span></code></pre></div>
 <ul>
-<li><strong>Queried or sliced:</strong> with <code>queried=True</code>, the rows are those of
-  <code>LIMIT params.fetch OFFSET params.offset</code>, one more than <code>limit</code> when there's a next page.
-  Without it, <code>paginate</code> slices the page from the whole list.</li>
-<li><strong>Links:</strong> first, previous and, while <code>has_more</code>, next. There's no last page, nor a number of
-  pages: for those, <code>PaginationLimitOffset</code> counts.</li>
+<li><strong>Three ways to call <code>paginate</code>:</strong> with <code>total=</code>, the rows are the page
+  (<code>LIMIT params.limit OFFSET params.offset</code>); with <code>queried=True</code>, they're those of
+  <code>LIMIT params.fetch OFFSET params.offset</code>, one more than <code>limit</code> when there's a next page;
+  with neither, <code>paginate</code> slices the page from the whole list, and counts it.</li>
+<li><strong>Links:</strong> first, previous and, while <code>has_more</code>, next; with the total, the last page too.
+  First, previous and last are on the grid of <code>limit</code> from 0, where clients that start at the
+  first page walk.</li>
 <li><strong>By position:</strong> a row added or deleted before the page shifts it, so an item may be skipped
   or seen twice, and a database still walks past every row before the offset: deep pages get
-  slower. For lists that grow while they're read, page by key (<code>PaginationIdBased</code>,
-  <code>PaginationCursor</code>).</li>
+  slower. For lists that grow while they're read, page by key (<a href="../cursor/"><code>PaginationCursor</code></a>,
+  <a href="../keyset/"><code>PaginationKeyset</code></a>).</li>
 <li><strong>Limits:</strong> <code>limit</code> up to <code>max_limit</code> and <code>offset</code> from 0, a 422 otherwise.</li>
 </ul>
 
@@ -4059,7 +3828,7 @@ made, and for clients that only ever go to the next page:</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../limit-offset/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PaginationLimitOffset">
+          <a href="../keyset/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PaginationKeyset">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4069,7 +3838,7 @@ made, and for clients that only ever go to the next page:</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                PaginationLimitOffset
+                PaginationKeyset
               </div>
             </div>
           </a>

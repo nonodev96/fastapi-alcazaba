@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/pagination/keyset/">
       
       
-        <link rel="prev" href="../id-based/">
+        <link rel="prev" href="../cursor/">
       
       
-        <link rel="next" href="../limit-offset/">
+        <link rel="next" href="../offset/">
       
       
         
@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1283,14 +1313,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1375,34 +1397,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1432,34 +1426,6 @@
 
       </a>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1584,34 +1550,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../streaming/" class="md-nav__link">
         
   
@@ -1640,42 +1578,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../time-based/" class="md-nav__link">
+      <a href="../sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2498,16 +2408,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2575,34 +2475,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2715,118 +2587,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -3991,54 +3751,64 @@
 
 
 <h1 id="paginationkeyset">PaginationKeyset<a class="headerlink" href="#paginationkeyset" title="Permanent link">&para;</a></h1>
-<p>Keyset pagination, both ways: <code>?after=...</code> or <code>?before=...</code>.</p>
+<p>The key of the last item, in plain sight: <code>?after=42&amp;limit=20</code>.</p>
 <p>In an app: <a href="../../../examples/pagination/keyset/">the example</a>. How strategies work: <a href="../#strategies">Pagination</a>. Every argument: <a href="../../../reference/pagination/#fastapi_alcazaba.pagination.keyset.PaginationKeyset">the API reference</a>.</p>
-<p>Keyset pagination in both directions: <code>?after=&lt;after&gt;</code> gives the page after a key and
-<code>?before=&lt;before&gt;</code> the page before one, a key being the sort key of the item at the edge of a
-page. Each page is a query through an index, from either side, as fast on the last page as on
-the first, and rows added or deleted meanwhile don't shift the pages. For lists with "Previous"
-and "Next", and histories scrolled both ways:</p>
+<p>The items after the sort key of the last one seen: <code>GET /messages?after=42&amp;limit=20</code> answers
+<code>{"items": [...], "limit": 20, "after": "62", "has_more": true}</code>, and <code>?after=62</code> the next page.
+The key travels as it is, neither encoded nor signed: clients read it, keep it, and may write
+their own to start anywhere (the events since a date). Each page is a query through an index,
+as fast as the first, and rows added or deleted meanwhile don't shift the pages. For syncing,
+chats, exports and public APIs where clients drive the position:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.pagination.keyset</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeysetPage</span><span class="p">,</span> <span class="n">KeysetParams</span><span class="p">,</span> <span class="n">PaginationKeyset</span>
 </span><span id="__span-0-2">
-</span><span id="__span-0-3"><span class="n">keyset</span> <span class="o">=</span> <span class="n">PaginationKeyset</span><span class="p">(</span><span class="n">secret</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">keyset_secret</span><span class="p">)</span>  <span class="c1"># secrets.token_urlsafe(32)</span>
+</span><span id="__span-0-3"><span class="n">messages</span> <span class="o">=</span> <span class="n">PaginationKeyset</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">default_limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># by id: ?after=42</span>
 </span><span id="__span-0-4">
 </span><span id="__span-0-5">
-</span><span id="__span-0-6"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/products"</span><span class="p">)</span>
-</span><span id="__span-0-7"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"products"</span><span class="p">])</span>
-</span><span id="__span-0-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">KeysetParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">keyset</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">KeysetPage</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-</span><span id="__span-0-9">    <span class="n">key</span> <span class="o">=</span> <span class="n">tuple_</span><span class="p">(</span><span class="n">Product</span><span class="o">.</span><span class="n">price</span><span class="p">,</span> <span class="n">Product</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-</span><span id="__span-0-10">    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># the page before: the nearest rows first</span>
-</span><span id="__span-0-11">        <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Product</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">key</span> <span class="o">&lt;</span> <span class="n">params</span><span class="o">.</span><span class="n">before</span><span class="p">)</span>
-</span><span id="__span-0-12">        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Product</span><span class="o">.</span><span class="n">price</span><span class="o">.</span><span class="n">desc</span><span class="p">(),</span> <span class="n">Product</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
-</span><span id="__span-0-13">    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-14">        <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Product</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Product</span><span class="o">.</span><span class="n">price</span><span class="p">,</span> <span class="n">Product</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-</span><span id="__span-0-15">        <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-16">            <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">key</span> <span class="o">&gt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">)</span>
-</span><span id="__span-0-17">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">fetch</span><span class="p">)))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
-</span><span id="__span-0-18">    <span class="k">return</span> <span class="n">keyset</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">price</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-6"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/messages"</span><span class="p">)</span>
+</span><span id="__span-0-7"><span class="nd">@cache</span><span class="p">(</span><span class="n">expire</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"messages"</span><span class="p">])</span>
+</span><span id="__span-0-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_messages</span><span class="p">(</span>
+</span><span id="__span-0-9">    <span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">KeysetParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">messages</span><span class="p">)],</span>
+</span><span id="__span-0-10"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KeysetPage</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+</span><span id="__span-0-11">    <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Message</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Message</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">fetch</span><span class="p">)</span>
+</span><span id="__span-0-12">    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-13">        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Message</span><span class="o">.</span><span class="n">id</span> <span class="o">&gt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">)</span>
+</span><span id="__span-0-14">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</span><span id="__span-0-15">    <span class="k">return</span> <span class="n">messages</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>GET /products?limit=20</code> answers <code>{"items": [...], "limit": 20, "before": null, "after":
-"WzQuMiwxMl0..."}</code>: <code>after</code> is the key of the last item (null on the last page), and <code>before</code>
-the key of the first (null on the first page). The <code>Link</code> header has the first page and, when
-there's one, the page before (<code>before=...</code>) and the next (<code>after=...</code>).</p>
+<p>A key of several values, such as a time and the id that breaks its ties, goes as a JSON array:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="n">events</span> <span class="o">=</span> <span class="n">PaginationKeyset</span><span class="p">(</span><span class="n">sort</span><span class="o">=</span><span class="p">(</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span>  <span class="c1"># ?after=["2026-10-29T10:00:00Z",42]</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3">
+</span><span id="__span-1-4"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/events"</span><span class="p">)</span>
+</span><span id="__span-1-5"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_events</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">KeysetParams</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">events</span><span class="p">)])</span> <span class="o">-&gt;</span> <span class="n">KeysetPage</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+</span><span id="__span-1-6">    <span class="n">query</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Event</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">fetch</span><span class="p">)</span>
+</span><span id="__span-1-7">    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># (at, id) of the last event seen</span>
+</span><span id="__span-1-8">        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tuple_</span><span class="p">(</span><span class="n">Event</span><span class="o">.</span><span class="n">at</span><span class="p">,</span> <span class="n">Event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">params</span><span class="o">.</span><span class="n">after</span><span class="p">)</span>
+</span><span id="__span-1-9">    <span class="n">rows</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">scalars</span><span class="p">(</span><span class="n">query</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</span><span id="__span-1-10">    <span class="k">return</span> <span class="n">events</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">at</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="n">queried</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
 <ul>
-<li><strong>The key</strong> must be unique: <code>(price, id)</code>, not <code>price</code> alone, which two items may share. Its
-  values can be strings, integers (up to 64 bits), floats, booleans, datetimes, dates, UUIDs
-  and decimals, and <code>params.after</code> and <code>params.before</code> have them back as such.</li>
-<li><strong>Queried or sliced:</strong> with <code>queried=True</code>, the rows are those the database returned, up to
-  <code>params.fetch</code> (the limit and one more, which tells whether there's another page that way):
-  past <code>params.after</code> in order, or with <code>params.before</code>, before it in the reverse order, nearest
-  first, which <code>paginate</code> puts back in order. The other way there's always a page, the one the
-  key came from. Without it, <code>paginate</code> finds the page in the whole sorted list.
-  <code>descending=True</code> for newest first, where <code>after</code> reads <code>key &lt; :after</code> and <code>before</code>
-  <code>key &gt; :before ORDER BY key</code>.</li>
-<li><strong>Signed:</strong> with a <code>secret</code>, keys carry an HMAC-SHA256 and a client can't make one up or
-  change it; a list rotates secrets. An invalid key is a 400 (<code>Invalid after</code>,
-  <code>Invalid before</code>), and so are <code>after</code> and <code>before</code> together. Keys are base64, not encrypted:
-  clients can read the sort key, so sort by what they may see.</li>
-<li><strong>Limits:</strong> no total and no page numbers, only the first, previous and next pages. Going back
-  from a page that didn't start where the first page's walk would have, the first page can be
-  shorter than the limit.</li>
+<li><strong>Declared types:</strong> <code>sort</code> is the type of the key, or the types of its values in order:
+  <code>int</code>, <code>float</code>, <code>str</code>, <code>bool</code>, <code>datetime</code> (with a time zone), <code>date</code>, <code>UUID</code> and <code>Decimal</code>.
+  <code>params.after</code> has the key converted (a tuple for several values), and the page gives it as
+  <code>after</code> takes it: a value as text (<code>42</code>, <code>2026-10-29T10:00:00Z</code>), several as a JSON array
+  with datetimes and dates in ISO 8601, UUIDs and decimals as strings. A value of another type,
+  another number of them or JSON that doesn't parse is a 400, and more than 1024 characters a
+  422, before the endpoint runs.</li>
+<li><strong>The key</strong> must be unique: <code>m.id</code>, or <code>(e.at, e.id)</code>, not the time alone. A key that isn't of
+  the types of <code>sort</code> is a TypeError.</li>
+<li><strong><code>after</code> and <code>has_more</code>:</strong> <code>after</code> is the key of the page's last item, null when it's empty
+  (a client that has caught up keeps its own); <code>has_more</code> says whether there's a next page. A
+  client that syncs keeps <code>after</code> from the last page and asks with it later for what came since.
+  The <code>Link</code> header has the first page and, while <code>has_more</code>, the next one.</li>
+<li><strong>Queried or sliced:</strong> with <code>queried=True</code>, the rows are those of the page, queried past
+  <code>params.after</code> up to <code>params.fetch</code> (the limit and one more: it tells whether there's a next
+  page). Without it, <code>paginate</code> finds the page in the whole sorted list. <code>descending=True</code> for
+  newest first: the next page holds the keys smaller than <code>after</code>
+  (<code>WHERE id &lt; :after ORDER BY id DESC</code>).</li>
+<li><strong>Readable and writable:</strong> nothing stops a client from asking for any position, so sort by
+  what they may see. For keys they can't change or reuse with other filters, and pages in both
+  directions, use <a href="../cursor/"><code>PaginationCursor</code></a>.</li>
 </ul>
 
 
@@ -4077,7 +3847,7 @@ there's one, the page before (<code>before=...</code>) and the next (<code>after
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../id-based/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PaginationIdBased">
+          <a href="../cursor/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PaginationCursor">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4087,20 +3857,20 @@ there's one, the page before (<code>before=...</code>) and the next (<code>after
                 Previous
               </span>
               <div class="md-ellipsis">
-                PaginationIdBased
+                PaginationCursor
               </div>
             </div>
           </a>
         
         
           
-          <a href="../limit-offset/" class="md-footer__link md-footer__link--next" aria-label="Next: PaginationLimitOffset">
+          <a href="../offset/" class="md-footer__link md-footer__link--next" aria-label="Next: PaginationOffset">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                PaginationLimitOffset
+                PaginationOffset
               </div>
             </div>
             <div class="md-footer__button md-icon">

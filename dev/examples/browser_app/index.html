@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1279,14 +1309,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1374,34 +1396,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/keyset/" class="md-nav__link">
         
   
@@ -1410,34 +1404,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1570,34 +1536,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/streaming/" class="md-nav__link">
         
   
@@ -1626,42 +1564,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/time-based/" class="md-nav__link">
+      <a href="../../guide/pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2577,16 +2487,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2654,34 +2554,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2794,118 +2666,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4383,98 +4143,97 @@ fixation) gives nothing away:</p>
 </span><span id="__span-9-127"><span class="c1"># Each middleware added wraps the ones before it: the first is the innermost.</span>
 </span><span id="__span-9-128"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
 </span><span id="__span-9-129">    <span class="n">ServerSessionMiddleware</span><span class="p">,</span>
-</span><span id="__span-9-130">    <span class="n">cookie_name</span><span class="o">=</span><span class="s2">"__Host-session"</span><span class="p">,</span>  <span class="c1"># a sibling subdomain can't plant one</span>
-</span><span id="__span-9-131">    <span class="n">max_age</span><span class="o">=</span><span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">,</span>
-</span><span id="__span-9-132">    <span class="n">idle_timeout</span><span class="o">=</span><span class="mi">30</span> <span class="o">*</span> <span class="mi">60</span><span class="p">,</span>
-</span><span id="__span-9-133"><span class="p">)</span>
-</span><span id="__span-9-134"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">CSRFMiddleware</span><span class="p">,</span> <span class="n">require_token</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># outside: refusals don't read sessions</span>
-</span><span id="__span-9-135"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">BodySizeLimitMiddleware</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>  <span class="c1"># forms are small</span>
-</span><span id="__span-9-136"><span class="c1"># The outermost: the refusals of the middlewares inside it get the headers too.</span>
-</span><span id="__span-9-137"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityHeadersMiddleware</span><span class="p">,</span> <span class="n">html_csp</span><span class="o">=</span><span class="n">CSP</span><span class="p">)</span>
+</span><span id="__span-9-130">    <span class="n">max_age</span><span class="o">=</span><span class="mi">8</span> <span class="o">*</span> <span class="mi">3600</span><span class="p">,</span>
+</span><span id="__span-9-131">    <span class="n">idle_timeout</span><span class="o">=</span><span class="mi">30</span> <span class="o">*</span> <span class="mi">60</span><span class="p">,</span>
+</span><span id="__span-9-132"><span class="p">)</span>
+</span><span id="__span-9-133"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">CSRFMiddleware</span><span class="p">,</span> <span class="n">require_token</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># outside: refusals don't read sessions</span>
+</span><span id="__span-9-134"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">BodySizeLimitMiddleware</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">64</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>  <span class="c1"># forms are small</span>
+</span><span id="__span-9-135"><span class="c1"># The outermost: the refusals of the middlewares inside it get the headers too.</span>
+</span><span id="__span-9-136"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">SecurityHeadersMiddleware</span><span class="p">,</span> <span class="n">html_csp</span><span class="o">=</span><span class="n">CSP</span><span class="p">)</span>
+</span><span id="__span-9-137">
 </span><span id="__span-9-138">
-</span><span id="__span-9-139">
-</span><span id="__span-9-140"><span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTMLResponse</span><span class="p">:</span>
-</span><span id="__span-9-141"><span class="w">    </span><span class="sd">"""The page around `body`, with the CSRF token for app.js."""</span>
-</span><span id="__span-9-142">    <span class="n">token</span> <span class="o">=</span> <span class="n">escape</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">csrf_token</span><span class="p">)</span>
-</span><span id="__span-9-143">    <span class="k">return</span> <span class="n">HTMLResponse</span><span class="p">(</span>
-</span><span id="__span-9-144">        <span class="s1">'&lt;!doctype html&gt;&lt;html lang="en"&gt;&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;Shop&lt;/title&gt;'</span>
-</span><span id="__span-9-145">        <span class="sa">f</span><span class="s1">'&lt;meta name="csrf-token" content="</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s1">"&gt;&lt;script src="/app.js" defer&gt;&lt;/script&gt;'</span>
-</span><span id="__span-9-146">        <span class="sa">f</span><span class="s2">"&lt;/head&gt;&lt;body&gt;</span><span class="si">{</span><span class="n">body</span><span class="si">}</span><span class="s2">&lt;/body&gt;&lt;/html&gt;"</span>
-</span><span id="__span-9-147">    <span class="p">)</span>
+</span><span id="__span-9-139"><span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTMLResponse</span><span class="p">:</span>
+</span><span id="__span-9-140"><span class="w">    </span><span class="sd">"""The page around `body`, with the CSRF token for app.js."""</span>
+</span><span id="__span-9-141">    <span class="n">token</span> <span class="o">=</span> <span class="n">escape</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">csrf_token</span><span class="p">)</span>
+</span><span id="__span-9-142">    <span class="k">return</span> <span class="n">HTMLResponse</span><span class="p">(</span>
+</span><span id="__span-9-143">        <span class="s1">'&lt;!doctype html&gt;&lt;html lang="en"&gt;&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;Shop&lt;/title&gt;'</span>
+</span><span id="__span-9-144">        <span class="sa">f</span><span class="s1">'&lt;meta name="csrf-token" content="</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s1">"&gt;&lt;script src="/app.js" defer&gt;&lt;/script&gt;'</span>
+</span><span id="__span-9-145">        <span class="sa">f</span><span class="s2">"&lt;/head&gt;&lt;body&gt;</span><span class="si">{</span><span class="n">body</span><span class="si">}</span><span class="s2">&lt;/body&gt;&lt;/html&gt;"</span>
+</span><span id="__span-9-146">    <span class="p">)</span>
+</span><span id="__span-9-147">
 </span><span id="__span-9-148">
-</span><span id="__span-9-149">
-</span><span id="__span-9-150"><span class="k">def</span><span class="w"> </span><span class="nf">form</span><span class="p">(</span><span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">button</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-9-151">    <span class="n">inputs</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-</span><span id="__span-9-152">        <span class="sa">f</span><span class="s1">'&lt;input type="hidden" name="</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">" value="</span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s1">"&gt;'</span>
-</span><span id="__span-9-153">        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="__span-9-154">    <span class="p">)</span>
-</span><span id="__span-9-155">    <span class="k">return</span> <span class="sa">f</span><span class="s1">'&lt;form method="post" action="</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s1">"&gt;</span><span class="si">{</span><span class="n">inputs</span><span class="si">}</span><span class="s1">&lt;button&gt;</span><span class="si">{</span><span class="n">button</span><span class="si">}</span><span class="s1">&lt;/button&gt;&lt;/form&gt;'</span>
+</span><span id="__span-9-149"><span class="k">def</span><span class="w"> </span><span class="nf">form</span><span class="p">(</span><span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">button</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-9-150">    <span class="n">inputs</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="__span-9-151">        <span class="sa">f</span><span class="s1">'&lt;input type="hidden" name="</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">" value="</span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s1">"&gt;'</span>
+</span><span id="__span-9-152">        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="__span-9-153">    <span class="p">)</span>
+</span><span id="__span-9-154">    <span class="k">return</span> <span class="sa">f</span><span class="s1">'&lt;form method="post" action="</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s1">"&gt;</span><span class="si">{</span><span class="n">inputs</span><span class="si">}</span><span class="s1">&lt;button&gt;</span><span class="si">{</span><span class="n">button</span><span class="si">}</span><span class="s1">&lt;/button&gt;&lt;/form&gt;'</span>
+</span><span id="__span-9-155">
 </span><span id="__span-9-156">
-</span><span id="__span-9-157">
-</span><span id="__span-9-158"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
-</span><span id="__span-9-159"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">home</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTMLResponse</span><span class="p">:</span>
-</span><span id="__span-9-160">    <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
-</span><span id="__span-9-161">    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-9-162">        <span class="n">header</span> <span class="o">=</span> <span class="s1">'&lt;p&gt;&lt;a href="/login"&gt;Sign in&lt;/a&gt;&lt;/p&gt;'</span>
-</span><span id="__span-9-163">    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-9-164">        <span class="n">header</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"&lt;p&gt;Signed in as </span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">user</span><span class="p">)</span><span class="si">}</span><span class="s2">.&lt;/p&gt;</span><span class="si">{</span><span class="n">form</span><span class="p">(</span><span class="s1">'/logout'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Sign out'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="__span-9-165">    <span class="n">products</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-</span><span id="__span-9-166">        <span class="sa">f</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">product</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">form</span><span class="p">(</span><span class="s1">'/cart'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Add to cart'</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="o">=</span><span class="n">product</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span>
-</span><span id="__span-9-167">        <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">Product</span>
-</span><span id="__span-9-168">    <span class="p">)</span>
-</span><span id="__span-9-169">    <span class="n">cart</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cart"</span><span class="p">,</span> <span class="p">{})</span>
-</span><span id="__span-9-170">    <span class="n">items</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">cart</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">Product</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cart</span><span class="p">)</span>
-</span><span id="__span-9-171">    <span class="k">return</span> <span class="n">page</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">header</span><span class="si">}</span><span class="s2">&lt;h1&gt;Shop&lt;/h1&gt;&lt;ul&gt;</span><span class="si">{</span><span class="n">products</span><span class="si">}</span><span class="s2">&lt;/ul&gt;&lt;h2&gt;Cart&lt;/h2&gt;&lt;ul&gt;</span><span class="si">{</span><span class="n">items</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
+</span><span id="__span-9-157"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+</span><span id="__span-9-158"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">home</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTMLResponse</span><span class="p">:</span>
+</span><span id="__span-9-159">    <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
+</span><span id="__span-9-160">    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-9-161">        <span class="n">header</span> <span class="o">=</span> <span class="s1">'&lt;p&gt;&lt;a href="/login"&gt;Sign in&lt;/a&gt;&lt;/p&gt;'</span>
+</span><span id="__span-9-162">    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-9-163">        <span class="n">header</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"&lt;p&gt;Signed in as </span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">user</span><span class="p">)</span><span class="si">}</span><span class="s2">.&lt;/p&gt;</span><span class="si">{</span><span class="n">form</span><span class="p">(</span><span class="s1">'/logout'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Sign out'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="__span-9-164">    <span class="n">products</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+</span><span id="__span-9-165">        <span class="sa">f</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">product</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">form</span><span class="p">(</span><span class="s1">'/cart'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Add to cart'</span><span class="p">,</span><span class="w"> </span><span class="n">product</span><span class="o">=</span><span class="n">product</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span>
+</span><span id="__span-9-166">        <span class="k">for</span> <span class="n">product</span> <span class="ow">in</span> <span class="n">Product</span>
+</span><span id="__span-9-167">    <span class="p">)</span>
+</span><span id="__span-9-168">    <span class="n">cart</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cart"</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="__span-9-169">    <span class="n">items</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;li&gt;</span><span class="si">{</span><span class="n">escape</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">cart</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/li&gt;"</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">Product</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cart</span><span class="p">)</span>
+</span><span id="__span-9-170">    <span class="k">return</span> <span class="n">page</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">header</span><span class="si">}</span><span class="s2">&lt;h1&gt;Shop&lt;/h1&gt;&lt;ul&gt;</span><span class="si">{</span><span class="n">products</span><span class="si">}</span><span class="s2">&lt;/ul&gt;&lt;h2&gt;Cart&lt;/h2&gt;&lt;ul&gt;</span><span class="si">{</span><span class="n">items</span><span class="si">}</span><span class="s2">&lt;/ul&gt;"</span><span class="p">)</span>
+</span><span id="__span-9-171">
 </span><span id="__span-9-172">
-</span><span id="__span-9-173">
-</span><span id="__span-9-174"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">)</span>
-</span><span id="__span-9-175"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login_page</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">failed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTMLResponse</span><span class="p">:</span>
-</span><span id="__span-9-176">    <span class="n">error</span> <span class="o">=</span> <span class="s2">"&lt;p&gt;Wrong username or password.&lt;/p&gt;"</span> <span class="k">if</span> <span class="n">failed</span> <span class="k">else</span> <span class="s2">""</span>
-</span><span id="__span-9-177">    <span class="k">return</span> <span class="n">page</span><span class="p">(</span>
-</span><span id="__span-9-178">        <span class="n">request</span><span class="p">,</span>
-</span><span id="__span-9-179">        <span class="sa">f</span><span class="s2">"&lt;h1&gt;Sign in&lt;/h1&gt;</span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="__span-9-180">        <span class="s1">'&lt;form method="post" action="/login"&gt;'</span>
-</span><span id="__span-9-181">        <span class="s1">'&lt;label&gt;Username &lt;input name="username" autocomplete="username" required&gt;&lt;/label&gt; '</span>
-</span><span id="__span-9-182">        <span class="s1">'&lt;label&gt;Password &lt;input name="password" type="password" '</span>
-</span><span id="__span-9-183">        <span class="s1">'autocomplete="current-password" required&gt;&lt;/label&gt; &lt;button&gt;Sign in&lt;/button&gt;&lt;/form&gt;'</span><span class="p">,</span>
-</span><span id="__span-9-184">    <span class="p">)</span>
+</span><span id="__span-9-173"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">)</span>
+</span><span id="__span-9-174"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login_page</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">failed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HTMLResponse</span><span class="p">:</span>
+</span><span id="__span-9-175">    <span class="n">error</span> <span class="o">=</span> <span class="s2">"&lt;p&gt;Wrong username or password.&lt;/p&gt;"</span> <span class="k">if</span> <span class="n">failed</span> <span class="k">else</span> <span class="s2">""</span>
+</span><span id="__span-9-176">    <span class="k">return</span> <span class="n">page</span><span class="p">(</span>
+</span><span id="__span-9-177">        <span class="n">request</span><span class="p">,</span>
+</span><span id="__span-9-178">        <span class="sa">f</span><span class="s2">"&lt;h1&gt;Sign in&lt;/h1&gt;</span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="__span-9-179">        <span class="s1">'&lt;form method="post" action="/login"&gt;'</span>
+</span><span id="__span-9-180">        <span class="s1">'&lt;label&gt;Username &lt;input name="username" autocomplete="username" required&gt;&lt;/label&gt; '</span>
+</span><span id="__span-9-181">        <span class="s1">'&lt;label&gt;Password &lt;input name="password" type="password" '</span>
+</span><span id="__span-9-182">        <span class="s1">'autocomplete="current-password" required&gt;&lt;/label&gt; &lt;button&gt;Sign in&lt;/button&gt;&lt;/form&gt;'</span><span class="p">,</span>
+</span><span id="__span-9-183">    <span class="p">)</span>
+</span><span id="__span-9-184">
 </span><span id="__span-9-185">
-</span><span id="__span-9-186">
-</span><span id="__span-9-187"><span class="c1"># Five attempts a minute per client address.</span>
-</span><span id="__span-9-188"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">))])</span>
-</span><span id="__span-9-189"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span>
-</span><span id="__span-9-190">    <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
-</span><span id="__span-9-191">    <span class="n">username</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Form</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)],</span>
-</span><span id="__span-9-192">    <span class="n">password</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Form</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)],</span>
-</span><span id="__span-9-193"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
-</span><span id="__span-9-194">    <span class="c1"># In a thread: scrypt is slow on purpose, and would hold up the other requests.</span>
-</span><span id="__span-9-195">    <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">check</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
-</span><span id="__span-9-196">        <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/login?failed=true"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
-</span><span id="__span-9-197">    <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span> <span class="o">=</span> <span class="n">username</span>
-</span><span id="__span-9-198">    <span class="n">rotate_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># a new id: one planted in the browser before is worthless now</span>
-</span><span id="__span-9-199">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-9-186"><span class="c1"># Five attempts a minute per client address.</span>
+</span><span id="__span-9-187"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">))])</span>
+</span><span id="__span-9-188"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span>
+</span><span id="__span-9-189">    <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+</span><span id="__span-9-190">    <span class="n">username</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Form</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">100</span><span class="p">)],</span>
+</span><span id="__span-9-191">    <span class="n">password</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Form</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)],</span>
+</span><span id="__span-9-192"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
+</span><span id="__span-9-193">    <span class="c1"># In a thread: scrypt is slow on purpose, and would hold up the other requests.</span>
+</span><span id="__span-9-194">    <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">run_in_threadpool</span><span class="p">(</span><span class="n">users</span><span class="o">.</span><span class="n">check</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+</span><span id="__span-9-195">        <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/login?failed=true"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-9-196">    <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span> <span class="o">=</span> <span class="n">username</span>
+</span><span id="__span-9-197">    <span class="n">rotate_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># a new id: one planted in the browser before is worthless now</span>
+</span><span id="__span-9-198">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-9-199">
 </span><span id="__span-9-200">
-</span><span id="__span-9-201">
-</span><span id="__span-9-202"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/logout"</span><span class="p">)</span>
-</span><span id="__span-9-203"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logout</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
-</span><span id="__span-9-204">    <span class="n">clear_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># deleted from the backend: a copied cookie is worth nothing now</span>
-</span><span id="__span-9-205">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-9-201"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/logout"</span><span class="p">)</span>
+</span><span id="__span-9-202"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logout</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
+</span><span id="__span-9-203">    <span class="n">clear_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># deleted from the backend: a copied cookie is worth nothing now</span>
+</span><span id="__span-9-204">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-9-205">
 </span><span id="__span-9-206">
-</span><span id="__span-9-207">
-</span><span id="__span-9-208"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/cart"</span><span class="p">)</span>
-</span><span id="__span-9-209"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_to_cart</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">product</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Product</span><span class="p">,</span> <span class="n">Form</span><span class="p">()])</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
-</span><span id="__span-9-210">    <span class="n">cart</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"cart"</span><span class="p">,</span> <span class="p">{})</span>
-</span><span id="__span-9-211">    <span class="n">cart</span><span class="p">[</span><span class="n">product</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cart</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># at most 10 of each</span>
-</span><span id="__span-9-212">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-9-207"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/cart"</span><span class="p">)</span>
+</span><span id="__span-9-208"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_to_cart</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">product</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">Product</span><span class="p">,</span> <span class="n">Form</span><span class="p">()])</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
+</span><span id="__span-9-209">    <span class="n">cart</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"cart"</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="__span-9-210">    <span class="n">cart</span><span class="p">[</span><span class="n">product</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">cart</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">product</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># at most 10 of each</span>
+</span><span id="__span-9-211">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-9-212">
 </span><span id="__span-9-213">
-</span><span id="__span-9-214">
-</span><span id="__span-9-215"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/app.js"</span><span class="p">)</span>
-</span><span id="__span-9-216"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">script</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
-</span><span id="__span-9-217">    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">APP_JS</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">"text/javascript"</span><span class="p">)</span>
+</span><span id="__span-9-214"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/app.js"</span><span class="p">)</span>
+</span><span id="__span-9-215"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">script</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+</span><span id="__span-9-216">    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">APP_JS</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">"text/javascript"</span><span class="p">)</span>
+</span><span id="__span-9-217">
 </span><span id="__span-9-218">
-</span><span id="__span-9-219">
-</span><span id="__span-9-220"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-</span><span id="__span-9-221">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-9-219"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-9-220">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <!-- fmt: on -->
 

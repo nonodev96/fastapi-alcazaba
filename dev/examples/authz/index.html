@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1279,14 +1309,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1374,34 +1396,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/keyset/" class="md-nav__link">
         
   
@@ -1410,34 +1404,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1570,34 +1536,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../guide/pagination/streaming/" class="md-nav__link">
         
   
@@ -1626,42 +1564,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/pagination/time-based/" class="md-nav__link">
+      <a href="../../guide/pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guide/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2577,16 +2487,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2654,34 +2554,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2794,118 +2666,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4215,11 +3975,11 @@ admin, makes Dan a writer, which takes effect at once:</p>
   <code>keyMatch2</code> takes <code>/articles/:id</code> as a pattern. <code>members.require("articles", "publish")</code> asks
   about a named action, the same on whatever route it guards.</li>
 <li><strong>Visitors and members:</strong> <code>authz</code> has the policy check visitors without a token as
-  <code>anonymous</code>, so that the policy opens the reading routes to them. <code>members</code> refuses them with
+  <code>*anonymous</code>, a name no user can have, so that the policy opens the reading routes to them. <code>members</code> refuses them with
   a 401 before asking the policy, and so always returns a user name: the routes for members
   don't deal with None.</li>
-<li><strong>What anonymous may do, everybody may:</strong> the matcher grants the rules of <code>anonymous</code> to every
-  subject (<code>p.sub == "anonymous" || g(r.sub, p.sub)</code>), so Dan, without a role, isn't worse off
+<li><strong>What visitors may do, everybody may:</strong> the matcher grants the rules of <code>*anonymous</code> to every
+  subject (<code>p.sub == "*anonymous" || g(r.sub, p.sub)</code>), so Dan, without a role, isn't worse off
   than a visitor.</li>
 <li><strong>Checks that depend on the data</strong> go in the route, with <code>authz.enforce()</code>: everybody may list
   the articles, but only those who may read the drafts see them. A draft is a 404 for the others,
@@ -4314,87 +4074,88 @@ admin, makes Dan a writer, which takes effect at once:</p>
 </span><span id="__span-7-78">    <span class="k">return</span> <span class="n">user</span>
 </span><span id="__span-7-79">
 </span><span id="__span-7-80">
-</span><span id="__span-7-81"><span class="c1"># Routes open to visitors when the policy says so: the policy knows them as "anonymous".</span>
-</span><span id="__span-7-82"><span class="n">authz</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="s2">"anonymous"</span><span class="p">)</span>
-</span><span id="__span-7-83"><span class="c1"># Routes for people with an account: a 401 without one, before asking the policy.</span>
-</span><span id="__span-7-84"><span class="n">members</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">)</span>
-</span><span id="__span-7-85"><span class="n">Visitor</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">authz</span><span class="p">)]</span>
-</span><span id="__span-7-86"><span class="n">Member</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="p">)]</span>
-</span><span id="__span-7-87">
+</span><span id="__span-7-81"><span class="c1"># Routes open to visitors when the policy says so: the policy knows them as "*anonymous", a name</span>
+</span><span id="__span-7-82"><span class="c1"># no user can have (the * isn't allowed in user names), so nobody signs up to get its rules.</span>
+</span><span id="__span-7-83"><span class="n">authz</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="s2">"*anonymous"</span><span class="p">)</span>
+</span><span id="__span-7-84"><span class="c1"># Routes for people with an account: a 401 without one, before asking the policy.</span>
+</span><span id="__span-7-85"><span class="n">members</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">)</span>
+</span><span id="__span-7-86"><span class="n">Visitor</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">authz</span><span class="p">)]</span>
+</span><span id="__span-7-87"><span class="n">Member</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="p">)]</span>
 </span><span id="__span-7-88">
-</span><span id="__span-7-89"><span class="nd">@asynccontextmanager</span>
-</span><span id="__span-7-90"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-</span><span id="__span-7-91">    <span class="k">await</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">load_policy</span><span class="p">()</span>  <span class="c1"># an AsyncEnforcer reads it when told</span>
-</span><span id="__span-7-92">    <span class="k">yield</span>
-</span><span id="__span-7-93">
+</span><span id="__span-7-89">
+</span><span id="__span-7-90"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-7-91"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-7-92">    <span class="k">await</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">load_policy</span><span class="p">()</span>  <span class="c1"># an AsyncEnforcer reads it when told</span>
+</span><span id="__span-7-93">    <span class="k">yield</span>
 </span><span id="__span-7-94">
-</span><span id="__span-7-95"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-</span><span id="__span-7-96">
+</span><span id="__span-7-95">
+</span><span id="__span-7-96"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
 </span><span id="__span-7-97">
-</span><span id="__span-7-98"><span class="k">def</span><span class="w"> </span><span class="nf">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-7-99">    <span class="c1"># A check inside the route: the route is open to everybody, the drafts aren't.</span>
-</span><span id="__span-7-100">    <span class="k">return</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">authz</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="s2">"drafts"</span><span class="p">,</span> <span class="s2">"read"</span><span class="p">)</span>
-</span><span id="__span-7-101">
+</span><span id="__span-7-98">
+</span><span id="__span-7-99"><span class="k">def</span><span class="w"> </span><span class="nf">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-7-100">    <span class="c1"># A check inside the route: the route is open to everybody, the drafts aren't.</span>
+</span><span id="__span-7-101">    <span class="k">return</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">authz</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="s2">"drafts"</span><span class="p">,</span> <span class="s2">"read"</span><span class="p">)</span>
 </span><span id="__span-7-102">
-</span><span id="__span-7-103"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/articles"</span><span class="p">)</span>
-</span><span id="__span-7-104"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_articles</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">Visitor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Article</span><span class="p">]:</span>
-</span><span id="__span-7-105"><span class="w">    </span><span class="sd">"""The published articles; the drafts too for those who may read them."""</span>
-</span><span id="__span-7-106">    <span class="n">drafts</span> <span class="o">=</span> <span class="n">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
-</span><span id="__span-7-107">    <span class="k">return</span> <span class="p">[</span><span class="n">article</span> <span class="k">for</span> <span class="n">article</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="ow">or</span> <span class="n">drafts</span><span class="p">]</span>
-</span><span id="__span-7-108">
+</span><span id="__span-7-103">
+</span><span id="__span-7-104"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/articles"</span><span class="p">)</span>
+</span><span id="__span-7-105"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_articles</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">Visitor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Article</span><span class="p">]:</span>
+</span><span id="__span-7-106"><span class="w">    </span><span class="sd">"""The published articles; the drafts too for those who may read them."""</span>
+</span><span id="__span-7-107">    <span class="n">drafts</span> <span class="o">=</span> <span class="n">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+</span><span id="__span-7-108">    <span class="k">return</span> <span class="p">[</span><span class="n">article</span> <span class="k">for</span> <span class="n">article</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="ow">or</span> <span class="n">drafts</span><span class="p">]</span>
 </span><span id="__span-7-109">
-</span><span id="__span-7-110"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-7-111"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_article</span><span class="p">(</span><span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Visitor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-112">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
-</span><span id="__span-7-113">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="ow">or</span> <span class="n">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">)):</span>
-</span><span id="__span-7-114">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>  <span class="c1"># for readers, a draft doesn't exist</span>
-</span><span id="__span-7-115">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-116">
+</span><span id="__span-7-110">
+</span><span id="__span-7-111"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-7-112"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_article</span><span class="p">(</span><span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Visitor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
+</span><span id="__span-7-113">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
+</span><span id="__span-7-114">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="ow">or</span> <span class="n">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">)):</span>
+</span><span id="__span-7-115">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>  <span class="c1"># for readers, a draft doesn't exist</span>
+</span><span id="__span-7-116">    <span class="k">return</span> <span class="n">article</span>
 </span><span id="__span-7-117">
-</span><span id="__span-7-118"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/articles"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
-</span><span id="__span-7-119"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_article</span><span class="p">(</span><span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Member</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-120">    <span class="n">article</span> <span class="o">=</span> <span class="n">Article</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="o">**</span><span class="n">draft</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
-</span><span id="__span-7-121">    <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="p">[</span><span class="n">article</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">article</span>
-</span><span id="__span-7-122">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-123">
+</span><span id="__span-7-118">
+</span><span id="__span-7-119"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/articles"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
+</span><span id="__span-7-120"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_article</span><span class="p">(</span><span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Member</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
+</span><span id="__span-7-121">    <span class="n">article</span> <span class="o">=</span> <span class="n">Article</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="o">**</span><span class="n">draft</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+</span><span id="__span-7-122">    <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="p">[</span><span class="n">article</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">article</span>
+</span><span id="__span-7-123">    <span class="k">return</span> <span class="n">article</span>
 </span><span id="__span-7-124">
-</span><span id="__span-7-125"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-7-126"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">edit_article</span><span class="p">(</span><span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Member</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-127">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
-</span><span id="__span-7-128">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-129">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>
-</span><span id="__span-7-130">    <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">author</span> <span class="o">!=</span> <span class="n">user</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">authz</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="s2">"articles"</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">):</span>
-</span><span id="__span-7-131">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">403</span><span class="p">,</span> <span class="s2">"Only its author or an editor edits an article"</span><span class="p">)</span>
-</span><span id="__span-7-132">    <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">article</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">body</span>
-</span><span id="__span-7-133">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-134">
+</span><span id="__span-7-125">
+</span><span id="__span-7-126"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-7-127"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">edit_article</span><span class="p">(</span><span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Member</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
+</span><span id="__span-7-128">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
+</span><span id="__span-7-129">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-130">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>
+</span><span id="__span-7-131">    <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">author</span> <span class="o">!=</span> <span class="n">user</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">authz</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="s2">"articles"</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">):</span>
+</span><span id="__span-7-132">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">403</span><span class="p">,</span> <span class="s2">"Only its author or an editor edits an article"</span><span class="p">)</span>
+</span><span id="__span-7-133">    <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">article</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">body</span>
+</span><span id="__span-7-134">    <span class="k">return</span> <span class="n">article</span>
 </span><span id="__span-7-135">
-</span><span id="__span-7-136"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">/publish"</span><span class="p">)</span>
-</span><span id="__span-7-137"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">publish_article</span><span class="p">(</span>
-</span><span id="__span-7-138">    <span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-</span><span id="__span-7-139">    <span class="n">editor</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"articles"</span><span class="p">,</span> <span class="s2">"publish"</span><span class="p">))],</span>
-</span><span id="__span-7-140"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-141"><span class="w">    </span><span class="sd">"""A named action, not a path: (editor, articles, publish)."""</span>
-</span><span id="__span-7-142">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
-</span><span id="__span-7-143">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-144">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>
-</span><span id="__span-7-145">    <span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="o">=</span> <span class="n">editor</span>
-</span><span id="__span-7-146">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-147">
+</span><span id="__span-7-136">
+</span><span id="__span-7-137"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">/publish"</span><span class="p">)</span>
+</span><span id="__span-7-138"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">publish_article</span><span class="p">(</span>
+</span><span id="__span-7-139">    <span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+</span><span id="__span-7-140">    <span class="n">editor</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"articles"</span><span class="p">,</span> <span class="s2">"publish"</span><span class="p">))],</span>
+</span><span id="__span-7-141"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
+</span><span id="__span-7-142"><span class="w">    </span><span class="sd">"""A named action, not a path: (editor, articles, publish)."""</span>
+</span><span id="__span-7-143">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
+</span><span id="__span-7-144">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-145">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>
+</span><span id="__span-7-146">    <span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="o">=</span> <span class="n">editor</span>
+</span><span id="__span-7-147">    <span class="k">return</span> <span class="n">article</span>
 </span><span id="__span-7-148">
-</span><span id="__span-7-149"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
-</span><span id="__span-7-150">    <span class="s2">"/users/</span><span class="si">{user}</span><span class="s2">/roles/</span><span class="si">{role}</span><span class="s2">"</span><span class="p">,</span>
-</span><span id="__span-7-151">    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">,</span>
-</span><span id="__span-7-152">    <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="s2">"grant"</span><span class="p">))],</span>
-</span><span id="__span-7-153"><span class="p">)</span>
-</span><span id="__span-7-154"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">grant_role</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="n">Role</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-155"><span class="w">    </span><span class="sd">"""Takes effect at once in this process. The other processes see it when they load the policy</span>
-</span><span id="__span-7-156"><span class="sd">    again: a Casbin watcher (casbin-redis-watcher...) tells them."""</span>
-</span><span id="__span-7-157">    <span class="k">await</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">add_role_for_user</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
-</span><span id="__span-7-158">
+</span><span id="__span-7-149">
+</span><span id="__span-7-150"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
+</span><span id="__span-7-151">    <span class="s2">"/users/</span><span class="si">{user}</span><span class="s2">/roles/</span><span class="si">{role}</span><span class="s2">"</span><span class="p">,</span>
+</span><span id="__span-7-152">    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">,</span>
+</span><span id="__span-7-153">    <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="s2">"grant"</span><span class="p">))],</span>
+</span><span id="__span-7-154"><span class="p">)</span>
+</span><span id="__span-7-155"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">grant_role</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="n">Role</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-156"><span class="w">    </span><span class="sd">"""Takes effect at once in this process. The other processes see it when they load the policy</span>
+</span><span id="__span-7-157"><span class="sd">    again: a Casbin watcher (casbin-redis-watcher...) tells them."""</span>
+</span><span id="__span-7-158">    <span class="k">await</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">add_role_for_user</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
 </span><span id="__span-7-159">
-</span><span id="__span-7-160"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-</span><span id="__span-7-161">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-7-160">
+</span><span id="__span-7-161"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+</span><span id="__span-7-162">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <!-- fmt: on --></p>
 </div>
@@ -4402,28 +4163,29 @@ admin, makes Dan a writer, which takes effect at once:</p>
 <div class="language-ini highlight"><span class="filename">examples/authz/model.conf</span><pre><span></span><code><span id="__span-8-1"><span class="c1"># RBAC on paths and on named actions: a request is (who, what, how).</span>
 </span><span id="__span-8-2"><span class="c1">#   (ben, /articles/7, PUT): may Ben edit article 7?</span>
 </span><span id="__span-8-3"><span class="c1">#   (ben, articles, publish): may Ben publish articles?</span>
-</span><span id="__span-8-4"><span class="c1"># keyMatch2 takes /articles/:id as a pattern; "articles" matches itself. What anonymous may do,</span>
-</span><span id="__span-8-5"><span class="c1"># everybody may: a user without a role reads what visitors read.</span>
-</span><span id="__span-8-6">
-</span><span id="__span-8-7"><span class="k">[request_definition]</span>
-</span><span id="__span-8-8"><span class="na">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
-</span><span id="__span-8-9">
-</span><span id="__span-8-10"><span class="k">[policy_definition]</span>
-</span><span id="__span-8-11"><span class="na">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
-</span><span id="__span-8-12">
-</span><span id="__span-8-13"><span class="k">[role_definition]</span>
-</span><span id="__span-8-14"><span class="na">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">_, _</span>
-</span><span id="__span-8-15">
-</span><span id="__span-8-16"><span class="k">[policy_effect]</span>
-</span><span id="__span-8-17"><span class="na">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">some(where (p.eft == allow))</span>
-</span><span id="__span-8-18">
-</span><span id="__span-8-19"><span class="k">[matchers]</span>
-</span><span id="__span-8-20"><span class="na">m = (p.sub =</span><span class="o">=</span><span class="w"> </span><span class="s">"anonymous"</span><span class="w"> </span><span class="na">|| g(r.sub, p.sub)) &amp;&amp; keyMatch2(r.obj, p.obj) &amp;&amp; r.act</span><span class="w"> </span><span class="o">=</span><span class="s">= p.act</span>
+</span><span id="__span-8-4"><span class="c1"># keyMatch2 takes /articles/:id as a pattern; "articles" matches itself. What visitors</span>
+</span><span id="__span-8-5"><span class="c1"># (*anonymous: no user name starts with *) may do, everybody may: a user without a role reads</span>
+</span><span id="__span-8-6"><span class="c1"># what visitors read.</span>
+</span><span id="__span-8-7">
+</span><span id="__span-8-8"><span class="k">[request_definition]</span>
+</span><span id="__span-8-9"><span class="na">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
+</span><span id="__span-8-10">
+</span><span id="__span-8-11"><span class="k">[policy_definition]</span>
+</span><span id="__span-8-12"><span class="na">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
+</span><span id="__span-8-13">
+</span><span id="__span-8-14"><span class="k">[role_definition]</span>
+</span><span id="__span-8-15"><span class="na">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">_, _</span>
+</span><span id="__span-8-16">
+</span><span id="__span-8-17"><span class="k">[policy_effect]</span>
+</span><span id="__span-8-18"><span class="na">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">some(where (p.eft == allow))</span>
+</span><span id="__span-8-19">
+</span><span id="__span-8-20"><span class="k">[matchers]</span>
+</span><span id="__span-8-21"><span class="na">m = (p.sub =</span><span class="o">=</span><span class="w"> </span><span class="s">"*anonymous"</span><span class="w"> </span><span class="na">|| g(r.sub, p.sub)) &amp;&amp; keyMatch2(r.obj, p.obj) &amp;&amp; r.act</span><span class="w"> </span><span class="o">=</span><span class="s">= p.act</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-text highlight"><span class="filename">examples/authz/policy.csv</span><pre><span></span><code><span id="__span-9-1">p, anonymous, /articles, GET
-</span><span id="__span-9-2">p, anonymous, /articles/:id, GET
+<div class="language-text highlight"><span class="filename">examples/authz/policy.csv</span><pre><span></span><code><span id="__span-9-1">p, *anonymous, /articles, GET
+</span><span id="__span-9-2">p, *anonymous, /articles/:id, GET
 </span><span id="__span-9-3">p, writer, /articles, POST
 </span><span id="__span-9-4">p, writer, /articles/:id, PUT
 </span><span id="__span-9-5">p, writer, drafts, read

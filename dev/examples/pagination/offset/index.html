@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/examples/pagination/offset/">
       
       
-        <link rel="prev" href="../limit-offset/">
+        <link rel="prev" href="../page-number/">
       
       
         <link rel="next" href="../range/">
@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1279,14 +1309,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1374,34 +1396,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../guide/pagination/keyset/" class="md-nav__link">
         
   
@@ -1410,34 +1404,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../guide/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1570,34 +1536,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../guide/pagination/streaming/" class="md-nav__link">
         
   
@@ -1626,42 +1564,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guide/pagination/time-based/" class="md-nav__link">
+      <a href="../../../guide/pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../guide/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2488,16 +2398,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2565,34 +2465,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2796,118 +2668,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4170,22 +3930,22 @@ counted: each page says whether there's another after it. The strategy:
 </span><span id="__span-1-2"><span class="go">HTTP/1.1 200 OK</span>
 </span><span id="__span-1-3"><span class="go">content-type: application/json</span>
 </span><span id="__span-1-4"><span class="go">link: &lt;/logs?offset=0&amp;limit=3&gt;; rel="first", &lt;/logs?offset=3&amp;limit=3&gt;; rel="next"</span>
-</span><span id="__span-1-5"><span class="go">etag: W/"058a76d9e5793e791c88050cae14514f"</span>
+</span><span id="__span-1-5"><span class="go">etag: W/"64cc8e327a8a5779379fa48acb2c8286"</span>
 </span><span id="__span-1-6"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
 </span><span id="__span-1-7"><span class="go">cache-control: max-age=10</span>
 </span><span id="__span-1-8">
-</span><span id="__span-1-9"><span class="go">{"items":[{"id":1000,"level":"error","message":"GET /products/30"},{"id":999,"level":"info","message":"GET /products/29"},{"id":998,"level":"info","message":"GET /products/28"}],"offset":0,"limit":3,"has_more":true}</span>
+</span><span id="__span-1-9"><span class="go">{"items":[{"id":1000,"level":"error","message":"GET /products/30"},{"id":999,"level":"info","message":"GET /products/29"},{"id":998,"level":"info","message":"GET /products/28"}],"offset":0,"limit":3,"has_more":true,"total":null}</span>
 </span></code></pre></div>
 <p>The <code>next</code> link is the following page:</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span><span class="s2">"http://localhost:8000/logs?offset=3&amp;limit=3"</span>
 </span><span id="__span-2-2"><span class="go">HTTP/1.1 200 OK</span>
 </span><span id="__span-2-3"><span class="go">content-type: application/json</span>
 </span><span id="__span-2-4"><span class="go">link: &lt;/logs?offset=0&amp;limit=3&gt;; rel="first", &lt;/logs?offset=0&amp;limit=3&gt;; rel="prev", &lt;/logs?offset=6&amp;limit=3&gt;; rel="next"</span>
-</span><span id="__span-2-5"><span class="go">etag: W/"b23265fd81d0eeed72304c4dcdbfec83"</span>
+</span><span id="__span-2-5"><span class="go">etag: W/"7f266a69ae7b4ed942e5ef096485b258"</span>
 </span><span id="__span-2-6"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
 </span><span id="__span-2-7"><span class="go">cache-control: max-age=10</span>
 </span><span id="__span-2-8">
-</span><span id="__span-2-9"><span class="go">{"items":[{"id":997,"level":"info","message":"GET /products/27"},{"id":996,"level":"info","message":"GET /products/26"},{"id":995,"level":"info","message":"GET /products/25"}],"offset":3,"limit":3,"has_more":true}</span>
+</span><span id="__span-2-9"><span class="go">{"items":[{"id":997,"level":"info","message":"GET /products/27"},{"id":996,"level":"info","message":"GET /products/26"},{"id":995,"level":"info","message":"GET /products/25"}],"offset":3,"limit":3,"has_more":true,"total":null}</span>
 </span></code></pre></div>
 <p>The errors alone: twenty of them, so from the nineteenth on there are only two, <code>has_more</code> is
 false and the links have no <code>next</code>. Asked again within ten seconds, the page comes from the cache:</p>
@@ -4193,11 +3953,11 @@ false and the links have no <code>next</code>. Asked again within ten seconds, t
 </span><span id="__span-3-2"><span class="go">HTTP/1.1 200 OK</span>
 </span><span id="__span-3-3"><span class="go">content-type: application/json</span>
 </span><span id="__span-3-4"><span class="go">link: &lt;/logs?level=error&amp;offset=0&amp;limit=20&gt;; rel="first", &lt;/logs?level=error&amp;offset=0&amp;limit=20&gt;; rel="prev"</span>
-</span><span id="__span-3-5"><span class="go">etag: W/"47586190d3552a24d4378013041c3f12"</span>
+</span><span id="__span-3-5"><span class="go">etag: W/"b7de8434b1ce71cd4dffef81cfa5b626"</span>
 </span><span id="__span-3-6"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
 </span><span id="__span-3-7"><span class="go">cache-control: max-age=10</span>
 </span><span id="__span-3-8">
-</span><span id="__span-3-9"><span class="go">{"items":[{"id":100,"level":"error","message":"GET /products/3"},{"id":50,"level":"error","message":"GET /products/50"}],"offset":18,"limit":20,"has_more":false}</span>
+</span><span id="__span-3-9"><span class="go">{"items":[{"id":100,"level":"error","message":"GET /products/3"},{"id":50,"level":"error","message":"GET /products/50"}],"offset":18,"limit":20,"has_more":false,"total":null}</span>
 </span><span id="__span-3-10">
 </span><span id="__span-3-11"><span class="gp">$ </span>curl<span class="w"> </span>-si<span class="w"> </span><span class="s2">"http://localhost:8000/logs?level=error&amp;offset=18"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cache-status
 </span><span id="__span-3-12"><span class="go">cache-status: Alcazaba; hit; ttl=10</span>
@@ -4214,12 +3974,12 @@ false and the links have no <code>next</code>. Asked again within ten seconds, t
 <li><strong>One row more, no count:</strong> the database is asked for <code>limit + 1</code> rows (<code>params.fetch</code>); the
   extra one isn't returned, it only says that there's a next page. Nothing counts the whole log,
   which on a big table takes longer than the page itself.</li>
-<li><strong>No total, no last page:</strong> the links are first, previous and, while <code>has_more</code>, next. A client
-  that needs the number of pages or the last one wants
-  <a href="../limit-offset/">PaginationLimitOffset</a>, which counts.</li>
+<li><strong>No total, no last page:</strong> <code>total</code> is null and the links are first, previous and, while
+  <code>has_more</code>, next. An endpoint that counts passes <code>total=</code> instead of <code>queried=True</code>, and its
+  pages have the total and a link to the last one.</li>
 <li><strong>Lines written meanwhile shift the pages:</strong> a line logged while page one is read pushes its
   last line into page two, which repeats it. To follow a list that grows at the top without
-  that, page by id: <a href="../id-based/">PaginationIdBased</a>.</li>
+  that, page by key: <a href="../keyset/">PaginationKeyset</a> or <a href="../cursor/">PaginationCursor</a>.</li>
 <li><strong>A short expiry:</strong> the log changes all the time, so each page is cached for ten seconds,
   under its own key (<code>offset</code>, <code>limit</code> and <code>level</code>). The level is an enum: clients can't create
   cache entries without end.</li>
@@ -4364,7 +4124,7 @@ false and the links have no <code>next</code>. Asked again within ten seconds, t
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../limit-offset/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PaginationLimitOffset">
+          <a href="../page-number/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PaginationPageNumber">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4374,7 +4134,7 @@ false and the links have no <code>next</code>. Asked again within ten seconds, t
                 Previous
               </span>
               <div class="md-ellipsis">
-                PaginationLimitOffset
+                PaginationPageNumber
               </div>
             </div>
           </a>

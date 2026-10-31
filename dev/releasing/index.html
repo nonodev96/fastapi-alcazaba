@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1274,14 +1304,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1369,34 +1391,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../guide/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../guide/pagination/keyset/" class="md-nav__link">
         
   
@@ -1405,34 +1399,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../guide/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1565,34 +1531,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../guide/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../guide/pagination/streaming/" class="md-nav__link">
         
   
@@ -1621,42 +1559,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../guide/pagination/time-based/" class="md-nav__link">
+      <a href="../guide/pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../guide/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2479,16 +2389,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2556,34 +2456,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2696,118 +2568,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4142,7 +3902,7 @@
 <h1 id="deployment-and-releases">Deployment and releases<a class="headerlink" href="#deployment-and-releases" title="Permanent link">&para;</a></h1>
 <p>Alcazaba is released from GitHub Actions: a <code>vX.Y.Z</code> tag builds the distributions, generates the
 SBOM, signs everything with Sigstore (no keys to keep), publishes to TestPyPI, checks that
-version installs, and publishes to PyPI after a manual approval. The repository is
+version installs, and publishes to PyPI, each index after a manual approval. The repository is
 <a href="https://github.com/nonodev96/fastapi-alcazaba">nonodev96/fastapi-alcazaba</a>.</p>
 <h2 id="one-time-setup">One-time setup<a class="headerlink" href="#one-time-setup" title="Permanent link">&para;</a></h2>
 <h3 id="1-repository">1. Repository<a class="headerlink" href="#1-repository" title="Permanent link">&para;</a></h3>
@@ -4165,7 +3925,8 @@ version installs, and publishes to PyPI after a manual approval. The repository 
 </ul>
 </li>
 <li><strong>Environments:</strong><ul>
-<li><code>testpypi</code>: deployment tags <code>v*</code>.</li>
+<li><code>testpypi</code>: deployment tags <code>v*</code>, <strong>required reviewer: you</strong> (nothing is published, not
+  even to TestPyPI, until you say so).</li>
 <li><code>pypi</code>: deployment tags <code>v*</code>, <strong>required reviewer: you</strong> (the approval before PyPI).</li>
 <li><code>github-pages</code>: created when Pages is enabled; deployment branch <code>main</code>, from which the
   <em>Docs</em> workflow deploys every version.</li>
@@ -4238,7 +3999,8 @@ on <a href="https://test.pypi.org/manage/account/publishing/">TestPyPI</a> and o
 <li>generates the CycloneDX SBOM and validates it;</li>
 <li>signs: GitHub attestations of build provenance (SLSA) and of the SBOM, plus a Sigstore
    bundle per file;</li>
-<li>publishes to TestPyPI and installs that version in a clean environment (smoke test);</li>
+<li>waits for your approval in the <code>testpypi</code> environment, publishes to TestPyPI and
+   installs that version in a clean environment (smoke test);</li>
 <li>waits for your approval in the <code>pypi</code> environment, then publishes to PyPI with PEP 740
    attestations;</li>
 <li>creates the GitHub release with the distributions, the SBOM, the provenance, the Sigstore

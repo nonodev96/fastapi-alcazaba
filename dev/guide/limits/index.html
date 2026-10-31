@@ -485,6 +485,8 @@
       
         
       
+        
+      
     
     
     
@@ -552,6 +554,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
   
 
     
@@ -1281,14 +1311,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -1376,34 +1398,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../pagination/keyset/" class="md-nav__link">
         
   
@@ -1412,34 +1406,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -1572,34 +1538,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../pagination/streaming/" class="md-nav__link">
         
   
@@ -1628,42 +1566,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/time-based/" class="md-nav__link">
+      <a href="../pagination/sqlalchemy/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
+    With SQLAlchemy
   
 
     
@@ -2555,16 +2465,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -2632,34 +2532,6 @@
     
   
     PaginationPageNumber
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/limit-offset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationLimitOffset
   
 
     
@@ -2772,118 +2644,6 @@
     
   
     PaginationKeyset
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/id-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationIdBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/time-based/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationTimeBased
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/search-after/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationSearchAfter
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/pagination/token/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationToken
   
 
     
@@ -4103,8 +3863,8 @@ live in the cache's backend, so every process and container shares them:</p>
   only from the addresses in <code>--forwarded-allow-ips</code> (127.0.0.1 by default), so give it your
   proxy's. The limiter never reads <code>X-Forwarded-For</code> itself, which any client can set.
   <code>identifier=</code> counts per user, API key… Identities are hashed before they reach the backend.</li>
-<li><strong>Where:</strong> each route has its own budget, whatever its path parameters: <code>/items/1</code> and
-  <code>/items/2</code> share one. Limiters with the same <code>name</code> and rate share one budget across routes,
+<li><strong>Where:</strong> each route has its own budget, whatever its path parameters (those of a <code>Mount</code>
+  too): <code>/items/1</code> and <code>/items/2</code> share one, and so does an endpoint mounted twice. Limiters with the same <code>name</code> and rate share one budget across routes,
   and <code>cost=</code> makes a route take more of it.</li>
 <li><strong>How:</strong> a sliding window. The count of the previous window is added in proportion to how much
   of it is still less than a window ago, so nobody doubles the limit around the boundary between
@@ -4134,18 +3894,27 @@ live in the cache's backend, so every process and container shares them:</p>
 <code>await limiter.hit(connection, key=..., cost=...)</code> yourself to limit anything else: it counts and
 returns <code>None</code> within the limit, else the seconds to wait. For example, the messages of a WebSocket, or
 the login attempts to an account:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.rate_limit</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIRateLimiter</span><span class="p">,</span> <span class="n">too_many_requests</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
 </span><span id="__span-1-2">
-</span><span id="__span-1-3"><span class="n">login_attempts</span> <span class="o">=</span> <span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-1-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.rate_limit</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIRateLimiter</span><span class="p">,</span> <span class="n">too_many_requests</span>
 </span><span id="__span-1-4">
-</span><span id="__span-1-5">
-</span><span id="__span-1-6"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">)</span>
-</span><span id="__span-1-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">LoginForm</span><span class="p">,</span> <span class="n">Form</span><span class="p">()])</span> <span class="o">-&gt;</span> <span class="n">Token</span><span class="p">:</span>
-</span><span id="__span-1-8">    <span class="c1"># Five attempts per account every 15 minutes, wherever they come from.</span>
-</span><span id="__span-1-9">    <span class="k">if</span> <span class="p">(</span><span class="n">wait</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">login_attempts</span><span class="o">.</span><span class="n">hit</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">form</span><span class="o">.</span><span class="n">username</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-1-10">        <span class="n">too_many_requests</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
-</span><span id="__span-1-11">    <span class="o">...</span>
+</span><span id="__span-1-5"><span class="n">login_attempts</span> <span class="o">=</span> <span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="s2">""</span><span class="p">)</span>
+</span><span id="__span-1-6"><span class="n">login_attempts_per_client</span> <span class="o">=</span> <span class="n">FastAPIRateLimiter</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>  <span class="c1"># per IP</span>
+</span><span id="__span-1-7">
+</span><span id="__span-1-8">
+</span><span id="__span-1-9"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">login_attempts_per_client</span><span class="p">)])</span>
+</span><span id="__span-1-10"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">LoginForm</span><span class="p">,</span> <span class="n">Form</span><span class="p">()])</span> <span class="o">-&gt;</span> <span class="n">Token</span><span class="p">:</span>
+</span><span id="__span-1-11">    <span class="c1"># Five attempts per account every 15 minutes, wherever they come from. The key is the</span>
+</span><span id="__span-1-12">    <span class="c1"># account as the app finds it, or "Alice@x.com", "alice@x.com " and the like would each get</span>
+</span><span id="__span-1-13">    <span class="c1"># five more.</span>
+</span><span id="__span-1-14">    <span class="n">account</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">"NFKC"</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">username</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span>
+</span><span id="__span-1-15">    <span class="k">if</span> <span class="p">(</span><span class="n">wait</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">login_attempts</span><span class="o">.</span><span class="n">hit</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">account</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-1-16">        <span class="n">too_many_requests</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
+</span><span id="__span-1-17">    <span class="o">...</span>
 </span></code></pre></div>
+<p>Normalise the key exactly as the login looks the account up. A limit per account also lets
+anyone lock that account out for the window with five wrong passwords: pair it with the limit
+per IP, and keep the window short.</p>
 <h2 id="concurrency-limits">Concurrency limits<a class="headerlink" href="#concurrency-limits" title="Permanent link">&para;</a></h2>
 <p><code>FastAPIConcurrencyLimiter</code> limits how many requests run <em>at the same time</em>, across every process
 and container, for endpoints whose cost is how long they run (AI, OCR, PDF rendering). The rate
