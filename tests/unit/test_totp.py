@@ -321,16 +321,19 @@ def step_up_app(totp: FastAPITOTP) -> TestClient:
     return TestClient(app)
 
 
+class WithoutLocks(InMemoryBackend):
+    supports_locks = False
+
+
 class TestBackendsWithoutLocks:
     """Each code is marked used with a lock: without them, every right code was refused."""
 
     def test_refused_when_given(self) -> None:
-        memcached = Cache(MemcachedBackend(FakeMemcache()))  # type: ignore[arg-type]
-        with pytest.raises(NotImplementedError, match="can't hold locks"):
-            make(cache=memcached)
+        with pytest.raises(NotImplementedError, match="can't hold locks.*shipped .* can"):
+            make(cache=Cache(WithoutLocks()))
 
     async def test_refused_when_resolved(self) -> None:
-        FastAPICache.init(MemcachedBackend(FakeMemcache()))  # type: ignore[arg-type]
+        FastAPICache.init(WithoutLocks())
         totp = make(cache=None)
         enrollment = totp.enroll("ana", label="ana@example.com")
         with pytest.raises(NotImplementedError, match="can't hold locks"):
@@ -338,6 +341,17 @@ class TestBackendsWithoutLocks:
         recovery = totp.recovery_codes("ana")
         with pytest.raises(NotImplementedError, match="can't hold locks"):
             await totp.use_recovery_code("ana", recovery.codes[0], recovery.digests)
+
+    async def test_memcached_holds_them(self) -> None:
+        totp = make(cache=Cache(MemcachedBackend(FakeMemcache())))  # type: ignore[arg-type]
+        sealed = totp.enroll("ana", label="ana@example.com").sealed
+        code = totp.code("ana", sealed)
+        assert await totp.verify("ana", sealed, code)
+        assert not await totp.verify("ana", sealed, code)
+        recovery = totp.recovery_codes("ana")
+        used = await totp.use_recovery_code("ana", recovery.codes[0], recovery.digests)
+        assert used == recovery.digests[0]
+        assert await totp.use_recovery_code("ana", recovery.codes[0], recovery.digests) is None
 
 
 class TestStepUp:

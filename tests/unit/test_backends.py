@@ -1,5 +1,7 @@
 # pylint: disable=protected-access  # tests look at the internals they check
 
+import asyncio
+import random
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any, NoReturn
@@ -11,6 +13,15 @@ from botocore.exceptions import ClientError
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends import Backend
+from fastapi_alcazaba.backends._generations import MAGIC as STAMP_MAGIC
+from fastapi_alcazaba.backends._generations import (
+    Stamp,
+    alive,
+    encode_stamp,
+    namespace_generation,
+    namespaces,
+    parse_stamp,
+)
 from fastapi_alcazaba.backends._redis_common import RedisLikeBackend, escape_glob
 from fastapi_alcazaba.backends.base import is_state_key
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
@@ -18,6 +29,7 @@ from fastapi_alcazaba.backends.memcached import MemcachedBackend, memcached_key
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.backends.valkey import ValkeyBackend
 from fastapi_alcazaba.core.errors import BackendUnavailable
+from fastapi_alcazaba.response_cache import cache
 
 
 async def check_incr_window(backend: Backend) -> None:
@@ -241,20 +253,54 @@ async def test_valkey_backend(fake_redis: Any) -> None:
 
 
 class FakeMemcache:
+    """memcached's commands as aiomcache sends them: expiry (relative, or a Unix time beyond 30
+    days), CAS tokens, multi-get."""
+
     def __init__(self) -> None:
         self.data: dict[bytes, bytes] = {}
         self.exptimes: dict[bytes, int] = {}
+        self.deadlines: dict[bytes, float] = {}
+        self.cas_tokens: dict[bytes, int] = {}
+        self._writes = 0
+
+    def _live(self, key: bytes) -> bool:
+        deadline = self.deadlines.get(key)
+        if key in self.data and deadline is not None and deadline <= time.time():
+            del self.data[key]
+        return key in self.data
 
     async def get(self, key: bytes) -> bytes | None:
-        return self.data.get(key)
+        return self.data[key] if self._live(key) else None
+
+    async def multi_get(self, *keys: bytes) -> tuple[bytes | None, ...]:
+        assert len(set(keys)) == len(keys), "aiomcache refuses duplicate keys"
+        return tuple([await self.get(key) for key in keys])
+
+    async def gets(self, key: bytes) -> tuple[bytes | None, int | None]:
+        if not self._live(key):
+            return None, None
+        return self.data[key], self.cas_tokens.get(key, 0)
 
     async def set(self, key: bytes, value: bytes, exptime: int = 0) -> bool:
+        assert exptime >= 0, "aiomcache refuses a negative exptime"
+        self._writes += 1
         self.data[key] = value
         self.exptimes[key] = exptime
+        self.cas_tokens[key] = self._writes
+        if not exptime:
+            self.deadlines.pop(key, None)
+        else:
+            relative = exptime <= 30 * 24 * 3600
+            self.deadlines[key] = time.time() + exptime if relative else exptime
         return True
 
+    async def cas(self, key: bytes, value: bytes, cas_token: int, exptime: int = 0) -> bool:
+        if not self._live(key) or self.cas_tokens.get(key, 0) != cas_token:
+            return False
+        return await self.set(key, value, exptime)
+
     async def delete(self, key: bytes) -> bool:
-        return self.data.pop(key, None) is not None
+        return self._live(key) and self.data.pop(key, None) is not None
 
     async def incr(self, key: bytes, increment: int = 1) -> int:
         return self._change(b"incr", key, increment)
@@ -263,7 +309,7 @@ class FakeMemcache:
         return self._change(b"decr", key, -decrement)
 
     def _change(self, command: bytes, key: bytes, delta: int) -> int:
-        if key not in self.data:  # what aiomcache 0.8 does, though it documents returning None
+        if not self._live(key):  # what aiomcache 0.8 does, though it documents returning None
             raise ClientException(f"Memcached {command!s} command failed", bytearray(b"NOT_FOUND"))
         if not self.data[key].isdigit():
             raise ClientException(
@@ -274,7 +320,7 @@ class FakeMemcache:
         return value
 
     async def add(self, key: bytes, value: bytes, exptime: int = 0) -> bool:
-        if key in self.data:
+        if self._live(key):
             return False
         return await self.set(key, value, exptime)
 
@@ -288,20 +334,129 @@ class RacingMemcache(FakeMemcache):
         return await super().add(key, value, exptime)
 
 
+class TestGenerations:
+    @pytest.mark.parametrize(
+        ("key", "expected"),
+        [
+            ("app:ns:abc", ["app", "app:ns"]),
+            ("::abc", ["", ":"]),
+            (":ns:abc", ["", ":ns"]),
+            ("no-colon", []),
+            ("app!lock:{x}", []),  # state
+            (":".join("abcdefghijk"), [":".join("abcdefghijk"[:n]) for n in range(1, 9)]),
+        ],
+    )
+    def test_namespaces_of_a_key(self, key: str, expected: list[str]) -> None:
+        assert namespaces(key) == expected
+
+    def test_stamp_round_trip(self) -> None:
+        stamp = Stamp(1_800_000_000, {"g1": "a", "g2": ""})
+        data = encode_stamp(stamp, b"\x00value\nwith new lines")
+        assert parse_stamp(data) == (stamp, b"\x00value\nwith new lines")
+        assert parse_stamp(b'{"json": "of 0.7"}') is None
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            b"[]",
+            b'{"e": 0}',
+            b'{"e": 0, "g": {}, "x": 1}',
+            b'{"e": 1.5, "g": {}}',
+            b'{"e": true, "g": {}}',
+            b'{"e": -1, "g": {}}',
+            b'{"e": 0, "g": []}',
+            b'{"e": 0, "g": {"a": 1}}',
+            b"\xff",
+            b"[" * 100_000,
+        ],
+    )
+    def test_malformed_stamps(self, line: bytes) -> None:
+        with pytest.raises(ValueError, match="."):
+            parse_stamp(STAMP_MAGIC + line + b"\nvalue")
+
+    @pytest.mark.parametrize(
+        ("recorded", "current", "is_alive"),
+        [
+            ({"a": "1"}, {"a": "1"}, True),
+            ({"a": "1"}, {"a": "2"}, False),
+            ({"a": "1"}, {"a": None}, False),  # evicted
+            ({"a": ""}, {"a": None}, True),
+            ({}, {"a": None}, True),
+            ({}, {"a": "1"}, False),  # cleared since
+            ({"tag": "1"}, {}, False),  # not fetched: none now
+        ],
+    )
+    def test_alive(
+        self,
+        recorded: dict[str, str],
+        current: dict[str, str | None],
+        is_alive: bool,
+    ) -> None:
+        assert alive(Stamp(0, recorded), current, ["a"]) is is_alive
+
+
+class CountingMemcache(FakeMemcache):
+    """Counts the round trips of reads."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.reads = 0
+
+    async def multi_get(self, *keys: bytes) -> tuple[bytes | None, ...]:
+        self.reads += 1
+        return await super().multi_get(*keys)
+
+
+class OvertakingMemcache(FakeMemcache):
+    """Another client writes the key right after each gets."""
+
+    async def gets(self, key: bytes) -> tuple[bytes | None, int | None]:
+        found = await super().gets(key)
+        if found[0] is not None:
+            await self.set(key, b"theirs", self.exptimes[key])
+        return found
+
+
+def memcached(mcache: FakeMemcache | None = None) -> MemcachedBackend:
+    return MemcachedBackend(mcache or FakeMemcache())  # type: ignore[arg-type]
+
+
 class TestMemcachedBackend:
-    async def test_set_get_and_unknown_ttl(self) -> None:
-        backend = MemcachedBackend(FakeMemcache())  # type: ignore[arg-type]
-        await backend.set("k", b"v", expire=60)
-        assert await backend.get_with_ttl("k") == (-1, b"v")
+    async def test_set_get_and_ttl(self) -> None:
+        backend = memcached()
+        await backend.set("app:ns:k", b"v", expire=60)
+        ttl, value = await backend.get_with_ttl("app:ns:k")
+        assert (value, 59 <= ttl <= 60) == (b"v", True)
+        await backend.set("app:ns:forever", b"v")
+        assert await backend.get_with_ttl("app:ns:forever") == (-1, b"v")
         assert await backend.get_with_ttl("missing") == (0, None)
+
+    async def test_lifetime_counts_down(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        backend = memcached()
+        await backend.set("app:ns:k", b"v", expire=60)
+        now = time.time()
+        monkeypatch.setattr(time, "time", lambda: now + 50)
+        assert await backend.get_with_ttl("app:ns:k") == (10, b"v")
+        monkeypatch.setattr(time, "time", lambda: now + 61)
+        assert await backend.get_with_ttl("app:ns:k") == (0, None)
+
+    async def test_state_is_stored_as_is(self) -> None:
+        """Locks, counters and sessions read the same by every version."""
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        await backend.set("app!session:x", b"v", expire=60)
+        assert mcache.data[b"app!session:x"] == b"v"
+        assert await backend.get_with_ttl("app!session:x") == (-1, b"v")
+        assert await backend.get("app!session:missing") is None
 
     async def test_long_expire_becomes_a_timestamp(self) -> None:
         mcache = FakeMemcache()
-        backend = MemcachedBackend(mcache)  # type: ignore[arg-type]
+        backend = memcached(mcache)
         await backend.set("short", b"v", expire=60)
         await backend.set("long", b"v", expire=40 * 24 * 3600)
         assert mcache.exptimes[b"short"] == 60
         assert mcache.exptimes[b"long"] > time.time()
+        assert 40 * 24 * 3600 - 2 <= (await backend.get_with_ttl("long"))[0] <= 40 * 24 * 3600
 
     def test_invalid_keys_are_hashed(self) -> None:
         assert memcached_key("app:ns:abc") == b"app:ns:abc"
@@ -310,48 +465,259 @@ class TestMemcachedBackend:
             assert hashed.startswith(b"fastapi_alcazaba:sha256:")
             assert len(hashed) <= 250
 
-    async def test_clear(self) -> None:
-        backend = MemcachedBackend(FakeMemcache())  # type: ignore[arg-type]
+    async def test_clear_a_key(self) -> None:
+        backend = memcached()
         await backend.set("k", b"v")
         assert await backend.clear(key="k") == 1
         assert await backend.clear(key="k") == 0
-        with pytest.raises(NotImplementedError):
-            await backend.clear(namespace="ns")
+        assert await backend.clear() == 0
 
-    async def test_what_it_cant_do_says_so(self) -> None:
-        backend = MemcachedBackend(FakeMemcache())  # type: ignore[arg-type]
-        assert not backend.supports_locks
-        assert not backend.supports_tags
-        with pytest.raises(NotImplementedError, match="^MemcachedBackend can't hold locks$"):
-            await backend.acquire_lock("lock", "token", 5)
-        with pytest.raises(NotImplementedError, match="^MemcachedBackend can't keep tags$"):
-            await backend.invalidate_tags(["tag"])
+    async def test_clear_a_namespace(self) -> None:
+        backend = memcached()
+        for key in ("app:a:1", "app:a:2", "app:ab:1", "app!otp:a"):
+            await backend.set(key, b"v", expire=60)
+        assert await backend.clear(namespace="app:a") == 0  # can't count them
+        assert [await backend.get(key) for key in ("app:a:1", "app:a:2")] == [None, None]
+        assert await backend.get("app:ab:1") == b"v"
+        await backend.set("app:a:1", b"new", expire=60)
+        assert await backend.get("app:a:1") == b"new"  # stored after the clear
+        await backend.clear(namespace="app")
+        assert await backend.get("app:ab:1") is None
+        assert await backend.get("app:a:1") is None
+        assert await backend.get("app!otp:a") == b"v"  # state isn't in any namespace
+
+    async def test_clear_everything_without_a_prefix(self) -> None:
+        backend = memcached()
+        FastAPICache.init(backend)
+        for key in ("::1", ":ns:1", "other-app:1"):
+            await backend.set(key, b"x")
+        assert await FastAPICache.clear() == 0
+        assert [await backend.get(key) for key in ("::1", ":ns:1")] == [None, None]
+        assert await backend.get("other-app:1") == b"x"
+
+    async def test_too_deep_a_namespace_is_refused(self) -> None:
+        backend = memcached()
+        await backend.clear(namespace=":".join("abcdefgh"))  # 7 colons
+        with pytest.raises(ValueError, match="fewer than 8"):
+            await backend.clear(namespace=":".join("abcdefghi"))
+
+    async def test_a_clear_while_storing_hides_the_entry(self) -> None:
+        """The generations are read before the value is written: a clear in between wins."""
+        backend = memcached()
+        read_generations = backend._generations
+
+        async def cleared_meanwhile(names: Any) -> dict[str, str]:
+            tokens = await read_generations(names)
+            await backend.clear(namespace="app:ns")
+            return tokens
+
+        backend._generations = cleared_meanwhile  # type: ignore[method-assign]
+        await backend.set("app:ns:1", b"computed before the clear", expire=60)
+        backend._generations = read_generations  # type: ignore[method-assign]
+        assert await backend.get("app:ns:1") is None
+
+    async def test_an_evicted_generation_never_brings_entries_back(self) -> None:
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        await backend.set("app:ns:1", b"v", expire=60)
+        await backend.clear(namespace="app:ns")
+        del mcache.data[memcached_key(namespace_generation("app:ns"))]
+        assert await backend.get("app:ns:1") is None
+        await backend.set("app:ns:2", b"v", expire=60)
+        del mcache.data[memcached_key(namespace_generation("app"))]
+        assert await backend.get("app:ns:2") is None  # recomputed, never stale
+
+    async def test_a_generation_created_by_another_client(self) -> None:
+        """Two first stores at once: both record the generation one of them created."""
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        add = mcache.add
+
+        async def overtaken(key: bytes, value: bytes, exptime: int = 0) -> bool:
+            await add(key, b"theirs", exptime)
+            return await add(key, value, exptime)
+
+        mcache.add = overtaken  # type: ignore[method-assign]
+        await backend.set("app:1", b"v")
+        assert await backend.get("app:1") == b"v"
+        assert mcache.data[memcached_key(namespace_generation("app"))] == b"theirs"
+
+    async def test_entries_of_earlier_versions_are_misses(self) -> None:
+        """Whether a clear hid them since can't be told."""
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        mcache.data[b"app:ns:1"] = b'{"written": "by 0.7"}'
+        assert await backend.get_with_ttl("app:ns:1") == (0, None)
+
+    @pytest.mark.parametrize(
+        "stored",
+        [
+            STAMP_MAGIC + b'{"e": 0, "g": {}}',  # no end of line
+            STAMP_MAGIC + b"not json\nv",
+            STAMP_MAGIC + b'{"e": -1, "g": {}}\nv',
+        ],
+    )
+    async def test_unreadable_entries_are_misses(
+        self,
+        stored: bytes,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        mcache.data[b"app:ns:1"] = stored
+        assert await backend.get_with_ttl("app:ns:1") == (0, None)
+        assert "unreadable entry 'app:ns:1'" in caplog.text
+        await backend.add_tags("app:ns:1", ["app:tag:{t}"], 60)  # left as it is
+        assert mcache.data[b"app:ns:1"] == stored
+
+    async def test_locks(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """add takes it; gets + cas release or extend it, only for its holder."""
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        assert backend.supports_locks
+        assert await backend.acquire_lock("app!lock:x", "mine", 5)
+        assert not await backend.acquire_lock("app!lock:x", "theirs", 5)
+        await backend.release_lock("app!lock:x", "theirs")
+        assert not await backend.extend_lock("app!lock:x", "theirs", 60)
+        assert not await backend.acquire_lock("app!lock:x", "theirs", 5)
+        assert await backend.extend_lock("app!lock:x", "mine", 60)
+        assert mcache.exptimes[b"app!lock:x"] == 61
+        await backend.release_lock("app!lock:x", "mine")
+        await backend.release_lock("app!lock:x", "mine")  # already released
+        assert not await backend.extend_lock("app!lock:x", "mine", 5)
+        assert await backend.acquire_lock("app!lock:x", "theirs", 5)
+        now = time.time()
+        monkeypatch.setattr(time, "time", lambda: now + 7)  # expired
+        assert not await backend.extend_lock("app!lock:x", "theirs", 5)
+        assert await backend.acquire_lock("app!lock:x", "mine", 5)
+
+    @pytest.mark.parametrize(
+        ("ttl", "exptime"), [(0.05, 2), (1, 2), (2.5, 4), (30 * 24 * 3600, 30 * 24 * 3600 + 1)]
+    )
+    async def test_locks_last_whole_seconds_never_less(self, ttl: float, exptime: int) -> None:
+        mcache = FakeMemcache()
+        assert await memcached(mcache).acquire_lock("lock", "mine", ttl)
+        if exptime > 30 * 24 * 3600:  # a Unix time
+            exptime += int(time.time())
+        assert abs(mcache.exptimes[b"lock"] - exptime) <= 1
+
+    async def test_a_release_expires_the_lock_at_once(self) -> None:
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        await backend.acquire_lock("lock", "mine", 60)
+        await backend.release_lock("lock", "mine")
+        assert mcache.exptimes[b"lock"] == 30 * 24 * 3600 + 1  # a Unix time in 1970
+        assert await mcache.get(b"lock") is None
+
+    async def test_a_lock_written_since_isnt_released_nor_extended(self) -> None:
+        mcache = OvertakingMemcache()
+        backend = memcached(mcache)
+        await backend.acquire_lock("lock", "mine", 60)
+        await backend.release_lock("lock", "mine")
+        assert mcache.data[b"lock"] == b"theirs"
+        await mcache.set(b"lock", b"mine", 60)
+        assert not await backend.extend_lock("lock", "mine", 60)
+
+    async def test_tags(self) -> None:
+        backend = memcached()
+        assert backend.supports_tags
+        tag, other = "app:tag:{a}", "app:tag:{b}"
+        for i in range(3):
+            await backend.set(f"app:ns:{i}", b"v", expire=60)
+            await backend.add_tags(f"app:ns:{i}", [tag] if i < 2 else [other], 60)
+        assert await backend.invalidate_tags([tag]) == 0  # can't count them
+        assert [await backend.get(f"app:ns:{i}") for i in range(3)] == [None, None, b"v"]
+        assert await backend.invalidate_tags_with_keys([other]) == (0, None)
+        assert await backend.get("app:ns:2") is None
+        await backend.set("app:ns:0", b"new", expire=60)
+        await backend.add_tags("app:ns:0", [tag], 60)
+        assert await backend.get("app:ns:0") == b"new"  # stored after the invalidation
+
+    async def test_tagging_keeps_the_expiry(self) -> None:
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        await backend.set("app:ns:1", b"v", expire=60)
+        await backend.add_tags("app:ns:1", ["app:tag:{a}"], 60)
+        assert mcache.exptimes[b"app:ns:1"] > time.time()  # the entry's expiry, a Unix time
+        assert 59 <= (await backend.get_with_ttl("app:ns:1"))[0] <= 60
+        await backend.set("app:ns:2", b"v")
+        await backend.add_tags("app:ns:2", ["app:tag:{a}"], None)
+        assert mcache.exptimes[b"app:ns:2"] == 0
+
+    async def test_tagging_what_isnt_there_does_nothing(self) -> None:
+        mcache = FakeMemcache()
+        backend = memcached(mcache)
+        await backend.add_tags("app:ns:missing", ["app:tag:{a}"], 60)
+        mcache.data[b"app:ns:old"] = b"by 0.7"
+        await backend.add_tags("app:ns:old", ["app:tag:{a}"], 60)
+        assert mcache.data[b"app:ns:old"] == b"by 0.7"
+        assert b"app:ns:missing" not in mcache.data
+
+    async def test_a_newer_value_isnt_overwritten_by_tagging(self) -> None:
+        """Written between the gets and the cas: its own writer tags it."""
+        mcache = OvertakingMemcache()
+        backend = memcached(mcache)
+        await backend.set("app:ns:1", b"mine", expire=60)
+        await backend.add_tags("app:ns:1", ["app:tag:{a}"], 60)
+        assert mcache.data[b"app:ns:1"] == b"theirs"
+
+    async def test_round_trips_of_a_hit(self) -> None:
+        """One for an entry, two for a tagged one."""
+        mcache = CountingMemcache()
+        backend = memcached(mcache)
+        await backend.set("app:ns:1", b"v", expire=60)
+        await backend.set("app:ns:2", b"v", expire=60)
+        await backend.add_tags("app:ns:2", ["app:tag:{a}"], 60)
+        mcache.reads = 0
+        await backend.get("app:ns:1")
+        assert mcache.reads == 1
+        await backend.get("app:ns:2")
+        assert mcache.reads == 3
+
+    async def test_early_refresh(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Hits know their remaining lifetime, so early refresh happens."""
+        FastAPICache.init(memcached(), early_refresh=0.5)
+        calls: list[int] = []
+
+        @cache(expire=100)
+        async def value() -> int:
+            calls.append(1)
+            return len(calls)
+
+        assert await value() == 1
+        monkeypatch.setattr(random, "random", lambda: 0.99)
+        assert await value() == 1  # 100 s left of 100: outside the window
+        now = time.time()
+        monkeypatch.setattr(time, "time", lambda: now + 90)  # 10 s left: inside
+        assert await value() == 2
 
     async def test_counters(self) -> None:
         mcache = FakeMemcache()
-        backend = MemcachedBackend(mcache)  # type: ignore[arg-type]
+        backend = memcached(mcache)
         assert backend.supports_counters
         assert await backend.get_counter("c") == 0
         assert await backend.incr("c", expire=60) == 1
         assert mcache.exptimes[b"c"] == 60
         assert await backend.incr("c", 3, expire=60) == 4
         assert await backend.incr("c", -1, expire=60) == 3
-        assert await backend.get_counter("c") == 3
+        assert await backend.get_counter("app!c") == 0
+        assert await backend.incr("app!c", 3, expire=60) == 3
+        assert await backend.get_counter("app!c") == 3
         assert await backend.incr("new", -1, expire=60) == 0  # no negative counters
 
     async def test_incr_window_adds_and_takes_back(self) -> None:
         """memcached has no conditional increment: Backend's default."""
-        await check_incr_window(MemcachedBackend(FakeMemcache()))  # type: ignore[arg-type]
+        await check_incr_window(memcached())
 
     async def test_counter_created_by_another_client(self) -> None:
-        backend = MemcachedBackend(RacingMemcache())  # type: ignore[arg-type]
+        backend = memcached(RacingMemcache())
         assert await backend.incr("c", expire=60) == 11
 
     async def test_other_errors_go_through(self) -> None:
-        backend = MemcachedBackend(FakeMemcache())  # type: ignore[arg-type]
-        await backend.set("not a number", b"text")
+        backend = memcached()
+        await backend.set("app!not a number", b"text")
         with pytest.raises(ClientException):
-            await backend.incr("not a number")
+            await backend.incr("app!not a number")
 
 
 class TestFastAPICacheClear:
@@ -387,10 +753,24 @@ class FakeDynamoClient:
 
     def __init__(self) -> None:
         self.items: dict[str, dict[str, Any]] = {}
+        self.requests = 0
+        self.unprocessed = 0  # BatchGetItems that process no key
 
     async def get_item(self, Key: dict[str, Any], **_: Any) -> dict[str, Any]:  # noqa: N803  # pylint: disable=invalid-name
+        self.requests += 1
         item = self.items.get(Key["key"]["S"])
         return {} if item is None else {"Item": item}
+
+    async def batch_get_item(self, RequestItems: dict[str, Any]) -> dict[str, Any]:  # noqa: N803  # pylint: disable=invalid-name
+        self.requests += 1
+        ((table, request),) = RequestItems.items()
+        keys = [key["key"]["S"] for key in request["Keys"]]
+        assert len(set(keys)) == len(keys) <= 100, "DynamoDB refuses duplicate keys"
+        if self.unprocessed:
+            self.unprocessed -= 1
+            return {"Responses": {table: []}, "UnprocessedKeys": RequestItems}
+        found = [self.items[key] for key in keys if key in self.items]
+        return {"Responses": {table: found}, "UnprocessedKeys": {}}
 
     async def put_item(self, Item: dict[str, Any], **kwargs: Any) -> None:  # noqa: N803  # pylint: disable=invalid-name
         key = Item["key"]["S"]
@@ -420,6 +800,13 @@ class FakeDynamoClient:
         """Only what DynamoBackend sends: ADD to a number, SET if_not_exists, and the condition
         "attribute_not_exists(#count) OR #count <= :at_most"; or extend_lock's SET."""
         names, values = kwargs["ExpressionAttributeNames"], kwargs["ExpressionAttributeValues"]
+        if kwargs["UpdateExpression"] == "SET #tags = :tags":  # add_tags's
+            assert kwargs["ConditionExpression"] == "attribute_exists(#key)"
+            item = self.items.get(kwargs["Key"]["key"]["S"])
+            if item is None:
+                conditional_check_failed()
+            item[names["#tags"]] = values[":tags"]
+            return {}
         if kwargs["UpdateExpression"] == "SET #expires = :expires, #ttl = :ttl":
             assert kwargs["ConditionExpression"] == "#token = :token AND #expires >= :now"
             item = self.items.get(kwargs["Key"]["key"]["S"])
@@ -486,8 +873,108 @@ class TestDynamoBackend:
         assert await backend.clear(key="k") == 1
         assert await backend.clear(key="k") == 0
         assert await backend.clear() == 0
-        with pytest.raises(NotImplementedError):
-            await backend.clear(namespace="ns")
+
+    async def test_clear_a_namespace(self, backend: Any) -> None:
+        for key in ("app:a:1", "app:a:2", "app:ab:1", "app!otp:a"):
+            await backend.set(key, b"v", expire=60)
+        assert await backend.clear(namespace="app:a") == 0  # can't count them
+        assert [await backend.get(key) for key in ("app:a:1", "app:a:2")] == [None, None]
+        assert await backend.get("app:ab:1") == b"v"
+        await backend.set("app:a:1", b"new", expire=60)
+        assert await backend.get("app:a:1") == b"new"  # stored after the clear
+        await backend.clear(namespace="app")
+        assert await backend.get("app:ab:1") is None
+        assert await backend.get("app:a:1") is None
+        assert await backend.get("app!otp:a") == b"v"  # state isn't in any namespace
+        with pytest.raises(ValueError, match="fewer than 8"):
+            await backend.clear(namespace=":".join("abcdefghi"))
+
+    async def test_a_clear_while_storing_hides_the_entry(self, backend: Any) -> None:
+        read_generations = backend._generations
+
+        async def cleared_meanwhile(names: Any) -> dict[str, str]:
+            tokens: dict[str, str] = await read_generations(names)
+            await backend.clear(namespace="app:ns")
+            return tokens
+
+        await backend.clear(namespace="app:ns")
+        backend._generations = cleared_meanwhile
+        await backend.set("app:ns:1", b"computed before the clear", expire=60)
+        backend._generations = read_generations
+        assert await backend.get("app:ns:1") is None
+
+    async def test_state_and_items_without_a_value(self, backend: Any) -> None:
+        await backend.set("app!session:x", b"v", expire=60)
+        assert "generations" not in backend.client.items["app!session:x"]
+        assert (await backend.get_with_ttl("app!session:x"))[1] == b"v"
+        assert await backend.get("app!session:missing") is None
+        await backend.incr("app:ns:counter", 1)  # an item without a value
+        assert await backend.get("app:ns:counter") is None
+
+    async def test_items_of_earlier_versions(self, backend: Any) -> None:
+        """Without generations: served until their namespace is cleared."""
+        backend.client.items["app:ns:1"] = {"key": {"S": "app:ns:1"}, "value": {"B": b"v"}}
+        assert await backend.get_with_ttl("app:ns:1") == (-1, b"v")
+        await backend.clear(namespace="app")
+        assert await backend.get("app:ns:1") is None
+
+    async def test_tags(self, backend: Any) -> None:
+        assert backend.supports_tags
+        tag, other = "app:tag:{a}", "app:tag:{b}"
+        for i in range(3):
+            await backend.set(f"app:ns:{i}", b"v", expire=60)
+            await backend.add_tags(f"app:ns:{i}", [tag] if i < 2 else [other], 60)
+        assert await backend.invalidate_tags([tag]) == 0  # can't count them
+        assert [await backend.get(f"app:ns:{i}") for i in range(3)] == [None, None, b"v"]
+        assert await backend.invalidate_tags_with_keys([other]) == (0, None)
+        assert await backend.get("app:ns:2") is None
+        await backend.set("app:ns:0", b"new", expire=60)
+        await backend.add_tags("app:ns:0", [tag], 60)
+        assert await backend.get("app:ns:0") == b"new"  # stored after the invalidation
+
+    async def test_tagging_what_isnt_there_does_nothing(self, backend: Any) -> None:
+        await backend.add_tags("app:ns:missing", ["app:tag:{a}"], 60)
+        assert "app:ns:missing" not in backend.client.items
+
+    async def test_requests_of_a_hit(self, backend: Any) -> None:
+        """One for an entry, two for a tagged one."""
+        await backend.set("app:ns:1", b"v", expire=60)
+        await backend.set("app:ns:2", b"v", expire=60)
+        await backend.add_tags("app:ns:2", ["app:tag:{a}"], 60)
+        backend.client.requests = 0
+        await backend.get("app:ns:1")
+        assert backend.client.requests == 1
+        await backend.get("app:ns:2")
+        assert backend.client.requests == 3
+
+    async def test_unprocessed_keys_are_retried(
+        self,
+        backend: Any,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        waits: list[float] = []
+
+        async def wait(seconds: float) -> None:
+            waits.append(seconds)
+
+        monkeypatch.setattr(asyncio, "sleep", wait)
+        await backend.set("app:ns:1", b"v", expire=60)
+        backend.client.unprocessed = 2
+        assert await backend.get("app:ns:1") == b"v"
+        backend.client.unprocessed = 5
+        with pytest.raises(BackendUnavailable, match="unprocessed"):
+            await backend.get("app:ns:1")
+        assert waits == [0.05, 0.1] + [0.05, 0.1, 0.2, 0.4, 0.8]
+
+    async def test_other_tagging_errors_go_through(self, backend: Any) -> None:
+        async def throttled(**_: Any) -> Any:
+            error = {"Error": {"Code": "ProvisionedThroughputExceededException", "Message": "slow"}}
+            raise ClientError(error, "UpdateItem")  # type: ignore[arg-type]
+
+        await backend.set("app:ns:1", b"v", expire=60)
+        backend.client.update_item = throttled
+        with pytest.raises(ClientError):
+            await backend.add_tags("app:ns:1", ["app:tag:{a}"], 60)
 
     async def test_other_clear_errors_go_through(self, backend: Any) -> None:
         async def throttled(**_: Any) -> Any:

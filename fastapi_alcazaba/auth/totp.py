@@ -103,7 +103,7 @@ def _check_locks(cache: Cache) -> Cache:
     if not backend.supports_locks:
         raise NotImplementedError(
             f"{type(backend).__name__} can't hold locks, which FastAPITOTP needs to accept each "
-            "code once"
+            "code once (every backend shipped with fastapi-alcazaba can)"
         )
     return cache
 

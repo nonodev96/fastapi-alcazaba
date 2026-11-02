@@ -48,7 +48,8 @@ class Backend(abc.ABC):
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
         """Delete every entry of `namespace` (keys starting with "<namespace>:", so ":" for "",
         the whole of a cache without prefix), or else the entry `key`; returns how many were
-        deleted."""
+        deleted. Backends that can't list keys (memcached, DynamoDB) hide a namespace's entries
+        instead, and return 0."""
         raise NotImplementedError
 
     async def acquire_lock(self, key: str, token: str, ttl: float) -> bool:
@@ -69,7 +70,8 @@ class Backend(abc.ABC):
         raise _unsupported(self, "keep tags")
 
     async def invalidate_tags(self, tags: Sequence[str]) -> int:
-        """Delete every entry recorded under `tags`; returns how many were deleted."""
+        """Delete every entry recorded under `tags`; returns how many were deleted (0 where they
+        are hidden instead: memcached, DynamoDB)."""
         raise _unsupported(self, "keep tags")
 
     async def invalidate_tags_with_keys(self, tags: Sequence[str]) -> tuple[int, list[str] | None]:

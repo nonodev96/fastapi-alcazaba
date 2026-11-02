@@ -169,7 +169,7 @@ class TestErrors:
         class WithoutLocks(InMemoryBackend):
             supports_locks = False
 
-        with pytest.raises(NotImplementedError, match="WithoutLocks can't hold locks"):
+        with pytest.raises(NotImplementedError, match="WithoutLocks can't hold locks .*shipped"):
             Lock(Cache(WithoutLocks()), "report")
 
     @pytest.mark.parametrize("tiered", [False, True])

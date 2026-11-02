@@ -492,7 +492,7 @@ class TestValidation:
         class WithoutLocks(InMemoryBackend):
             supports_locks = False
 
-        with pytest.raises(NotImplementedError, match="WithoutLocks can't hold locks"):
+        with pytest.raises(NotImplementedError, match="WithoutLocks can't hold locks.*shipped"):
             FastAPIConcurrencyLimiter(1, cache=Cache(WithoutLocks()))
         app, _ = gated_app(FastAPIConcurrencyLimiter(1))
         Cache(WithoutLocks()).install(app)

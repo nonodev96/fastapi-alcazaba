@@ -120,6 +120,12 @@ class IdempotencyMiddleware:
             raise ValueError("expire must be at least 1 second")
         if max_body_size < 0 or max_response_size < 0:
             raise ValueError("the sizes can't be negative")
+        if cache is not None and not cache.backend.supports_locks:
+            # Checked here when the cache is known; otherwise on the first request, by its lock.
+            raise NotImplementedError(
+                f"{type(cache.backend).__name__} can't hold locks, which IdempotencyMiddleware "
+                "needs to run each request once (every backend shipped with fastapi-alcazaba can)"
+            )
         self.app = app
         self.cache = cache
         self.methods = frozenset(method.upper() for method in methods)

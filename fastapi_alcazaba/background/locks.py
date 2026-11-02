@@ -68,7 +68,10 @@ class Lock:
         if wait is not None and wait < 0:
             raise ValueError("wait can't be negative")
         if not cache.backend.supports_locks:
-            raise NotImplementedError(f"{type(cache.backend).__name__} can't hold locks")
+            raise NotImplementedError(
+                f"{type(cache.backend).__name__} can't hold locks "
+                "(every backend shipped with fastapi-alcazaba can)"
+            )
         if renew and not _renews(cache.backend):
             raise NotImplementedError(
                 f"{type(cache.backend).__name__} can't renew locks (it has no extend_lock): "

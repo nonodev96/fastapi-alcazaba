@@ -431,4 +431,5 @@ class FastAPIScheduler:
         try:
             return cache.lock(f"scheduler:{job.name}", ttl=_RUN_LOCK_TTL)
         except NotImplementedError:
-            return None  # memcached: each tick still runs once, but long runs may overlap
+            # A backend without locks: each tick still runs once, but long runs may overlap.
+            return None

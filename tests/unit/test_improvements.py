@@ -16,7 +16,6 @@ from fastapi_alcazaba import Cache, FastAPICache, UnstableCacheKeyWarning
 from fastapi_alcazaba.auth import TokenBlocklist
 from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.backends.memcached import MemcachedBackend
 from fastapi_alcazaba.backends.redis import RedisBackend
 from fastapi_alcazaba.rate_limit import FastAPIRateLimiter
 from fastapi_alcazaba.response_cache import JsonCoder, cache, default_key_builder
@@ -346,21 +345,18 @@ class TestTags:
             await value(x)
         assert len(backend._tags) == 1
 
-    async def test_backends_without_tags(self) -> None:
-        class FakeMemcache:
-            async def get(self, *_: object) -> bytes | None:
-                return None
+    async def test_backends_without_tags(self, caplog: pytest.LogCaptureFixture) -> None:
+        class WithoutTags(InMemoryBackend):
+            supports_tags = False
 
-            async def set(self, *_: object, **__: object) -> bool:
-                return True
-
-        FastAPICache.init(MemcachedBackend(FakeMemcache()))  # type: ignore[arg-type]
+        FastAPICache.init(WithoutTags())
 
         @cache(expire=60, tags=["x"])
         async def value() -> int:
             return 1
 
         assert await value() == 1
+        assert "can't store tags" in caplog.text
         with pytest.raises(NotImplementedError):
             await FastAPICache.invalidate_tags("x")
 

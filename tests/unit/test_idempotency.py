@@ -421,6 +421,9 @@ class TestFailures:
         client = TestClient(app.app)
         with pytest.raises(NotImplementedError, match="can't hold locks"):
             client.post("/orders", json={"item": "a"}, headers=KEY)
+        # Given its cache, it refuses when it's set up.
+        with pytest.raises(NotImplementedError, match="IdempotencyMiddleware needs .*shipped"):
+            IdempotencyMiddleware(FastAPI(), cache=Cache(WithoutLocks()))
 
 
 class TestASGI:

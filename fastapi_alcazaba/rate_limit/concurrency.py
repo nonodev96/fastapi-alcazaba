@@ -284,5 +284,6 @@ class FastAPIConcurrencyLimiter:
 def _check_locks(cache: Cache) -> None:
     if not cache.backend.supports_locks:
         raise NotImplementedError(
-            f"{type(cache.backend).__name__} can't hold locks, which the concurrency limiter needs"
+            f"{type(cache.backend).__name__} can't hold locks, which the concurrency limiter needs "
+            "(every backend shipped with fastapi-alcazaba can)"
         )
