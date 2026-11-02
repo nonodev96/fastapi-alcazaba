@@ -53,7 +53,8 @@ def _cut_off(issued: float | None, cutoff: bytes | None) -> bool:
 
 
 class TokenBlocklist:
-    """Revoked tokens (by their `jti`) and subjects logged out everywhere (`revoke_subject`).
+    """Revoked tokens (by their `jti`), sessions (by their `sid`: every token of one login, see
+    `RefreshTokens`) and subjects logged out everywhere (`revoke_subject`).
 
         blocklist = TokenBlocklist()
 
@@ -146,35 +147,44 @@ class TokenBlocklist:
         key = self._key(cache, "subject", subject)
         await self._store(cache, key, cutoff, ttl + self.leeway)
 
+    async def revoke_session(self, session: str, *, ttl: int) -> None:
+        """Refuse every token whose `sid` is `session` (one login, on one device), for `ttl`
+        seconds: the longest lifetime of its tokens. Raises BackendUnavailable when the backend
+        fails."""
+        if ttl < 1:
+            raise ValueError("ttl must be at least 1 second")
+        cache = resolve_cache(self.cache)
+        key = self._key(cache, "session", session)
+        await self._store(cache, key, b"1", ttl + self.leeway)
+
     async def is_revoked(
         self,
         token_id: str,
         *,
         subject: str | None = None,
         issued_at: Moment | None = None,
+        session: str | None = None,
     ) -> bool:
-        """Whether the token is refused: its `jti` was revoked, or its subject was logged out
-        everywhere after it was issued (give its `sub` and `iat`). When the backend fails,
-        `not fail_open`."""
+        """Whether the token is refused: its `jti` was revoked, its session (`sid`, give it as
+        `session`) was, or its subject was logged out everywhere after it was issued (give its
+        `sub` and `iat`). When the backend fails, `not fail_open`."""
         if (subject is None) != (issued_at is None):
             raise ValueError("pass subject and issued_at together")
         issued = None if issued_at is None else _timestamp(issued_at)
         cache = resolve_cache(self.cache)
-        token_key = self._key(cache, "token", token_id)
+        marks = [self._key(cache, "token", token_id)]
+        if session is not None:
+            marks.append(self._key(cache, "session", session))
+        cutoffs = [] if subject is None else [self._key(cache, "subject", subject)]
         try:
-            if subject is None:
-                mark, cutoff = await self._load(cache, token_key), None
-            else:
-                mark, cutoff = await asyncio.gather(
-                    self._load(cache, token_key),
-                    self._load(cache, self._key(cache, "subject", subject)),
-                )
+            found = await asyncio.gather(*(self._load(cache, key) for key in [*marks, *cutoffs]))
         except BackendUnavailable as exc:
             verdict = "accepted" if self.fail_open else "refused"
             logger.warning("Couldn't check whether a token is revoked: %s", verdict, exc_info=exc)
             cache.metrics.count("tokens.checks", outcome="unchecked")
             return not self.fail_open
-        revoked = mark is not None or _cut_off(issued, cutoff)
+        cutoff = found[len(marks)] if cutoffs else None
+        revoked = any(mark is not None for mark in found[: len(marks)]) or _cut_off(issued, cutoff)
         cache.metrics.count("tokens.checks", outcome="revoked" if revoked else "valid")
         return revoked
 

@@ -56,8 +56,8 @@ class JWTStrategy(Strategy):
     :param required: claims a token must have.
     :param verify: `verify(claims)`: the user, or None to refuse the token. Async, or a plain
         function, which runs in a thread. By default the user is the claims themselves.
-    :param blocklist: refuses the tokens revoked there (by `jti`, and by `sub` and `iat` for
-        "log out everywhere"); tokens then need a `jti` and an `iat`.
+    :param blocklist: refuses the tokens revoked there (by `jti`, by `sid` for one login, and by
+        `sub` and `iat` for "log out everywhere"); tokens then need a `jti` and an `iat`.
     :param cookie: also reads the token from this cookie, for browsers.
     :param signing_key: what `issue` signs with, for asymmetric algorithms (the private key); by
         default the first `key`, for HMAC ones.
@@ -125,6 +125,11 @@ class JWTStrategy(Strategy):
         else:
             self._signing_key = self._keys[0] if hmac and self._keys else None
 
+    @property
+    def can_issue(self) -> bool:
+        """Whether `issue` can sign: an HMAC key, or a `signing_key`."""
+        return self._signing_key is not None
+
     def openapi_scheme(self) -> HTTPBearer:
         return HTTPBearer(bearerFormat="JWT", scheme_name=self.name, auto_error=False)
 
@@ -134,7 +139,10 @@ class JWTStrategy(Strategy):
             return None
         claims = await self.decode(token)
         if self.blocklist is not None and await self.blocklist.is_revoked(
-            str(claims["jti"]), subject=_subject(claims), issued_at=claims["iat"]
+            str(claims["jti"]),
+            subject=_subject(claims),
+            issued_at=claims["iat"],
+            session=_session(claims),
         ):
             raise AuthenticationFailed("the token was revoked")
         self.grant(connection, _scopes(claims, self.scope_claims))
@@ -172,7 +180,7 @@ class JWTStrategy(Strategy):
     ) -> str:
         """A token for `subject`, valid for `expires_in` seconds, with `iat`, `exp`, a random
         `jti`, `iss` and `aud` when they're set, and `claims`."""
-        if self._signing_key is None:
+        if not self.can_issue:
             raise RuntimeError("issue() needs a signing_key (a private key, or an HMAC secret)")
         now = int(time.time())
         payload: dict[str, Any] = {
@@ -234,3 +242,9 @@ def _scopes(claims: dict[str, Any], names: Sequence[str]) -> list[str]:
 def _subject(claims: dict[str, Any]) -> str | None:
     subject = claims.get("sub")
     return str(subject) if subject is not None else None
+
+
+def _session(claims: dict[str, Any]) -> str | None:
+    """The token's session id (`sid`, see `RefreshTokens`), revoked with its login."""
+    session = claims.get("sid")
+    return str(session) if session is not None else None
