@@ -70,14 +70,14 @@ never `public`.
 **Independent Test**: an endpoint setting `public, max-age=999`, one with
 `cache_control="no-cache"`, one per-user with `public`: headers on miss and hit.
 
-- [ ] T010 [US2] Tests in `tests/unit/test_cached_responses.py` for Story 2's acceptance scenarios,
+- [X] T010 [US2] Tests in `tests/unit/test_cached_responses.py` for Story 2's acceptance scenarios,
   plus `cache_control` validation errors and a 304 carrying the stored `Cache-Control` (T009)
-- [ ] T011 [US2] `cache_control` parameter on `cache()` and `_Endpoint` in `decorator.py`, validated
+- [X] T011 [US2] `cache_control` parameter on `cache()` and `_Endpoint` in `decorator.py`, validated
   when decorating (no line breaks, no `no-store`)
-- [ ] T012 [US2] `_HeaderPolicy` in `decorator.py`: per target, configured directives (+ `max-age`
+- [X] T012 [US2] `_HeaderPolicy` in `decorator.py`: per target, configured directives (+ `max-age`
   if absent, + `stale-while-revalidate`), else the target's own header, else today's; `private`
   enforcement for per-user entries
-- [ ] T013 [P] [US2] Typing test for `cache_control` in `tests/typing/test_public_api.py`
+- [X] T013 [P] [US2] Typing test for `cache_control` in `tests/typing/test_public_api.py`
 
 **Checkpoint**: Stories 1 and 2 pass.
 

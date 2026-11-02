@@ -29,10 +29,21 @@ def sync_function(x: int) -> int:
     return x
 
 
+@cache(expire=60, cache_control="public, s-maxage=600")
+async def shared_function(x: int) -> str:
+    return str(x)
+
+
+def _cache_control_is_directives() -> None:
+    """Never called: only mypy reads it."""
+    cache(cache_control=600)  # type: ignore[arg-type]  # directives, not a number
+
+
 async def test_types_are_preserved() -> None:
     FastAPICache.init(InMemoryBackend())
     assert_type(await async_function(1, name="a"), str | Response)
     assert_type(await sync_function(2), int | Response)
+    assert_type(await shared_function(3), str | Response)
     assert await async_function(1, name="a") == "a1"
     assert await sync_function(2) == 2
 

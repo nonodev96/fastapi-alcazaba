@@ -2,6 +2,7 @@
 Cache-Control it's sent with, and what an entry holds when the route has a response model."""
 
 import pickle  # noqa: S403  # what PickleCoder raises
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -313,3 +314,80 @@ class TestOtherVersions:
         entry = encode_entry(Entry("response", 200, (), b"{}"))
         with pytest.raises(error):
             coder.decode_as_type(entry, type_=None)
+
+
+class TestCacheControl:
+    """User Story 2: configured directives, else the endpoint's own, else the computed header;
+    never public for an entry of one user."""
+
+    def _app(self) -> FastAPI:
+        app = FastAPI()
+
+        @app.get("/own")
+        @cache(expire=60)
+        async def own(response: Response) -> dict[str, int]:
+            response.headers["Cache-Control"] = "public, max-age=999"
+            return {"a": 1}
+
+        @app.get("/own-response")
+        @cache(expire=60)
+        async def own_response() -> Response:
+            return Response(b"x", headers={"Cache-Control": "public, immutable, max-age=999"})
+
+        @app.get("/configured")
+        @cache(expire=60, cache_control="public, s-maxage=600")
+        async def configured(response: Response) -> dict[str, int]:
+            response.headers["Cache-Control"] = "no-cache"  # the configured directives win
+            return {"a": 1}
+
+        @app.get("/configured-max-age")
+        @cache(expire=60, cache_control="no-cache, max-age=0", stale_while_revalidate=30)
+        async def configured_max_age() -> dict[str, int]:
+            return {"a": 1}
+
+        @app.get("/computed")
+        @cache(expire=60)
+        async def computed() -> dict[str, int]:
+            return {"a": 1}
+
+        return app
+
+    @pytest.mark.parametrize(
+        ("path", "headers", "expected"),
+        [
+            ("/own", {}, "public, max-age=999"),
+            ("/own-response", {}, "public, immutable, max-age=999"),
+            ("/configured", {}, r"public, s-maxage=600, max-age=(60|59)"),
+            ("/configured-max-age", {}, "no-cache, max-age=0, stale-while-revalidate=30"),
+            ("/computed", {}, r"max-age=(60|59)"),
+            # One user's entry: never public.
+            ("/own", {"Authorization": "Bearer a"}, "private, max-age=999"),
+            (
+                "/configured",
+                {"Authorization": "Bearer a"},
+                r"private, s-maxage=600, max-age=(60|59)",
+            ),
+            ("/computed", {"Authorization": "Bearer a"}, r"private, max-age=(60|59)"),
+        ],
+    )
+    def test_on_miss_and_hit(self, path: str, headers: dict[str, str], expected: str) -> None:
+        FastAPICache.init(InMemoryBackend())
+        with TestClient(self._app()) as client:
+            miss = client.get(path, headers=headers)
+            hit = client.get(path, headers=headers)
+        assert served(hit.headers) == "hit"
+        for response in (miss, hit):
+            assert re.fullmatch(expected, response.headers["Cache-Control"]), response.headers
+
+    def test_a_304_repeats_the_policy(self) -> None:
+        FastAPICache.init(InMemoryBackend())
+        with TestClient(self._app()) as client:
+            etag = client.get("/own").headers["ETag"]
+            not_modified = client.get("/own", headers={"If-None-Match": etag})
+        assert not_modified.status_code == 304
+        assert not_modified.headers["Cache-Control"] == "public, max-age=999"
+
+    @pytest.mark.parametrize("directives", ["", " , ", "public\r\nX-Evil: 1", "private, NO-STORE"])
+    def test_invalid_directives(self, directives: str) -> None:
+        with pytest.raises(ValueError, match="cache_control"):
+            cache(cache_control=directives)

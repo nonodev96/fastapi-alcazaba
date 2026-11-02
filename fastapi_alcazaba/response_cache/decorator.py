@@ -243,19 +243,53 @@ def _hit(ttl: int | None) -> str:
     return f"hit; ttl={ttl}" if ttl is not None and ttl > 0 else "hit"
 
 
+def _directives(value: str) -> list[str]:
+    return [directive.strip() for directive in value.split(",") if directive.strip()]
+
+
+def _directive_name(directive: str) -> str:
+    return directive.partition("=")[0].strip().lower()
+
+
+def _check_cache_control(value: str) -> tuple[str, ...]:
+    directives = _directives(value)
+    if not directives or any(char in value for char in "\r\n\0"):
+        raise ValueError('cache_control is directives on one line, e.g. "public, s-maxage=600"')
+    if "no-store" in {_directive_name(directive) for directive in directives}:
+        raise ValueError(
+            "cache_control can't be no-store: the entry would be stored all the same; "
+            "set no-store on the response instead, which isn't stored"
+        )
+    return tuple(directives)
+
+
 @dataclass(frozen=True)
 class _HeaderPolicy:
     status_name: str | None
     vary: tuple[str, ...]
     private: bool
     stale_while_revalidate: int | None
+    #: `@cache(cache_control=...)`: sent instead of the endpoint's own header or the computed one.
+    directives: tuple[str, ...] | None = None
 
-    def cache_control(self, max_age: int | None) -> str | None:
-        directives = ["private"] if self.private else []
-        if max_age is not None and max_age > 0:
-            directives.append(f"max-age={max_age}")
-            if self.stale_while_revalidate:
+    def cache_control(self, max_age: int | None, own: str | None = None) -> str | None:
+        """The configured directives (with the time left as max-age unless they say one), else
+        the endpoint's own header, else max-age; an entry of one user is private whatever they
+        say."""
+        if self.directives is not None or own is None:
+            directives = list(self.directives or ())
+            names = {_directive_name(directive) for directive in directives}
+            if max_age is not None and max_age > 0 and "max-age" not in names:
+                directives.append(f"max-age={max_age}")
+            if self.stale_while_revalidate and "stale-while-revalidate" not in names:
                 directives.append(f"stale-while-revalidate={self.stale_while_revalidate}")
+        else:
+            directives = _directives(own)
+        if self.private:
+            directives = [
+                "private",
+                *(d for d in directives if _directive_name(d) not in ("public", "private")),
+            ]
         return ", ".join(directives) or None
 
     def apply(
@@ -265,10 +299,10 @@ class _HeaderPolicy:
         etag: str,
         max_age: int | None,
     ) -> None:
-        cache_control = self.cache_control(max_age)
         for target in targets:
             target.headers["ETag"] = etag
             _add_cache_status(target, self.status_name, status)
+            cache_control = self.cache_control(max_age, target.headers.get("cache-control"))
             if cache_control:
                 target.headers["Cache-Control"] = cache_control
             if self.vary:
@@ -354,6 +388,7 @@ class _Endpoint:
     distributed_lock: bool | None
     early_refresh: float | None
     tags: Tags | None
+    cache_control: tuple[str, ...] | None = None
     #: The Cache this function was decorated with (Cache.cached); None: FastAPICache's.
     instance: Cache | None = None
     key_checked: bool = field(default=False)
@@ -498,6 +533,7 @@ class _CachedCall:
             vary=vary,
             private=vary_digest is not None,
             stale_while_revalidate=endpoint.stale_while_revalidate,
+            directives=endpoint.cache_control,
         )
         self.if_none_match = (
             self.request.headers.get("if-none-match") if self.request is not None else None
@@ -823,6 +859,7 @@ def cache(
     early_refresh: float | None = None,
     tags: Tags | None = None,
     instance: Cache | None = None,
+    cache_control: str | None = None,
 ) -> _CacheDecorator:
     """Cache the result of an endpoint, or of any function, sync or async.
 
@@ -841,6 +878,9 @@ def cache(
     :param respect_cache_control: let clients skip the cache with Cache-Control no-cache or
         no-store.
     :param stale_while_revalidate: adds that directive to Cache-Control.
+    :param cache_control: the Cache-Control directives to send ("public, s-maxage=600"), with
+        `max-age` the time the entry has left unless they give one; by default, the endpoint's
+        own Cache-Control, or `max-age`. An entry of one user is `private` whatever they say.
     :param single_flight: concurrent misses for the same key wait for the first one.
     :param max_value_size: don't store values larger than this many bytes.
     :param distributed_lock: one process computes a missing value while the others wait.
@@ -855,6 +895,7 @@ def cache(
         raise ValueError("early_refresh is a fraction of the lifetime, between 0 and 1")
     if max_value_size is not None and max_value_size < 1:
         raise ValueError("max_value_size must be at least 1 byte")
+    directives = None if cache_control is None else _check_cache_control(cache_control)
 
     injected_request = Parameter(
         name=f"{injected_dependency_namespace}_request",
@@ -897,6 +938,7 @@ def cache(
             distributed_lock=distributed_lock,
             early_refresh=early_refresh,
             tags=static_tags if static_tags is not None else tags,
+            cache_control=directives,
             instance=instance,
         )
 
