@@ -761,6 +761,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1618,6 +1624,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../observability/" class="md-nav__link">
         
   
@@ -1654,6 +1688,34 @@
     
   
     Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Object storage
   
 
     
@@ -1735,7 +1797,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_15" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1757,14 +1819,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_13" id="__nav_3_2_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_2_15" id="__nav_3_2_15_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_15">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2023,6 +2085,34 @@
     
   
     Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../passwords/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passwords
   
 
     
@@ -3803,6 +3893,8 @@
       
         
       
+        
+      
     
     
     
@@ -4178,6 +4270,34 @@
     
   
     Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
   
 
     
@@ -4898,6 +5018,11 @@ vulnerabilities as described in
 <td>TOTP doesn't resist a phishing page that relays the code within its 30 seconds: WebAuthn does. The app keeps the user halfway in between the password and the code.</td>
 </tr>
 <tr>
+<td>Passwords</td>
+<td>Hashes cracked from a stolen database (scrypt with OWASP's cost, and a pepper kept outside it), guesses at an account (a lockout after <code>max_attempts</code>, in every process), accounts found by timing (unknown ones hash too), leaked passwords (refused, without sending them), reset tokens used twice, guessed or kept after a newer one (256 bits, digests, once).</td>
+<td>A lockout lets anyone lock an account out for <code>lockout</code> seconds: pair it with a rate limit per IP. Ending the user's sessions after a reset is yours (<code>UserSessions.end_all</code>).</td>
+</tr>
+<tr>
 <td>Revocations, codes, API keys</td>
 <td>Revoked tokens accepted while the backend is down (refused unless <code>fail_open</code>); brute force of codes (attempts counted atomically, kept past the code); API keys read from the backend (only HMAC digests with a pepper).</td>
 <td></td>
@@ -4928,6 +5053,16 @@ vulnerabilities as described in
 <td>Macro-enabled Office documents are told by their content types, read without an XML parser: don't take that as the only check before serving one back. Archives may expand far beyond their size.</td>
 </tr>
 <tr>
+<td>Object storage</td>
+<td>Uploads larger or of another declared type than the form allows (refused by the service), keys that escape their prefix, uploaded HTML or SVG run on the bucket's origin (<code>filename</code> downloads it).</td>
+<td>The form bounds the declared type, not the file's: check it before using it. A URL works for anyone who has it until it expires: keep <code>expires</code> short.</td>
+</tr>
+<tr>
+<td>E-mail</td>
+<td>Headers and recipients added through a field (line breaks, commas, reserved headers refused), mail read on the way (STARTTLS or TLS, certificates checked; plain only to localhost), bodies with links and codes in logs.</td>
+<td>SPF, DKIM and DMARC for the sender's domain are your provider's and your DNS's. Escape what goes into the HTML.</td>
+</tr>
+<tr>
 <td>Pagination</td>
 <td>Cursors made up, changed, or used with other filters (signed and bound to the query); limits past the maximum (a 422).</td>
 <td>Keyset keys are in plain sight and writable: sort by what clients may see.</td>
@@ -4936,6 +5071,16 @@ vulnerabilities as described in
 <td>Task queue</td>
 <td>Tasks planted or altered in the backend (sealed, bound to the queue), copies of a sealed task written back (each run is claimed once, until <code>replay_window</code>), pickle (arguments travel as JSON).</td>
 <td>Delivery is at least once: tasks must be idempotent. Without a key, whoever writes to the backend runs your tasks.</td>
+</tr>
+<tr>
+<td>Broadcast</td>
+<td>Messages planted by whoever can write to Redis (signed with <code>signing_key</code>), floods that exhaust memory (64 KiB a message, <code>queue_size</code> per subscriber).</td>
+<td>Delivery is at most once: a subscriber gets a <code>gap</code> for what it missed, and must send the state again. Without a key, a planted message reaches the subscribers.</td>
+</tr>
+<tr>
+<td>Outbox</td>
+<td>A change saved without its message, or a message sent for a change rolled back (both in one transaction).</td>
+<td>Delivery is at least once: consumers keep the ids they've seen. Run one relay.</td>
 </tr>
 <tr>
 <td>Feature flags, maintenance, breakers</td>

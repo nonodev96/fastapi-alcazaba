@@ -233,6 +233,10 @@
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
+         <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/guide/mail/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/guide/observability/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
@@ -245,11 +249,19 @@
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
+         <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/guide/passwords/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/guide/production/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/guide/security-model/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/guide/storage/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>
@@ -410,6 +422,10 @@
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/reference/limits/</loc>
+         <lastmod>2026-11-02</lastmod>
+    </url>
+    <url>
+         <loc>https://nonodev96.github.io/fastapi-alcazaba/dev/reference/mail/</loc>
          <lastmod>2026-11-02</lastmod>
     </url>
     <url>

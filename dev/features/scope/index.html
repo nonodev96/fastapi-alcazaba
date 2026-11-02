@@ -850,6 +850,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1707,6 +1713,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/observability/" class="md-nav__link">
         
   
@@ -1743,6 +1777,34 @@
     
   
     Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Object storage
   
 
     
@@ -1824,7 +1886,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_15" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1846,14 +1908,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_13" id="__nav_3_2_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_2_15" id="__nav_3_2_15_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_15">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2112,6 +2174,34 @@
     
   
     Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/passwords/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passwords
   
 
     
@@ -3795,6 +3885,8 @@
       
         
       
+        
+      
     
     
     
@@ -4170,6 +4262,34 @@
     
   
     Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
   
 
     
@@ -4793,7 +4913,9 @@ themselves:</p>
   passkeys), what they may do (authorization), what they used (accounting), what they did (an
   audit trail), and what reaches the app (CSRF, headers, uploads, webhooks, outbound calls).</li>
 <li><strong>The operations around them:</strong> circuit breakers, maintenance mode, health checks, problem
-  details, request IDs, metrics and traces.</li>
+  details, request IDs, metrics, traces and logs.</li>
+<li><strong>What leaves the app:</strong> e-mail, files in object storage, messages to its other processes, and
+  those a change announces (an outbox).</li>
 </ul>
 <p>A tool belongs here when it keeps that kind of state or guards that kind of edge, and is secure by
 default: nothing that opens a door stored in clear, a failure that refuses unless the tool says
@@ -4916,6 +5038,14 @@ and what to change in an app. Beyond that, each tool is one of:</p>
 </tr>
 <tr>
 <td><a href="../../guide/accounting/">Accounting</a></td>
+<td>Experimental</td>
+</tr>
+<tr>
+<td><a href="../../guide/passwords/">Passwords</a>, <a href="../../guide/storage/">object storage</a>, <a href="../../guide/mail/">e-mail</a></td>
+<td>Experimental</td>
+</tr>
+<tr>
+<td><a href="../../guide/background/#broadcast">Broadcast</a>, <a href="../../guide/background/#outbox">the outbox</a>, <a href="../../guide/observability/#structured-logs">structured logs</a></td>
 <td>Experimental</td>
 </tr>
 </tbody>

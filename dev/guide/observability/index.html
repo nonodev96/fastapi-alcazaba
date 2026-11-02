@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/observability/">
       
       
-        <link rel="prev" href="../uploads/">
+        <link rel="prev" href="../mail/">
       
       
         <link rel="next" href="../idempotency/">
@@ -719,6 +719,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -1615,6 +1621,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1732,6 +1766,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#structured-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured logs
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1756,6 +1801,34 @@
     
   
     Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Object storage
   
 
     
@@ -1837,7 +1910,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_15" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1859,14 +1932,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_13" id="__nav_3_2_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_2_15" id="__nav_3_2_15_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_15">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2125,6 +2198,34 @@
     
   
     Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../passwords/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passwords
   
 
     
@@ -3808,6 +3909,8 @@
       
         
       
+        
+      
     
     
     
@@ -4183,6 +4286,34 @@
     
   
     Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
   
 
     
@@ -4740,6 +4871,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#structured-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured logs
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4825,7 +4967,7 @@
 
 <h1 id="errors-and-observability">Errors and observability<a class="headerlink" href="#errors-and-observability" title="Permanent link">&para;</a></h1>
 <p>Errors that say what went wrong without leaking internals, and what tells you how the app is doing:
-request IDs, deadlines, health checks, metrics and traces.</p>
+request IDs, deadlines, health checks, metrics and traces, and logs as JSON.</p>
 <p>In an app: <a href="../../examples/observability/">the example</a>. Every class and function: <a href="../../reference/observability/">the API reference</a>.</p>
 <h2 id="problem-details">Problem details<a class="headerlink" href="#problem-details" title="Permanent link">&para;</a></h2>
 <p><code>FastAPIProblemDetails</code> answers errors with RFC 9457 problem details
@@ -5202,6 +5344,14 @@ Then Alcazaba adds to them:</p>
 <td><code>fastapi_alcazaba.queue</code>: tasks taken over from workers that stopped answering</td>
 </tr>
 <tr>
+<td><code>fastapi_alcazaba.passwords</code></td>
+<td><code>fastapi_alcazaba.outcome</code> (success, wrong, locked, unknown, malformed, too_long, unchecked; reset_used, reset_unknown, reset_replaced, reset_malformed, reset_unchecked): a burst of wrong or locked is someone guessing</td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.mail</code></td>
+<td><code>fastapi_alcazaba.outcome</code> (sent, failed)</td>
+</tr>
+<tr>
 <td><code>fastapi_alcazaba.accounting</code></td>
 <td><code>fastapi_alcazaba.meter</code>, <code>fastapi_alcazaba.outcome</code> (allowed, exceeded, unauthenticated, unchecked, refunded)</td>
 </tr>
@@ -5223,6 +5373,39 @@ Then Alcazaba adds to them:</p>
 </tr>
 </tbody>
 </table>
+<h2 id="structured-logs">Structured logs<a class="headerlink" href="#structured-logs" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Experimental</p>
+<p>New in 0.7: its API may still change in any release.</p>
+</div>
+<p>One line of JSON per record, for the log pipeline to search (CloudWatch, Loki, Elasticsearch, a
+SIEM): <code>logging_config</code> sends every record, Uvicorn's included, to standard output through
+<code>JSONFormatter</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="__span-6-2">
+</span><span id="__span-6-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging_config</span>
+</span><span id="__span-6-4">
+</span><span id="__span-6-5"><span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"app:app"</span><span class="p">,</span> <span class="n">log_config</span><span class="o">=</span><span class="n">logging_config</span><span class="p">(</span><span class="n">static</span><span class="o">=</span><span class="p">{</span><span class="s2">"service"</span><span class="p">:</span> <span class="s2">"shop"</span><span class="p">}))</span>
+</span><span id="__span-6-6"><span class="c1"># or logging.config.dictConfig(logging_config(...)) at start, with uvicorn's --log-config</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Order placed"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span> <span class="s2">"card_token"</span><span class="p">:</span> <span class="n">token</span><span class="p">})</span>
+</span></code></pre></div>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-8-1"><span class="p">{</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-11-02T09:14:03.512+00:00"</span><span class="p">,</span><span class="nt">"level"</span><span class="p">:</span><span class="s2">"INFO"</span><span class="p">,</span><span class="nt">"logger"</span><span class="p">:</span><span class="s2">"shop.orders"</span><span class="p">,</span><span class="nt">"service"</span><span class="p">:</span><span class="s2">"shop"</span><span class="p">,</span><span class="nt">"message"</span><span class="p">:</span><span class="s2">"Order placed"</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"5f0c…"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="s2">"4bf9…"</span><span class="p">,</span><span class="nt">"span_id"</span><span class="p">:</span><span class="s2">"00f0…"</span><span class="p">,</span><span class="nt">"extra"</span><span class="p">:{</span><span class="nt">"order_id"</span><span class="p">:</span><span class="mi">42</span><span class="p">,</span><span class="nt">"card_token"</span><span class="p">:</span><span class="s2">"[redacted]"</span><span class="p">}}</span>
+</span></code></pre></div>
+<ul>
+<li><strong>What each line has:</strong> the time (UTC, to the millisecond), level, logger and message; the
+  <code>static</code> fields; the ID of the request being handled (<a href="#request-ids">request IDs</a>) and its
+  OpenTelemetry trace and span, so a line leads to its request and its trace; the exception's
+  type, message and the last 30 frames of its stack.</li>
+<li><strong><code>extra=</code></strong> is redacted as the <a href="../audit/">audit trail</a> redacts details: the values of keys
+  that name a secret (<code>token</code>, <code>password</code>, <code>secret</code>, <code>authorization</code>...; <code>redact</code> adds words) and
+  strings that look like credentials become <code>[redacted]</code>, and every value is bounded.</li>
+<li><strong>Uvicorn's access lines</strong> have the method, the status, the client and the path without its
+  query, which may carry tokens, codes or e-mail addresses. <code>access_log=False</code> drops them, when
+  the proxy in front logs requests already.</li>
+<li><strong>One line per record,</strong> whatever the message holds: line breaks in it are escaped, so nobody
+  can forge a line by putting one in a field that ends up logged.</li>
+</ul>
 
 
 
@@ -5260,7 +5443,7 @@ Then Alcazaba adds to them:</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../uploads/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Checking uploads">
+          <a href="../mail/" class="md-footer__link md-footer__link--prev" aria-label="Previous: E-mail">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -5270,7 +5453,7 @@ Then Alcazaba adds to them:</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Checking uploads
+                E-mail
               </div>
             </div>
           </a>

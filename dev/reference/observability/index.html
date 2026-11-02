@@ -754,6 +754,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1611,6 +1617,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/observability/" class="md-nav__link">
         
   
@@ -1647,6 +1681,34 @@
     
   
     Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Object storage
   
 
     
@@ -1728,7 +1790,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_15" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1750,14 +1812,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_13" id="__nav_3_2_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_2_15" id="__nav_3_2_15_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_13">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_15">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2016,6 +2078,34 @@
     
   
     Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/passwords/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passwords
   
 
     
@@ -3701,6 +3791,8 @@
       
         
       
+        
+      
     
     
     
@@ -4099,6 +4191,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../webhooks/" class="md-nav__link">
         
   
@@ -4352,6 +4472,28 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;HealthCheck
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.observability.JSONFormatter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;JSONFormatter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.observability.logging_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;logging_config
       
     </span>
   </a>
@@ -4972,6 +5114,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.observability.JSONFormatter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;JSONFormatter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.observability.logging_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;logging_config
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5038,9 +5202,9 @@
 
 
 <h1 id="errors-and-observability">Errors and observability<a class="headerlink" href="#errors-and-observability" title="Permanent link">&para;</a></h1>
-<p>Problem details, request IDs, request deadlines and health checks.
+<p>Problem details, request IDs, request deadlines, health checks and logs as JSON.
 In <code>fastapi_alcazaba.observability</code>.</p>
-<p>In the guide: <a href="../../guide/observability/#problem-details">Problem details</a>, <a href="../../guide/observability/#request-ids">Request IDs</a>, <a href="../../guide/observability/#request-timeouts">Request timeouts</a>, <a href="../../guide/observability/#health-checks">Health checks</a>. In an app: <a href="../../examples/observability/">the example</a>.</p>
+<p>In the guide: <a href="../../guide/observability/#problem-details">Problem details</a>, <a href="../../guide/observability/#request-ids">Request IDs</a>, <a href="../../guide/observability/#request-timeouts">Request timeouts</a>, <a href="../../guide/observability/#health-checks">Health checks</a>, <a href="../../guide/observability/#structured-logs">Structured logs</a>. In an app: <a href="../../examples/observability/">the example</a>.</p>
 
 
 <div class="doc doc-object doc-class">
@@ -6169,6 +6333,204 @@ raising within <code>timeout</code>. Sync ones run in a thread of their own, off
 
 
   </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="fastapi_alcazaba.observability.JSONFormatter" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">fastapi_alcazaba.observability.JSONFormatter</span>
+
+
+<a href="#fastapi_alcazaba.observability.JSONFormatter" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">JSONFormatter</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">static</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">redact</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">())</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="logging.Formatter">Formatter</span></code></p>
+
+
+
+        <p>Formats each record as one line of JSON, ASCII only: nothing in it splits a line, a
+message with line breaks included.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>static</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>fields every line has, such as {"service": "shop", "environment": "prod"}.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>redact</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Collection">Collection</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>words that mark secrets in the keys of <code>extra</code>, besides the audit trail's
+<code>SENSITIVE_WORDS</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="fastapi_alcazaba.observability.logging_config" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">fastapi_alcazaba.observability.logging_config</span>
+
+
+<a href="#fastapi_alcazaba.observability.logging_config" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">logging_config</span><span class="p">(</span><span class="n">level</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'INFO'</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">static</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">redact</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">access_log</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>A <code>logging.config.dictConfig</code> that sends every record, Uvicorn's too, to standard output
+as JSON: for <code>uvicorn.run(..., log_config=logging_config())</code>, or <code>dictConfig()</code> at start.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>level</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>of the app's loggers and the root.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;INFO&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>static</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>fields every line has ({"service": "shop"}).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>redact</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Collection">Collection</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>more words that mark secrets in <code>extra</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>access_log</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>keep Uvicorn's line per request.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
