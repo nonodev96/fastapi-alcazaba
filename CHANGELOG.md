@@ -23,6 +23,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `FastAPITOTP` on a backend without locks (memcached) refused every code, right ones included,
   and counted each attempt as a backend failure: it marks codes used with a lock. It now raises
   `NotImplementedError` when built with such a cache, or when the default one is.
+- `SMTPSender` raised `MailNotSent` when the server took some recipients and refused others, so
+  the task retry that the mail guide recommends sent the message again to those who had it. That
+  message is sent: the refused recipients are logged, and nothing is raised. A message every
+  recipient of which is refused still raises.
 
 ## [0.7.0] - 2026-11-02
 

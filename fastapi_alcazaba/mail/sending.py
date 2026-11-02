@@ -40,8 +40,8 @@ _RESERVED = frozenset(
 
 
 class MailNotSent(Exception):
-    """The message wasn't sent: the server refused it, didn't answer, or the TLS failed. Its
-    recipients are in the message; its body never is."""
+    """The message wasn't sent: the server refused it (every recipient), didn't answer, or the
+    TLS failed. Its recipients are in the message; its body never is."""
 
 
 class MailSender(Protocol):
@@ -219,7 +219,12 @@ class SMTPSender:
         except (smtplib.SMTPException, OSError, ssl.SSLError) as exc:
             raise MailNotSent(f"{type(exc).__name__}: {str(exc)[:200]}") from exc
         if refused:
-            raise MailNotSent(f"the server refused {sorted(refused)}")
+            # The others got it: MailNotSent would have the task send it to them again.
+            logger.warning(
+                "Mail %s sent, but the server refused %s",
+                message["Message-ID"],
+                sorted(refused),
+            )
 
 
 class MemoryMailSender:

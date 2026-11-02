@@ -237,6 +237,19 @@ class TestSMTP:
             with pytest.raises(MailNotSent):
                 await smtp_mail(server, tls[1]).send("gone@example.com", "Hi", "Text")
 
+    async def test_some_recipients_refused(
+        self,
+        tls: tuple[ssl.SSLContext, ssl.SSLContext],
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """The others got it: MailNotSent would have a task retry send it to them again."""
+        with serve(tls[0]) as server:
+            server.refuse.add("gone@example.com")
+            mail = smtp_mail(server, tls[1])
+            await mail.send(["kept@example.com", "gone@example.com"], "Hi", "Text")
+        assert [envelope["to"] for envelope in server.received] == [["kept@example.com"]]
+        assert "refused ['gone@example.com']" in caplog.text
+
     async def test_nobody_listening(self) -> None:
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))

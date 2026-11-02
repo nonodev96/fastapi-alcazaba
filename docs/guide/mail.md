@@ -51,9 +51,11 @@ message_id = await mail.send(
   server's certificate checked against the system's authorities (`ssl_context` for one of your
   own). Plain SMTP, `tls="none"`, is only for `localhost`: a development server such as Mailpit.
 - **A connection per message,** in a thread, with `timeout` seconds for each step.
-- **When it isn't sent** (the server refuses a recipient, doesn't answer, the TLS or the login
-  fails), `send` raises `MailNotSent` and logs who it was for, never the body: it holds the links
-  and codes that open doors. Send from a [task](background.md#task-queue), which tries again:
+- **When it isn't sent** (the server refuses every recipient, doesn't answer, the TLS or the
+  login fails), `send` raises `MailNotSent` and logs who it was for, never the body: it holds the
+  links and codes that open doors. When the server takes some recipients and refuses others, the
+  message is sent: the refused ones are logged, and nothing is raised, so a retry doesn't send it
+  to the others twice. Send from a [task](background.md#task-queue), which tries again:
 
 ```python
 @queue.task(retries=5)
