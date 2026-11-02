@@ -13,7 +13,9 @@ themselves:
   passkeys), what they may do (authorization), what they used (accounting), what they did (an
   audit trail), and what reaches the app (CSRF, headers, uploads, webhooks, outbound calls).
 - **The operations around them:** circuit breakers, maintenance mode, health checks, problem
-  details, request IDs, metrics and traces.
+  details, request IDs, metrics, traces and logs.
+- **What leaves the app:** e-mail, files in object storage, messages to its other processes, and
+  those a change announces (an outbox).
 
 A tool belongs here when it keeps that kind of state or guards that kind of edge, and is secure by
 default: nothing that opens a door stored in clear, a failure that refuses unless the tool says
@@ -59,6 +61,8 @@ and what to change in an app. Beyond that, each tool is one of:
 | [Second factor (TOTP)](../guide/two-factor.md), [passkeys (WebAuthn)](../guide/passkeys.md), step-up | Experimental |
 | [Each user's sessions](../guide/browser.md#each-users-sessions) (`UserSessions`) | Experimental |
 | [Accounting](../guide/accounting.md) | Experimental |
+| [Passwords](../guide/passwords.md), [object storage](../guide/storage.md), [e-mail](../guide/mail.md) | Experimental |
+| [Broadcast](../guide/background.md#broadcast), [the outbox](../guide/background.md#outbox), [structured logs](../guide/observability.md#structured-logs) | Experimental |
 
 ## Towards 1.0
 

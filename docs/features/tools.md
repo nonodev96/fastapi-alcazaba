@@ -52,6 +52,13 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
     API keys with scopes and expiry, a blocklist of tokens and one-time codes, nothing stored in
     clear.
 
+-   :material-form-textbox-password:{ .lg .middle } __[Passwords](../guide/passwords.md)__
+
+    ---
+
+    Slow hashes with a pepper, leaked passwords refused, guesses limited per account, and resets
+    by a link that works once.
+
 -   :material-fingerprint:{ .lg .middle } __[Passkeys](../guide/passkeys.md)__
 
     ---
@@ -99,6 +106,20 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
 
     The real type from the bytes, the size, image dimensions and safe file names.
 
+-   :material-bucket:{ .lg .middle } __[Object storage](../guide/storage.md)__
+
+    ---
+
+    Signed URLs and upload forms for S3, R2 or MinIO: files go straight from the browser, bounded
+    in size and type.
+
+-   :material-email-fast:{ .lg .middle } __[E-mail](../guide/mail.md)__
+
+    ---
+
+    Password resets, codes and receipts over SMTP with TLS, in messages nothing can add a header
+    or a recipient to.
+
 -   :material-webhook:{ .lg .middle } __[Webhooks and outbound calls](../guide/webhooks.md)__
 
     ---
@@ -110,13 +131,15 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
 
     ---
 
-    RFC 9457 problem details, request IDs, timeouts, health checks, metrics and traces.
+    RFC 9457 problem details, request IDs, timeouts, health checks, metrics, traces and logs as
+    JSON.
 
 -   :material-calendar-clock:{ .lg .middle } __[Background work](../guide/background.md)__
 
     ---
 
-    Scheduled jobs, a task queue, a leader and locks, shared by every process.
+    Scheduled jobs, a task queue, a leader and locks, shared by every process; messages to all of
+    them, and an outbox for those a change announces.
 
 -   :material-toggle-switch:{ .lg .middle } __[Operations](../guide/operations.md)__
 

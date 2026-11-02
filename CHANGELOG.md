@@ -7,6 +7,44 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-02
+
+### Added
+
+- Passwords: `FastAPIPasswords` hashes them with scrypt (OWASP's cost, a random salt, PHC's
+  format, in a thread) and an optional pepper; `verify` locks an account out after
+  `max_attempts` wrong ones, in every process, and takes as long for an account that doesn't
+  exist; `needs_rehash` for stronger parameters later; `check` refuses short passwords, those
+  with the user's e-mail or name, and, with `PwnedPasswords` (the `passwords` extra), those
+  leaked, asking Have I Been Pwned without sending them. Reset tokens work once, expire, and a
+  newer one replaces the last. Audited and counted (`fastapi_alcazaba.passwords`).
+- E-mail: `FastAPIMail` builds messages that no field can add a header or a recipient to, with
+  `Message-ID`, `Date` and `Auto-Submitted`, and `SMTPSender` sends them over STARTTLS or
+  implicit TLS, certificates checked (plain SMTP only to localhost). `MailNotSent` when one
+  isn't sent, never with its body; `MemoryMailSender` for tests. Counted
+  (`fastapi_alcazaba.mail`).
+- Object storage: `S3Presigner` signs download URLs, upload URLs and upload forms bounded in
+  size and type (Signature Version 4, query or POST policy) for S3, R2, MinIO and the like,
+  without an SDK. Downloads can be attachments, so uploaded HTML never runs on the bucket's
+  origin; object keys can't escape their prefix.
+- Broadcast: `FastAPIBroadcast` sends messages to every process's subscribers of a channel, over
+  Redis or Valkey's pub/sub, signed, bounded, with a `gap` for what a subscriber missed; in the
+  process without a client.
+- The transactional outbox: `SQLAlchemyOutbox` writes a message in the transaction of the change
+  it announces, and `OutboxRelay` delivers it at least once, with retries and a backoff, giving up
+  after `max_attempts` (in `fastapi_alcazaba.background.outbox`, with the `sqlalchemy` extra).
+- Structured logs: `JSONFormatter` and `logging_config` write one line of JSON per record, with
+  the request's ID, its trace and span, the exception, and `extra=` redacted as the audit trail
+  redacts details; Uvicorn's access lines without the query.
+- `fastapi_alcazaba.audit.redacted`, the audit trail's redaction for other uses.
+- These are experimental, as the scope and stability page says.
+
+### Fixed
+
+- A test of the circuit breaker moves its clock by hand instead of sleeping, and no longer fails
+  on a slow runner.
+- The scheduled mutation testing copies `fuzz/`, `scripts/` and `docs/`, which the tests import.
+
 ## [0.6.0] - 2026-11-02
 
 ### Added

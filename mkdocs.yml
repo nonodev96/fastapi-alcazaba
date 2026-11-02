@@ -106,8 +106,10 @@ nav:
           - Backends: guide/backends.md
           - Background work: guide/background.md
           - Checking uploads: guide/uploads.md
+          - E-mail: guide/mail.md
           - Errors and observability: guide/observability.md
           - Idempotency keys: guide/idempotency.md
+          - Object storage: guide/storage.md
           - Operations: guide/operations.md
           - Pagination:
               - guide/pagination/index.md
@@ -120,6 +122,7 @@ nav:
               - PaginationStreaming: guide/pagination/streaming.md
               - With SQLAlchemy: guide/pagination/sqlalchemy.md
           - Passkeys: guide/passkeys.md
+          - Passwords: guide/passwords.md
           - Production setup: guide/production.md
           - Rate and concurrency limits: guide/limits.md
           - Response cache: guide/cache.md
@@ -184,6 +187,7 @@ nav:
       - Accounting: reference/accounting.md
       - Audit trail: reference/audit.md
       - Checking uploads: reference/uploads.md
+      - E-mail: reference/mail.md
       - Webhooks and outbound calls: reference/webhooks.md
       - Errors and observability: reference/observability.md
       - Background work: reference/background.md

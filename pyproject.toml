@@ -55,13 +55,15 @@ auth-strategy-oauth2 = ["httpx2>=2.15.1"]
 auth-strategy-oidc = ["httpx2>=2.15.1", "pyjwt[crypto]>=2.10"]
 # API keys managed by Unkey (UnkeyStrategy, UnkeyKeys), through its API with httpx2.
 auth-strategy-unkey = ["httpx2>=2.15.1"]
+# Passwords checked against those leaked (PwnedPasswords), with httpx2; hashing needs nothing.
+passwords = ["httpx2>=2.15.1"]
 # Nothing more: HTTPBearerStrategy only needs FastAPI. There for every strategy to have its extra.
 auth-strategy-http-bearer = []
 # SAML 2.0 single sign-on: signxml verifies the XML signatures (with lxml and cryptography).
 auth-strategy-saml = ["signxml>=5.2"]
 # The queries of the pagination strategies, for SQLAlchemy 2 (fastapi_alcazaba.pagination.sqlalchemy).
 sqlalchemy = ["sqlalchemy>=2.0"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,sqlalchemy]"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"
@@ -240,7 +242,7 @@ filterwarnings = [
 [tool.mutmut]
 # Mutation testing (make mutation): mutmut changes the code and checks that some test fails.
 source_paths = ["fastapi_alcazaba/"]
-also_copy = ["examples/", "tests/"]
+also_copy = ["examples/", "tests/", "fuzz/", "scripts/", "docs/"]
 pytest_add_cli_args = ["-q", "-p", "no:cacheprovider", "-x"]
 pytest_add_cli_args_test_selection = ["tests/unit/", "tests/typing/"]
 

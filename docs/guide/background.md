@@ -1,7 +1,7 @@
 # Background work
 
-Work outside requests, shared by every process: jobs at given times, a task queue, a leader, and
-locks.
+Work outside requests, shared by every process: jobs at given times, a task queue, a leader,
+locks, messages to every process, and an outbox for the messages a change announces.
 
 In an app: [the example](../examples/background.md). Every class and function: [the API reference](../reference/background.md).
 
@@ -190,3 +190,103 @@ async def nightly_report() -> None:  # every instance runs it; one builds the re
 - **Limits:** a holder that stalls for longer than `ttl` (a long pause, a network partition) loses
   the lock while it still runs. `lock.held` turns False when the renewals couldn't keep up: check it
   between the steps of long jobs, and make work that must never overlap idempotent too.
+
+## Broadcast
+
+!!! warning "Experimental"
+    New in 0.7: its API may still change in any release.
+
+What one process must tell the WebSockets of the others (a chat, a live board, notifications), or
+the other processes themselves (a setting changed): `FastAPIBroadcast`, over Redis or Valkey's
+pub/sub.
+
+```python
+from fastapi_alcazaba import FastAPIBroadcast
+
+broadcast = FastAPIBroadcast(redis_client, signing_key=settings.broadcast_key)
+
+
+@app.post("/rooms/{room}/messages")
+async def say(room: int, form: Say, user: CurrentUser) -> None:
+    await broadcast.publish(f"room:{room}", {"from": user.name, "text": form.text})
+
+
+@app.websocket("/rooms/{room}")
+async def listen(websocket: WebSocket, room: int) -> None:
+    await websocket.accept()
+    async with broadcast.subscribe(f"room:{room}") as messages:
+        async for message in messages:
+            if message.gap:
+                await websocket.send_json(await room_state(room))  # some may have been missed
+            else:
+                await websocket.send_json(message.data)
+```
+
+- **At most once:** a message reaches those subscribed when it's published. One that a
+  subscriber missed (its connection to Redis dropped, or it fell `queue_size` messages behind)
+  doesn't come back: the subscriber gets a `gap` instead, and sends the state again. Work that
+  must happen goes to the [task queue](#task-queue) or the [outbox](#outbox).
+- **One subscription per process,** whatever its number of subscribers, which reconnects by
+  itself, with a backoff.
+- **Signed:** with `signing_key` (32 bytes or more, the same in every process; a list rotates
+  it), each message carries an HMAC of its channel and data, and those without it, planted by
+  whoever can write to Redis, are dropped.
+- **Bounded:** a message is JSON, 64 KiB at most; channels are letters, digits and `_.:-`.
+- **Without a client,** messages stay in the process: for tests, and apps of one process.
+- **At shutdown,** `await broadcast.close()` in the lifespan.
+
+## Outbox
+
+!!! warning "Experimental"
+    New in 0.7: its API may still change in any release.
+
+A change saved and the message that announces it (to the task queue, a webhook, another service)
+go together or not at all: the message is written in the same database transaction as the change,
+and a relay delivers it afterwards, at least once. With the `sqlalchemy` extra.
+
+```python
+from fastapi_alcazaba.background import FastAPILeader
+from fastapi_alcazaba.background.outbox import (
+    OutboxMessage,
+    OutboxRelay,
+    SQLAlchemyOutbox,
+    outbox_table,
+)
+
+outbox = SQLAlchemyOutbox(outbox_table(Base.metadata), sessions=async_session)
+
+
+@app.post("/orders")
+async def place(form: Order) -> dict[str, int]:
+    async with async_session() as session, session.begin():
+        order = Order(**form.model_dump())
+        session.add(order)
+        await session.flush()
+        await outbox.add(session, "order.placed", {"order_id": order.id})  # same transaction
+    return {"id": order.id}
+
+
+async def deliver(message: OutboxMessage) -> None:
+    await queue.enqueue(order_placed, message.id, message.payload)  # skips ids it has seen
+
+
+relay = OutboxRelay(outbox, deliver)
+leader = FastAPILeader("outbox")  # one process relays
+
+
+@leader.run
+async def relay_outbox() -> None:
+    await relay.run()
+```
+
+- **The table** is yours, in your migrations: `outbox_table(metadata)` defines it (`outbox` by
+  default). `sessions` makes the relay's sessions, a `sessionmaker` or an `async_sessionmaker`.
+- **At least once:** `deliver(message)` is awaited, and the message marked as sent when it
+  returns. A process that stops in between delivers it again: each message has an `id`, and
+  consumers keep the ones they've seen.
+- **Retries:** when `deliver` raises, the message is tried again 1, 2, 4… seconds later, up to
+  `max_delay`, and given up on after `max_attempts`: kept in the table with its last error, never
+  sent, for someone to look at.
+- **In order, by one relay:** the oldest due messages first, `batch` at a time. Run the relay
+  in one process ([leader election](#leader-election)).
+- **Payloads** are JSON, 256 KiB at most: ids and what changed, not files.

@@ -46,6 +46,13 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "challenge, origin, rp_id, user_presence, user_verification, signature, counter, "
         "algorithm, backup, user_handle, malformed, unchecked",
     ),
+    "mail": ("{message}", "Messages FastAPIMail sent, by outcome: sent, failed"),
+    "passwords": (
+        "{attempt}",
+        "Passwords checked by FastAPIPasswords, by outcome: success, wrong, locked (too many "
+        "wrong ones), unknown (no such account), malformed, too_long, unchecked; and reset tokens, "
+        "reset_used, reset_unknown, reset_replaced, reset_malformed, reset_unchecked",
+    ),
     "totp.verifications": (
         "{attempt}",
         "TOTP codes verified, by outcome: success, wrong, replayed (used already), malformed, "

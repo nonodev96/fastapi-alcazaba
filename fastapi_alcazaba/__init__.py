@@ -9,15 +9,27 @@ from importlib.metadata import PackageNotFoundError, version
 
 from fastapi_alcazaba.accounting import FastAPIAccounting
 from fastapi_alcazaba.audit import FastAPIAudit
-from fastapi_alcazaba.auth import FastAPIAPIKeys, FastAPIAuth, FastAPITOTP, FastAPIWebAuthn
+from fastapi_alcazaba.auth import (
+    FastAPIAPIKeys,
+    FastAPIAuth,
+    FastAPIPasswords,
+    FastAPITOTP,
+    FastAPIWebAuthn,
+)
 from fastapi_alcazaba.authz import FastAPIAuthz
 from fastapi_alcazaba.backends import Backend
-from fastapi_alcazaba.background import FastAPILeader, FastAPIScheduler, FastAPITaskQueue
+from fastapi_alcazaba.background import (
+    FastAPIBroadcast,
+    FastAPILeader,
+    FastAPIScheduler,
+    FastAPITaskQueue,
+)
 from fastapi_alcazaba.core import (
     BackendUnavailable,
     UnsignedEntriesWarning,
     UnstableCacheKeyWarning,
 )
+from fastapi_alcazaba.mail import FastAPIMail
 from fastapi_alcazaba.observability import FastAPIProblemDetails, Problem
 from fastapi_alcazaba.operations import (
     BreakerOpen,
@@ -59,6 +71,7 @@ __all__ = [
     "FastAPIAudit",
     "FastAPIAuth",
     "FastAPIBreaker",
+    "FastAPIBroadcast",
     "FastAPICache",
     "FastAPITOTP",
     "FastAPIWebAuthn",
@@ -66,7 +79,9 @@ __all__ = [
     "FastAPIConcurrencyLimiter",
     "FastAPIFeatureFlags",
     "FastAPILeader",
+    "FastAPIMail",
     "FastAPIMaintenance",
+    "FastAPIPasswords",
     "FastAPIProblemDetails",
     "FastAPIRateLimiter",
     "FastAPIScheduler",

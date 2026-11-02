@@ -5,13 +5,15 @@ import re
 import time
 from collections.abc import Awaitable, Callable, Iterator
 from functools import partial
+from types import SimpleNamespace
 from typing import Any, TypeVar
 
 import pytest
 from fastapi.testclient import TestClient
 
 from examples.operations.main import ShippingService, app, flags, maintenance, settings
-from fastapi_alcazaba import FastAPIBreaker, FastAPICache, FastAPIFeatureFlags, FastAPIMaintenance
+from fastapi_alcazaba import FastAPICache, FastAPIFeatureFlags, FastAPIMaintenance
+from fastapi_alcazaba.core import resilience
 
 T = TypeVar("T")
 
@@ -219,11 +221,15 @@ class TestCircuitBreaker:
         assert client.get("/orders/7/shipping").status_code == 502  # the 3rd failure in a row
         assert client.get("/orders/7/shipping").status_code == 503
 
-    def test_then_one_request_tries_again(self, client: TestClient) -> None:
-        # The same breaker, but open for 0.2 s instead of 30.
-        app.state.shipping_breaker = FastAPIBreaker(
-            "shipping", failure_threshold=3, reset_timeout=0.2, failures=(ConnectionError,)
-        )
+    def test_then_one_request_tries_again(
+        self,
+        client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # The breaker's clock, moved by hand: a slow runner doesn't let it reopen meanwhile.
+        now = [1000.0]
+        clock = SimpleNamespace(monotonic=lambda: now[0], perf_counter=time.perf_counter)
+        monkeypatch.setattr(resilience, "time", clock)
         client.put("/admin/simulate/shipping?down=true", headers=ADMIN)
         assert [client.get("/orders/7/shipping").status_code for _ in range(4)] == [
             502,
@@ -231,11 +237,11 @@ class TestCircuitBreaker:
             502,
             503,
         ]
-        time.sleep(0.21)
+        now[0] += 31  # its reset_timeout, 30 s, has passed
         assert client.get("/orders/7/shipping").status_code == 502  # the trial failed: open again
         assert client.get("/orders/7/shipping").status_code == 503
         client.put("/admin/simulate/shipping?down=false", headers=ADMIN)
-        time.sleep(0.21)
+        now[0] += 31
         assert client.get("/orders/7/shipping").status_code == 200  # the trial closes it
         assert client.get("/orders/7/shipping").status_code == 200
         assert shipping().calls == 6

@@ -51,8 +51,8 @@ and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to 
 
     ---
 
-    API keys stored as digests, revoked tokens, one-time codes, the second factor (TOTP) and
-    passkeys (WebAuthn).
+    Passwords, API keys stored as digests, revoked tokens, one-time codes, the second factor
+    (TOTP) and passkeys (WebAuthn).
     In `fastapi_alcazaba.auth`.
 
 -   :material-account-key:{ .lg .middle } __[Authorization](authz.md)__
@@ -88,8 +88,15 @@ and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to 
 
     ---
 
-    The type of a file from its bytes, its size and pixels, and safe file names.
-    In `fastapi_alcazaba.uploads`.
+    The type of a file from its bytes, its size and pixels, safe file names, and signed URLs for
+    object storage. In `fastapi_alcazaba.uploads`.
+
+-   :material-email-fast:{ .lg .middle } __[E-mail](mail.md)__
+
+    ---
+
+    `FastAPIMail`, which builds messages nothing can add headers to, and `SMTPSender`.
+    In `fastapi_alcazaba.mail`.
 
 -   :material-webhook:{ .lg .middle } __[Webhooks and outbound calls](webhooks.md)__
 
@@ -102,15 +109,15 @@ and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to 
 
     ---
 
-    Problem details, request IDs, request deadlines and health checks.
+    Problem details, request IDs, request deadlines, health checks and logs as JSON.
     In `fastapi_alcazaba.observability`.
 
 -   :material-calendar-clock:{ .lg .middle } __[Background work](background.md)__
 
     ---
 
-    Scheduled jobs, the task queue, leader election and locks shared by every process.
-    In `fastapi_alcazaba.background`.
+    Scheduled jobs, the task queue, leader election and locks shared by every process, broadcast
+    and the outbox. In `fastapi_alcazaba.background`.
 
 -   :material-toggle-switch:{ .lg .middle } __[Operations](operations.md)__
 

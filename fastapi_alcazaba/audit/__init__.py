@@ -8,6 +8,7 @@ from fastapi_alcazaba.audit.trail import (
     FastAPIAudit,
     LoggingAuditSink,
     MemoryAuditSink,
+    redacted,
     verify_audit_trail,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "LoggingAuditSink",
     "MemoryAuditSink",
     "SENSITIVE_WORDS",
+    "redacted",
     "verify_audit_trail",
 ]

@@ -1,7 +1,7 @@
 # Errors and observability
 
 Errors that say what went wrong without leaking internals, and what tells you how the app is doing:
-request IDs, deadlines, health checks, metrics and traces.
+request IDs, deadlines, health checks, metrics and traces, and logs as JSON.
 
 In an app: [the example](../examples/observability.md). Every class and function: [the API reference](../reference/observability.md).
 
@@ -271,8 +271,50 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.tasks` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` (succeeded, retried, failed, interrupted; for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered) |
 | `fastapi_alcazaba.tasks.duration` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` |
 | `fastapi_alcazaba.tasks.reclaimed` | `fastapi_alcazaba.queue`: tasks taken over from workers that stopped answering |
+| `fastapi_alcazaba.passwords` | `fastapi_alcazaba.outcome` (success, wrong, locked, unknown, malformed, too_long, unchecked; reset_used, reset_unknown, reset_replaced, reset_malformed, reset_unchecked): a burst of wrong or locked is someone guessing |
+| `fastapi_alcazaba.mail` | `fastapi_alcazaba.outcome` (sent, failed) |
 | `fastapi_alcazaba.accounting` | `fastapi_alcazaba.meter`, `fastapi_alcazaba.outcome` (allowed, exceeded, unauthenticated, unchecked, refunded) |
 | `fastapi_alcazaba.accounting.usage` | `fastapi_alcazaba.meter`: the units charged |
 | `fastapi_alcazaba.accounting.undelivered` | `fastapi_alcazaba.sink`, `fastapi_alcazaba.reason` (error, timeout): usage records a sink didn't write |
 | `fastapi_alcazaba.audit` | `fastapi_alcazaba.action`, `fastapi_alcazaba.outcome` (success, failure, denied): a burst of denied is someone probing |
 | `fastapi_alcazaba.audit.undelivered` | `fastapi_alcazaba.sink`, `fastapi_alcazaba.reason` (error, timeout): events a sink didn't write |
+
+## Structured logs
+
+!!! warning "Experimental"
+    New in 0.7: its API may still change in any release.
+
+One line of JSON per record, for the log pipeline to search (CloudWatch, Loki, Elasticsearch, a
+SIEM): `logging_config` sends every record, Uvicorn's included, to standard output through
+`JSONFormatter`.
+
+```python
+import uvicorn
+
+from fastapi_alcazaba.observability import logging_config
+
+uvicorn.run("app:app", log_config=logging_config(static={"service": "shop"}))
+# or logging.config.dictConfig(logging_config(...)) at start, with uvicorn's --log-config
+```
+
+```python
+logger.info("Order placed", extra={"order_id": 42, "card_token": token})
+```
+
+```json
+{"time":"2026-11-02T09:14:03.512+00:00","level":"INFO","logger":"shop.orders","service":"shop","message":"Order placed","request_id":"5f0c…","trace_id":"4bf9…","span_id":"00f0…","extra":{"order_id":42,"card_token":"[redacted]"}}
+```
+
+- **What each line has:** the time (UTC, to the millisecond), level, logger and message; the
+  `static` fields; the ID of the request being handled ([request IDs](#request-ids)) and its
+  OpenTelemetry trace and span, so a line leads to its request and its trace; the exception's
+  type, message and the last 30 frames of its stack.
+- **`extra=`** is redacted as the [audit trail](audit.md) redacts details: the values of keys
+  that name a secret (`token`, `password`, `secret`, `authorization`...; `redact` adds words) and
+  strings that look like credentials become `[redacted]`, and every value is bounded.
+- **Uvicorn's access lines** have the method, the status, the client and the path without its
+  query, which may carry tokens, codes or e-mail addresses. `access_log=False` drops them, when
+  the proxy in front logs requests already.
+- **One line per record,** whatever the message holds: line breaks in it are escaped, so nobody
+  can forge a line by putting one in a field that ends up logged.
+

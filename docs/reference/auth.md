@@ -1,10 +1,16 @@
 # API keys, tokens and codes
 
-API keys stored as digests, revoked tokens, one-time codes, the second factor (TOTP), passkeys
-(WebAuthn) and step-up.
+Passwords, API keys stored as digests, revoked tokens, one-time codes, the second factor (TOTP),
+passkeys (WebAuthn) and step-up.
 In `fastapi_alcazaba.auth`.
 
-In the guide: [API keys](../guide/auth.md#api-keys), [Revoked tokens and one-time codes](../guide/auth.md#revoked-tokens-and-one-time-codes), [Second factor](../guide/two-factor.md), [Passkeys](../guide/passkeys.md). In an app: [the example](../examples/auth.md), [the second factor's](../examples/two_factor.md).
+In the guide: [Passwords](../guide/passwords.md), [API keys](../guide/auth.md#api-keys), [Revoked tokens and one-time codes](../guide/auth.md#revoked-tokens-and-one-time-codes), [Second factor](../guide/two-factor.md), [Passkeys](../guide/passkeys.md). In an app: [the example](../examples/auth.md), [the second factor's](../examples/two_factor.md).
+
+::: fastapi_alcazaba.auth.FastAPIPasswords
+
+::: fastapi_alcazaba.auth.ScryptParameters
+
+::: fastapi_alcazaba.auth.PwnedPasswords
 
 ::: fastapi_alcazaba.auth.FastAPIAPIKeys
 

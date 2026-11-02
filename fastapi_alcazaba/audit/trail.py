@@ -235,6 +235,19 @@ class _Cleaner:
         return cleaned
 
 
+_DEFAULT_CLEANER = _Cleaner(SENSITIVE_WORDS)
+
+
+def redacted(details: Mapping[str, Any], *, redact: Collection[str] = ()) -> dict[str, Any]:
+    """`details` as the audit trail records them: JSON values only, the values under keys that
+    name a secret (`SENSITIVE_WORDS`, and `redact`) and the strings that look like credentials
+    replaced by "[redacted]", cut to `MAX_STRING`, `MAX_ITEMS` and `MAX_DEPTH`. For log records
+    too (`JSONFormatter`)."""
+    if not redact:
+        return _DEFAULT_CLEANER.details(details)
+    return _Cleaner(SENSITIVE_WORDS | {word.lower() for word in redact}).details(details)
+
+
 @dataclass(frozen=True, slots=True)
 class AuditEvent:
     """An event of the trail, as the sinks get it; `to_dict()` and `to_json()` give its JSON form.
