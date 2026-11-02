@@ -49,6 +49,10 @@ def test_random_inputs(module: ModuleType, data: bytes) -> None:
     [
         # A signed cursor that isn't ASCII: compare_digest raised a TypeError instead of a 400.
         (cursors_fuzzer, "eyJ.é".encode()),
+        # JSON that json reads but can't write back: the target sealed it, and seal refused it.
+        (cursors_fuzzer, b"NaN"),
+        (cursors_fuzzer, b"[1e999]"),
+        (cursors_fuzzer, b'{"after": -Infinity}'),
         # An extension short in characters but not in bytes: the name came out longer.
         (uploads_fuzzer, b"\x00" + b"a" * 100 + b"." + "\U0001f600".encode() * 15),
         (uploads_fuzzer, b"\x00" + b"CON .txt"),

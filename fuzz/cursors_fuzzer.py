@@ -43,11 +43,13 @@ def fuzz_one_input(data: bytes) -> None:
     text = data.decode("utf-8", errors="replace")
     _cursor(text)
     try:
-        payload = json.loads(text)
+        sealed = _SEALER.seal(json.loads(text))
     except (ValueError, RecursionError):
+        # Not JSON, too deep, or with NaN or an infinity, which json reads (`NaN`, `1e999`) but
+        # a cursor can't hold: seal refuses them, so no signed cursor has them.
         pass
     else:
-        _cursor(_SEALER.seal(payload))
+        _cursor(sealed)
     for keyset in _KEYSETS:
         try:
             position = keyset.decode(text)
