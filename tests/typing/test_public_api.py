@@ -10,6 +10,8 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from fastapi_alcazaba import Cache, FastAPIBreaker, FastAPICache, FastAPIScheduler
+from fastapi_alcazaba.auth import RefreshTokens, TokenBlocklist, TokenPair
+from fastapi_alcazaba.auth.strategies.jwt import JWTStrategy
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.pagination.cursor import CursorPage, PaginationCursor
 from fastapi_alcazaba.pagination.keyset import KeysetPage, PaginationKeyset
@@ -99,6 +101,15 @@ def test_pagination_types() -> None:
     assert pages.paginate([1, 2, 3], pages.params(page_size=2)).items == [1, 2]
 
 
+async def test_refresh_token_types() -> None:
+    strategy = JWTStrategy("j" * 32, blocklist=TokenBlocklist(Cache(InMemoryBackend())))
+    refresh = RefreshTokens(strategy, secret="r" * 32, cache=Cache(InMemoryBackend()))
+    pair = await refresh.issue("ana", client="ios", scope="read")
+    assert_type(pair, TokenPair)
+    assert_type(await refresh.exchange(pair.refresh_token, client="ios"), TokenPair)
+    assert_type(await refresh.revoke(pair.refresh_token), bool)
+
+
 async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checked
     # pylint: disable=no-member  # wrong on purpose: mypy must refuse each of these calls
     await async_function("1")  # type: ignore[arg-type]
@@ -113,3 +124,7 @@ async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checke
     PaginationPageNumber().paginate([1], {"page": 1})  # type: ignore[arg-type]
     PaginationCursor("s" * 32).paginate([1], PaginationPageNumber().params(), key=str)  # type: ignore[arg-type]
     PaginationCursor()  # type: ignore[call-arg]  # pylint: disable=no-value-for-parameter
+    refresh = RefreshTokens(JWTStrategy("j" * 32), secret="r" * 32)
+    await refresh.issue(1)  # type: ignore[arg-type]
+    await refresh.exchange("token", client=1)  # type: ignore[arg-type]
+    RefreshTokens(JWTStrategy("j" * 32), secret="r" * 32, grace="10")  # type: ignore[arg-type]

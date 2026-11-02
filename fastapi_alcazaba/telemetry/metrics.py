@@ -35,6 +35,11 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "{check}",
         "Tokens checked against the blocklist, by outcome: valid, revoked, unchecked",
     ),
+    "refresh": (
+        "{token}",
+        "Refresh tokens issued and exchanged, by outcome: issued, rotated, grace, malformed, "
+        "unknown, forged, expired, revoked, reused, wrong_client, unchecked",
+    ),
     "otp.verifications": (
         "{attempt}",
         "One-time codes verified, by outcome: success, wrong, missing (expired or used), "

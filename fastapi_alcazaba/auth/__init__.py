@@ -1,8 +1,10 @@
-"""Authentication strategies, API keys stored as digests, revoked tokens, one-time codes, and
-passwords, a second factor (TOTP, recovery codes, step-up), and passkeys (WebAuthn)."""
+"""Authentication strategies, API keys stored as digests, revoked tokens, refresh tokens,
+one-time codes, and passwords, a second factor (TOTP, recovery codes, step-up), and passkeys
+(WebAuthn)."""
 
 from fastapi_alcazaba.auth.apikeys import APIKeyRecord, FastAPIAPIKeys
 from fastapi_alcazaba.auth.passwords import FastAPIPasswords, PwnedPasswords, ScryptParameters
+from fastapi_alcazaba.auth.refresh import RefreshRefused, RefreshTokens, TokenPair
 from fastapi_alcazaba.auth.strategies import (
     AuthenticationFailed,
     FastAPIAuth,
@@ -28,11 +30,14 @@ __all__ = [
     "Passkey",
     "PwnedPasswords",
     "RecoveryCodes",
+    "RefreshRefused",
+    "RefreshTokens",
     "ScryptParameters",
     "SessionStrategy",
     "Strategy",
     "TOTPEnrollment",
     "TokenBlocklist",
+    "TokenPair",
     "WebAuthnRefused",
     "credential_id",
     "granted_scopes",
