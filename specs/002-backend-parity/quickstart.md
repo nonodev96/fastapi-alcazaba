@@ -21,10 +21,10 @@ backend = MemcachedBackend(aiomcache.Client("127.0.0.1", 21211))
 cache = Cache(backend, prefix="demo")
 
 await backend.set("demo:products:1", b"v", expire=60)
-await backend.get_with_ttl("demo:products:1")      # (60, b"v")
-await cache.clear(namespace="products")            # 0: can't count
-await backend.get("demo:products:1")               # None
+await backend.get_with_ttl("demo:products:1")  # (60, b"v")
+await cache.clear(namespace="products")  # 0: can't count
+await backend.get("demo:products:1")  # None
 
-async with cache.lock("nightly"):                   # held once across processes
+async with cache.lock("nightly"):  # held once across processes
     ...
 ```

@@ -25,8 +25,9 @@ from starlette.requests import Request
 
 from fastapi_alcazaba import Cache, FastAPICache, FastAPIScheduler
 from fastapi_alcazaba.accounting import FastAPIAccounting, Quota
-from fastapi_alcazaba.auth import OneTimeCodes, TokenBlocklist
+from fastapi_alcazaba.auth import FastAPITOTP, OneTimeCodes, TokenBlocklist
 from fastapi_alcazaba.backends import Backend
+from fastapi_alcazaba.backends.tiered import shared_backend
 from fastapi_alcazaba.idempotency import IdempotencyMiddleware
 from fastapi_alcazaba.rate_limit import FastAPIRateLimiter
 from fastapi_alcazaba.response_cache import cache, default_key_builder
@@ -181,7 +182,7 @@ async def test_round_trip(backend: Backend, prefix: str) -> None:
     await backend.set(f"{prefix}:k", b"v", expire=60)
     ttl, value = await backend.get_with_ttl(f"{prefix}:k")
     assert value == b"v"
-    assert ttl == -1 or 0 < ttl <= 60  # memcached can't tell
+    assert 0 < ttl <= 60
     assert await backend.get(f"{prefix}:k") == b"v"
     assert await backend.get_with_ttl(f"{prefix}:missing") == (0, None)
     assert await backend.clear(key=f"{prefix}:k") == 1
@@ -189,21 +190,26 @@ async def test_round_trip(backend: Backend, prefix: str) -> None:
 
 
 async def test_clear_namespace(backend: Backend, prefix: str) -> None:
-    if isinstance(backend, _no_namespace_clear()):
-        pytest.skip("this backend can't delete by namespace")
     for i in range(7):
         await backend.set(f"{prefix}:ns:{i}", b"v", expire=60)
     await backend.set(f"{prefix}:ns10:1", b"v", expire=60)
-    assert await backend.clear(namespace=f"{prefix}:ns") == 7
+    await backend.set(f"{prefix}!state:1", b"v", expire=60)
+    assert await backend.clear(namespace=f"{prefix}:ns") == (7 if _counts(backend) else 0)
+    assert [await backend.get(f"{prefix}:ns:{i}") for i in range(7)] == [None] * 7
     assert await backend.get(f"{prefix}:ns10:1") == b"v"
     assert await backend.clear(namespace="x') redis.call('FLUSHALL') --") == 0
     assert await backend.get(f"{prefix}:ns10:1") == b"v"
-    assert await backend.clear(namespace=prefix) == 1
+    await backend.set(f"{prefix}:ns:0", b"after", expire=60)
+    assert await backend.get(f"{prefix}:ns:0") == b"after"
+    assert await backend.clear(namespace=prefix) == (2 if _counts(backend) else 0)
+    assert await backend.get(f"{prefix}:ns10:1") is None
+    assert await backend.get(f"{prefix}:ns:0") is None
+    assert await backend.get(f"{prefix}!state:1") == b"v"  # state isn't in any namespace
+    await backend.clear(key=f"{prefix}!state:1")
 
 
 async def test_locks(backend: Backend, prefix: str) -> None:
-    if not backend.supports_locks:
-        pytest.skip("no locks")
+    assert backend.supports_locks
     lock = f"{prefix}:lock"
     assert await backend.acquire_lock(lock, "mine", 5)
     assert not await backend.acquire_lock(lock, "theirs", 5)
@@ -211,14 +217,13 @@ async def test_locks(backend: Backend, prefix: str) -> None:
     assert not await backend.acquire_lock(lock, "theirs", 5)
     await backend.release_lock(lock, "mine")
     assert await backend.acquire_lock(lock, "theirs", 0.05)
-    await asyncio.sleep(0.2)  # expired
+    await asyncio.sleep(_lock_expiry(backend))  # expired
     assert await backend.acquire_lock(lock, "mine", 5)
     await backend.release_lock(lock, "mine")
 
 
 async def test_extend_lock(backend: Backend, prefix: str) -> None:
-    if not backend.supports_locks:
-        pytest.skip("no locks")
+    assert backend.supports_locks
     lock = f"{prefix}:lock:{{x}}"
     assert await backend.acquire_lock(lock, "mine", 0.5)
     assert await backend.extend_lock(lock, "mine", 5)
@@ -227,14 +232,12 @@ async def test_extend_lock(backend: Backend, prefix: str) -> None:
     assert not await backend.acquire_lock(lock, "theirs", 5)  # extended
     await backend.release_lock(lock, "mine")
     assert await backend.acquire_lock(lock, "theirs", 0.05)
-    await asyncio.sleep(0.2)
+    await asyncio.sleep(_lock_expiry(backend))
     assert not await backend.extend_lock(lock, "theirs", 5)  # expired
 
 
 async def test_cache_lock(backend: Backend, prefix: str) -> None:
     """Renewed while held: it outlives its ttl, and only one of many contenders gets it."""
-    if not backend.supports_locks:
-        pytest.skip("no locks")
     app_cache = Cache(backend, prefix=prefix)
     async with app_cache.lock("job", ttl=1) as lock:
         await asyncio.sleep(1.5)
@@ -293,8 +296,6 @@ async def test_token_blocklist(backend: Backend, prefix: str) -> None:
 
 async def test_idempotency(backend: Backend, prefix: str) -> None:
     """Five copies of a request at once: it runs once, the others wait for it or get it back."""
-    if not backend.supports_locks:
-        pytest.skip("no locks")
     app = FastAPI()
     Cache(backend, prefix=prefix, encryption_key="e" * 32).install(app)
     app.add_middleware(IdempotencyMiddleware)
@@ -316,17 +317,22 @@ async def test_idempotency(backend: Backend, prefix: str) -> None:
 
 
 async def test_tags(backend: Backend, prefix: str) -> None:
-    if not backend.supports_tags:
-        pytest.skip("no tags")
+    assert backend.supports_tags
     tag, other = f"{prefix}:tag:{{a}}", f"{prefix}:tag:{{b}}"
     for i in range(3):
         await backend.set(f"{prefix}:e{i}", b"v", expire=60)
         await backend.add_tags(f"{prefix}:e{i}", [tag] if i < 2 else [other], 60)
-    assert await backend.invalidate_tags([tag]) == 2
+    assert await backend.invalidate_tags([tag]) == (2 if _counts(backend) else 0)
     assert await backend.get(f"{prefix}:e0") is None
+    assert await backend.get(f"{prefix}:e1") is None
     assert await backend.get(f"{prefix}:e2") == b"v"
     assert await backend.invalidate_tags([tag]) == 0
-    assert await backend.invalidate_tags_with_keys([other]) == (1, [f"{prefix}:e2"])
+    with_keys = await backend.invalidate_tags_with_keys([other])
+    assert with_keys == ((1, [f"{prefix}:e2"]) if _counts(backend) else (0, None))
+    assert await backend.get(f"{prefix}:e2") is None
+    await backend.set(f"{prefix}:e0", b"after", expire=60)
+    await backend.add_tags(f"{prefix}:e0", [tag], 60)
+    assert await backend.get(f"{prefix}:e0") == b"after"
 
 
 async def test_counters(backend: Backend, prefix: str) -> None:
@@ -397,12 +403,8 @@ async def test_user_sessions(backend: Backend, prefix: str) -> None:
     transport = httpx.ASGITransport(app=app)
     devices = [httpx.AsyncClient(transport=transport, base_url="https://test") for _ in range(5)]
     await asyncio.gather(*(device.post("/login/ana") for device in devices))
-    listed = (await devices[0].get("/sessions")).json()
-    # Without locks (memcached), logins at once may leave some out of the index.
-    assert listed == 5 if backend.supports_locks else 1 <= listed <= 5
-    ended = (await devices[0].post("/everywhere")).json()
-    # All the listed but this one; without locks, this one may be the one left out.
-    assert ended == listed - 1 if backend.supports_locks else ended <= listed
+    assert (await devices[0].get("/sessions")).json() == 5
+    assert (await devices[0].post("/everywhere")).json() == 4
     # Every other device is logged out, those the index missed too.
     assert [(await device.get("/me")).json() for device in devices] == ["ana"] + [None] * 4
     for device in devices:
@@ -441,7 +443,7 @@ async def test_through_the_decorator(
     FastAPICache.init(
         backend,
         prefix=prefix,
-        distributed_lock=backend.supports_locks,
+        distributed_lock=True,
         signing_key=key if protection == "signing_key" else None,
         encryption_key=key if protection == "encryption_key" else None,
         compression=compression,
@@ -462,22 +464,79 @@ async def test_through_the_decorator(
     stored = await backend.get(default_key_builder(value, f"{prefix}:ns", args=(1,), kwargs={}))
     assert stored is not None
     assert (b"confidential-1" in stored) is (protection == "signing_key")
-    if not isinstance(backend, _no_namespace_clear()):
-        assert await FastAPICache.clear(namespace="ns") == 1
+    assert await FastAPICache.clear(namespace="ns") == (1 if _counts(backend) else 0)
+    assert await cached(1) == expected
+    assert calls == [1, 1]
 
 
-def _no_namespace_clear() -> tuple[type, ...]:
-    kinds: list[type] = []
-    try:
-        from fastapi_alcazaba.backends.memcached import MemcachedBackend
+async def test_distributed_lock(backend: Backend, prefix: str) -> None:
+    """Two processes (two caches, without single flight between them) ask at once: one computes,
+    the other waits for its value."""
+    caches = [
+        Cache(backend, prefix=prefix, distributed_lock=True, single_flight=False) for _ in range(2)
+    ]
+    calls: list[int] = []
 
-        kinds.append(MemcachedBackend)
-    except ImportError:  # pragma: no cover
-        pass
-    try:
-        from fastapi_alcazaba.backends.dynamodb import DynamoBackend
+    async def value() -> int:
+        calls.append(1)
+        await asyncio.sleep(0.3)
+        return 7
 
-        kinds.append(DynamoBackend)
-    except ImportError:  # pragma: no cover
-        pass
-    return tuple(kinds)
+    cached = [c.cached(expire=60, namespace="ns", vary_headers=())(value) for c in caches]
+    assert list(await asyncio.gather(*(each() for each in cached * 3))) == [7] * 6
+    assert calls == [1]
+
+
+async def test_tags_through_the_cache(backend: Backend, prefix: str) -> None:
+    app_cache = Cache(backend, prefix=prefix)
+    calls: list[int] = []
+
+    async def product(product_id: int) -> dict[str, int]:
+        calls.append(product_id)
+        return {"id": product_id, "version": len(calls)}
+
+    def tags(product_id: int) -> list[str]:
+        return [f"p:{product_id}"]
+
+    cached = app_cache.cached(expire=60, namespace="products", vary_headers=(), tags=tags)(product)
+    assert [await cached(1), await cached(2), await cached(1)] == [
+        {"id": 1, "version": 1},
+        {"id": 2, "version": 2},
+        {"id": 1, "version": 1},
+    ]
+    await app_cache.invalidate_tags("p:1")
+    assert await cached(1) == {"id": 1, "version": 3}
+    assert await cached(2) == {"id": 2, "version": 2}
+
+
+async def test_second_factor(backend: Backend, prefix: str) -> None:
+    """Of several requests with the same right code at once, one is accepted."""
+    totp = FastAPITOTP(issuer="Example", secret="t" * 32, cache=Cache(backend, prefix=prefix))
+    sealed = totp.enroll("ana", "ana@example.com").sealed
+    code = totp.code("ana", sealed)
+    tries = [totp.verify("ana", sealed, code) for _ in range(5)]
+    assert sum(await asyncio.gather(*tries)) == 1
+
+
+async def test_entries_of_earlier_versions_on_memcached(backend: Backend, prefix: str) -> None:
+    """Whether a clear hid them since can't be told: recomputed. State reads as it was."""
+    from fastapi_alcazaba.backends.memcached import MemcachedBackend
+
+    if not isinstance(backend, MemcachedBackend):
+        pytest.skip("memcached only")
+    await backend.mcache.set(f"{prefix}:ns:1".encode(), b'{"by": "0.7"}')
+    await backend.mcache.set(f"{prefix}!session:1".encode(), b'{"by": "0.7"}')
+    assert await backend.get(f"{prefix}:ns:1") is None
+    assert await backend.get(f"{prefix}!session:1") == b'{"by": "0.7"}'
+
+
+def _counts(backend: Backend) -> bool:
+    """Whether the backend counts what a clear deletes; memcached and DynamoDB hide entries
+    instead."""
+    shared = shared_backend(backend)
+    return type(shared).__name__ not in ("MemcachedBackend", "DynamoBackend")
+
+
+def _lock_expiry(backend: Backend) -> float:
+    """How long to wait for a lock of 0.05 seconds to expire: memcached counts whole seconds."""
+    return 2.5 if type(shared_backend(backend)).__name__ == "MemcachedBackend" else 0.2

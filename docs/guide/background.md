@@ -33,8 +33,8 @@ app = FastAPI(lifespan=scheduler.lifespan)  # or `async with scheduler:` in your
 
 - **Once per tick:** at each tick, the processes claim it in the backend, with an atomic counter
   named after the job and the tick, and only the first runs it. A lock held while the job runs
-  keeps a run that outlasts its interval from overlapping the next tick in another process
-  (memcached can't hold locks: there, each tick still runs once, but long runs may overlap).
+  keeps a run that outlasts its interval from overlapping the next tick in another process (on a
+  backend of your own without locks, each tick still runs once, but long runs may overlap).
   The ticks are the same in every process: `every(minutes=5)` runs at :00, :05… (UTC), so keep
   the servers' clocks in sync (NTP). `exclusive=False` runs a job in every process.
 - **Cron:** five fields (minute, hour, day of the month, month, day of the week, Sunday being 0 or
@@ -155,7 +155,7 @@ if leader.is_leader:  # anywhere, sync code included
   leadership ends and must let the cancellation through. An exception is logged with its
   traceback; the process keeps leading.
 - **Failures:** while the backend is down nobody is elected, and a leader that can't renew steps
-  down when its lock expires: no leader is better than two. memcached can't hold locks.
+  down when its lock expires: no leader is better than two.
 - **Limits:** a leader that stalls for longer than `ttl` (a long pause, a network partition) can
   overlap the next one for a moment. Check `is_leader` between the steps of long work, and keep
   that work idempotent.
@@ -179,9 +179,10 @@ async def nightly_report() -> None:  # every instance runs it; one builds the re
 - **Expiry and renewal:** a lock expires after `ttl` seconds, so a holder that dies doesn't keep it
   forever; while it's held, a background task renews it every `ttl / 3`.
 - **Only the holder** releases or renews it: each acquisition has a random token, checked by a Lua
-  script on Redis, Valkey and GLIDE and by conditional writes on DynamoDB (in memory, within one
-  process). memcached can't hold locks. On DynamoDB, expiry compares the clocks of the app's
-  servers: keep them in sync (NTP). A custom backend written for 0.1 has no `extend_lock`: use
+  script on Redis, Valkey and GLIDE, by conditional writes on DynamoDB and by `gets` + `cas` on
+  memcached (in memory, within one process). memcached counts whole seconds: a lock there lasts
+  up to two seconds more than its `ttl`, never less. On DynamoDB, expiry compares the clocks of
+  the app's servers: keep them in sync (NTP). A custom backend written for 0.1 has no `extend_lock`: use
   `renew=False` there, with a `ttl` longer than the work.
 - **Waiting:** `wait=0` (the default) tries once, `wait=5` keeps trying for 5 seconds,
   `wait=None` as long as it takes. `acquire()` and `release()` work without `async with`.

@@ -66,7 +66,9 @@ would hand that cookie, a session, to everyone else) or streams.
 
 Delete entries with `await FastAPICache.clear(namespace="products")`, one entry with
 `await FastAPICache.clear(key=...)`, or by tag with `await FastAPICache.invalidate_tags(...)`.
-`clear()` without arguments deletes every cached response under the prefix. Locks, rate-limit
+`clear()` without arguments deletes every cached response under the prefix. memcached and
+DynamoDB can't list their keys: there, a clear or an invalidation hides the entries instead (they
+expire in their own time) and returns 0, since it can't count them. Locks, rate-limit
 counters, revoked tokens, one-time codes and idempotency records are kept apart, under
 `{prefix}!` instead of `{prefix}:`, so no `clear()` frees a held lock, resets a limit or takes a
 revocation back; `InMemoryBackend` keeps them apart too, so caching many responses never evicts

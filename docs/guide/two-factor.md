@@ -71,7 +71,8 @@ async def login_totp(request: Request, form: Code) -> dict[str, str]:
 - **Halfway in:** between the password and the code, keep in the session who's logging in, not
   that they're logged in: the routes for logged-in users don't take them yet.
 - **When the backend fails,** nothing is accepted: no code is checked for replay, nor guesses
-  counted. It must hold locks, which mark each code used: memcached doesn't, and is refused.
+  counted. The backend must hold locks, which mark each code used: every backend shipped with
+  fastapi-alcazaba does, and one of your own without them is refused.
 
 ## Recovery codes
 

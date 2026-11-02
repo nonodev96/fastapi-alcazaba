@@ -149,7 +149,7 @@ async def scan_pending() -> None:  # outside requests: a job, a queue consumer
   a `slot()` inside the stream there.
 - **Failures:** if the backend fails, each process counts the slots on its own (`fail_open=True`,
   the default: at most `limit` per process run); `fail_open=False` refuses with a 503 instead
-  (`slot()` raises `BackendUnavailable`). memcached can't hold locks.
+  (`slot()` raises `BackendUnavailable`).
 - **Limits:** like any lock on a cache-like store, a holder that stalls for longer than `ttl`
   loses its slot while it still runs, and someone else may take it. Taking a slot when most are
   busy costs a round trip per busy slot tried.

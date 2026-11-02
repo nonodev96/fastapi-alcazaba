@@ -7,6 +7,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- memcached holds locks: taken with `add`, released or extended with `gets` + `cas`, so only by
+  their holder. `Lock`, `FastAPILeader`, the concurrency limiter, `IdempotencyMiddleware`,
+  `FastAPITOTP`, `distributed_lock`, the scheduler's run lock and the index of user sessions now
+  work on memcached. memcached counts whole seconds: a lock there lasts up to two seconds more than
+  its `ttl`, never less.
+- memcached and DynamoDB clear a namespace (`clear(namespace=...)`, `clear()`) and invalidate tags
+  (`invalidate_tags`), without listing keys: through generations, a token per namespace or tag
+  that each cached response records and each clear replaces (see "Generations" in the backends
+  guide).
+- memcached hits know their remaining lifetime: `max-age` counts down and `early_refresh` works.
+- `IdempotencyMiddleware` given a cache whose backend can't hold locks refuses it when it's set
+  up, not on the first request.
+
+### Changed
+
+- On memcached and DynamoDB, `clear(namespace=...)`, `clear()` and `invalidate_tags` return 0:
+  they hide the entries rather than delete them, and can't count them.
+  `invalidate_tags_with_keys` returns `(0, None)`.
+- memcached: cached responses are stored with a stamp (their expiry and generations). Those stored
+  by 0.7 are recomputed once after upgrading, and a 0.7 process can't read those of this version
+  (it recomputes them too). State (locks, counters, sessions, revoked tokens) is stored as before.
+- DynamoDB: a 0.7 process ignores the generations, so during a rolling upgrade it may serve an
+  entry that this version cleared, until the deploy ends.
+- The tools that refuse a backend without locks say that every backend shipped with
+  fastapi-alcazaba can hold them.
+
 ## [0.7.1] - 2026-11-02
 
 ### Security
