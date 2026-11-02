@@ -13,7 +13,7 @@ from starlette.testclient import TestClient
 from fastapi_alcazaba import FastAPICache, UnsignedEntriesWarning
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.core import Signer
-from fastapi_alcazaba.response_cache import PickleCoder, cache
+from fastapi_alcazaba.response_cache import PickleCoder, cache, decorator
 from tests.cache_status import cache_status, served
 
 KEY = "k" * 32
@@ -249,6 +249,62 @@ class TestOnlySuccessfulResponsesAreCached:
         assert first.status_code == second.status_code
         assert cache_status(second.headers) == "fwd=miss"  # not stored
         assert "ETag" not in second.headers
+        assert len(calls) == 2
+
+
+class TestResponsesThatSetCookiesAreNotShared:
+    """A hit would hand the cookie of the request that stored the entry, a session, to everyone
+    else (RFC 9111, section 7.1)."""
+
+    def _client(self) -> tuple[TestClient, list[str]]:
+        FastAPICache.init(InMemoryBackend(), signing_key=KEY)
+        calls: list[str] = []
+        app = FastAPI()
+
+        @app.get("/returned")
+        @cache(expire=60, coder=PickleCoder)
+        async def returned() -> Response:
+            calls.append("returned")
+            response = Response(b"hello", media_type="text/plain")
+            response.set_cookie("session", f"session-{len(calls)}")
+            return response
+
+        @app.get("/injected")
+        @cache(expire=60)
+        async def injected(response: Response) -> dict[str, str]:
+            calls.append("injected")
+            response.set_cookie("session", f"session-{len(calls)}")
+            return {"hello": "world"}
+
+        return TestClient(app), calls
+
+    @pytest.mark.parametrize("path", ["/returned", "/injected"])
+    def test_not_cached(self, path: str) -> None:
+        client, calls = self._client()
+        with client:
+            first = client.get(path)
+            client.cookies.clear()
+            second = client.get(path)
+        assert first.cookies["session"] == "session-1"
+        assert second.cookies["session"] == "session-2"
+        assert cache_status(second.headers) == "fwd=miss"  # not stored
+        assert "ETag" not in second.headers
+        assert "max-age" not in second.headers.get("Cache-Control", "")
+        assert len(calls) == 2
+
+    def test_entries_stored_by_earlier_versions_are_recomputed(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        client, calls = self._client()
+        with client:
+            with monkeypatch.context() as patched:
+                patched.setattr(decorator, "_is_cacheable", lambda result, response: True)
+                client.get("/returned")
+            client.cookies.clear()
+            second = client.get("/returned")
+        assert second.cookies["session"] == "session-2"
+        assert served(second.headers) == "miss"
         assert len(calls) == 2
 
 

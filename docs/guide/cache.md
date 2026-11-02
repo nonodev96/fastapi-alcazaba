@@ -61,6 +61,9 @@ Call it once, at startup (in the `lifespan`).
 | `early_refresh` | from `init` | |
 | `tags` | `None` | names to invalidate the entry by: a list, or a function of the arguments |
 
+Only 200 responses are stored, and never one that says `no-store`, sets a cookie (its hits
+would hand that cookie, a session, to everyone else) or streams.
+
 Delete entries with `await FastAPICache.clear(namespace="products")`, one entry with
 `await FastAPICache.clear(key=...)`, or by tag with `await FastAPICache.invalidate_tags(...)`.
 `clear()` without arguments deletes every cached response under the prefix. Locks, rate-limit

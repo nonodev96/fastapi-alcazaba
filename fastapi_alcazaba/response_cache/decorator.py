@@ -192,11 +192,19 @@ def _forbids_storing(target: Response | None) -> bool:
     return "no-store" in directives
 
 
+def _sets_cookie(target: object) -> bool:
+    return isinstance(target, Response) and "set-cookie" in target.headers
+
+
 def _is_cacheable(result: object, response: Response | None) -> bool:
     """Only successful responses that don't say no-store. A Response returned with another
     status, or a status set on the injected response, would come back from the cache as a 200
-    with the error body. Streams aren't kept: reading one to store it would use it up."""
+    with the error body. Streams aren't kept: reading one to store it would use it up. Nor is a
+    response that sets a cookie (RFC 9111, section 7.1): its hits would hand that cookie, one
+    client's session, to everybody else."""
     if isinstance(result, StreamingResponse):
+        return False
+    if _sets_cookie(result) or _sets_cookie(response):
         return False
     if isinstance(result, Response) and (
         result.status_code != HTTP_200_OK or _forbids_storing(result)
@@ -679,6 +687,10 @@ class _CachedCall:
             logger.warning(
                 "Ignoring cache entry %r: it can't be decoded", self.cache_key, exc_info=True
             )
+            return _UNUSABLE
+        if _sets_cookie(result):
+            # Stored by a version that kept such responses: recompute, which doesn't store it.
+            logger.warning("Ignoring cache entry %r: it sets a cookie", self.cache_key)
             return _UNUSABLE
         self.policy.apply(_targets(self.response, result), status, etag, max_age)
         _add_page_links(result, self.args, self.kwargs)
