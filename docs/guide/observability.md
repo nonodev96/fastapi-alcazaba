@@ -241,6 +241,7 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.scheduler.runs` | `fastapi_alcazaba.outcome` (ran, failed, skipped, overlapping, unchecked), `fastapi_alcazaba.job` |
 | `fastapi_alcazaba.idempotency` | `fastapi_alcazaba.outcome` (stored, replayed, conflict, mismatch, not_kept, invalid, too_large, unchecked) |
 | `fastapi_alcazaba.tokens.checks` | `fastapi_alcazaba.outcome` (valid, revoked, unchecked) |
+| `fastapi_alcazaba.refresh` | `fastapi_alcazaba.outcome` (issued, rotated, grace, malformed, unknown, forged, expired, revoked, reused, wrong_client, unchecked): any reused or wrong_client is a stolen token |
 | `fastapi_alcazaba.webauthn` | `fastapi_alcazaba.ceremony` (register, authenticate), `fastapi_alcazaba.outcome` (success, challenge, origin, rp_id, signature, counter…): a burst of origin or rp_id is a phishing page |
 | `fastapi_alcazaba.totp.verifications` | `fastapi_alcazaba.outcome` (success, wrong, replayed, malformed, locked, unchecked): a burst of wrong or locked is someone guessing |
 | `fastapi_alcazaba.totp.recovery` | `fastapi_alcazaba.outcome` (used, wrong, replayed, locked, unchecked) |
@@ -317,4 +318,3 @@ logger.info("Order placed", extra={"order_id": 42, "card_token": token})
   the proxy in front logs requests already.
 - **One line per record,** whatever the message holds: line breaks in it are escaped, so nobody
   can forge a line by putting one in a field that ends up logged.
-

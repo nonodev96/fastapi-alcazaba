@@ -117,6 +117,9 @@ async def login(email: str, code: str) -> Token:
 - **Log out everywhere:** `revoke_subject` refuses the tokens issued before the current second.
   `iat` has whole seconds, so the token you issue right after for the current session stays
   valid.
+- **One login:** `revoke_session(sid, ttl=...)` refuses every token whose `sid` claim is `sid`:
+  `JWTStrategy` checks it, and `RefreshTokens` revokes a login's access tokens this way (see
+  [refresh tokens](authentication/jwt.md#refresh-tokens)).
 - **Guesses and single use:** every guess counts, malformed ones included, and a code is lost
   after `max_attempts` (5). Of several requests with the right code at the same time, only one
   succeeds. Issuing a code replaces the previous one and gives the attempts again: rate-limit the

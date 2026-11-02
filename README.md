@@ -28,8 +28,8 @@ Redis, Valkey, memcached or DynamoDB), one format of errors and one set of metri
 | [Response cache](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/cache/) | `response_cache` | `@cache` for endpoints and functions, invalidated by tag, signed or encrypted |
 | [Rate and concurrency limits](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/limits/) | `rate_limit` | a sliding window, and at most N requests at a time, shared by every process |
 | [Idempotency keys](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/idempotency/) | `idempotency` | a retried POST gets the first response instead of running twice |
-| [Authentication](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/authentication/) | `auth` | `FastAPIAuth` with strategies: JWTs, bearer tokens, sessions, OAuth2, OpenID Connect and SAML logins, Unkey's API keys, your own |
-| [Tokens, codes and API keys](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/auth/) | `auth` | a JWT blocklist, one-time codes and API keys, nothing stored in clear |
+| [Authentication](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/authentication/) | `auth` | `FastAPIAuth` with strategies: JWTs (with rotating refresh tokens), bearer tokens, sessions, OAuth2, OpenID Connect and SAML logins, Unkey's API keys, your own |
+| [Tokens, codes and API keys](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/auth/) | `auth` | a JWT blocklist, refresh tokens that detect reuse, one-time codes and API keys, nothing stored in clear |
 | [Passwords](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/passwords/) | `auth` | scrypt hashes with a pepper, leaked passwords refused, guesses limited per account, resets by a link that works once |
 | [Passkeys](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/passkeys/) | `auth` | logins without a password (WebAuthn), which a phishing page can't relay |
 | [Second factor](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/two-factor/) | `auth` | authenticator apps' codes (TOTP) after the password, recovery codes, step-up for sensitive actions |

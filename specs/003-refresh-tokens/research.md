@@ -76,6 +76,6 @@ Current Practice, §4.14 refresh token protection), on 2026-11-03.
 - `RefreshRefused(AuthenticationFailed)` with a `reason` (`malformed`, `unknown`, `forged`,
   `expired`, `reused`, `wrong_client`, `revoked`); the app answers 401. Backend failures raise
   `BackendUnavailable` (503 with the app's handler), nothing is issued.
-- Metrics `refresh.exchanges` by outcome; audit actions `auth.refresh.issue`,
+- Metric `refresh` by outcome (issued, rotated, grace and the refusals); audit actions `auth.refresh.issue`,
   `auth.refresh.exchange` (failures with their reason) and `auth.refresh.revoke`; a warning log on
   reuse.

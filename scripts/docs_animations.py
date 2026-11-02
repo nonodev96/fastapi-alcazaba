@@ -527,19 +527,20 @@ ANIMATIONS: dict[str, Animation] = {
     ),
     "auth_jwt": Animation(
         "JWTStrategy",
-        "What it's for: scripts and other services prove who they are with a signed token, which"
-        " the app checks without looking anything up.",
-        ("Script", "Your app", "Revoked tokens"),
+        "What it's for: scripts and apps prove who they are with a short signed token, which the"
+        " app checks without looking anything up, and get a new one with a refresh token.",
+        ("Script", "Your app", "Backend"),
         (
             request(0, 1, "POST /token, password"),
-            reply(1, 0, "a signed JWT, for 1 h"),
+            reply(1, 0, "JWT for 15 min + refresh"),
             request(0, 1, "GET /me, Bearer eyJ…"),
             Note(1, "✓ signature, exp, iss, aud"),
-            request(1, 2, "jti revoked?"),
-            reply(2, 1, "no"),
             reply(1, 0, '200 {"login": "octocat"}'),
+            request(0, 1, "POST /token/refresh"),
+            request(1, 2, "rotate the login"),
+            reply(1, 0, "a new pair, old one used up"),
         ),
-        "Who sends it is in the token, signed: no session to look up",
+        "Short tokens, refreshed: a copied refresh token ends the login",
     ),
     "auth_oauth2": Animation(
         "OAuth2Strategy",

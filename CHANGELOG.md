@@ -9,6 +9,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `RefreshTokens`: refresh tokens for `JWTStrategy`'s access tokens. Each exchange gives a new
+  pair and uses the refresh token up; one exchanged that comes back (after a grace period of 10
+  seconds) was copied, and ends the whole login, access tokens included, logged, counted and
+  audited. Logins last 30 days, 7 without a refresh; they can be bound to a client and revoked by
+  refresh token, by session (`sid`) or by user. The backend never holds a refresh token nor
+  anything that makes one. See "Refresh tokens" in the JWT guide; the JWT example uses them.
+- `TokenBlocklist.revoke_session(sid, ttl=...)` and `is_revoked(..., session=...)`: every token of
+  one login. `JWTStrategy` with a blocklist refuses tokens whose `sid` was revoked.
+- `JWTStrategy.can_issue`: whether `issue` can sign.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
   (HTML, CSV, an image, a `JSONResponse` with its headers) is stored whole, status, headers and
   body, with any coder; before, with `JsonCoder`, a `JSONResponse` came back as its body alone and

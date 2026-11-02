@@ -26,7 +26,15 @@ from starlette.requests import Request
 
 from fastapi_alcazaba import Cache, FastAPICache, FastAPIScheduler
 from fastapi_alcazaba.accounting import FastAPIAccounting, Quota
-from fastapi_alcazaba.auth import FastAPITOTP, OneTimeCodes, TokenBlocklist
+from fastapi_alcazaba.auth import (
+    AuthenticationFailed,
+    FastAPITOTP,
+    OneTimeCodes,
+    RefreshRefused,
+    RefreshTokens,
+    TokenBlocklist,
+)
+from fastapi_alcazaba.auth.strategies.jwt import JWTStrategy
 from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.backends.tiered import shared_backend
 from fastapi_alcazaba.idempotency import IdempotencyMiddleware
@@ -556,6 +564,27 @@ async def test_second_factor(backend: Backend, prefix: str) -> None:
     code = totp.code("ana", sealed)
     tries = [totp.verify("ana", sealed, code) for _ in range(5)]
     assert sum(await asyncio.gather(*tries)) == 1
+
+
+async def test_refresh_tokens(backend: Backend, prefix: str) -> None:
+    """Rotation, five exchanges of one token at once (one new token), and a copy that comes back
+    ending the login, access tokens included."""
+    shared = Cache(backend, prefix=prefix, signing_key="s" * 32)
+    strategy = JWTStrategy("j" * 32, blocklist=TokenBlocklist(shared))
+    refresh = RefreshTokens(strategy, secret="r" * 32, cache=shared)
+    first = await refresh.issue("ana")
+    exchanged = await asyncio.gather(*(refresh.exchange(first.refresh_token) for _ in range(5)))
+    assert len({pair.refresh_token for pair in exchanged}) == 1
+    third = await refresh.exchange(exchanged[0].refresh_token)
+    with pytest.raises(RefreshRefused, match="reused"):
+        await refresh.exchange(first.refresh_token)
+    with pytest.raises(RefreshRefused, match="unknown"):
+        await refresh.exchange(third.refresh_token)
+    request = Request(
+        {"type": "http", "headers": [(b"authorization", f"Bearer {third.access_token}".encode())]}
+    )
+    with pytest.raises(AuthenticationFailed, match="revoked"):
+        await strategy.authenticate(request)
 
 
 async def test_entries_of_earlier_versions_on_memcached(backend: Backend, prefix: str) -> None:
