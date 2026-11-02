@@ -15,21 +15,21 @@ that fails without it.
 
 ## Phase 1: Setup
 
-- [ ] T001 Read the response cache tests that assert today's header and Response behaviour
+- [X] T001 Read the response cache tests that assert today's header and Response behaviour
   (`tests/unit/test_decorator.py`, `test_features.py`, `test_security.py`,
   `test_cache_status.py`) and list those this feature changes on purpose in plan.md's "Changes to
   existing behaviour"
 
 ## Phase 2: Foundational (blocking all stories)
 
-- [ ] T002 Create `fastapi_alcazaba/response_cache/entries.py`: the envelope of data-model.md —
+- [X] T002 Create `fastapi_alcazaba/response_cache/entries.py`: the envelope of data-model.md —
   `Entry` (kind, status, headers, payload), `encode_entry`, `parse_entry` (None for legacy bytes,
   raises `ValueError` for a malformed envelope), `storable_headers` (R4, with a `paginated` flag),
   `MAGIC`
-- [ ] T003 [P] Unit tests for the envelope in `tests/unit/test_cached_responses.py`: round trip of
+- [X] T003 [P] Unit tests for the envelope in `tests/unit/test_cached_responses.py`: round trip of
   each kind, repeated headers and order kept, legacy bytes → None, malformed/unknown version →
   ValueError, forbidden headers dropped both when encoding and when parsing
-- [ ] T004 [P] Fuzz target `fuzz/entries_fuzzer.py` (parse arbitrary bytes: only ValueError, never a
+- [X] T004 [P] Fuzz target `fuzz/entries_fuzzer.py` (parse arbitrary bytes: only ValueError, never a
   forbidden header) and its known cases in `tests/unit/test_fuzz_targets.py`
 
 **Checkpoint**: the envelope exists and is tested; nothing uses it yet.

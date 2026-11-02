@@ -15,6 +15,7 @@ from fuzz import (
     audit_fuzzer,
     compression_fuzzer,
     cursors_fuzzer,
+    entries_fuzzer,
     sessions_fuzzer,
     stamps_fuzzer,
     uploads_fuzzer,
@@ -26,6 +27,7 @@ TARGETS = [
     audit_fuzzer,
     compression_fuzzer,
     cursors_fuzzer,
+    entries_fuzzer,
     sessions_fuzzer,
     stamps_fuzzer,
     uploads_fuzzer,
@@ -55,6 +57,16 @@ def test_random_inputs(module: ModuleType, data: bytes) -> None:
         (cursors_fuzzer, b"NaN"),
         (cursors_fuzzer, b"[1e999]"),
         (cursors_fuzzer, b'{"after": -Infinity}'),
+        # Cache entries: metadata that isn't an object, a bool for a status, forbidden and
+        # malformed headers, a value outside latin-1, too deep for json.
+        (entries_fuzzer, b"[]\n"),
+        (entries_fuzzer, b'{"kind": "response", "status": true, "headers": []}\nbody'),
+        (
+            entries_fuzzer,
+            b'{"kind": "value", "status": 200, "headers": [["Set-Cookie", "s=1"], ["a b", "x"],'
+            b' ["x", "\\r\\n"], ["x", "\\u20ac"], [1, 2]]}\n',
+        ),
+        (entries_fuzzer, b"[" * 100_000),
         # An extension short in characters but not in bytes: the name came out longer.
         (uploads_fuzzer, b"\x00" + b"a" * 100 + b"." + "\U0001f600".encode() * 15),
         (uploads_fuzzer, b"\x00" + b"CON .txt"),
