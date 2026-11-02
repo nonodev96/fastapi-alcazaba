@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-02
+
 ### Security
 
 - Response cache: a response that sets a cookie is no longer stored. A `Response` returned with
