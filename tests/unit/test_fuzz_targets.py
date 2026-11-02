@@ -16,6 +16,7 @@ from fuzz import (
     compression_fuzzer,
     cursors_fuzzer,
     sessions_fuzzer,
+    stamps_fuzzer,
     uploads_fuzzer,
     webauthn_fuzzer,
     webhooks_fuzzer,
@@ -26,6 +27,7 @@ TARGETS = [
     compression_fuzzer,
     cursors_fuzzer,
     sessions_fuzzer,
+    stamps_fuzzer,
     uploads_fuzzer,
     webauthn_fuzzer,
     webhooks_fuzzer,
@@ -80,6 +82,14 @@ def test_random_inputs(module: ModuleType, data: bytes) -> None:
         (sessions_fuzzer, b'{"data": [], "created": 1, "seen": 1, "started": 1}'),
         (sessions_fuzzer, b'["data"]'),
         (sessions_fuzzer, b'{"data": {"user_id": "ana"}, "created": 1800000000, "seen": 1}'),
+        # Stamps: a whole one, none, no end of line, too deep, not UTF-8, a float, a bool expiry.
+        (stamps_fuzzer, b'{"e": 1800000000, "g": {"a": "1"}}\nvalue'),
+        (stamps_fuzzer, b'{"written": "by 0.7"}'),
+        (stamps_fuzzer, b'{"e": 0, "g": {}}'),
+        (stamps_fuzzer, b"[" * 100_000 + b"\n"),
+        (stamps_fuzzer, b"\xff\n"),
+        (stamps_fuzzer, b'{"e": 1e999, "g": {}}\n'),
+        (stamps_fuzzer, b'{"e": false, "g": {}}\n'),
     ],
 )
 def test_known_cases(module: ModuleType, data: bytes) -> None:
