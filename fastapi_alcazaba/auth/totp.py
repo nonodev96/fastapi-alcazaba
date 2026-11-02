@@ -97,6 +97,17 @@ def _digest(*parts: str) -> str:
     return hashlib.sha256(json.dumps(parts).encode()).hexdigest()
 
 
+def _check_locks(cache: Cache) -> Cache:
+    """A code is marked used with a lock: without them every code would fail, unexplained."""
+    backend = shared_backend(cache.backend)
+    if not backend.supports_locks:
+        raise NotImplementedError(
+            f"{type(backend).__name__} can't hold locks, which FastAPITOTP needs to accept each "
+            "code once"
+        )
+    return cache
+
+
 def _normalized(code: str) -> str:
     """A recovery code as it was made: upper case, without spaces nor dashes."""
     return code.replace("-", "").replace(" ", "").upper()
@@ -121,7 +132,7 @@ class FastAPITOTP:
         the TOTP secrets and makes the recovery codes' digests. A list rotates it: the first one
         seals, all of them open.
     :param cache: the Cache whose backend keeps the codes used and the guesses; FastAPICache's
-        by default, resolved at each call.
+        by default, resolved at each call. Its backend must hold locks (not memcached).
     :param digits: of each code, 6 or 8.
     :param period: seconds each code lasts.
     :param window: steps accepted before and after the current one.
@@ -164,7 +175,7 @@ class FastAPITOTP:
         self.issuer = issuer
         self._secrets = secret_list(secret)
         self._encrypter = Encrypter(self._secrets)
-        self.cache = cache
+        self.cache = None if cache is None else _check_locks(cache)
         self.digits = digits
         self.period = period
         self.window = window
@@ -215,7 +226,7 @@ class FastAPITOTP:
         `window` steps away), and hasn't been used. False when the user is locked out by wrong
         codes, or the backend fails. Raises ValueError when `sealed` isn't `user_id`'s."""
         key = self._open(user_id, sealed)
-        cache = resolve_cache(self.cache)
+        cache = _check_locks(resolve_cache(self.cache))
         outcome = await self._verify(cache, str(user_id), key, code)
         cache.metrics.count("totp.verifications", outcome=outcome)
         await self._audit("auth.mfa", outcome, user_id, request)
@@ -274,7 +285,7 @@ class FastAPITOTP:
         """The digest of `digests` that `code` is, used up: delete it from those stored. None
         when it's none of them, was used already, the user is locked out, or the backend fails.
         Counts as a guess like a wrong TOTP code."""
-        cache = resolve_cache(self.cache)
+        cache = _check_locks(resolve_cache(self.cache))
         outcome, used = await self._use_recovery(cache, str(user_id), code, digests)
         cache.metrics.count("totp.recovery", outcome=outcome)
         await self._audit("auth.recovery_code", outcome, user_id, request)

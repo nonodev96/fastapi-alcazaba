@@ -71,7 +71,7 @@ async def login_totp(request: Request, form: Code) -> dict[str, str]:
 - **Halfway in:** between the password and the code, keep in the session who's logging in, not
   that they're logged in: the routes for logged-in users don't take them yet.
 - **When the backend fails,** nothing is accepted: no code is checked for replay, nor guesses
-  counted.
+  counted. It must hold locks, which mark each code used: memcached doesn't, and is refused.
 
 ## Recovery codes
 

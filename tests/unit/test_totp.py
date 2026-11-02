@@ -13,12 +13,14 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 from pydantic import SecretStr
 
-from fastapi_alcazaba import Cache, FastAPIAudit
+from fastapi_alcazaba import Cache, FastAPIAudit, FastAPICache
 from fastapi_alcazaba.audit import MemoryAuditSink
 from fastapi_alcazaba.auth import FastAPITOTP, stepup
 from fastapi_alcazaba.auth import totp as totp_module
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
+from fastapi_alcazaba.backends.memcached import MemcachedBackend
 from fastapi_alcazaba.security import ServerSessionMiddleware
+from tests.unit.test_backends import FakeMemcache
 from tests.unit.test_metrics import points
 
 SECRET = "totp-secret-of-at-least-32-bytes!!"  # noqa: S105  # the tests' own
@@ -317,6 +319,25 @@ def step_up_app(totp: FastAPITOTP) -> TestClient:
     Cache(InMemoryBackend()).install(app)
     app.add_middleware(ServerSessionMiddleware, cookie_name="session", secure=False)
     return TestClient(app)
+
+
+class TestBackendsWithoutLocks:
+    """Each code is marked used with a lock: without them, every right code was refused."""
+
+    def test_refused_when_given(self) -> None:
+        memcached = Cache(MemcachedBackend(FakeMemcache()))  # type: ignore[arg-type]
+        with pytest.raises(NotImplementedError, match="can't hold locks"):
+            make(cache=memcached)
+
+    async def test_refused_when_resolved(self) -> None:
+        FastAPICache.init(MemcachedBackend(FakeMemcache()))  # type: ignore[arg-type]
+        totp = make(cache=None)
+        enrollment = totp.enroll("ana", label="ana@example.com")
+        with pytest.raises(NotImplementedError, match="can't hold locks"):
+            await totp.verify("ana", enrollment.sealed, totp.code("ana", enrollment.sealed))
+        recovery = totp.recovery_codes("ana")
+        with pytest.raises(NotImplementedError, match="can't hold locks"):
+            await totp.use_recovery_code("ana", recovery.codes[0], recovery.digests)
 
 
 class TestStepUp:

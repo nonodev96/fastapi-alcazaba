@@ -28,6 +28,9 @@ Every class and function: [the API reference](../reference/backends.md).
 | DynamoDB | no | yes (conditional writes) | no | yes, a conditional write |
 | Tiered | like its shared backend | like its shared backend | like its shared backend | in its shared backend |
 
+Without locks, `Lock`, the concurrency limiter and the second factor (`FastAPITOTP`) refuse the
+backend, and `distributed_lock` is skipped with a warning.
+
 Valkey example with valkey-py:
 
 ```python
