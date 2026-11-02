@@ -4979,7 +4979,7 @@ vulnerabilities as described in
 <tbody>
 <tr>
 <td>Response cache</td>
-<td>One user's response served to another: requests are told apart by the endpoint's arguments and the <code>vary_headers</code> (<code>Authorization</code>, <code>Cookie</code>), and per-user entries are sent <code>private</code>. Only 200s without <code>no-store</code> are kept.</td>
+<td>One user's response served to another: requests are told apart by the endpoint's arguments and the <code>vary_headers</code> (<code>Authorization</code>, <code>Cookie</code>), and per-user entries are sent <code>private</code>. Only 200s without <code>no-store</code> are kept, and none that sets a cookie.</td>
 <td>A response that depends on anything else (<code>request.state</code>, another header, the client IP) needs it in <code>vary_headers</code> or the key builder; with authentication by another header, a shared entry otherwise.</td>
 </tr>
 <tr>

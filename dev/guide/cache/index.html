@@ -5301,6 +5301,8 @@ one up.</p>
 </tr>
 </tbody>
 </table>
+<p>Only 200 responses are stored, and never one that says <code>no-store</code>, sets a cookie (its hits
+would hand that cookie, a session, to everyone else) or streams.</p>
 <p>Delete entries with <code>await FastAPICache.clear(namespace="products")</code>, one entry with
 <code>await FastAPICache.clear(key=...)</code>, or by tag with <code>await FastAPICache.invalidate_tags(...)</code>.
 <code>clear()</code> without arguments deletes every cached response under the prefix. Locks, rate-limit

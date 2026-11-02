@@ -4948,9 +4948,11 @@ server), always encrypted. Nothing to install.</p>
   server's certificate checked against the system's authorities (<code>ssl_context</code> for one of your
   own). Plain SMTP, <code>tls="none"</code>, is only for <code>localhost</code>: a development server such as Mailpit.</li>
 <li><strong>A connection per message,</strong> in a thread, with <code>timeout</code> seconds for each step.</li>
-<li><strong>When it isn't sent</strong> (the server refuses a recipient, doesn't answer, the TLS or the login
-  fails), <code>send</code> raises <code>MailNotSent</code> and logs who it was for, never the body: it holds the links
-  and codes that open doors. Send from a <a href="../background/#task-queue">task</a>, which tries again:</li>
+<li><strong>When it isn't sent</strong> (the server refuses every recipient, doesn't answer, the TLS or the
+  login fails), <code>send</code> raises <code>MailNotSent</code> and logs who it was for, never the body: it holds the
+  links and codes that open doors. When the server takes some recipients and refuses others, the
+  message is sent: the refused ones are logged, and nothing is raised, so a retry doesn't send it
+  to the others twice. Send from a <a href="../background/#task-queue">task</a>, which tries again:</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="nd">@queue</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </span><span id="__span-1-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_reset</span><span class="p">(</span><span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
