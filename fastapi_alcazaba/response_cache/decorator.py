@@ -5,6 +5,7 @@ import logging
 import random
 import secrets
 import warnings
+from collections import Counter
 from collections.abc import Awaitable, Callable, Collection, Iterable
 from dataclasses import dataclass, field
 from functools import wraps
@@ -15,7 +16,7 @@ from typing import Any, ParamSpec, Protocol, TypeVar, cast, overload
 from fastapi.concurrency import run_in_threadpool
 from fastapi.dependencies.utils import get_typed_return_annotation, get_typed_signature
 from starlette.requests import Request
-from starlette.responses import Response, StreamingResponse
+from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_304_NOT_MODIFIED
 
 from fastapi_alcazaba.backends.base import Backend
@@ -32,6 +33,16 @@ from fastapi_alcazaba.response_cache.caches import (
 )
 from fastapi_alcazaba.response_cache.coder import Coder, type_adapter_for
 from fastapi_alcazaba.response_cache.compression import decompress
+from fastapi_alcazaba.response_cache.entries import (
+    NOT_MODIFIED_HEADERS,
+    Entry,
+    Header,
+    build_response,
+    decoded_headers,
+    encode_entry,
+    parse_entry,
+    storable_headers,
+)
 from fastapi_alcazaba.response_cache.key_builder import KeyBuilder, default_key_builder
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -199,10 +210,12 @@ def _sets_cookie(target: object) -> bool:
 def _is_cacheable(result: object, response: Response | None) -> bool:
     """Only successful responses that don't say no-store. A Response returned with another
     status, or a status set on the injected response, would come back from the cache as a 200
-    with the error body. Streams aren't kept: reading one to store it would use it up. Nor is a
-    response that sets a cookie (RFC 9111, section 7.1): its hits would hand that cookie, one
-    client's session, to everybody else."""
-    if isinstance(result, StreamingResponse):
+    with the error body. Streams and files aren't kept: their body isn't in memory, and reading
+    a stream to store it would use it up. Nor is a response that sets a cookie (RFC 9111, section
+    7.1): its hits would hand that cookie, one client's session, to everybody else."""
+    if isinstance(result, Response) and not isinstance(
+        getattr(result, "body", None), bytes | memoryview
+    ):
         return False
     if _sets_cookie(result) or _sets_cookie(response):
         return False
@@ -265,6 +278,32 @@ class _HeaderPolicy:
                 seen = {v.lower() for v in existing}
                 added = [name.title() for name in self.vary if name not in seen]
                 target.headers["Vary"] = ", ".join(existing + added)
+
+
+def _paginated(args: tuple[Any, ...], kwargs: dict[str, Any]) -> bool:
+    return any(
+        isinstance(value, PaginationParams) and value.links is not None
+        for value in (*args, *kwargs.values())
+    )
+
+
+def _added_headers(response: Response | None, before: list[tuple[bytes, bytes]]) -> list[Header]:
+    """The headers written on `response` since it held `before`: the endpoint's. Those its
+    dependencies wrote first (a remaining quota, a request ID) belong to each request."""
+    if response is None:
+        return []
+    earlier = Counter(before)
+    added = []
+    for header in response.raw_headers:
+        if earlier[header]:
+            earlier[header] -= 1
+        else:
+            added.append(header)
+    return decoded_headers(added)
+
+
+def _raw(headers: Iterable[Header]) -> list[tuple[bytes, bytes]]:
+    return [(name.encode("latin-1"), value.encode("latin-1")) for name, value in headers]
 
 
 def _add_page_links(result: object, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
@@ -549,11 +588,11 @@ class _CachedCall:
 
     # region Miss
 
-    def _encode(self, result: Any) -> tuple[str, bytes | None]:
+    def _encode(self, result: Any, added: list[Header]) -> tuple[str, bytes | None]:
         if not _is_cacheable(result, self.response):
             return "uncacheable", None
         try:
-            payload = self.coder.encode(result)
+            payload = self._entry(result, added)
         except Exception:
             logger.warning(
                 "Not caching %r: the result can't be encoded", self.cache_key, exc_info=True
@@ -570,9 +609,21 @@ class _CachedCall:
             return "too_large", None
         return "stored", payload
 
+    def _entry(self, result: Any, added: list[Header]) -> bytes:
+        """What to store: a returned response whole; a value as its coder writes it, in an entry
+        with the headers the endpoint added to the injected response, if any."""
+        paginated = _paginated(self.args, self.kwargs)
+        if isinstance(result, Response):
+            headers = storable_headers(decoded_headers(result.raw_headers), paginated=paginated)
+            return encode_entry(Entry("response", result.status_code, headers, bytes(result.body)))
+        headers = storable_headers(added, paginated=paginated)
+        value = self.coder.encode(result)
+        return encode_entry(Entry("value", HTTP_200_OK, headers, value)) if headers else value
+
     async def _compute(self) -> Any:
+        before = list(self.response.raw_headers) if self.response is not None else []
         result = await self.run()
-        outcome, payload = self._encode(result)
+        outcome, payload = self._encode(result, _added_headers(self.response, before))
         if payload is not None and not await self._store(payload):
             outcome = "failed"
         self.metrics.store(
@@ -668,9 +719,20 @@ class _CachedCall:
 
     # region Response
 
-    def _not_modified(self, etag: str, status: str, max_age: int | None) -> Response | None:
+    def _not_modified(
+        self,
+        etag: str,
+        status: str,
+        max_age: int | None,
+        headers: Iterable[Header] = (),
+    ) -> Response | None:
+        """A 304, with the validators and policy of the response it stands for (RFC 9110,
+        15.4.5) among `headers`, those of the entry or of the response just computed."""
         if self.response is None or not _etag_matches(self.if_none_match, etag):
             return None
+        self.response.raw_headers.extend(
+            _raw(header for header in headers if header[0].lower() in NOT_MODIFIED_HEADERS)
+        )
         self.policy.apply([self.response], status, etag, max_age)
         self.response.status_code = HTTP_304_NOT_MODIFIED
         return self.response
@@ -678,10 +740,16 @@ class _CachedCall:
     def _serve(self, payload: bytes, status: str, max_age: int | None) -> Any:
         """The result from cached bytes, or _UNUSABLE when they don't decode."""
         etag = _compute_etag(payload)
-        if (unchanged := self._not_modified(etag, status, max_age)) is not None:
+        try:
+            entry = parse_entry(payload)
+        except ValueError:
+            logger.warning("Ignoring cache entry %r: %s", self.cache_key, "a format we can't read")
+            return _UNUSABLE
+        stored = () if entry is None else entry.headers
+        if (unchanged := self._not_modified(etag, status, max_age, stored)) is not None:
             return unchanged
         try:
-            result = self.coder.decode_as_type(payload, type_=self.endpoint.return_type)
+            result = self._decode(entry, payload)
         except Exception:
             # Corrupt, or written before the return type changed: recompute it.
             logger.warning(
@@ -692,16 +760,27 @@ class _CachedCall:
             # Stored by a version that kept such responses: recompute, which doesn't store it.
             logger.warning("Ignoring cache entry %r: it sets a cookie", self.cache_key)
             return _UNUSABLE
+        if entry is not None and entry.kind != "response" and self.response is not None:
+            self.response.raw_headers.extend(_raw(entry.headers))
         self.policy.apply(_targets(self.response, result), status, etag, max_age)
         _add_page_links(result, self.args, self.kwargs)
         return result
+
+    def _decode(self, entry: Entry | None, payload: bytes) -> Any:
+        if entry is None:  # a bare value
+            return self.coder.decode_as_type(payload, type_=self.endpoint.return_type)
+        if entry.kind == "response":
+            return build_response(entry)
+        return self.coder.decode_as_type(entry.payload, type_=self.endpoint.return_type)
 
     def _finish(self, result: Any, payload: bytes | None) -> Any:
         status = f"fwd={self.forward}; stored" if self.stored else f"fwd={self.forward}"
         if payload is None:  # not cacheable: no ETag nor Cache-Control for it
             return self._report(result, status)
         etag = _compute_etag(payload)
-        if (unchanged := self._not_modified(etag, status, self.expire)) is not None:
+        # The endpoint's headers are on the injected response already, unless it returned one.
+        own = decoded_headers(result.raw_headers) if isinstance(result, Response) else []
+        if (unchanged := self._not_modified(etag, status, self.expire, own)) is not None:
             return unchanged
         self.policy.apply(_targets(self.response, result), status, etag, self.expire)
         return result

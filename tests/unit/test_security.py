@@ -299,7 +299,13 @@ class TestResponsesThatSetCookiesAreNotShared:
         client, calls = self._client()
         with client:
             with monkeypatch.context() as patched:
+                # What 0.7.0 did: store it, pickled whole, cookie included.
                 patched.setattr(decorator, "_is_cacheable", lambda result, response: True)
+                patched.setattr(
+                    decorator._CachedCall,
+                    "_entry",
+                    lambda call, result, added: call.coder.encode(result),
+                )
                 client.get("/returned")
             client.cookies.clear()
             second = client.get("/returned")

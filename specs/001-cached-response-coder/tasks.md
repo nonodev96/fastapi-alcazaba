@@ -42,22 +42,22 @@ with any coder; never cookies, hop-by-hop or dependencies' headers; no backgroun
 **Independent Test**: PNG, CSV, HTML, JSONResponse with a header, and a value with a header on the
 injected response, each requested twice: the second is a hit, identical.
 
-- [ ] T005 [US1] Tests in `tests/unit/test_cached_responses.py` for Story 1's acceptance scenarios
+- [X] T005 [US1] Tests in `tests/unit/test_cached_responses.py` for Story 1's acceptance scenarios
   and edge cases (file and streaming responses not stored, background tasks only on the miss,
   a dependency's header on the injected response not replayed, `Link` on paginated calls not
   stored, `Content-Length` matches, pickle coder too, legacy entries still served, a 0.7.x-style
   reader recomputes an envelope; FR-011: envelopes with signing, encryption, compression, the size
   limit, tags and single flight)
-- [ ] T006 [US1] In `fastapi_alcazaba/response_cache/decorator.py`: snapshot the injected
+- [X] T006 [US1] In `fastapi_alcazaba/response_cache/decorator.py`: snapshot the injected
   response's headers before the endpoint runs (`_CachedCall._compute`), and compute the endpoint's
   added headers after
-- [ ] T007 [US1] In `decorator.py`: `_encode` stores a returned in-memory `Response` as a
+- [X] T007 [US1] In `decorator.py`: `_encode` stores a returned in-memory `Response` as a
   `response` entry, and a value with endpoint headers as a `value` entry (`coder.encode` payload);
   bare values unchanged; responses without an in-memory body not stored
-- [ ] T008 [US1] In `decorator.py`: `_serve` parses envelopes — `response` → rebuild a `Response`
+- [X] T008 [US1] In `decorator.py`: `_serve` parses envelopes — `response` → rebuild a `Response`
   (status, headers in order, body, Content-Length); `value` → decode with the coder as today and
   add the stored headers to the injected response; unusable envelope → recompute
-- [ ] T009 [US1] 304 path: answer with the stored `Cache-Control`, `Expires`, `Vary`,
+- [X] T009 [US1] 304 path: answer with the stored `Cache-Control`, `Expires`, `Vary`,
   `Content-Location` (R8) in `decorator.py`
 
 **Checkpoint**: Story 1 passes on its own.
