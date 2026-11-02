@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/authz/">
+        <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/authorization/service/">
       
       
-        <link rel="prev" href="../audit/">
+        <link rel="prev" href="../cedar/">
       
       
-        <link rel="next" href="../backends/">
+        <link rel="next" href="../opa/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/favicon.png">
+      <link rel="icon" href="../../../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>Authorization with Casbin - Alcazaba</title>
+        <title>As a separate service - Alcazaba</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,13 +53,13 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../stylesheets/brand.css">
+      <link rel="stylesheet" href="../../../stylesheets/brand.css">
     
-      <link rel="stylesheet" href="../../stylesheets/animations.css">
+      <link rel="stylesheet" href="../../../stylesheets/animations.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -68,12 +68,12 @@
   
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Alcazaba">
-  <meta property="og:title" content="Authorization with Casbin - Alcazaba">
+  <meta property="og:title" content="As a separate service - Alcazaba">
   <meta property="og:description" content="Secure, maintained tools for FastAPI: response cache, rate limits, sessions, CSRF, webhooks, a task queue and more">
   <meta property="og:image" content="https://nonodev96.github.io/fastapi-alcazaba/dev/assets/social-card.png">
   <meta property="og:image:width" content="1280">
   <meta property="og:image:height" content="640">
-  <meta property="og:url" content="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/authz/">
+  <meta property="og:url" content="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/authorization/service/">
   <meta name="twitter:card" content="summary_large_image">
 
   </head>
@@ -95,7 +95,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#authorization-with-casbin" class="md-skip">
+        <a href="#as-a-separate-service" class="md-skip">
           Skip to content
         </a>
       
@@ -110,10 +110,10 @@
             <div class="md-banner__inner md-grid md-typeset">
               
   This is the documentation of another version than the latest release.
-  <a href="../../.."><strong>Go to the latest.</strong></a>
+  <a href="../../../.."><strong>Go to the latest.</strong></a>
 
             </div>
-            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
           </aside>
         
       </div>
@@ -125,9 +125,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Alcazaba" class="md-header__button md-logo" aria-label="Alcazaba" data-md-component="logo">
+    <a href="../../.." title="Alcazaba" class="md-header__button md-logo" aria-label="Alcazaba" data-md-component="logo">
       
-  <img src="../../assets/logo.svg" alt="logo">
+  <img src="../../../assets/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -144,7 +144,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Authorization with Casbin
+              As a separate service
             
           </span>
         </div>
@@ -249,7 +249,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href="../../.." class="md-tabs__link">
         
   
   
@@ -270,7 +270,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../features/" class="md-tabs__link">
+        <a href="../../../features/" class="md-tabs__link">
           
   
   
@@ -294,7 +294,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../learn/" class="md-tabs__link">
+        <a href="../../../learn/" class="md-tabs__link">
           
   
   
@@ -316,7 +316,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/" class="md-tabs__link">
+        <a href="../../../reference/" class="md-tabs__link">
           
   
   
@@ -338,7 +338,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../resources/" class="md-tabs__link">
+        <a href="../../../resources/" class="md-tabs__link">
           
   
   
@@ -360,7 +360,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../about/" class="md-tabs__link">
+        <a href="../../../about/" class="md-tabs__link">
           
   
   
@@ -380,7 +380,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../changelog/" class="md-tabs__link">
+      <a href="../../../changelog/" class="md-tabs__link">
         
   
   
@@ -421,9 +421,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Alcazaba" class="md-nav__button md-logo" aria-label="Alcazaba" data-md-component="logo">
+    <a href="../../.." title="Alcazaba" class="md-nav__button md-logo" aria-label="Alcazaba" data-md-component="logo">
       
-  <img src="../../assets/logo.svg" alt="logo">
+  <img src="../../../assets/logo.svg" alt="logo">
 
     </a>
     Alcazaba
@@ -450,7 +450,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -487,6 +487,8 @@
       
         
       
+        
+      
     
     
     
@@ -502,7 +504,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../features/" class="md-nav__link ">
+            <a href="../../../features/" class="md-nav__link ">
               
   
   
@@ -546,7 +548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../features/tools/" class="md-nav__link">
+      <a href="../../../features/tools/" class="md-nav__link">
         
   
   
@@ -574,7 +576,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../features/performance/" class="md-nav__link">
+      <a href="../../../features/scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope and stability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/performance/" class="md-nav__link">
         
   
   
@@ -639,7 +669,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../learn/" class="md-nav__link ">
+            <a href="../../../learn/" class="md-nav__link ">
               
   
   
@@ -725,6 +755,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -740,7 +776,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -802,6 +838,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -817,7 +857,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../authentication/" class="md-nav__link ">
+            <a href="../../authentication/" class="md-nav__link ">
               
   
   
@@ -861,7 +901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/http-bearer/" class="md-nav__link">
+      <a href="../../authentication/http-bearer/" class="md-nav__link">
         
   
   
@@ -889,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/jwt/" class="md-nav__link">
+      <a href="../../authentication/jwt/" class="md-nav__link">
         
   
   
@@ -917,7 +957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/oauth2/" class="md-nav__link">
+      <a href="../../authentication/oauth2/" class="md-nav__link">
         
   
   
@@ -945,7 +985,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/saml/" class="md-nav__link">
+      <a href="../../authentication/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDCStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../authentication/saml/" class="md-nav__link">
         
   
   
@@ -973,7 +1041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/session/" class="md-nav__link">
+      <a href="../../authentication/session/" class="md-nav__link">
         
   
   
@@ -1001,7 +1069,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/your-own/" class="md-nav__link">
+      <a href="../../authentication/unkey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnkeyStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../authentication/your-own/" class="md-nav__link">
         
   
   
@@ -1037,7 +1133,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../auth/" class="md-nav__link">
+      <a href="../../accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../auth/" class="md-nav__link">
         
   
   
@@ -1065,7 +1189,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../audit/" class="md-nav__link">
+      <a href="../../audit/" class="md-nav__link">
         
   
   
@@ -1094,22 +1218,40 @@
   
   
   
-    <li class="md-nav__item md-nav__item--active">
+    
+    
       
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+        
+          
+        
       
         
       
+        
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" checked>
+        
           
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Authorization
   
 
     
@@ -1117,17 +1259,99 @@
   
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authorization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
       
-      <a href="./" class="md-nav__link md-nav__link--active">
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_6_2" id="__nav_3_2_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In process
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    In process
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../casbin/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Casbin
   
 
     
@@ -1136,36 +1360,137 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+    </li>
   
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cedar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cedar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
   
   
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#casbin-policies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Casbin policies
-      
-    </span>
-  </a>
   
-</li>
+    
+    
       
-    </ul>
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_6_3" id="__nav_3_2_6_3_label" tabindex="0">
+            
   
-</nav>
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_6_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    As a separate service
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
       
     </li>
   
@@ -1179,7 +1504,51 @@
   
   
     <li class="md-nav__item">
-      <a href="../backends/" class="md-nav__link">
+      <a href="../opa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Policy Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../backends/" class="md-nav__link">
         
   
   
@@ -1207,7 +1576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../background/" class="md-nav__link">
+      <a href="../../background/" class="md-nav__link">
         
   
   
@@ -1235,7 +1604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../uploads/" class="md-nav__link">
+      <a href="../../uploads/" class="md-nav__link">
         
   
   
@@ -1263,7 +1632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
+      <a href="../../observability/" class="md-nav__link">
         
   
   
@@ -1291,7 +1660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../idempotency/" class="md-nav__link">
+      <a href="../../idempotency/" class="md-nav__link">
         
   
   
@@ -1319,7 +1688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../operations/" class="md-nav__link">
+      <a href="../../operations/" class="md-nav__link">
         
   
   
@@ -1380,11 +1749,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_13" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../pagination/" class="md-nav__link ">
+            <a href="../../pagination/" class="md-nav__link ">
               
   
   
@@ -1402,14 +1771,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_12" id="__nav_3_2_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_2_13" id="__nav_3_2_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1428,7 +1797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/cursor/" class="md-nav__link">
+      <a href="../../pagination/cursor/" class="md-nav__link">
         
   
   
@@ -1456,7 +1825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/keyset/" class="md-nav__link">
+      <a href="../../pagination/keyset/" class="md-nav__link">
         
   
   
@@ -1484,7 +1853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/offset/" class="md-nav__link">
+      <a href="../../pagination/offset/" class="md-nav__link">
         
   
   
@@ -1512,7 +1881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/page-number/" class="md-nav__link">
+      <a href="../../pagination/page-number/" class="md-nav__link">
         
   
   
@@ -1540,7 +1909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/range/" class="md-nav__link">
+      <a href="../../pagination/range/" class="md-nav__link">
         
   
   
@@ -1568,7 +1937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/scroll/" class="md-nav__link">
+      <a href="../../pagination/scroll/" class="md-nav__link">
         
   
   
@@ -1596,7 +1965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/streaming/" class="md-nav__link">
+      <a href="../../pagination/streaming/" class="md-nav__link">
         
   
   
@@ -1624,7 +1993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/sqlalchemy/" class="md-nav__link">
+      <a href="../../pagination/sqlalchemy/" class="md-nav__link">
         
   
   
@@ -1660,7 +2029,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../production/" class="md-nav__link">
+      <a href="../../passkeys/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../production/" class="md-nav__link">
         
   
   
@@ -1688,7 +2085,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../limits/" class="md-nav__link">
+      <a href="../../limits/" class="md-nav__link">
         
   
   
@@ -1716,7 +2113,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cache/" class="md-nav__link">
+      <a href="../../cache/" class="md-nav__link">
         
   
   
@@ -1744,7 +2141,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../security-model/" class="md-nav__link">
+      <a href="../../two-factor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Second factor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security-model/" class="md-nav__link">
         
   
   
@@ -1772,7 +2197,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../browser/" class="md-nav__link">
+      <a href="../../browser/" class="md-nav__link">
         
   
   
@@ -1800,7 +2225,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../webhooks/" class="md-nav__link">
+      <a href="../../webhooks/" class="md-nav__link">
         
   
   
@@ -1870,6 +2295,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1885,7 +2316,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../examples/" class="md-nav__link ">
+            <a href="../../../examples/" class="md-nav__link ">
               
   
   
@@ -1929,7 +2360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/browser_app/" class="md-nav__link">
+      <a href="../../../examples/browser_app/" class="md-nav__link">
         
   
   
@@ -1957,7 +2388,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/auth/" class="md-nav__link">
+      <a href="../../../examples/accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/auth/" class="md-nav__link">
         
   
   
@@ -1985,7 +2444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/audit/" class="md-nav__link">
+      <a href="../../../examples/audit/" class="md-nav__link">
         
   
   
@@ -2031,6 +2490,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2042,11 +2505,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_6" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../examples/auth_strategies/" class="md-nav__link ">
+            <a href="../../../examples/auth_strategies/" class="md-nav__link ">
               
   
   
@@ -2064,14 +2527,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_3_5" id="__nav_3_3_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3_6" id="__nav_3_3_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_5">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2090,7 +2553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/jwt/" class="md-nav__link">
+      <a href="../../../examples/auth_strategies/jwt/" class="md-nav__link">
         
   
   
@@ -2118,7 +2581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/oauth2/" class="md-nav__link">
+      <a href="../../../examples/auth_strategies/oauth2/" class="md-nav__link">
         
   
   
@@ -2146,7 +2609,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/session/" class="md-nav__link">
+      <a href="../../../examples/auth_strategies/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDCStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/auth_strategies/session/" class="md-nav__link">
         
   
   
@@ -2174,7 +2665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/http-bearer/" class="md-nav__link">
+      <a href="../../../examples/auth_strategies/http-bearer/" class="md-nav__link">
         
   
   
@@ -2202,7 +2693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/saml/" class="md-nav__link">
+      <a href="../../../examples/auth_strategies/saml/" class="md-nav__link">
         
   
   
@@ -2230,7 +2721,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/your-own/" class="md-nav__link">
+      <a href="../../../examples/auth_strategies/unkey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnkeyStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/auth_strategies/your-own/" class="md-nav__link">
         
   
   
@@ -2265,15 +2784,140 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../examples/authorization/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_7" id="__nav_3_3_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authorization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_7_2" id="__nav_3_3_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In process
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    In process
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../../examples/authz/" class="md-nav__link">
+      <a href="../../../examples/authorization/casbin/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Casbin
   
 
     
@@ -2294,7 +2938,171 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/background/" class="md-nav__link">
+      <a href="../../../examples/authorization/cedar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cedar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_7_3" id="__nav_3_3_7_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    As a separate service
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/authorization/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/authorization/opa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Policy Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/background/" class="md-nav__link">
         
   
   
@@ -2322,7 +3130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/uploads/" class="md-nav__link">
+      <a href="../../../examples/uploads/" class="md-nav__link">
         
   
   
@@ -2350,7 +3158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/observability/" class="md-nav__link">
+      <a href="../../../examples/observability/" class="md-nav__link">
         
   
   
@@ -2378,7 +3186,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/idempotency/" class="md-nav__link">
+      <a href="../../../examples/idempotency/" class="md-nav__link">
         
   
   
@@ -2406,7 +3214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/operations/" class="md-nav__link">
+      <a href="../../../examples/operations/" class="md-nav__link">
         
   
   
@@ -2465,11 +3273,11 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_13" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../examples/pagination/" class="md-nav__link ">
+            <a href="../../../examples/pagination/" class="md-nav__link ">
               
   
   
@@ -2487,14 +3295,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_3_12" id="__nav_3_3_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3_13" id="__nav_3_3_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2513,7 +3321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pagination/page-number/" class="md-nav__link">
+      <a href="../../../examples/pagination/page-number/" class="md-nav__link">
         
   
   
@@ -2541,7 +3349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pagination/offset/" class="md-nav__link">
+      <a href="../../../examples/pagination/offset/" class="md-nav__link">
         
   
   
@@ -2569,7 +3377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pagination/range/" class="md-nav__link">
+      <a href="../../../examples/pagination/range/" class="md-nav__link">
         
   
   
@@ -2597,7 +3405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pagination/cursor/" class="md-nav__link">
+      <a href="../../../examples/pagination/cursor/" class="md-nav__link">
         
   
   
@@ -2625,7 +3433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pagination/keyset/" class="md-nav__link">
+      <a href="../../../examples/pagination/keyset/" class="md-nav__link">
         
   
   
@@ -2653,7 +3461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pagination/scroll/" class="md-nav__link">
+      <a href="../../../examples/pagination/scroll/" class="md-nav__link">
         
   
   
@@ -2681,7 +3489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/pagination/streaming/" class="md-nav__link">
+      <a href="../../../examples/pagination/streaming/" class="md-nav__link">
         
   
   
@@ -2717,7 +3525,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/limits/" class="md-nav__link">
+      <a href="../../../examples/passkeys/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/limits/" class="md-nav__link">
         
   
   
@@ -2745,7 +3581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/cache/" class="md-nav__link">
+      <a href="../../../examples/cache/" class="md-nav__link">
         
   
   
@@ -2773,7 +3609,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/webhooks/" class="md-nav__link">
+      <a href="../../../examples/two_factor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Second factor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/webhooks/" class="md-nav__link">
         
   
   
@@ -2854,6 +3718,8 @@
       
         
       
+        
+      
     
     
     
@@ -2869,7 +3735,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/" class="md-nav__link ">
+            <a href="../../../reference/" class="md-nav__link ">
               
   
   
@@ -2913,7 +3779,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cache/" class="md-nav__link">
+      <a href="../../../reference/cache/" class="md-nav__link">
         
   
   
@@ -2941,7 +3807,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/backends/" class="md-nav__link">
+      <a href="../../../reference/backends/" class="md-nav__link">
         
   
   
@@ -2969,7 +3835,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/pagination/" class="md-nav__link">
+      <a href="../../../reference/pagination/" class="md-nav__link">
         
   
   
@@ -2997,7 +3863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/limits/" class="md-nav__link">
+      <a href="../../../reference/limits/" class="md-nav__link">
         
   
   
@@ -3025,7 +3891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/idempotency/" class="md-nav__link">
+      <a href="../../../reference/idempotency/" class="md-nav__link">
         
   
   
@@ -3053,7 +3919,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/authentication/" class="md-nav__link">
+      <a href="../../../reference/authentication/" class="md-nav__link">
         
   
   
@@ -3081,7 +3947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/auth/" class="md-nav__link">
+      <a href="../../../reference/auth/" class="md-nav__link">
         
   
   
@@ -3109,14 +3975,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/authz/" class="md-nav__link">
+      <a href="../../../reference/authz/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Authorization
   
 
     
@@ -3137,7 +4003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/browser/" class="md-nav__link">
+      <a href="../../../reference/browser/" class="md-nav__link">
         
   
   
@@ -3165,7 +4031,35 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/audit/" class="md-nav__link">
+      <a href="../../../reference/accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/audit/" class="md-nav__link">
         
   
   
@@ -3193,7 +4087,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/uploads/" class="md-nav__link">
+      <a href="../../../reference/uploads/" class="md-nav__link">
         
   
   
@@ -3221,7 +4115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/webhooks/" class="md-nav__link">
+      <a href="../../../reference/webhooks/" class="md-nav__link">
         
   
   
@@ -3249,7 +4143,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/observability/" class="md-nav__link">
+      <a href="../../../reference/observability/" class="md-nav__link">
         
   
   
@@ -3277,7 +4171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/background/" class="md-nav__link">
+      <a href="../../../reference/background/" class="md-nav__link">
         
   
   
@@ -3305,7 +4199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/operations/" class="md-nav__link">
+      <a href="../../../reference/operations/" class="md-nav__link">
         
   
   
@@ -3333,7 +4227,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/integrity/" class="md-nav__link">
+      <a href="../../../reference/integrity/" class="md-nav__link">
         
   
   
@@ -3399,7 +4293,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../resources/" class="md-nav__link ">
+            <a href="../../../resources/" class="md-nav__link ">
               
   
   
@@ -3443,7 +4337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../resources/help/" class="md-nav__link">
+      <a href="../../../resources/help/" class="md-nav__link">
         
   
   
@@ -3471,7 +4365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/" class="md-nav__link">
+      <a href="../../../development/" class="md-nav__link">
         
   
   
@@ -3499,7 +4393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../security/" class="md-nav__link">
+      <a href="../../../security/" class="md-nav__link">
         
   
   
@@ -3527,7 +4421,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../releasing/" class="md-nav__link">
+      <a href="../../../releasing/" class="md-nav__link">
         
   
   
@@ -3555,7 +4449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../verifying/" class="md-nav__link">
+      <a href="../../../verifying/" class="md-nav__link">
         
   
   
@@ -3611,7 +4505,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../about/" class="md-nav__link ">
+            <a href="../../../about/" class="md-nav__link ">
               
   
   
@@ -3657,7 +4551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../../../changelog/" class="md-nav__link">
         
   
   
@@ -3697,25 +4591,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#casbin-policies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Casbin policies
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -3739,7 +4614,7 @@
   
   
     <li class="md-path__item">
-      <a href="../.." class="md-path__link">
+      <a href="../../.." class="md-path__link">
         
   <span class="md-ellipsis">
     Alcazaba
@@ -3757,7 +4632,7 @@
     
     
       <li class="md-path__item">
-        <a href="../../learn/" class="md-path__link">
+        <a href="../../../learn/" class="md-path__link">
           
   <span class="md-ellipsis">
     Learn
@@ -3775,10 +4650,46 @@
     
     
       <li class="md-path__item">
-        <a href="../" class="md-path__link">
+        <a href="../../" class="md-path__link">
           
   <span class="md-ellipsis">
     Tutorial - User Guide
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Authorization
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    As a separate service
   </span>
 
         </a>
@@ -3797,114 +4708,80 @@
 
 
 
-<h1 id="authorization-with-casbin">Authorization with Casbin<a class="headerlink" href="#authorization-with-casbin" title="Permanent link">&para;</a></h1>
-<p>Who may do what to which resource, decided by a Casbin policy (ACL, RBAC, ABAC…) per route or for
-every request, instead of checks spread over the routes.</p>
-<p>In an app: <a href="../../examples/authz/">the example</a>. Every class and function: <a href="../../reference/authz/">the API reference</a>.</p>
-<h2 id="casbin-policies">Casbin policies<a class="headerlink" href="#casbin-policies" title="Permanent link">&para;</a></h2>
-<p><code>FastAPICasbin</code> lets a request through only when a <a href="https://casbin.org">Casbin</a> policy allows it.
-Who may do what lives in the policy (ACL, RBAC, RBAC with domains, ABAC…), not in checks spread
-over the routes. The <code>casbin</code> extra installs <a href="https://github.com/casbin/pycasbin">PyCasbin</a>.</p>
-<p>A Casbin model says what a request is and how it matches the policy; the policy, who may do
-what. Here a request is (user, object, action), and users get permissions through roles:</p>
-<div class="language-ini highlight"><span class="filename">model.conf</span><pre><span></span><code><span id="__span-0-1"><span class="k">[request_definition]</span>
-</span><span id="__span-0-2"><span class="na">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
-</span><span id="__span-0-3">
-</span><span id="__span-0-4"><span class="k">[policy_definition]</span>
-</span><span id="__span-0-5"><span class="na">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
-</span><span id="__span-0-6">
-</span><span id="__span-0-7"><span class="k">[role_definition]</span>
-</span><span id="__span-0-8"><span class="na">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">_, _</span>
-</span><span id="__span-0-9">
-</span><span id="__span-0-10"><span class="k">[policy_effect]</span>
-</span><span id="__span-0-11"><span class="na">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">some(where (p.eft == allow))</span>
-</span><span id="__span-0-12">
-</span><span id="__span-0-13"><span class="k">[matchers]</span>
-</span><span id="__span-0-14"><span class="na">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">g(r.sub, p.sub) &amp;&amp; keyMatch2(r.obj, p.obj) &amp;&amp; r.act == p.act</span>
-</span></code></pre></div>
-<div class="language-text highlight"><span class="filename">policy.csv</span><pre><span></span><code><span id="__span-1-1">p, reader, /articles/:id, GET
-</span><span id="__span-1-2">p, editor, /articles/:id, PUT
-</span><span id="__span-1-3">p, editor, articles, publish
-</span><span id="__span-1-4">g, editor, reader
-</span><span id="__span-1-5">g, ana, editor
-</span></code></pre></div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">import</span><span class="w"> </span><span class="nn">casbin</span>
-</span><span id="__span-2-2">
-</span><span id="__span-2-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.authz</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPICasbin</span>
-</span><span id="__span-2-4">
-</span><span id="__span-2-5"><span class="n">enforcer</span> <span class="o">=</span> <span class="n">casbin</span><span class="o">.</span><span class="n">Enforcer</span><span class="p">(</span><span class="s2">"model.conf"</span><span class="p">,</span> <span class="s2">"policy.csv"</span><span class="p">)</span>
-</span><span id="__span-2-6"><span class="n">authz</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_username</span><span class="p">)</span>  <span class="c1"># your dependency: who's asking</span>
-</span><span id="__span-2-7">
-</span><span id="__span-2-8"><span class="c1"># (user, path, method): may ana PUT /articles/7?</span>
-</span><span id="__span-2-9"><span class="n">api</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">authz</span><span class="p">)])</span>
-</span><span id="__span-2-10">
-</span><span id="__span-2-11">
-</span><span id="__span-2-12"><span class="c1"># (user, *values): your own objects and actions. Both dependencies return the user.</span>
-</span><span id="__span-2-13"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">/publish"</span><span class="p">)</span>
-</span><span id="__span-2-14"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span>
-</span><span id="__span-2-15">    <span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-</span><span id="__span-2-16">    <span class="n">editor</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">authz</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"articles"</span><span class="p">,</span> <span class="s2">"publish"</span><span class="p">))],</span>
-</span><span id="__span-2-17"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span> <span class="o">...</span>
-</span><span id="__span-2-18">
-</span><span id="__span-2-19">
-</span><span id="__span-2-20"><span class="c1"># {name} takes a path parameter: (user, "projects/7", "archive").</span>
-</span><span id="__span-2-21"><span class="n">archive</span> <span class="o">=</span> <span class="n">authz</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"projects/</span><span class="si">{project_id}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"archive"</span><span class="p">)</span>
-</span><span id="__span-2-22">
-</span><span id="__span-2-23">
-</span><span id="__span-2-24"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/projects/</span><span class="si">{project_id}</span><span class="s2">/archive"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">archive</span><span class="p">)])</span>
-</span><span id="__span-2-25"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">archive_project</span><span class="p">(</span><span class="n">project_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
-</span></code></pre></div>
+<h1 id="as-a-separate-service">As a separate service<a class="headerlink" href="#as-a-separate-service" title="Permanent link">&para;</a></h1>
+<p>A policy decision point that runs apart from the app: every service of a company asks the same
+one, over the network, and the policies are deployed and audited in one place.</p>
+<p>How the dependency and the middleware work: <a href="../">Authorization</a>. The engines that run in
+the process, with no network: <a href="../casbin/">Casbin</a> and <a href="../cedar/">Cedar</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Model</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../opa/">Open Policy Agent</a></td>
+<td>Policies in Rego, any model</td>
+<td>One policy language for the whole infrastructure (Kubernetes, gateways, services)</td>
+</tr>
+<tr>
+<td><a href="https://openfga.dev">OpenFGA</a>, <a href="https://authzed.com/spicedb">SpiceDB</a></td>
+<td>Relationships, as Google's Zanzibar</td>
+<td>Permissions that follow relationships: shared documents, organisations, teams</td>
+</tr>
+<tr>
+<td><a href="https://www.cerbos.dev">Cerbos</a></td>
+<td>Policies in YAML, RBAC and ABAC</td>
+<td>Readable policies with tests of their own</td>
+</tr>
+</tbody>
+</table>
+<p>What changes from an engine in the process:</p>
 <ul>
-<li><strong>Who:</strong> <code>subject</code> is a FastAPI dependency that returns who makes the request: a user name, an
-  id, or an object for ABAC matchers (<code>r.sub.age &gt;= 18</code>); None when nobody is logged in. Its own
-  dependencies (a bearer token, a session) appear in the OpenAPI schema, for the docs' Authorize
-  button. Without one, the user of Starlette's <code>AuthenticationMiddleware</code>.</li>
-<li><strong>What:</strong> <code>Depends(authz)</code> checks the path the app routes (without the <code>root_path</code> a proxy or
-  a mount adds in front) and the method; WebSockets have the action <code>WEBSOCKET</code>, so a policy for
-  GET doesn't open them. <code>authz.require(...)</code> checks your own values instead, <code>{name}</code> filled
-  from the path parameters. In <code>keyMatch2</code>, <code>:name</code> is a parameter: name objects without colons
-  (<code>projects/7</code>, not <code>project:7</code>), or the rule for <code>project:7</code> lets <code>project:8</code> through.</li>
-<li><strong>Answers:</strong> a request without a subject gets a 401 with <code>WWW-Authenticate: Bearer</code>
-  (<code>challenge=</code>), without asking the policy; <code>anonymous="*anonymous"</code> has the policy check it as
-  that subject instead, for routes open to everybody (<code>p, *anonymous, /catalog, GET</code>): a name no
-  user can have, or whoever signs up as it gets its rules. A subject
-  that the policy refuses gets a 403. WebSockets are closed with 1008 (policy violation). A path
-  with control characters (<code>/users/%0A</code>) gets a 400 without asking the policy: Starlette routes
-  it to <code>/users/</code>, while the policy would read the newline. With <code>FastAPIProblemDetails</code>, the
-  errors are problem details.</li>
-<li><strong>In a route:</strong> <code>authz.enforce(user, "drafts", "read")</code> returns a bool, for what depends on the
-  data: the items of a list, the owner of an object.</li>
-<li><strong>Fails closed:</strong> a broken model, or a request that doesn't fit it (<code>invalid request size</code>),
-  raises: a 500, never a request let through. A disabled enforcer
-  (<code>enforcer.enable_enforce(False)</code>) lets everything through, as Casbin does.</li>
-<li><strong>Enforcers:</strong> any of Casbin's: <code>Enforcer</code>, <code>SyncedEnforcer</code>, <code>FastEnforcer</code>, <code>AsyncEnforcer</code>
-  (for async adapters; <code>await enforcer.load_policy()</code> in the lifespan). The checks run in the
-  event loop, like an AsyncEnforcer's changes: a request never sees half a change. Casbin tries
-  the rules one by one, a few microseconds each (about 2.5 ms per request with 1,000 rules on a
-  laptop): give permissions to roles rather than users, and roles to users.</li>
-<li><strong>Several processes:</strong> each one has its copy of the policy. A change made in one
-  (<code>await enforcer.add_role_for_user(...)</code>) reaches the database through the adapter, and the
-  other processes when they load the policy again: a Casbin watcher (casbin-redis-watcher…)
-  tells them.</li>
+<li><strong>Latency:</strong> each check is a request over the network, a fraction of a millisecond next to
+  the service, against a few microseconds in the process. Ask once per request, not once per
+  item of a list.</li>
+<li><strong>Failures:</strong> when the service doesn't answer, the request is refused, never let through. An
+  enforcer raises <code>PolicyUnavailable</code>, and the request gets a 503 (<code>Authorization unavailable</code>),
+  a WebSocket 1013 (try again later), counted as <code>unavailable</code> in the <code>fastapi_alcazaba.authz</code>
+  metric. Each call has a deadline, and a circuit breaker stops asking a service that is down,
+  so that requests don't each wait for it.</li>
+<li><strong>Async:</strong> a call over the network can't block the event loop. <code>FastAPIAuthz</code> and
+  <code>AuthzMiddleware</code> await an <code>enforce</code> that is a coroutine function.</li>
 </ul>
-<p><code>CasbinMiddleware</code> checks every request instead, as (user, path, method) with the user of
-Starlette's <code>AuthenticationMiddleware</code> (its <code>identity</code>), and refuses requests without one. Add
-it before <code>AuthenticationMiddleware</code>, so that it runs after it. With <code>anonymous="*anonymous"</code>,
-those are checked as that subject, and the policy opens the public routes (<code>/docs</code>, <code>/login</code>…)
-to it:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.authentication</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthenticationMiddleware</span>
-</span><span id="__span-3-2">
-</span><span id="__span-3-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.authz</span><span class="w"> </span><span class="kn">import</span> <span class="n">CasbinMiddleware</span>
-</span><span id="__span-3-4">
-</span><span id="__span-3-5"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">CasbinMiddleware</span><span class="p">,</span> <span class="n">enforcer</span><span class="o">=</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="s2">"*anonymous"</span><span class="p">)</span>
-</span><span id="__span-3-6"><span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">AuthenticationMiddleware</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">JWTBackend</span><span class="p">())</span>
+<p><a href="../opa/">Open Policy Agent</a> has an enforcer of its own, <code>OPAEnforcer</code>. For another service, an
+enforcer is a class with an async <code>enforce</code>, which raises <code>PolicyUnavailable</code> when the service
+doesn't answer:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">import</span><span class="w"> </span><span class="nn">httpx2</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">httpx</span>
+</span><span id="__span-0-2">
+</span><span id="__span-0-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.authz</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIAuthz</span><span class="p">,</span> <span class="n">PolicyUnavailable</span>
+</span><span id="__span-0-4"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.outbound</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResilientTransport</span>
+</span><span id="__span-0-5">
+</span><span id="__span-0-6">
+</span><span id="__span-0-7"><span class="k">class</span><span class="w"> </span><span class="nc">PolicyService</span><span class="p">:</span>
+</span><span id="__span-0-8">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-9">        <span class="c1"># A deadline for each call, and a circuit breaker for the service.</span>
+</span><span id="__span-0-10">        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">base_url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">transport</span><span class="o">=</span><span class="n">ResilientTransport</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.5</span><span class="p">))</span>
+</span><span id="__span-0-11">
+</span><span id="__span-0-12">    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">enforce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resource</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-13">        <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-14">            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+</span><span id="__span-0-15">                <span class="s2">"/check"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"subject"</span><span class="p">:</span> <span class="n">subject</span><span class="p">,</span> <span class="s2">"resource"</span><span class="p">:</span> <span class="n">resource</span><span class="p">,</span> <span class="s2">"action"</span><span class="p">:</span> <span class="n">action</span><span class="p">}</span>
+</span><span id="__span-0-16">            <span class="p">)</span>
+</span><span id="__span-0-17">        <span class="k">except</span> <span class="n">httpx</span><span class="o">.</span><span class="n">TransportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+</span><span id="__span-0-18">            <span class="k">raise</span> <span class="n">PolicyUnavailable</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the policy service didn't answer: </span><span class="si">{</span><span class="n">exc</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+</span><span id="__span-0-19">        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&gt;=</span> <span class="mi">500</span><span class="p">:</span>
+</span><span id="__span-0-20">            <span class="k">raise</span> <span class="n">PolicyUnavailable</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the policy service answered </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-0-21">        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>  <span class="c1"># a 4xx is a mistake to fix: a 500</span>
+</span><span id="__span-0-22">        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"allowed"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span>  <span class="c1"># only true allows</span>
+</span><span id="__span-0-23">
+</span><span id="__span-0-24">
+</span><span id="__span-0-25"><span class="n">enforcer</span> <span class="o">=</span> <span class="n">PolicyService</span><span class="p">(</span><span class="s2">"http://policy-service:8080"</span><span class="p">)</span>  <span class="c1"># enforcer.client.aclose() at shutdown</span>
+</span><span id="__span-0-26"><span class="n">authz</span> <span class="o">=</span> <span class="n">FastAPIAuthz</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_username</span><span class="p">)</span>
 </span></code></pre></div>
-<p>It checks the path the app routes, without the <code>root_path</code>, and the method: GET for HEAD, which
-runs the GET route, and <code>WEBSOCKET</code> for WebSockets. Refusals get a 403 with
-<code>{"detail": "Forbidden"}</code>, like FastAPI's errors (problem details with <code>FastAPIProblemDetails</code>),
-or a 401 with <code>WWW-Authenticate</code> when there's no user (or <code>anonymous</code> is refused), and a 400 for paths with control characters; WebSockets are closed with 1008. <code>OPTIONS</code>
-requests are checked like the others: add <code>CORSMiddleware</code> after <code>CasbinMiddleware</code> (outside it),
-to answer the preflights.</p>
 
 
 
@@ -3942,7 +4819,7 @@ to answer the preflights.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../audit/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Audit trail">
+          <a href="../cedar/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Cedar">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3952,20 +4829,20 @@ to answer the preflights.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Audit trail
+                Cedar
               </div>
             </div>
           </a>
         
         
           
-          <a href="../backends/" class="md-footer__link md-footer__link--next" aria-label="Next: Backends">
+          <a href="../opa/" class="md-footer__link md-footer__link--next" aria-label="Next: Open Policy Agent">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Backends
+                Open Policy Agent
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -4027,10 +4904,10 @@ to answer the preflights.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.tabs.link", "navigation.footer", "navigation.indexes", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.copy", "content.tabs.link", "navigation.footer", "navigation.indexes", "navigation.path", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

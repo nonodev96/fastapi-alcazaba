@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/examples/authz/">
+        <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/examples/authorization/">
       
       
         <link rel="prev" href="../auth_strategies/your-own/">
       
       
-        <link rel="next" href="../background/">
+        <link rel="next" href="casbin/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Authorization with Casbin - Alcazaba</title>
+        <title>Authorization - Alcazaba</title>
       
     
     
@@ -68,12 +68,12 @@
   
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Alcazaba">
-  <meta property="og:title" content="Authorization with Casbin - Alcazaba">
+  <meta property="og:title" content="Authorization - Alcazaba">
   <meta property="og:description" content="Secure, maintained tools for FastAPI: response cache, rate limits, sessions, CSRF, webhooks, a task queue and more">
   <meta property="og:image" content="https://nonodev96.github.io/fastapi-alcazaba/dev/assets/social-card.png">
   <meta property="og:image:width" content="1280">
   <meta property="og:image:height" content="640">
-  <meta property="og:url" content="https://nonodev96.github.io/fastapi-alcazaba/dev/examples/authz/">
+  <meta property="og:url" content="https://nonodev96.github.io/fastapi-alcazaba/dev/examples/authorization/">
   <meta name="twitter:card" content="summary_large_image">
 
   </head>
@@ -95,7 +95,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#authorization-with-casbin" class="md-skip">
+        <a href="#authorization" class="md-skip">
           Skip to content
         </a>
       
@@ -144,7 +144,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Authorization with Casbin
+              Authorization
             
           </span>
         </div>
@@ -487,6 +487,8 @@
       
         
       
+        
+      
     
     
     
@@ -554,6 +556,34 @@
     
   
     The tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../features/scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scope and stability
   
 
     
@@ -723,6 +753,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -786,6 +822,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -943,6 +983,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/authentication/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDCStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/authentication/saml/" class="md-nav__link">
         
   
@@ -999,6 +1067,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/authentication/unkey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnkeyStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/authentication/your-own/" class="md-nav__link">
         
   
@@ -1023,6 +1119,34 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1090,15 +1214,140 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../guide/authorization/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authorization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_6_2" id="__nav_3_2_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In process
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    In process
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../../guide/authz/" class="md-nav__link">
+      <a href="../../guide/authorization/casbin/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Casbin
   
 
     
@@ -1107,6 +1356,170 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/authorization/cedar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cedar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_6_3" id="__nav_3_2_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    As a separate service
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/authorization/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/authorization/opa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Policy Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1320,7 +1733,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1342,14 +1755,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_12" id="__nav_3_2_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_2_13" id="__nav_3_2_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1600,6 +2013,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/passkeys/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/production/" class="md-nav__link">
         
   
@@ -1664,6 +2105,34 @@
     
   
     Response cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/two-factor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Second factor
   
 
     
@@ -1812,6 +2281,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1879,6 +2354,34 @@
     
   
     A browser app
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
   
 
     
@@ -1973,6 +2476,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1984,7 +2491,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_6" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2006,14 +2513,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_3_5" id="__nav_3_3_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3_6" id="__nav_3_3_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_5">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2068,6 +2575,34 @@
     
   
     OAuth2Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auth_strategies/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDCStrategy
   
 
     
@@ -2172,6 +2707,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../auth_strategies/unkey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnkeyStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../auth_strategies/your-own/" class="md-nav__link">
         
   
@@ -2209,22 +2772,40 @@
   
   
   
-    <li class="md-nav__item md-nav__item--active">
+    
+    
       
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+        
+          
+        
       
         
       
+        
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7" checked>
+        
           
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
   
   
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Authorization
   
 
     
@@ -2232,17 +2813,99 @@
   
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_3_3_7" id="__nav_3_3_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authorization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
       
-      <a href="./" class="md-nav__link md-nav__link--active">
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_7_2" id="__nav_3_3_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In process
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    In process
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="casbin/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Casbin
   
 
     
@@ -2251,69 +2914,169 @@
   
 
       </a>
-      
-        
+    </li>
+  
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cedar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cedar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
   
   
   
     
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_7_3" id="__nav_3_3_7_3_label" tabindex="0">
+            
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#run-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Run it
-      
-    </span>
-  </a>
+  <span class="md-ellipsis">
+    
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#try-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Try it
-      
-    </span>
-  </a>
+    As a separate service
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-to-look-at" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What to look at
-      
-    </span>
-  </a>
+
+    
+  </span>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-code" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The code
-      
-    </span>
-  </a>
   
-</li>
-      
-    </ul>
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            
   
-</nav>
+    As a separate service
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="opa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Policy Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -2498,7 +3261,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_13" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2520,14 +3283,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_3_12" id="__nav_3_3_12_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3_13" id="__nav_3_3_13_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_12_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_12">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_13">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2750,6 +3513,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../passkeys/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../limits/" class="md-nav__link">
         
   
@@ -2786,6 +3577,34 @@
     
   
     Response cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../two_factor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Second factor
   
 
     
@@ -2853,6 +3672,8 @@
       
         
           
+        
+      
         
       
         
@@ -3149,7 +3970,7 @@
   <span class="md-ellipsis">
     
   
-    Authorization with Casbin
+    Authorization
   
 
     
@@ -3178,6 +3999,34 @@
     
   
     Sessions, CSRF and security headers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
   
 
     
@@ -3730,58 +4579,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#run-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Run it
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#try-it" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Try it
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-to-look-at" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What to look at
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-code" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The code
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -3853,6 +4650,24 @@
   
 
       
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="./" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Authorization
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
     </ol>
   </nav>
 
@@ -3863,344 +4678,52 @@
 
 
 
-<h1 id="authorization-with-casbin">Authorization with Casbin<a class="headerlink" href="#authorization-with-casbin" title="Permanent link">&para;</a></h1>
+<h1 id="authorization">Authorization<a class="headerlink" href="#authorization" title="Permanent link">&para;</a></h1>
 <figure class="alc-anim">
-<svg viewBox="0 0 640 418" role="img" aria-labelledby="alc-authz-title alc-authz-desc" xmlns="http://www.w3.org/2000/svg">
-<title id="alc-authz-title">Authorization with Casbin</title>
-<desc id="alc-authz-desc">User to Your app: cris: POST …/3/publish. Your app to Casbin policy: (cris, articles, publish)? Casbin policy to Your app: deny: a writer. Your app to User: 403 Forbidden. User to Your app: ben: POST …/3/publish. Your app to Casbin policy: (ben, articles, publish)? Casbin policy to Your app: allow: an editor. Your app to User: 200, published by ben. Who may do what is in the policy, not in the routes.</desc>
-<line class="alc-life" x1="100" y1="52" x2="100" y2="366"/>
+<svg viewBox="0 0 640 346" role="img" aria-labelledby="alc-authorization-title alc-authorization-desc" xmlns="http://www.w3.org/2000/svg">
+<title id="alc-authorization-title">Authorization</title>
+<desc id="alc-authorization-desc">User to Your app: bob: PUT /articles/7. Your app to Policy engine: may bob PUT /articles/7? Policy engine to Your app: deny. Your app to User: 403 Forbidden. User to Your app: GET /users/%0A. Your app to User: 400, before asking. One dependency, whatever engine holds the policy.</desc>
+<line class="alc-life" x1="100" y1="52" x2="100" y2="294"/>
 <g class="alc-actor"><rect x="18" y="10" width="164" height="42" rx="8"/><text x="100" y="36">User</text></g>
-<line class="alc-life" x1="320" y1="52" x2="320" y2="366"/>
+<line class="alc-life" x1="320" y1="52" x2="320" y2="294"/>
 <g class="alc-actor"><rect x="238" y="10" width="164" height="42" rx="8"/><text x="320" y="36">Your app</text></g>
-<line class="alc-life" x1="540" y1="52" x2="540" y2="366"/>
-<g class="alc-actor"><rect x="458" y="10" width="164" height="42" rx="8"/><text x="540" y="36">Casbin policy</text></g>
-<g class="alc-step alc-request alc-s1"><line x1="106" y1="92" x2="306" y2="92"/><polygon points="314,92 304,87 304,97"/><text class="alc-label" x="210" y="84">cris: POST …/3/publish</text></g>
+<line class="alc-life" x1="540" y1="52" x2="540" y2="294"/>
+<g class="alc-actor"><rect x="458" y="10" width="164" height="42" rx="8"/><text x="540" y="36">Policy engine</text></g>
+<g class="alc-step alc-request alc-s1"><line x1="106" y1="92" x2="306" y2="92"/><polygon points="314,92 304,87 304,97"/><text class="alc-label" x="210" y="84">bob: PUT /articles/7</text></g>
 <circle class="alc-dot alc-request alc-m1" cx="106" cy="92" r="5" style="--dx: 208px"/>
-<g class="alc-step alc-request alc-s2"><line x1="326" y1="128" x2="526" y2="128"/><polygon points="534,128 524,123 524,133"/><text class="alc-label" x="430" y="120">(cris, articles, publish)?</text></g>
+<g class="alc-step alc-request alc-s2"><line x1="326" y1="128" x2="526" y2="128"/><polygon points="534,128 524,123 524,133"/><text class="alc-label" x="430" y="120">may bob PUT /articles/7?</text></g>
 <circle class="alc-dot alc-request alc-m2" cx="326" cy="128" r="5" style="--dx: 208px"/>
-<g class="alc-step alc-reply alc-s3"><line x1="534" y1="164" x2="334" y2="164"/><polygon points="326,164 336,159 336,169"/><text class="alc-label" x="430" y="156">deny: a writer</text></g>
+<g class="alc-step alc-reply alc-s3"><line x1="534" y1="164" x2="334" y2="164"/><polygon points="326,164 336,159 336,169"/><text class="alc-label" x="430" y="156">deny</text></g>
 <circle class="alc-dot alc-reply alc-m3" cx="534" cy="164" r="5" style="--dx: -208px"/>
 <g class="alc-step alc-refused alc-s4"><line x1="314" y1="200" x2="114" y2="200"/><polygon points="106,200 116,195 116,205"/><text class="alc-label" x="210" y="192">403 Forbidden</text></g>
 <circle class="alc-dot alc-refused alc-m4" cx="314" cy="200" r="5" style="--dx: -208px"/>
-<g class="alc-step alc-request alc-s5"><line x1="106" y1="236" x2="306" y2="236"/><polygon points="314,236 304,231 304,241"/><text class="alc-label" x="210" y="228">ben: POST …/3/publish</text></g>
+<g class="alc-step alc-request alc-s5"><line x1="106" y1="236" x2="306" y2="236"/><polygon points="314,236 304,231 304,241"/><text class="alc-label" x="210" y="228">GET /users/%0A</text></g>
 <circle class="alc-dot alc-request alc-m5" cx="106" cy="236" r="5" style="--dx: 208px"/>
-<g class="alc-step alc-request alc-s6"><line x1="326" y1="272" x2="526" y2="272"/><polygon points="534,272 524,267 524,277"/><text class="alc-label" x="430" y="264">(ben, articles, publish)?</text></g>
-<circle class="alc-dot alc-request alc-m6" cx="326" cy="272" r="5" style="--dx: 208px"/>
-<g class="alc-step alc-reply alc-s7"><line x1="534" y1="308" x2="334" y2="308"/><polygon points="326,308 336,303 336,313"/><text class="alc-label" x="430" y="300">allow: an editor</text></g>
-<circle class="alc-dot alc-reply alc-m7" cx="534" cy="308" r="5" style="--dx: -208px"/>
-<g class="alc-step alc-reply alc-s8"><line x1="314" y1="344" x2="114" y2="344"/><polygon points="106,344 116,339 116,349"/><text class="alc-label" x="210" y="336">200, published by ben</text></g>
-<circle class="alc-dot alc-reply alc-m8" cx="314" cy="344" r="5" style="--dx: -208px"/>
-<g class="alc-step alc-banner alc-s9"><rect x="20" y="374" width="600" height="34" rx="17"/><text x="320" y="396">Who may do what is in the policy, not in the routes</text></g>
+<g class="alc-step alc-refused alc-s6"><line x1="314" y1="272" x2="114" y2="272"/><polygon points="106,272 116,267 116,277"/><text class="alc-label" x="210" y="264">400, before asking</text></g>
+<circle class="alc-dot alc-refused alc-m6" cx="314" cy="272" r="5" style="--dx: -208px"/>
+<g class="alc-step alc-banner alc-s7"><rect x="20" y="302" width="600" height="34" rx="17"/><text x="320" y="324">One dependency, whatever engine holds the policy</text></g>
 </svg>
-<figcaption>What it&#x27;s for: a Casbin policy (roles and their permissions) decides who may do what, for each route or each action, instead of checks spread over the code.</figcaption>
+<figcaption>What it&#x27;s for: a policy, not checks spread over the routes, decides who may do what, with the engine in the process (Casbin, Cedar) or as a service apart.</figcaption>
 </figure>
 
-<p>A newsroom API whose policy, not its routes, says who may do what. Anybody reads the published
-articles; writers write drafts, editors edit and publish them, and admins give people roles. The
-<a href="../../guide/authz/#casbin-policies"><code>FastAPICasbin</code></a> dependencies check each request against
-Casbin's policy: on the path and method of the route, or on a named action such as
-<code>(ben, articles, publish)</code>.</p>
-<p>Users log in with a fixed token each, which stands in for your authentication (JWTs, sessions,
-<a href="../auth/">API keys</a>): <code>ana-token</code> (admin), <code>ben-token</code> (editor), <code>cris-token</code> (writer) and
-<code>dan-token</code> (no role yet).</p>
-<h2 id="run-it">Run it<a class="headerlink" href="#run-it" title="Permanent link">&para;</a></h2>
-<p>From a clone of the repository:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1">make<span class="w"> </span>deps<span class="w">                 </span><span class="c1"># .venv, with every extra</span>
-</span><span id="__span-0-2"><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-</span><span id="__span-0-3">uvicorn<span class="w"> </span>examples.authz.main:app
-</span></code></pre></div>
-<h2 id="try-it">Try it<a class="headerlink" href="#try-it" title="Permanent link">&para;</a></h2>
-<p>Visitors read the published articles. Cris, a writer, reads the drafts too:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-1-1"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/articles
-</span><span id="__span-1-2"><span class="go">[{"title":"Olive harvest starts","body":"...","id":1,"author":"cris","published_by":"ben"}]</span>
-</span><span id="__span-1-3">
-</span><span id="__span-1-4"><span class="gp">$ </span>curl<span class="w"> </span>http://127.0.0.1:8000/articles<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer cris-token"</span>
-</span><span id="__span-1-5"><span class="go">[{"title":"Olive harvest starts",...,"published_by":"ben"},{"title":"Draft: new mill","body":"...","id":2,"author":"cris","published_by":null}]</span>
-</span></code></pre></div>
-<p>Writing needs an account, and the writer role:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-2-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/articles<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"title": "Mill opens", "body": "On Monday."}'</span>
-</span><span id="__span-2-3"><span class="go">HTTP/1.1 401 Unauthorized</span>
-</span><span id="__span-2-4"><span class="go">www-authenticate: Bearer</span>
-</span><span id="__span-2-5">
-</span><span id="__span-2-6"><span class="go">{"detail":"Not authenticated"}</span>
-</span><span id="__span-2-7">
-</span><span id="__span-2-8"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/articles<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer cris-token"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-9"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"title": "Mill opens", "body": "On Monday."}'</span>
-</span><span id="__span-2-10"><span class="go">{"title":"Mill opens","body":"On Monday.","id":3,"author":"cris","published_by":null}</span>
-</span></code></pre></div>
-<p>Publishing is a named action, <code>(user, articles, publish)</code>, which only editors may do:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/articles/3/publish<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer cris-token"</span>
-</span><span id="__span-3-2"><span class="go">HTTP/1.1 403 Forbidden</span>
-</span><span id="__span-3-3">
-</span><span id="__span-3-4"><span class="go">{"detail":"Forbidden"}</span>
-</span><span id="__span-3-5">
-</span><span id="__span-3-6"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/articles/3/publish<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ben-token"</span>
-</span><span id="__span-3-7"><span class="go">{"title":"Mill opens","body":"On Monday.","id":3,"author":"cris","published_by":"ben"}</span>
-</span></code></pre></div>
-<p>Dan has an account but no role, and so reads what visitors read, and nothing more. Ana, an
-admin, makes Dan a writer, which takes effect at once:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-4-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/articles<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer dan-token"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-2"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"title": "Hello", "body": "First post."}'</span>
-</span><span id="__span-4-3"><span class="go">HTTP/1.1 403 Forbidden</span>
-</span><span id="__span-4-4">
-</span><span id="__span-4-5"><span class="go">{"detail":"Forbidden"}</span>
-</span><span id="__span-4-6">
-</span><span id="__span-4-7"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/users/dan/roles/writer<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ana-token"</span>
-</span><span id="__span-4-8"><span class="go">HTTP/1.1 204 No Content</span>
-</span><span id="__span-4-9">
-</span><span id="__span-4-10"><span class="gp">$ </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"%{http_code}\n"</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/articles<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-11"><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer dan-token"</span><span class="w"> </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-12"><span class="w">    </span>-d<span class="w"> </span><span class="s1">'{"title": "Hello", "body": "First post."}'</span>
-</span><span id="__span-4-13"><span class="go">201</span>
-</span></code></pre></div>
-<p>Admins only grant the roles the policy knows:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-5-1"><span class="gp">$ </span>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>http://127.0.0.1:8000/users/dan/roles/root<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer ana-token"</span>
-</span><span id="__span-5-2"><span class="go">{"detail":[{"type":"enum","loc":["path","role"],"msg":"Input should be 'writer', 'editor' or 'admin'",...}]}</span>
-</span></code></pre></div>
-<p>A wrong token is refused, rather than taken for a visitor without one:</p>
-<div class="language-console highlight"><pre><span></span><code><span id="__span-6-1"><span class="gp">$ </span>curl<span class="w"> </span>-i<span class="w"> </span>http://127.0.0.1:8000/articles<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer nonsense"</span>
-</span><span id="__span-6-2"><span class="go">HTTP/1.1 401 Unauthorized</span>
-</span><span id="__span-6-3"><span class="go">www-authenticate: Bearer</span>
-</span><span id="__span-6-4">
-</span><span id="__span-6-5"><span class="go">{"detail":"Invalid token"}</span>
-</span></code></pre></div>
-<h2 id="what-to-look-at">What to look at<a class="headerlink" href="#what-to-look-at" title="Permanent link">&para;</a></h2>
+<p>A policy decides who may do what, checked by <a href="../../guide/authorization/"><code>FastAPIAuthz</code></a>
+for each route or each action, and by <code>AuthzMiddleware</code> for every request, whatever engine holds
+the policy:</p>
 <ul>
-<li><strong>The policy is data:</strong> <code>policy.csv</code> has a <code>p</code> line per permission of a role and a <code>g</code> line
-  per role of a user (or of another role: editors are writers too). Changing who may do what
-  doesn't change the code; in production the policy comes from a database, through one of
-  Casbin's async adapters.</li>
-<li><strong>Two ways to ask:</strong> <code>Depends(authz)</code> asks about the route, as (user, path, method): Casbin's
-  <code>keyMatch2</code> takes <code>/articles/:id</code> as a pattern. <code>members.require("articles", "publish")</code> asks
-  about a named action, the same on whatever route it guards.</li>
-<li><strong>Visitors and members:</strong> <code>authz</code> has the policy check visitors without a token as
-  <code>*anonymous</code>, a name no user can have, so that the policy opens the reading routes to them. <code>members</code> refuses them with
-  a 401 before asking the policy, and so always returns a user name: the routes for members
-  don't deal with None.</li>
-<li><strong>What visitors may do, everybody may:</strong> the matcher grants the rules of <code>*anonymous</code> to every
-  subject (<code>p.sub == "*anonymous" || g(r.sub, p.sub)</code>), so Dan, without a role, isn't worse off
-  than a visitor.</li>
-<li><strong>Checks that depend on the data</strong> go in the route, with <code>authz.enforce()</code>: everybody may list
-  the articles, but only those who may read the drafts see them. A draft is a 404 for the others,
-  not a 403, which would tell that it exists.</li>
-<li><strong>Roles granted at runtime</strong> take effect at once in the process that grants them: an
-  <code>AsyncEnforcer</code> changes its policy in the event loop, where the checks run. The file adapter of
-  the example doesn't keep them; a database adapter does, and a Casbin watcher tells the other
-  processes to load the policy again.</li>
+<li><strong>In process</strong>, with the policy in the app's memory:<ul>
+<li><a href="casbin/">Casbin</a>: a newsroom whose roles write, edit, publish and grant roles.</li>
+<li><a href="cedar/">Cedar</a>: a team's documents, read and edited as their attributes allow, where
+  contractors never see a confidential one.</li>
 </ul>
-<h2 id="the-code">The code<a class="headerlink" href="#the-code" title="Permanent link">&para;</a></h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">main.py</label><label for="__tabbed_1_2">model.conf</label><label for="__tabbed_1_3">policy.csv</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p><!-- fmt: off -->
-<div class="language-python highlight"><span class="filename">examples/authz/main.py</span><pre><span></span><code><span id="__span-7-1"><span class="sd">"""A newsroom API whose policy, not its routes, says who may do what: Casbin's RBAC.</span>
-</span><span id="__span-7-2">
-</span><span id="__span-7-3"><span class="sd">    uvicorn examples.authz.main:app</span>
-</span><span id="__span-7-4">
-</span><span id="__span-7-5"><span class="sd">Anybody reads the published articles; writers write drafts, editors edit and publish them, and</span>
-</span><span id="__span-7-6"><span class="sd">admins give people roles. Who may do what is in policy.csv (`p` lines: what a role may do; `g`</span>
-</span><span id="__span-7-7"><span class="sd">lines: who has which role, and which roles include others), checked by FastAPICasbin: on the path</span>
-</span><span id="__span-7-8"><span class="sd">and method of a route (`Depends(authz)`), or on a named action (`Depends(authz.require(...))`).</span>
-</span><span id="__span-7-9">
-</span><span id="__span-7-10"><span class="sd">The policy is read from files here; in production, from a database through one of Casbin's</span>
-</span><span id="__span-7-11"><span class="sd">async adapters (casbin-async-sqlalchemy-adapter...), which also keeps the roles granted at runtime.</span>
-</span><span id="__span-7-12"><span class="sd">"""</span>
-</span><span id="__span-7-13">
-</span><span id="__span-7-14"><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIterator</span>
-</span><span id="__span-7-15"><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
-</span><span id="__span-7-16"><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrEnum</span>
-</span><span id="__span-7-17"><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-</span><span id="__span-7-18"><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
-</span><span id="__span-7-19">
-</span><span id="__span-7-20"><span class="kn">import</span><span class="w"> </span><span class="nn">casbin</span>
-</span><span id="__span-7-21"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-</span><span id="__span-7-22"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">status</span>
-</span><span id="__span-7-23"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPAuthorizationCredentials</span><span class="p">,</span> <span class="n">HTTPBearer</span>
-</span><span id="__span-7-24"><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
-</span><span id="__span-7-25">
-</span><span id="__span-7-26"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPICasbin</span>
-</span><span id="__span-7-27">
-</span><span id="__span-7-28"><span class="n">HERE</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
-</span><span id="__span-7-29">
-</span><span id="__span-7-30">
-</span><span id="__span-7-31"><span class="k">class</span><span class="w"> </span><span class="nc">Role</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
-</span><span id="__span-7-32">    <span class="c1"># An enum: admins can only grant the roles the policy knows.</span>
-</span><span id="__span-7-33">    <span class="n">WRITER</span> <span class="o">=</span> <span class="s2">"writer"</span>
-</span><span id="__span-7-34">    <span class="n">EDITOR</span> <span class="o">=</span> <span class="s2">"editor"</span>
-</span><span id="__span-7-35">    <span class="n">ADMIN</span> <span class="o">=</span> <span class="s2">"admin"</span>
-</span><span id="__span-7-36">
-</span><span id="__span-7-37">
-</span><span id="__span-7-38"><span class="k">class</span><span class="w"> </span><span class="nc">Draft</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-7-39">    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-</span><span id="__span-7-40">    <span class="n">body</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
-</span><span id="__span-7-41">
-</span><span id="__span-7-42">
-</span><span id="__span-7-43"><span class="k">class</span><span class="w"> </span><span class="nc">Article</span><span class="p">(</span><span class="n">Draft</span><span class="p">):</span>
-</span><span id="__span-7-44">    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
-</span><span id="__span-7-45">    <span class="n">author</span><span class="p">:</span> <span class="nb">str</span>
-</span><span id="__span-7-46">    <span class="n">published_by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-7-47">
-</span><span id="__span-7-48">
-</span><span id="__span-7-49"><span class="k">class</span><span class="w"> </span><span class="nc">Database</span><span class="p">:</span>
-</span><span id="__span-7-50"><span class="w">    </span><span class="sd">"""Stands in for the database."""</span>
-</span><span id="__span-7-51">
-</span><span id="__span-7-52">    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-53">        <span class="bp">self</span><span class="o">.</span><span class="n">articles</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-7-54">            <span class="mi">1</span><span class="p">:</span> <span class="n">Article</span><span class="p">(</span>
-</span><span id="__span-7-55">                <span class="nb">id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Olive harvest starts"</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="s2">"cris"</span><span class="p">,</span> <span class="n">published_by</span><span class="o">=</span><span class="s2">"ben"</span>
-</span><span id="__span-7-56">            <span class="p">),</span>
-</span><span id="__span-7-57">            <span class="mi">2</span><span class="p">:</span> <span class="n">Article</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Draft: new mill"</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="s2">"cris"</span><span class="p">),</span>
-</span><span id="__span-7-58">        <span class="p">}</span>
-</span><span id="__span-7-59">
-</span><span id="__span-7-60">
-</span><span id="__span-7-61"><span class="c1"># Async: its changes to the policy (granting a role) run in the event loop, like the checks.</span>
-</span><span id="__span-7-62"><span class="n">enforcer</span> <span class="o">=</span> <span class="n">casbin</span><span class="o">.</span><span class="n">AsyncEnforcer</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">HERE</span> <span class="o">/</span> <span class="s2">"model.conf"</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">HERE</span> <span class="o">/</span> <span class="s2">"policy.csv"</span><span class="p">))</span>
-</span><span id="__span-7-63"><span class="n">db</span> <span class="o">=</span> <span class="n">Database</span><span class="p">()</span>
-</span><span id="__span-7-64"><span class="n">bearer</span> <span class="o">=</span> <span class="n">HTTPBearer</span><span class="p">(</span><span class="n">auto_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-7-65"><span class="c1"># Stands in for the app's authentication (JWTs, sessions, API keys): a token per user.</span>
-</span><span id="__span-7-66"><span class="n">TOKENS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"ana-token"</span><span class="p">:</span> <span class="s2">"ana"</span><span class="p">,</span> <span class="s2">"ben-token"</span><span class="p">:</span> <span class="s2">"ben"</span><span class="p">,</span> <span class="s2">"cris-token"</span><span class="p">:</span> <span class="s2">"cris"</span><span class="p">,</span> <span class="s2">"dan-token"</span><span class="p">:</span> <span class="s2">"dan"</span><span class="p">}</span>
-</span><span id="__span-7-67">
-</span><span id="__span-7-68">
-</span><span id="__span-7-69"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">current_user</span><span class="p">(</span>
-</span><span id="__span-7-70">    <span class="n">credentials</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">HTTPAuthorizationCredentials</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">bearer</span><span class="p">)],</span>
-</span><span id="__span-7-71"><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-72"><span class="w">    </span><span class="sd">"""Who makes the request; None for a visitor without a token."""</span>
-</span><span id="__span-7-73">    <span class="k">if</span> <span class="n">credentials</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-74">        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="__span-7-75">    <span class="n">user</span> <span class="o">=</span> <span class="n">TOKENS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">credentials</span><span class="o">.</span><span class="n">credentials</span><span class="p">)</span>
-</span><span id="__span-7-76">    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># a wrong token isn't a visitor without one</span>
-</span><span id="__span-7-77">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Invalid token"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"WWW-Authenticate"</span><span class="p">:</span> <span class="s2">"Bearer"</span><span class="p">})</span>
-</span><span id="__span-7-78">    <span class="k">return</span> <span class="n">user</span>
-</span><span id="__span-7-79">
-</span><span id="__span-7-80">
-</span><span id="__span-7-81"><span class="c1"># Routes open to visitors when the policy says so: the policy knows them as "*anonymous", a name</span>
-</span><span id="__span-7-82"><span class="c1"># no user can have (the * isn't allowed in user names), so nobody signs up to get its rules.</span>
-</span><span id="__span-7-83"><span class="n">authz</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">,</span> <span class="n">anonymous</span><span class="o">=</span><span class="s2">"*anonymous"</span><span class="p">)</span>
-</span><span id="__span-7-84"><span class="c1"># Routes for people with an account: a 401 without one, before asking the policy.</span>
-</span><span id="__span-7-85"><span class="n">members</span> <span class="o">=</span> <span class="n">FastAPICasbin</span><span class="p">(</span><span class="n">enforcer</span><span class="p">,</span> <span class="n">subject</span><span class="o">=</span><span class="n">current_user</span><span class="p">)</span>
-</span><span id="__span-7-86"><span class="n">Visitor</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">authz</span><span class="p">)]</span>
-</span><span id="__span-7-87"><span class="n">Member</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="p">)]</span>
-</span><span id="__span-7-88">
-</span><span id="__span-7-89">
-</span><span id="__span-7-90"><span class="nd">@asynccontextmanager</span>
-</span><span id="__span-7-91"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">_</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-</span><span id="__span-7-92">    <span class="k">await</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">load_policy</span><span class="p">()</span>  <span class="c1"># an AsyncEnforcer reads it when told</span>
-</span><span id="__span-7-93">    <span class="k">yield</span>
-</span><span id="__span-7-94">
-</span><span id="__span-7-95">
-</span><span id="__span-7-96"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">)</span>
-</span><span id="__span-7-97">
-</span><span id="__span-7-98">
-</span><span id="__span-7-99"><span class="k">def</span><span class="w"> </span><span class="nf">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-7-100">    <span class="c1"># A check inside the route: the route is open to everybody, the drafts aren't.</span>
-</span><span id="__span-7-101">    <span class="k">return</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">authz</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="s2">"drafts"</span><span class="p">,</span> <span class="s2">"read"</span><span class="p">)</span>
-</span><span id="__span-7-102">
-</span><span id="__span-7-103">
-</span><span id="__span-7-104"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/articles"</span><span class="p">)</span>
-</span><span id="__span-7-105"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list_articles</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">Visitor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Article</span><span class="p">]:</span>
-</span><span id="__span-7-106"><span class="w">    </span><span class="sd">"""The published articles; the drafts too for those who may read them."""</span>
-</span><span id="__span-7-107">    <span class="n">drafts</span> <span class="o">=</span> <span class="n">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
-</span><span id="__span-7-108">    <span class="k">return</span> <span class="p">[</span><span class="n">article</span> <span class="k">for</span> <span class="n">article</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="ow">or</span> <span class="n">drafts</span><span class="p">]</span>
-</span><span id="__span-7-109">
-</span><span id="__span-7-110">
-</span><span id="__span-7-111"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-7-112"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_article</span><span class="p">(</span><span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Visitor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-113">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
-</span><span id="__span-7-114">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="ow">or</span> <span class="n">reads_drafts</span><span class="p">(</span><span class="n">user</span><span class="p">)):</span>
-</span><span id="__span-7-115">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>  <span class="c1"># for readers, a draft doesn't exist</span>
-</span><span id="__span-7-116">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-117">
-</span><span id="__span-7-118">
-</span><span id="__span-7-119"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/articles"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
-</span><span id="__span-7-120"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">write_article</span><span class="p">(</span><span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Member</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-121">    <span class="n">article</span> <span class="o">=</span> <span class="n">Article</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="o">**</span><span class="n">draft</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
-</span><span id="__span-7-122">    <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="p">[</span><span class="n">article</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">article</span>
-</span><span id="__span-7-123">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-124">
-</span><span id="__span-7-125">
-</span><span id="__span-7-126"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-7-127"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">edit_article</span><span class="p">(</span><span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Member</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-128">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
-</span><span id="__span-7-129">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-130">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>
-</span><span id="__span-7-131">    <span class="k">if</span> <span class="n">article</span><span class="o">.</span><span class="n">author</span> <span class="o">!=</span> <span class="n">user</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">authz</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="s2">"articles"</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">):</span>
-</span><span id="__span-7-132">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">403</span><span class="p">,</span> <span class="s2">"Only its author or an editor edits an article"</span><span class="p">)</span>
-</span><span id="__span-7-133">    <span class="n">article</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">article</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">body</span>
-</span><span id="__span-7-134">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-135">
-</span><span id="__span-7-136">
-</span><span id="__span-7-137"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/articles/</span><span class="si">{article_id}</span><span class="s2">/publish"</span><span class="p">)</span>
-</span><span id="__span-7-138"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">publish_article</span><span class="p">(</span>
-</span><span id="__span-7-139">    <span class="n">article_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-</span><span id="__span-7-140">    <span class="n">editor</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"articles"</span><span class="p">,</span> <span class="s2">"publish"</span><span class="p">))],</span>
-</span><span id="__span-7-141"><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Article</span><span class="p">:</span>
-</span><span id="__span-7-142"><span class="w">    </span><span class="sd">"""A named action, not a path: (editor, articles, publish)."""</span>
-</span><span id="__span-7-143">    <span class="n">article</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">articles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">article_id</span><span class="p">)</span>
-</span><span id="__span-7-144">    <span class="k">if</span> <span class="n">article</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-145">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"No such article"</span><span class="p">)</span>
-</span><span id="__span-7-146">    <span class="n">article</span><span class="o">.</span><span class="n">published_by</span> <span class="o">=</span> <span class="n">editor</span>
-</span><span id="__span-7-147">    <span class="k">return</span> <span class="n">article</span>
-</span><span id="__span-7-148">
-</span><span id="__span-7-149">
-</span><span id="__span-7-150"><span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span>
-</span><span id="__span-7-151">    <span class="s2">"/users/</span><span class="si">{user}</span><span class="s2">/roles/</span><span class="si">{role}</span><span class="s2">"</span><span class="p">,</span>
-</span><span id="__span-7-152">    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">,</span>
-</span><span id="__span-7-153">    <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">members</span><span class="o">.</span><span class="n">require</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="s2">"grant"</span><span class="p">))],</span>
-</span><span id="__span-7-154"><span class="p">)</span>
-</span><span id="__span-7-155"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">grant_role</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="n">Role</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-7-156"><span class="w">    </span><span class="sd">"""Takes effect at once in this process. The other processes see it when they load the policy</span>
-</span><span id="__span-7-157"><span class="sd">    again: a Casbin watcher (casbin-redis-watcher...) tells them."""</span>
-</span><span id="__span-7-158">    <span class="k">await</span> <span class="n">enforcer</span><span class="o">.</span><span class="n">add_role_for_user</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">role</span><span class="p">)</span>
-</span><span id="__span-7-159">
-</span><span id="__span-7-160">
-</span><span id="__span-7-161"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-</span><span id="__span-7-162">    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"main:app"</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span></code></pre></div>
-<!-- fmt: on --></p>
-</div>
-<div class="tabbed-block">
-<div class="language-ini highlight"><span class="filename">examples/authz/model.conf</span><pre><span></span><code><span id="__span-8-1"><span class="c1"># RBAC on paths and on named actions: a request is (who, what, how).</span>
-</span><span id="__span-8-2"><span class="c1">#   (ben, /articles/7, PUT): may Ben edit article 7?</span>
-</span><span id="__span-8-3"><span class="c1">#   (ben, articles, publish): may Ben publish articles?</span>
-</span><span id="__span-8-4"><span class="c1"># keyMatch2 takes /articles/:id as a pattern; "articles" matches itself. What visitors</span>
-</span><span id="__span-8-5"><span class="c1"># (*anonymous: no user name starts with *) may do, everybody may: a user without a role reads</span>
-</span><span id="__span-8-6"><span class="c1"># what visitors read.</span>
-</span><span id="__span-8-7">
-</span><span id="__span-8-8"><span class="k">[request_definition]</span>
-</span><span id="__span-8-9"><span class="na">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
-</span><span id="__span-8-10">
-</span><span id="__span-8-11"><span class="k">[policy_definition]</span>
-</span><span id="__span-8-12"><span class="na">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sub, obj, act</span>
-</span><span id="__span-8-13">
-</span><span id="__span-8-14"><span class="k">[role_definition]</span>
-</span><span id="__span-8-15"><span class="na">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">_, _</span>
-</span><span id="__span-8-16">
-</span><span id="__span-8-17"><span class="k">[policy_effect]</span>
-</span><span id="__span-8-18"><span class="na">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">some(where (p.eft == allow))</span>
-</span><span id="__span-8-19">
-</span><span id="__span-8-20"><span class="k">[matchers]</span>
-</span><span id="__span-8-21"><span class="na">m = (p.sub =</span><span class="o">=</span><span class="w"> </span><span class="s">"*anonymous"</span><span class="w"> </span><span class="na">|| g(r.sub, p.sub)) &amp;&amp; keyMatch2(r.obj, p.obj) &amp;&amp; r.act</span><span class="w"> </span><span class="o">=</span><span class="s">= p.act</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-text highlight"><span class="filename">examples/authz/policy.csv</span><pre><span></span><code><span id="__span-9-1">p, *anonymous, /articles, GET
-</span><span id="__span-9-2">p, *anonymous, /articles/:id, GET
-</span><span id="__span-9-3">p, writer, /articles, POST
-</span><span id="__span-9-4">p, writer, /articles/:id, PUT
-</span><span id="__span-9-5">p, writer, drafts, read
-</span><span id="__span-9-6">p, editor, articles, edit
-</span><span id="__span-9-7">p, editor, articles, publish
-</span><span id="__span-9-8">p, admin, roles, grant
-</span><span id="__span-9-9">g, editor, writer
-</span><span id="__span-9-10">g, admin, editor
-</span><span id="__span-9-11">g, ana, admin
-</span><span id="__span-9-12">g, ben, editor
-</span><span id="__span-9-13">g, cris, writer
-</span></code></pre></div>
-</div>
-</div>
-</div>
+</li>
+<li><strong><a href="service/">As a separate service</a></strong>, one policy decision point that every service asks:<ul>
+<li><a href="opa/">Open Policy Agent</a>: a shop whose orders and refunds a Rego policy decides, by
+  the user's roles and the order's total.</li>
+</ul>
+</li>
+</ul>
+<p>Each example runs with uvicorn and its own users, tokens and data; the commands in its page show
+what each user gets.</p>
 
 
 
@@ -4255,13 +4778,13 @@ admin, makes Dan a writer, which takes effect at once:</p>
         
         
           
-          <a href="../background/" class="md-footer__link md-footer__link--next" aria-label="Next: Background work">
+          <a href="casbin/" class="md-footer__link md-footer__link--next" aria-label="Next: Casbin">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Background work
+                Casbin
               </div>
             </div>
             <div class="md-footer__button md-icon">
