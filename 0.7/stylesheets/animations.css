@@ -1,0 +1,226 @@
+/* The animations at the top of the examples: what a tool is for, as a sequence diagram whose
+   steps appear one by one and start over. Inline SVG, drawn in the theme's colours. Each step
+   takes 9% of the cycle (alc-s1 at 0%, alc-s2 at 9%...); everything stays until 94%. A dot
+   (alc-m1...) runs along each arrow, --dx far. Hovering pauses it; with reduced motion, or in
+   print, the whole diagram shows at once. */
+.md-typeset figure.alc-anim {
+  display: block;
+  width: 100%;
+  margin: 0 0 1.5em;
+  overflow-x: auto;
+}
+
+.alc-anim svg {
+  --alc-cycle: 18s;
+  --alc-request: var(--md-accent-fg-color);
+  --alc-reply: #b04528;
+  --alc-refused: #c62828;
+
+  display: block;
+  width: 100%;
+  min-width: 34rem;
+  height: auto;
+  font-family: var(--md-text-font-family);
+}
+
+[data-md-color-scheme="slate"] .alc-anim svg {
+  --alc-reply: #ec8e63;
+  --alc-refused: #ef6b6b;
+}
+
+.md-typeset .alc-anim figcaption {
+  max-width: none;
+  margin: 0.4em 0 0;
+  color: var(--md-default-fg-color--light);
+  font-style: normal;
+}
+
+.alc-actor rect {
+  fill: var(--md-code-bg-color);
+  stroke: var(--md-default-fg-color--lighter);
+}
+
+.alc-actor text {
+  fill: var(--md-default-fg-color);
+  font-size: 15px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.alc-life {
+  stroke: var(--md-default-fg-color--lighter);
+  stroke-dasharray: 4 5;
+}
+
+.alc-label {
+  fill: var(--md-default-fg-color);
+  font-family: var(--md-code-font-family);
+  font-size: 12.5px;
+  text-anchor: middle;
+  /* A halo of the page's colour, so that the lifelines don't cross the letters. */
+  paint-order: stroke;
+  stroke: var(--md-default-bg-color);
+  stroke-width: 4px;
+}
+
+.alc-request line {
+  stroke: var(--alc-request);
+}
+
+.alc-reply line {
+  stroke: var(--alc-reply);
+}
+
+.alc-refused line {
+  stroke: var(--alc-refused);
+}
+
+.alc-request polygon,
+.alc-request.alc-dot {
+  fill: var(--alc-request);
+}
+
+.alc-reply polygon,
+.alc-reply.alc-dot {
+  fill: var(--alc-reply);
+}
+
+.alc-refused polygon,
+.alc-refused.alc-dot {
+  fill: var(--alc-refused);
+}
+
+.alc-step line {
+  stroke-width: 2px;
+}
+
+.alc-note rect {
+  fill: var(--md-accent-fg-color--transparent);
+  stroke: var(--alc-request);
+}
+
+.alc-note.alc-refused rect {
+  fill: none;
+  stroke: var(--alc-refused);
+}
+
+.alc-banner rect {
+  fill: var(--md-primary-fg-color);
+}
+
+/* The dark scheme's primary colour is close to its page: an edge sets the banner apart. */
+[data-md-color-scheme="slate"] .alc-banner rect {
+  stroke: var(--md-accent-fg-color);
+}
+
+.alc-banner text {
+  fill: var(--md-primary-bg-color);
+  font-size: 14px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.alc-step,
+.alc-dot {
+  opacity: 0;
+  animation: var(--alc-cycle) linear infinite both;
+}
+
+.alc-anim:hover .alc-step,
+.alc-anim:hover .alc-dot {
+  animation-play-state: paused;
+}
+
+.alc-s1 { animation-name: alc-s1; }
+.alc-s2 { animation-name: alc-s2; }
+.alc-s3 { animation-name: alc-s3; }
+.alc-s4 { animation-name: alc-s4; }
+.alc-s5 { animation-name: alc-s5; }
+.alc-s6 { animation-name: alc-s6; }
+.alc-s7 { animation-name: alc-s7; }
+.alc-s8 { animation-name: alc-s8; }
+.alc-s9 { animation-name: alc-s9; }
+.alc-m1 { animation-name: alc-m1; }
+.alc-m2 { animation-name: alc-m2; }
+.alc-m3 { animation-name: alc-m3; }
+.alc-m4 { animation-name: alc-m4; }
+.alc-m5 { animation-name: alc-m5; }
+.alc-m6 { animation-name: alc-m6; }
+.alc-m7 { animation-name: alc-m7; }
+.alc-m8 { animation-name: alc-m8; }
+
+@keyframes alc-s1 { 0% { opacity: 0; } 2%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s2 { 0%, 9% { opacity: 0; } 11%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s3 { 0%, 18% { opacity: 0; } 20%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s4 { 0%, 27% { opacity: 0; } 29%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s5 { 0%, 36% { opacity: 0; } 38%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s6 { 0%, 45% { opacity: 0; } 47%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s7 { 0%, 54% { opacity: 0; } 56%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s8 { 0%, 63% { opacity: 0; } 65%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+@keyframes alc-s9 { 0%, 72% { opacity: 0; } 74%, 94% { opacity: 1; } 98%, 100% { opacity: 0; } }
+
+@keyframes alc-m1 {
+  0% { opacity: 1; transform: translateX(0); }
+  6% { opacity: 1; transform: translateX(var(--dx)); }
+  7%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@keyframes alc-m2 {
+  0%, 9% { opacity: 0; transform: translateX(0); }
+  10% { opacity: 1; transform: translateX(0); }
+  15% { opacity: 1; transform: translateX(var(--dx)); }
+  16%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@keyframes alc-m3 {
+  0%, 18% { opacity: 0; transform: translateX(0); }
+  19% { opacity: 1; transform: translateX(0); }
+  24% { opacity: 1; transform: translateX(var(--dx)); }
+  25%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@keyframes alc-m4 {
+  0%, 27% { opacity: 0; transform: translateX(0); }
+  28% { opacity: 1; transform: translateX(0); }
+  33% { opacity: 1; transform: translateX(var(--dx)); }
+  34%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@keyframes alc-m5 {
+  0%, 36% { opacity: 0; transform: translateX(0); }
+  37% { opacity: 1; transform: translateX(0); }
+  42% { opacity: 1; transform: translateX(var(--dx)); }
+  43%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@keyframes alc-m6 {
+  0%, 45% { opacity: 0; transform: translateX(0); }
+  46% { opacity: 1; transform: translateX(0); }
+  51% { opacity: 1; transform: translateX(var(--dx)); }
+  52%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@keyframes alc-m7 {
+  0%, 54% { opacity: 0; transform: translateX(0); }
+  55% { opacity: 1; transform: translateX(0); }
+  60% { opacity: 1; transform: translateX(var(--dx)); }
+  61%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@keyframes alc-m8 {
+  0%, 63% { opacity: 0; transform: translateX(0); }
+  64% { opacity: 1; transform: translateX(0); }
+  69% { opacity: 1; transform: translateX(var(--dx)); }
+  70%, 100% { opacity: 0; transform: translateX(var(--dx)); }
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  .alc-step {
+    opacity: 1;
+    animation: none;
+  }
+
+  .alc-dot {
+    display: none;
+  }
+}
