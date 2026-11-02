@@ -61,6 +61,31 @@ from `.clusterfuzzlite/requirements.txt`; when they change, `make fuzz-requireme
   release younger than three days (pip enforces it: `make deps` and CI set
   `PIP_UPLOADED_PRIOR_TO=P3D`).
 
+## Spec Kit (optional)
+
+Larger features can go through [Spec Kit](https://github.com/github/spec-kit) 1.2.6, set up for
+Claude Code: the rules plans are checked against are in `.specify/memory/constitution.md` (the
+guidelines above, nothing new), and each feature leaves its `spec.md`, `plan.md` and `tasks.md`
+in `specs/NNN-name/`, committed with its code. In Claude Code, on a branch:
+
+```text
+/speckit-specify    what and why, no technology
+/speckit-clarify    up to five questions on what the spec leaves open
+/speckit-plan       how: modules, backends, options
+/speckit-tasks      the plan as ordered steps
+/speckit-analyze    consistency across spec, plan and tasks (writes nothing)
+/speckit-implement
+/speckit-converge   compares the code with the spec, adds what's missing to tasks.md
+```
+
+The commands run only when typed (`--no-model-invocation`), add no hooks to
+`.claude/settings.json` (`--events false`) and never create branches (no `git` extension). A
+delivered `specs/` directory isn't rewritten: a later change opens a new one. Small fixes,
+dependency bumps and security vulnerabilities (see [SECURITY.md](SECURITY.md)) don't go through
+it. To upgrade: `uv tool install specify-cli==<version> --force`, then
+`specify integration upgrade claude` with the same `--integration-options` (it replaces the
+stored ones).
+
 ## Releases
 
 Maintainers release by pushing a `vX.Y.Z` tag; see [docs/releasing.md](docs/releasing.md).

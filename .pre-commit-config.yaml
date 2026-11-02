@@ -10,8 +10,12 @@ repos:
       - id: check-yaml
         args: [--unsafe] # mkdocs.yml uses !ENV tags
       - id: detect-private-key
+      # Spec Kit tracks its files (.specify/, .claude/skills/) by hash: one rewritten here counts
+      # as edited by hand on `specify integration upgrade`. Only the hooks that rewrite skip them.
       - id: end-of-file-fixer
+        exclude: ^\.(specify|claude)/
       - id: trailing-whitespace
+        exclude: ^\.(specify|claude)/
 
   - repo: local
     hooks:
@@ -32,6 +36,7 @@ repos:
         entry: .venv/bin/ruff format
         language: system
         types_or: [python, markdown]
+        exclude: ^\.(specify|claude)/
         require_serial: true
       - id: mypy
         name: mypy
