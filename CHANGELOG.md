@@ -9,6 +9,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
+  (HTML, CSV, an image, a `JSONResponse` with its headers) is stored whole, status, headers and
+  body, with any coder; before, with `JsonCoder`, a `JSONResponse` came back as its body alone and
+  any other response was never stored. A value keeps the headers the endpoint set on the injected
+  response, not those its dependencies set. Cookies, the connection's headers and background tasks
+  never come back.
+- `@cache(cache_control="public, s-maxage=600")`: the `Cache-Control` directives to send, with
+  `max-age` the time the entry has left unless they give one.
+- With a response model, only what the model has is stored: a field the endpoint returns and the
+  model leaves out (a password hash) no longer reaches the backend.
+- A 304 repeats the response's `Cache-Control`, `Expires`, `Vary` and `Content-Location`.
 - memcached holds locks: taken with `add`, released or extended with `gets` + `cas`, so only by
   their holder. `Lock`, `FastAPILeader`, the concurrency limiter, `IdempotencyMiddleware`,
   `FastAPITOTP`, `distributed_lock`, the scheduler's run lock and the index of user sessions now
@@ -24,6 +35,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The endpoint's own `Cache-Control` is kept on misses and hits; before, the cache replaced it
+  with `max-age`. An entry of one user is still `private`. To get the old header, don't set one on
+  the response, or give `cache_control`.
+- Entries that hold more than a bare value use a new format. Entries of 0.7 keep being served
+  (but on memcached, see below); 0.7 recomputes the new ones, so a rolling upgrade or a rollback
+  is safe.
+- With `PickleCoder`, a returned `Response` is stored as such an entry, no longer pickled.
 - On memcached and DynamoDB, `clear(namespace=...)`, `clear()` and `invalidate_tags` return 0:
   they hide the entries rather than delete them, and can't count them.
   `invalidate_tags_with_keys` returns `(0, None)`.

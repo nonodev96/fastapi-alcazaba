@@ -55,6 +55,7 @@ Call it once, at startup (in the `lifespan`).
 | `vary_headers` | from `init` | `()` for responses that are the same for everybody |
 | `respect_cache_control` | from `init` | |
 | `stale_while_revalidate` | `None` | adds that `Cache-Control` directive |
+| `cache_control` | `None` | the `Cache-Control` directives to send (see [below](#cache-control)) |
 | `single_flight` | from `init` | |
 | `max_value_size` | from `init` | |
 | `distributed_lock` | from `init` | |
@@ -62,7 +63,45 @@ Call it once, at startup (in the `lifespan`).
 | `tags` | `None` | names to invalidate the entry by: a list, or a function of the arguments |
 
 Only 200 responses are stored, and never one that says `no-store`, sets a cookie (its hits
-would hand that cookie, a session, to everyone else) or streams.
+would hand that cookie, a session, to everyone else), streams or sends a file.
+
+### What a hit returns
+
+The response the endpoint gave, whatever its type and whatever the coder:
+
+- **A `Response` it returned** (JSON, HTML, CSV, an image…) comes back with its status, its
+  headers and its body, byte for byte. Its background tasks run when the endpoint does, not on
+  hits.
+- **A value**, with the headers the endpoint set on the injected response
+  (`response.headers["X-Total-Count"] = "2"`). Those its dependencies set first, before the
+  endpoint ran (a remaining quota, a request ID), belong to each request: they're never stored.
+- **With a response model**, only what the model has is stored: a field the endpoint returns and
+  the model leaves out (a password hash) never reaches the backend. The route's
+  `response_model_include`, `exclude` and `exclude_none` apply to each response, hit or miss.
+
+`Set-Cookie`, the connection's own headers (`Connection`, `Transfer-Encoding`…) and the cache's
+own (`ETag`, `Cache-Status`) are never stored, whoever writes the entry.
+
+### Cache-Control
+
+What each response is sent with, miss or hit:
+
+1. `cache_control="public, s-maxage=600"` on `@cache`: those directives, with `max-age` the time
+   the entry has left, unless they give one (`stale-while-revalidate` too, if set).
+2. Else the endpoint's own `Cache-Control`, as it set it.
+3. Else `max-age`, the time the entry has left (and `stale-while-revalidate`).
+
+An entry of one user (a request with `Authorization` or `Cookie`, see `vary_headers`) is
+`private` whatever these say. A 304 repeats the response's `Cache-Control`, `Expires`, `Vary`
+and `Content-Location`. `no-store` isn't a directive to configure: set on the response, it keeps
+it out of the cache.
+
+```python
+@app.get("/logo.png")
+@cache(expire=86_400, cache_control="public, immutable")
+async def logo() -> Response:
+    return Response(LOGO, media_type="image/png")
+```
 
 Delete entries with `await FastAPICache.clear(namespace="products")`, one entry with
 `await FastAPICache.clear(key=...)`, or by tag with `await FastAPICache.invalidate_tags(...)`.

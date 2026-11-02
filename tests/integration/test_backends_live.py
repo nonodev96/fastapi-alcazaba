@@ -20,7 +20,8 @@ from urllib.parse import urlparse
 
 import httpx2 as httpx
 import pytest
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Response
+from pydantic import BaseModel
 from starlette.requests import Request
 
 from fastapi_alcazaba import Cache, FastAPICache, FastAPIScheduler
@@ -314,6 +315,45 @@ async def test_idempotency(backend: Backend, prefix: str) -> None:
         replay = await c.post("/orders", headers=key)
     assert (replay.headers["idempotent-replayed"], replay.json()) == ("true", {"id": 1})
     assert runs == [1]
+
+
+async def test_whole_responses(backend: Backend, prefix: str) -> None:
+    """Each kind of entry, signed, through the app: a response, a value with the endpoint's
+    headers, a value through a response model."""
+    FastAPICache.init(backend, prefix=prefix, signing_key="s" * 32)
+    app = FastAPI()
+    calls: list[str] = []
+    png = b"\x89PNG\r\n\x1a\n" + bytes(range(256))
+
+    class Public(BaseModel):
+        name: str
+
+    @app.get("/png")
+    @cache(expire=60)
+    async def image() -> Response:
+        calls.append("png")
+        return Response(png, media_type="image/png", headers={"Cache-Control": "public, immutable"})
+
+    @app.get("/value")
+    @cache(expire=60)
+    async def value(response: Response) -> dict[str, int]:
+        calls.append("value")
+        response.headers["X-Total-Count"] = "2"
+        return {"total": 2}
+
+    @app.get("/model", response_model=Public)
+    @cache(expire=60)
+    async def model() -> dict[str, str]:
+        calls.append("model")
+        return {"name": "ana", "password_hash": "never stored"}
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        for path in ("/png", "/value", "/model"):
+            miss, hit = await c.get(path), await c.get(path)
+            assert (hit.status_code, hit.content) == (miss.status_code, miss.content), path
+            assert "hit" in hit.headers["cache-status"], path
+    assert calls == ["png", "value", "model"]
+    assert hit.json() == {"name": "ana"}
 
 
 async def test_tags(backend: Backend, prefix: str) -> None:

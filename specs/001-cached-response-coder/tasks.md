@@ -100,14 +100,19 @@ lacks it; misses and hits return the same.
 
 ## Phase 6: Polish & cross-cutting
 
-- [ ] T016 [P] Live round trip of each entry kind in `tests/integration/test_backends_live.py`
-- [ ] T017 [P] `docs/guide/cache.md`: "What a hit returns" and "Cache-Control" sections; the
+- [X] T016 [P] Live round trip of each entry kind in `tests/integration/test_backends_live.py`
+- [X] T017 [P] `docs/guide/cache.md`: "What a hit returns" and "Cache-Control" sections; the
   `cache_control` row in the `@cache()` table
-- [ ] T018 [P] `CHANGELOG.md` under Unreleased: Added (whole responses, `cache_control`, rendered
+- [X] T018 [P] `CHANGELOG.md` under Unreleased: Added (whole responses, `cache_control`, rendered
   entries), Changed (the endpoint's `Cache-Control` now wins; returned `JSONResponse` replayed as a
   response; pickle no longer stores returned `Response`s)
-- [ ] T019 `make lint`, unit + typing tests with coverage ≥ 90 %, `mkdocs build --strict`, the
+- [X] T019 `make lint`, unit + typing tests with coverage ≥ 90 %, `mkdocs build --strict`, the
   benchmarks (`pytest tests/benchmarks --benchmark-only`), and quickstart.md's checks
+
+## Phase 7: Convergence
+
+- [X] T020 [US1] Envelopes through single flight, the distributed lock and tags (FR-011, found by
+  converge: only bare values were tested with them) in `tests/unit/test_cached_responses.py`
 
 ## Dependencies & Execution Order
 

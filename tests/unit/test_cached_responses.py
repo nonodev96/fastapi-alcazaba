@@ -1,12 +1,14 @@
 """Whole cached responses: what a hit gives back (status, body, the endpoint's headers), the
 Cache-Control it's sent with, and what an entry holds when the route has a response model."""
 
+import asyncio
 import pickle  # noqa: S403  # what PickleCoder raises
 import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+import httpx2 as httpx
 import pytest
 from fastapi import Depends, FastAPI, Response
 from fastapi.responses import (
@@ -212,6 +214,43 @@ class TestHitsReturnTheResponse:
         assert len(calls) == 2
 
 
+class TestWithTheCachesOtherTools:
+    """FR-011: entries go through single flight, the distributed lock and tags as values do."""
+
+    def _app(self, calls: list[str], **options: Any) -> FastAPI:
+        app = FastAPI()
+
+        @app.get("/report")
+        @cache(expire=60, tags=["reports"], **options)
+        async def report(response: Response) -> Response:
+            calls.append("report")
+            await asyncio.sleep(0.05)
+            return Response(b"a,b\n", media_type="text/csv", headers={"X-Rows": "1"})
+
+        return app
+
+    @pytest.mark.parametrize("options", [{}, {"distributed_lock": True}])
+    async def test_concurrent_misses_compute_once(self, options: dict[str, Any]) -> None:
+        FastAPICache.init(InMemoryBackend())
+        calls: list[str] = []
+        transport = httpx.ASGITransport(app=self._app(calls, **options))
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+            responses = await asyncio.gather(*(client.get("/report") for _ in range(5)))
+        assert calls == ["report"]
+        assert {(r.content, r.headers["x-rows"]) for r in responses} == {(b"a,b\n", "1")}
+
+    async def test_invalidated_by_tag(self) -> None:
+        FastAPICache.init(InMemoryBackend())
+        calls: list[str] = []
+        transport = httpx.ASGITransport(app=self._app(calls))
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+            await client.get("/report")
+            assert await FastAPICache.invalidate_tags("reports") == 1
+            again = await client.get("/report")
+        assert served(again.headers) == "miss"
+        assert calls == ["report", "report"]
+
+
 class TestWhatIsNeverStored:
     def test_headers_of_dependencies(self) -> None:
         """Written on the injected response before the endpoint ran: per request, like the
@@ -301,6 +340,25 @@ class TestOtherVersions:
             hit = client.get("/value")
         assert served(hit.headers) == "hit"
         assert hit.json() == {"stored": 1}
+
+    def test_entries_of_a_later_format_are_recomputed(self) -> None:
+        """What a later version may write, during a rolling deploy: a miss, not an error."""
+        backend = InMemoryBackend()
+        FastAPICache.init(backend)
+        app = FastAPI()
+
+        @app.get("/value")
+        @cache(expire=60)
+        async def value() -> dict[str, int]:
+            return {"fresh": 1}
+
+        with TestClient(app) as client:
+            client.get("/value")
+            for entry in backend._store.values():  # pylint: disable=protected-access
+                entry.data = MAGIC + b'2\n{"kind": "value"}\n{}'
+            again = client.get("/value")
+        assert served(again.headers) == "miss"
+        assert again.json() == {"fresh": 1}
 
     @pytest.mark.parametrize(
         ("coder", "error"),

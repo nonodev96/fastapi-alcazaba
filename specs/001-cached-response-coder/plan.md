@@ -101,6 +101,10 @@ else stays where it is.
   instead of its decoded body as a plain value.
 - With pickle, a returned `Response` is stored as an envelope, not pickled.
 
+Existing tests changed on purpose: one, `test_security.py`'s
+`test_entries_stored_by_earlier_versions_are_recomputed`, whose simulation of 0.7.0 now also
+stores the `Response` pickled, as 0.7.0 did (the new format drops its cookie anyway).
+
 ## Complexity Tracking
 
 No constitution violations.
