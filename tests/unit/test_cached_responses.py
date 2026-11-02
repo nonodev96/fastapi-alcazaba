@@ -16,6 +16,7 @@ from fastapi.responses import (
     PlainTextResponse,
     StreamingResponse,
 )
+from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 from starlette.testclient import TestClient
 
@@ -391,3 +392,92 @@ class TestCacheControl:
     def test_invalid_directives(self, directives: str) -> None:
         with pytest.raises(ValueError, match="cache_control"):
             cache(cache_control=directives)
+
+
+class Public(BaseModel):
+    name: str
+    nickname: str | None = None
+    user_id: int = Field(alias="userId")
+
+
+class Full(Public):
+    password_hash: str
+
+
+class TestWhatTheResponseModelLetsThrough:
+    """User Story 3: the entry holds what the client gets, not the value the endpoint returned."""
+
+    def _app(self) -> FastAPI:
+        app = FastAPI()
+        user = {"name": "ana", "userId": 1, "password_hash": "scrypt$secret"}
+
+        @app.get("/dict", response_model=Public)
+        @cache(expire=60)
+        async def from_dict() -> dict[str, Any]:
+            return user
+
+        @app.get("/wider", response_model=Public)
+        @cache(expire=60)
+        async def wider() -> Full:
+            return Full.model_validate(user)
+
+        @app.get("/options", response_model=Public, response_model_exclude_none=True)
+        @cache(expire=60)
+        async def options() -> dict[str, Any]:
+            return user
+
+        @app.get("/exclude-required", response_model=Public, response_model_exclude={"user_id"})
+        @cache(expire=60)
+        async def exclude_required() -> dict[str, Any]:
+            return user
+
+        @app.get("/unset", response_model=Public, response_model_exclude_unset=True)
+        @cache(expire=60)
+        async def unset() -> dict[str, Any]:
+            return user
+
+        @app.get("/invalid", response_model=Public)
+        @cache(expire=60)
+        async def invalid() -> dict[str, Any]:
+            return {"name": "ana"}
+
+        return app
+
+    @pytest.mark.parametrize(
+        ("path", "expected"),
+        [
+            ("/dict", {"name": "ana", "nickname": None, "userId": 1}),
+            ("/wider", {"name": "ana", "nickname": None, "userId": 1}),
+            ("/options", {"name": "ana", "userId": 1}),
+            # A required field the route leaves out: FastAPI validates the hit, so it's stored.
+            ("/exclude-required", {"name": "ana", "nickname": None}),
+            ("/unset", {"name": "ana", "userId": 1}),
+        ],
+    )
+    def test_only_the_output_is_stored(self, path: str, expected: dict[str, Any]) -> None:
+        backend = InMemoryBackend()
+        FastAPICache.init(backend)
+        with TestClient(self._app()) as client:
+            miss = client.get(path)
+            hit = client.get(path)
+        assert served(hit.headers) == "hit"
+        assert miss.json() == hit.json() == expected
+        assert all(b"password_hash" not in data for data in stored(backend))
+
+    def test_a_value_the_model_refuses_isnt_stored(self) -> None:
+        backend = InMemoryBackend()
+        FastAPICache.init(backend)
+        with TestClient(self._app(), raise_server_exceptions=False) as client:
+            assert client.get("/invalid").status_code == 500
+        assert stored(backend) == []
+
+    async def test_outside_a_route_the_value_is_stored(self) -> None:
+        backend = InMemoryBackend()
+        FastAPICache.init(backend)
+
+        @cache(expire=60)
+        async def load() -> Full:
+            return Full.model_validate({"name": "ana", "userId": 1, "password_hash": "h"})
+
+        assert await load() == await load()
+        assert [data.startswith(MAGIC) for data in stored(backend)] == [False]

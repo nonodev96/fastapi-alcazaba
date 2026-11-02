@@ -15,6 +15,7 @@ from typing import Any, ParamSpec, Protocol, TypeVar, cast, overload
 
 from fastapi.concurrency import run_in_threadpool
 from fastapi.dependencies.utils import get_typed_return_annotation, get_typed_signature
+from pydantic import TypeAdapter
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_304_NOT_MODIFIED
@@ -31,7 +32,7 @@ from fastapi_alcazaba.response_cache.caches import (
     normalise_headers,
     warn_unsigned,
 )
-from fastapi_alcazaba.response_cache.coder import Coder, type_adapter_for
+from fastapi_alcazaba.response_cache.coder import Coder, JsonCoder, type_adapter_for
 from fastapi_alcazaba.response_cache.compression import decompress
 from fastapi_alcazaba.response_cache.entries import (
     NOT_MODIFIED_HEADERS,
@@ -653,8 +654,35 @@ class _CachedCall:
             headers = storable_headers(decoded_headers(result.raw_headers), paginated=paginated)
             return encode_entry(Entry("response", result.status_code, headers, bytes(result.body)))
         headers = storable_headers(added, paginated=paginated)
+        if (rendered := self._render(result)) is not None:
+            return encode_entry(Entry("rendered", HTTP_200_OK, headers, rendered))
         value = self.coder.encode(result)
         return encode_entry(Entry("value", HTTP_200_OK, headers, value)) if headers else value
+
+    def _response_model(self) -> tuple[Any, TypeAdapter[Any]] | None:
+        """The FastAPI route answering this request (an APIRoute) and its response model, if it
+        has one."""
+        route = None if self.request is None else self.request.scope.get("route")
+        model = getattr(route, "response_model", None)
+        adapter = None if model is None else Coder.adapter(model)
+        return None if adapter is None else (route, adapter)
+
+    def _render(self, result: Any) -> bytes | None:
+        """The value as the route's response model has it: what the endpoint returned besides (a
+        password hash the model leaves out) is never stored. The route's include, exclude and
+        exclude_none apply to each response, as FastAPI renders it from the model: applied here,
+        they could leave out a required field, and FastAPI validates every hit. Unset fields stay
+        unset (`response_model_exclude_unset`). None outside a route with a response model;
+        raises when the model refuses the value, which FastAPI answers with a 500 anyway."""
+        if (found := self._response_model()) is None:
+            return None
+        route, adapter = found
+        value = adapter.validate_python(result, from_attributes=True)
+        return adapter.dump_json(
+            value,
+            by_alias=True,
+            exclude_unset=bool(getattr(route, "response_model_exclude_unset", False)),
+        )
 
     async def _compute(self) -> Any:
         before = list(self.response.raw_headers) if self.response is not None else []
@@ -807,6 +835,12 @@ class _CachedCall:
             return self.coder.decode_as_type(payload, type_=self.endpoint.return_type)
         if entry.kind == "response":
             return build_response(entry)
+        if entry.kind == "rendered":
+            # An instance of the response model, which may be narrower than the return annotation
+            # (a page, for its links); called outside the route, it must fit the annotation.
+            if (found := self._response_model()) is not None:
+                return found[1].validate_json(entry.payload)
+            return JsonCoder.decode_as_type(entry.payload, type_=self.endpoint.return_type)
         return self.coder.decode_as_type(entry.payload, type_=self.endpoint.return_type)
 
     def _finish(self, result: Any, payload: bytes | None) -> Any:

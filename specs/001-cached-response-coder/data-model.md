@@ -17,7 +17,7 @@ Then compressed, signed or encrypted as configured, exactly like a bare value.
 | --- | --- | --- |
 | `kind` | `"response"` | a `Response` the endpoint returned: the payload is its body |
 | | `"value"` | a value the endpoint returned, encoded by the coder: the payload is `coder.encode(value)` |
-| | `"rendered"` | a value rendered through the route's response model: the payload is JSON, returned as decoded |
+| | `"rendered"` | a value validated through the route's response model: the payload is its JSON (by alias, unset fields left out when the route says so), validated back into the model on a hit |
 | `status` | int | the status (200; kept for the next change, which may cache others) |
 | `headers` | list of `[name, value]`, latin-1 strings, order and repeats kept | the storable headers: for `response`, the returned response's; for `value`/`rendered`, those the endpoint added to the injected response |
 

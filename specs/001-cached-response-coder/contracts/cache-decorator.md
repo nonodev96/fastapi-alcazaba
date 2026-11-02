@@ -23,7 +23,8 @@ own `no-store`, which skips the cache, or don't cache it).
    tasks.
 3. Not stored: streaming and file responses, responses with `no-store` or `Set-Cookie`, statuses
    other than 200.
-4. With a FastAPI route and a response model, the entry holds the rendered output only.
+4. With a FastAPI route and a response model, the entry holds only what the model has; the
+   route's include/exclude options apply to each response, hit or miss.
 5. `Cache-Control`: configured directives > the endpoint's own > today's computed header; per-user
    entries never `public`.
 6. 304s carry the entry's `Cache-Control`, `Expires`, `Vary`, `Content-Location`.

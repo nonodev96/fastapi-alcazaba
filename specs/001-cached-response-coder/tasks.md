@@ -88,11 +88,11 @@ never `public`.
 **Independent Test**: `response_model=Public` over a dict with `password_hash`: the stored entry
 lacks it; misses and hits return the same.
 
-- [ ] T014 [US3] Tests in `tests/unit/test_cached_responses.py`: the dropped field isn't stored;
+- [X] T014 [US3] Tests in `tests/unit/test_cached_responses.py`: the dropped field isn't stored;
   include/exclude/by_alias/exclude_unset/exclude_none respected; a return annotation wider than
   the response model still hits; no route in scope → stored as today; a value that fails
   validation isn't stored
-- [ ] T015 [US3] In `decorator.py`: when `request.scope["route"]` has a response model and the
+- [X] T015 [US3] In `decorator.py`: when `request.scope["route"]` has a response model and the
   endpoint returned a value, render it (R7, adapters cached through `Coder.adapter`) and store a
   `rendered` entry; `_serve` returns its decoded JSON without validating it as the return type
 

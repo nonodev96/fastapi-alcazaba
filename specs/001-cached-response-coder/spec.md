@@ -153,8 +153,11 @@ entry.
 - **FR-007**: Per-user entries MUST never be sent as `public`; `private` is enforced for them.
 - **FR-008**: With no endpoint header and no new options, the `Cache-Control` sent MUST be exactly
   today's.
-- **FR-009**: When the endpoint declares a response model, the stored entry MUST hold only the
-  output the client receives.
+- **FR-009**: When the endpoint declares a response model, the stored entry MUST hold only what
+  that model has: nothing the endpoint returned beyond it. The route's `include`, `exclude` and
+  `exclude_none` options keep applying to each response, hit or miss, as they do today (applied
+  before storing, they could leave out a required field that the framework then requires on
+  every hit).
 - **FR-010**: Entries written in the previous format MUST be served as before or treated as a miss,
   never as an error; the stored format MUST be versioned so the next change can do the same.
 - **FR-011**: Signing, encryption, compression, the size limit, tags, single flight and the

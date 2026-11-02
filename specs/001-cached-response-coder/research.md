@@ -84,14 +84,17 @@ reproductions run on 2026-11-02.
 
 - **Decision**: when the request's scope carries the FastAPI route (`scope["route"]`, an
   `APIRoute`) with a response model, and the endpoint returned a value (not a `Response`), store the
-  value validated and dumped as FastAPI does: `TypeAdapter(route.response_model)`,
-  `validate_python(value, from_attributes=True)`, then `dump_json` with the route's
-  `response_model_include`, `response_model_exclude`, `response_model_by_alias`,
-  `response_model_exclude_unset`, `response_model_exclude_defaults` and
-  `response_model_exclude_none`. The envelope marks it `rendered`: a hit returns the decoded JSON
-  without validating it against the function's return annotation (which may be wider than the
-  response model, and would then never validate), and FastAPI validates and serialises it with the
-  response model, as for any return value.
+  value validated through the model (`TypeAdapter(route.response_model)`,
+  `validate_python(value, from_attributes=True)`) and dumped by alias, leaving unset fields out
+  when the route says `response_model_exclude_unset`. The envelope marks it `rendered`; a hit
+  validates it back into the response model (not the function's return annotation, which may be
+  wider), and FastAPI renders it with the route's options, as for any return value.
+- **Revised during implementation**: a first version stored the output with every route option
+  applied and returned it as a dict on hits. Two failures: pagination needs the page object to
+  build its links (7 tests), and FastAPI validates every returned value against the response
+  model, so an output without a required field the route excludes would make each hit a 500.
+  `include`, `exclude`, `exclude_none` and `exclude_defaults` are therefore left to FastAPI on each
+  response; only `exclude_unset`, which never drops a field without a default, is applied.
 - **Rationale**: FR-009; reproduction on 2026-11-02 stored `"password_hash"` for an endpoint whose
   response model drops it. `TypeAdapter` and the route attributes are public API; FastAPI's own
   `serialize_response` is internal and changed signature across versions.
