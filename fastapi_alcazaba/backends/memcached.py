@@ -72,7 +72,7 @@ class MemcachedBackend(Backend):
         return value
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
-        if namespace:
+        if namespace is not None:
             # flush_all would also wipe every other application's data.
             raise NotImplementedError(
                 "memcached can't list the keys of a namespace; delete them one by one with `key`"

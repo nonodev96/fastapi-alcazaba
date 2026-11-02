@@ -253,7 +253,7 @@ class TieredBackend(Backend):
         deleted = await self.remote.clear(namespace, key)
         self._epoch += 1
         await self.local.clear(namespace, key)
-        if namespace:
+        if namespace is not None:
             await self._announce(namespace=namespace)
         elif key:
             await self._announce(key=key)

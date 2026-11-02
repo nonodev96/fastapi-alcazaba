@@ -113,7 +113,7 @@ class InMemoryBackend(Backend):
             self._delete(key)
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
-        if namespace:
+        if namespace is not None:
             prefix = f"{namespace}:"
             state = (key for place in self._state.values() for key in place)
             matching = [k for k in (*self._store, *state) if k.startswith(prefix)]

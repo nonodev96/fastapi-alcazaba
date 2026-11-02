@@ -14,6 +14,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   entry, to every client served from it. Entries stored by earlier versions that carry one are
   recomputed instead of served.
 
+### Fixed
+
+- `FastAPICache.clear()` without arguments deleted nothing with the default prefix (`""`), and
+  `Cache.clear()` likewise: every backend took the empty namespace for none. It now deletes every
+  cached response, still not locks, limits or revoked tokens. On memcached and DynamoDB it raises,
+  as with any other prefix.
+
 ## [0.7.0] - 2026-11-02
 
 ### Added

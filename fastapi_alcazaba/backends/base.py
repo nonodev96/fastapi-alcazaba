@@ -46,8 +46,9 @@ class Backend(abc.ABC):
 
     @abc.abstractmethod
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
-        """Delete every entry of `namespace` (keys starting with "<namespace>:"), or else the
-        entry `key`; returns how many were deleted."""
+        """Delete every entry of `namespace` (keys starting with "<namespace>:", so ":" for "",
+        the whole of a cache without prefix), or else the entry `key`; returns how many were
+        deleted."""
         raise NotImplementedError
 
     async def acquire_lock(self, key: str, token: str, ttl: float) -> bool:

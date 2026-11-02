@@ -231,7 +231,7 @@ class DynamoBackend(Backend):
         return True
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
-        if namespace:
+        if namespace is not None:
             raise NotImplementedError("DynamoDB can't delete a namespace without a table scan")
         if key:
             # Conditional, so that of several deleting the item at once only one is told it was

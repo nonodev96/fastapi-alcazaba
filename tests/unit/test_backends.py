@@ -176,6 +176,13 @@ class TestRedisBackend:
         assert await backend.clear(key="k") == 0
         assert await backend.clear() == 0
 
+    async def test_clear_the_empty_namespace(self, fake_redis: Any) -> None:
+        backend = RedisBackend(fake_redis)
+        for key in ("::1", ":ns:1", "!lock", "other"):
+            await fake_redis.set(key, b"x")
+        assert await backend.clear(namespace="") == 2
+        assert sorted(await fake_redis.keys()) == [b"!lock", b"other"]
+
     async def test_cluster_flag(self, fake_redis: Any) -> None:
         backend = RedisLikeBackend(fake_redis, is_cluster=True, scan_count=2)
         for i in range(3):
@@ -363,6 +370,16 @@ class TestFastAPICacheClear:
         await backend.set("app:other:1", b"x")
         assert await FastAPICache.clear(namespace="ns") == 1
         assert await FastAPICache.clear() == 1
+
+    async def test_clear_everything_without_a_prefix(self) -> None:
+        """The default prefix is "": its keys start with ":", and clear() deleted none."""
+        backend = InMemoryBackend()
+        FastAPICache.init(backend)
+        await backend.set("::1", b"x")
+        await backend.set(":ns:1", b"x")
+        await backend.set("other-app:1", b"x")
+        assert await FastAPICache.clear() == 2
+        assert await backend.get("other-app:1") == b"x"
 
 
 class FakeDynamoClient:

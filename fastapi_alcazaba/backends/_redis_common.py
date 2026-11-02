@@ -140,7 +140,7 @@ class RedisLikeBackend(Backend):
         await self._client.set(key, value, ex=expire or None)
 
     async def clear(self, namespace: str | None = None, key: str | None = None) -> int:
-        if namespace:
+        if namespace is not None:
             return await self._delete_matching(f"{escape_glob(namespace)}:*")
         if key:
             return int(await self._client.delete(key))

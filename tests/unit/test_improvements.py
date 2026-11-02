@@ -401,12 +401,16 @@ class TestTags:
         assert await Untold().invalidate_tags_with_keys(["t"]) == (3, None)
 
 
+@pytest.mark.parametrize("prefix", ["app", ""])
 @pytest.mark.parametrize("backend_kind", ["memory", "redis"])
-async def test_clearing_the_cache_keeps_locks_limits_and_revocations(backend_kind: str) -> None:
+async def test_clearing_the_cache_keeps_locks_limits_and_revocations(
+    backend_kind: str,
+    prefix: str,
+) -> None:
     backend: Backend = (
         InMemoryBackend() if backend_kind == "memory" else RedisBackend(fakeredis.FakeAsyncRedis())
     )
-    app_cache = Cache(backend, prefix="app")
+    app_cache = Cache(backend, prefix=prefix)
     blocklist = TokenBlocklist(app_cache)
     limiter = FastAPIRateLimiter(times=1, minutes=1, cache=app_cache, name="login")
     request = Request({"type": "http", "headers": [], "client": ("203.0.113.9", 1)})
