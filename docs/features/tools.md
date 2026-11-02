@@ -52,12 +52,26 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
     API keys with scopes and expiry, a blocklist of tokens and one-time codes, nothing stored in
     clear.
 
--   :material-account-key:{ .lg .middle } __[Authorization with Casbin](../guide/authz.md)__
+-   :material-fingerprint:{ .lg .middle } __[Passkeys](../guide/passkeys.md)__
 
     ---
 
-    Who may do what, decided by a Casbin policy (ACL, RBAC, ABAC) per route or for every
-    request.
+    Logins without a password with Touch ID, Windows Hello, a phone or a security key (WebAuthn),
+    which a phishing page can't relay.
+
+-   :material-cellphone-key:{ .lg .middle } __[Second factor](../guide/two-factor.md)__
+
+    ---
+
+    Authenticator apps' codes (TOTP) after the password, each once, recovery codes, and a recent
+    code for sensitive actions.
+
+-   :material-account-key:{ .lg .middle } __[Authorization](../guide/authorization/index.md)__
+
+    ---
+
+    Who may do what, decided by a Casbin or Cedar policy in the process, or by Open Policy Agent
+    over the network (ACL, RBAC, ABAC), per route or for every request.
 
 -   :material-shield-lock:{ .lg .middle } __[Sessions, CSRF and security headers](../guide/browser.md)__
 
@@ -65,6 +79,13 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
 
     Sessions you can revoke, requests from other sites refused, the OWASP headers and a body size
     limit.
+
+-   :material-counter:{ .lg .middle } __[Accounting](../guide/accounting.md)__
+
+    ---
+
+    What each user, API key or tenant uses per period, held to its plan's quotas, with a usage
+    record per charge for billing.
 
 -   :material-clipboard-text-clock:{ .lg .middle } __[Audit trail](../guide/audit.md)__
 

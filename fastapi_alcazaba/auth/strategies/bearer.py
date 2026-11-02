@@ -11,7 +11,7 @@ For JWTs, which carry their claims and a signature, JWTStrategy verifies them it
 """
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from typing import Any
 
 from fastapi.security import HTTPBearer
@@ -36,6 +36,8 @@ class HTTPBearerStrategy(Strategy):
         authentication fails). Async, or a plain function, which runs in a thread. Keep digests
         of the tokens, not the tokens: `FastAPIAPIKeys` does it for API keys.
     :param realm: the realm of the 401's challenge, `Bearer realm="..."`.
+    :param scopes_of: `scopes_of(user)`: the scopes the token grants (its row's, the `scope` of
+        the provider's introspection), for the routes that need some; none without it.
     :param name: what `FastAPIAuth.authenticate` calls it by.
     """
 
@@ -44,12 +46,14 @@ class HTTPBearerStrategy(Strategy):
         verify: Callable[[str], Any],
         *,
         realm: str | None = None,
+        scopes_of: Callable[[Any], str | Collection[str]] | None = None,
         name: str = "bearer",
     ) -> None:
         super().__init__(name)
         if realm is not None and not _REALM.fullmatch(realm):
             raise ValueError("the realm is printable ASCII, without quotes or backslashes")
         self.verify = verify
+        self.scopes_of = scopes_of
         self.challenge = f'Bearer realm="{realm}"' if realm is not None else "Bearer"
 
     def openapi_scheme(self) -> HTTPBearer:
@@ -65,4 +69,6 @@ class HTTPBearerStrategy(Strategy):
         user = await call(self.verify, token)
         if user is None:
             raise AuthenticationFailed("unknown token")
+        if self.scopes_of is not None:
+            self.grant(connection, self.scopes_of(user))
         return user

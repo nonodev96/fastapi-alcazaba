@@ -7,6 +7,15 @@ contributors, and from fastapi-limiter (https://github.com/long2ice/fastapi-limi
 2020 long2ice, both licensed under the Apache License, Version 2.0. Those files have been
 modified.
 
-`fastapi_alcazaba.authz.CasbinMiddleware` is based on the middleware of fastapi-authz
+`fastapi_alcazaba.authz.AuthzMiddleware` is based on the middleware of fastapi-authz
 (https://github.com/pycasbin/fastapi-authz), by Zxilly and the fastapi-authz contributors, licensed
 under the Apache License, Version 2.0, and has been modified.
+
+`tests/unit/webauthn_vectors.json` holds WebAuthn test vectors (answers of real browsers and
+authenticators) from py_webauthn (https://github.com/duo-labs/py_webauthn), Copyright (c)
+2017-2021 Duo Security, Inc., licensed under the BSD 3-Clause License, whose notice they keep:
+redistributions of source code must retain this copyright notice, this list of conditions and the
+following disclaimer; neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software without specific prior
+written permission. THE SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED.

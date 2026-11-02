@@ -20,16 +20,18 @@ from urllib.parse import urlparse
 
 import httpx2 as httpx
 import pytest
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from starlette.requests import Request
 
 from fastapi_alcazaba import Cache, FastAPICache, FastAPIScheduler
+from fastapi_alcazaba.accounting import FastAPIAccounting, Quota
 from fastapi_alcazaba.auth import OneTimeCodes, TokenBlocklist
 from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.idempotency import IdempotencyMiddleware
 from fastapi_alcazaba.rate_limit import FastAPIRateLimiter
 from fastapi_alcazaba.response_cache import cache, default_key_builder
 from fastapi_alcazaba.response_cache.compression import Codec
+from fastapi_alcazaba.security import ServerSessionMiddleware, UserSessions, rotate_session
 
 pytestmark = pytest.mark.integration
 
@@ -365,6 +367,65 @@ async def test_rate_limiter(backend: Backend, prefix: str) -> None:
     assert sum(result is None for result in results) == 3
     other = Request({"type": "http", "path": "/search", "client": ("192.0.2.2", 1234)})
     assert await limiter.hit(other) is None
+
+
+async def test_user_sessions(backend: Backend, prefix: str) -> None:
+    """Each user's sessions on a real backend: logins at once, all indexed (its locks), listed,
+    and ended everywhere but here."""
+    users = UserSessions()
+    app = FastAPI()
+
+    @app.post("/login/{user}")
+    async def login(request: Request, user: str) -> None:
+        request.session["user_id"] = user
+        rotate_session(request)
+
+    @app.get("/me")
+    async def me(request: Request) -> str | None:
+        return request.session.get("user_id")
+
+    @app.get("/sessions")
+    async def sessions(request: Request) -> int:
+        return len(await users.list("ana", request=request))
+
+    @app.post("/everywhere")
+    async def everywhere(request: Request) -> int:
+        return await users.end_all("ana", request=request, keep_current=True)
+
+    Cache(backend, prefix=prefix, signing_key="s" * 32).install(app)
+    app.add_middleware(ServerSessionMiddleware, users=users)
+    transport = httpx.ASGITransport(app=app)
+    devices = [httpx.AsyncClient(transport=transport, base_url="https://test") for _ in range(5)]
+    await asyncio.gather(*(device.post("/login/ana") for device in devices))
+    listed = (await devices[0].get("/sessions")).json()
+    # Without locks (memcached), logins at once may leave some out of the index.
+    assert listed == 5 if backend.supports_locks else 1 <= listed <= 5
+    ended = (await devices[0].post("/everywhere")).json()
+    # All the listed but this one; without locks, this one may be the one left out.
+    assert ended == listed - 1 if backend.supports_locks else ended <= listed
+    # Every other device is logged out, those the index missed too.
+    assert [(await device.get("/me")).json() for device in devices] == ["ana"] + [None] * 4
+    for device in devices:
+        await device.aclose()
+
+
+async def test_accounting_quota(backend: Backend, prefix: str) -> None:
+    """Concurrent requests against a quota: exactly its limit get through, and are counted."""
+    accounting = FastAPIAccounting(
+        subject=lambda: "acme",
+        quotas=[Quota("requests", limit=3)],
+        cache=Cache(backend, prefix=prefix),
+        sinks=(),
+    )
+    app = FastAPI()
+    app.get("/search", dependencies=[Depends(accounting.meter("requests"))])(lambda: None)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        responses = await asyncio.gather(*(client.get("/search") for _ in range(10)))
+    assert sorted(response.status_code for response in responses) == [200] * 3 + [429] * 7
+    assert (await accounting.usage("acme", "requests")).used == 3
+    await accounting.record("acme", "requests", 2)
+    assert (await accounting.usage("acme", "requests")).remaining == 0
 
 
 @pytest.mark.parametrize(

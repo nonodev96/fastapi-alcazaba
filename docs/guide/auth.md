@@ -1,7 +1,7 @@
 # API keys, tokens and codes
 
 Credentials kept only as digests: API keys with scopes and expiry, revoked tokens and one-time
-codes.
+codes. The codes of an authenticator app, as a second factor: [Second factor](two-factor.md).
 
 In an app: [the example](../examples/auth.md). Every class and function: [the API reference](../reference/auth.md).
 

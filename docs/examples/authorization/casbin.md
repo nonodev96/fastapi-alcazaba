@@ -1,15 +1,15 @@
-# Authorization with Casbin
+# Casbin
 
 --8<-- "docs/examples/animations/authz.svg"
 
 A newsroom API whose policy, not its routes, says who may do what. Anybody reads the published
 articles; writers write drafts, editors edit and publish them, and admins give people roles. The
-[`FastAPICasbin`](../guide/authz.md#casbin-policies) dependencies check each request against
+[`FastAPIAuthz`](../../guide/authorization/casbin.md) dependencies check each request against
 Casbin's policy: on the path and method of the route, or on a named action such as
 `(ben, articles, publish)`.
 
 Users log in with a fixed token each, which stands in for your authentication (JWTs, sessions,
-[API keys](auth.md)): `ana-token` (admin), `ben-token` (editor), `cris-token` (writer) and
+[API keys](../auth.md)): `ana-token` (admin), `ben-token` (editor), `cris-token` (writer) and
 `dan-token` (no role yet).
 
 ## Run it
@@ -113,7 +113,7 @@ www-authenticate: Bearer
 - **What visitors may do, everybody may:** the matcher grants the rules of `*anonymous` to every
   subject (`p.sub == "*anonymous" || g(r.sub, p.sub)`), so Dan, without a role, isn't worse off
   than a visitor.
-- **Checks that depend on the data** go in the route, with `authz.enforce()`: everybody may list
+- **Checks that depend on the data** go in the route, with `await authz.enforce()`: everybody may list
   the articles, but only those who may read the drafts see them. A draft is a 404 for the others,
   not a 403, which would tell that it exists.
 - **Roles granted at runtime** take effect at once in the process that grants them: an

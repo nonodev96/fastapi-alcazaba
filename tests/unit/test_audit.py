@@ -38,6 +38,7 @@ from fastapi_alcazaba.audit import (
 from fastapi_alcazaba.audit import trail as audit_module
 from fastapi_alcazaba.audit.trail import MAX_ITEMS, MAX_STRING, REDACTED
 from fastapi_alcazaba.core import canonical_json
+from fastapi_alcazaba.core.logs import outputs
 from fastapi_alcazaba.observability import RequestIDMiddleware
 from fastapi_alcazaba.telemetry import Metrics
 
@@ -575,13 +576,13 @@ def test_where_log_records_end_up() -> None:
     root = logging.getLogger()
     saved = root.handlers[:]
     try:
-        assert not audit_module._outputs(log, logging.INFO)  # the handler takes errors only
-        assert audit_module._outputs(log, logging.ERROR)
+        assert not outputs(log, logging.INFO)  # the handler takes errors only
+        assert outputs(log, logging.ERROR)
         log.removeHandler(handler)
         log.propagate = True
         root.handlers.clear()  # no handler at all: logging's last resort, from WARNING up
-        assert audit_module._outputs(log, logging.WARNING)
-        assert not audit_module._outputs(log, logging.INFO)
+        assert outputs(log, logging.WARNING)
+        assert not outputs(log, logging.INFO)
     finally:
         root.handlers[:] = saved
         log.removeHandler(handler)

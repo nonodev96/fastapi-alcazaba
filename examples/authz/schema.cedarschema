@@ -1,0 +1,7 @@
+entity Role;
+entity User in [Role] { team: String, contractor: Bool };
+entity Document { owner: User, team: String, confidential: Bool };
+entity Resource { id: String };
+
+action read, edit appliesTo { principal: [User], resource: [Document] };
+action GET, delete appliesTo { principal: [User], resource: [Resource] };

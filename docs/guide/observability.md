@@ -241,6 +241,9 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.scheduler.runs` | `fastapi_alcazaba.outcome` (ran, failed, skipped, overlapping, unchecked), `fastapi_alcazaba.job` |
 | `fastapi_alcazaba.idempotency` | `fastapi_alcazaba.outcome` (stored, replayed, conflict, mismatch, not_kept, invalid, too_large, unchecked) |
 | `fastapi_alcazaba.tokens.checks` | `fastapi_alcazaba.outcome` (valid, revoked, unchecked) |
+| `fastapi_alcazaba.webauthn` | `fastapi_alcazaba.ceremony` (register, authenticate), `fastapi_alcazaba.outcome` (success, challenge, origin, rp_id, signature, counter…): a burst of origin or rp_id is a phishing page |
+| `fastapi_alcazaba.totp.verifications` | `fastapi_alcazaba.outcome` (success, wrong, replayed, malformed, locked, unchecked): a burst of wrong or locked is someone guessing |
+| `fastapi_alcazaba.totp.recovery` | `fastapi_alcazaba.outcome` (used, wrong, replayed, locked, unchecked) |
 | `fastapi_alcazaba.otp.verifications` | `fastapi_alcazaba.outcome` (success, wrong, missing, exhausted, malformed, unchecked): a burst of wrong or exhausted is someone guessing |
 | `fastapi_alcazaba.lock.wait` | `fastapi_alcazaba.acquired` (true, false): seconds spent acquiring locks |
 | `fastapi_alcazaba.lock.lost` | locks whose renewals couldn't keep up |
@@ -258,7 +261,8 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.webhooks` | `fastapi_alcazaba.outcome` (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable) |
 | `fastapi_alcazaba.api_keys` | `fastapi_alcazaba.outcome` (accepted, malformed, unknown, wrong_secret, expired, insufficient_scope) |
 | `fastapi_alcazaba.auth` | `fastapi_alcazaba.strategy`, `fastapi_alcazaba.outcome` (success, failure: credentials there but refused, unauthenticated: no strategy found a user) |
-| `fastapi_alcazaba.authz` | `fastapi_alcazaba.outcome` (allowed, denied, unauthenticated): a burst of denied is someone probing |
+| `fastapi_alcazaba.auth.unkey` | `fastapi_alcazaba.strategy`, `fastapi_alcazaba.code` (Unkey's: VALID, NOT_FOUND, RATE_LIMITED, USAGE_EXCEEDED…; unavailable): a burst of NOT_FOUND is someone guessing keys |
+| `fastapi_alcazaba.authz` | `fastapi_alcazaba.outcome` (allowed, denied, unauthenticated, unavailable): a burst of denied is someone probing, of unavailable a policy service that is down |
 | `fastapi_alcazaba.csrf.refused` | `fastapi_alcazaba.kind` (http, websocket), `fastapi_alcazaba.reason` (fetch_site, origin, no_source, token) |
 | `fastapi_alcazaba.sessions` | `fastapi_alcazaba.event` (created, updated, rotated, deleted, touched, rejected: forged or altered, unreadable, unavailable) |
 | `fastapi_alcazaba.uploads` | `fastapi_alcazaba.outcome` (accepted, too_large, too_many_pixels, unsupported, unreadable, empty) |
@@ -267,5 +271,8 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.tasks` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` (succeeded, retried, failed, interrupted; for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered) |
 | `fastapi_alcazaba.tasks.duration` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` |
 | `fastapi_alcazaba.tasks.reclaimed` | `fastapi_alcazaba.queue`: tasks taken over from workers that stopped answering |
+| `fastapi_alcazaba.accounting` | `fastapi_alcazaba.meter`, `fastapi_alcazaba.outcome` (allowed, exceeded, unauthenticated, unchecked, refunded) |
+| `fastapi_alcazaba.accounting.usage` | `fastapi_alcazaba.meter`: the units charged |
+| `fastapi_alcazaba.accounting.undelivered` | `fastapi_alcazaba.sink`, `fastapi_alcazaba.reason` (error, timeout): usage records a sink didn't write |
 | `fastapi_alcazaba.audit` | `fastapi_alcazaba.action`, `fastapi_alcazaba.outcome` (success, failure, denied): a burst of denied is someone probing |
 | `fastapi_alcazaba.audit.undelivered` | `fastapi_alcazaba.sink`, `fastapi_alcazaba.reason` (error, timeout): events a sink didn't write |

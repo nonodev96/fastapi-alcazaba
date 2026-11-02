@@ -63,6 +63,11 @@ async def delete_invoice(
   beyond 2⁵³ are recorded as text, lone surrogates as U+FFFD. It can't tell that the newest events were
   removed, and whoever has the key can rewrite the trail: keep it from the people whose actions
   are recorded.
+- **Authentication and authorization:** `FastAPIAuth(audit=audit)` records failed
+  authentications, OAuth2, OpenID Connect and SAML logins, and missing scopes
+  ([In the audit trail](authentication/index.md#in-the-audit-trail)); `FastAPIAuthz(audit=audit)`
+  and `AuthzMiddleware(audit=audit)` the requests their policy refuses
+  ([Authorization](authorization/index.md)).
 - **Delivery:** a sink that fails or takes longer than `timeout` (5 s) is logged at ERROR with the
   event, so that it isn't lost, and counted; the other sinks still get it, and an event is written
   even when its request is cancelled meanwhile. The action isn't undone or refused for it: when an

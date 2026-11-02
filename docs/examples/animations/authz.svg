@@ -1,6 +1,6 @@
 <figure class="alc-anim">
 <svg viewBox="0 0 640 418" role="img" aria-labelledby="alc-authz-title alc-authz-desc" xmlns="http://www.w3.org/2000/svg">
-<title id="alc-authz-title">Authorization with Casbin</title>
+<title id="alc-authz-title">Casbin</title>
 <desc id="alc-authz-desc">User to Your app: cris: POST …/3/publish. Your app to Casbin policy: (cris, articles, publish)? Casbin policy to Your app: deny: a writer. Your app to User: 403 Forbidden. User to Your app: ben: POST …/3/publish. Your app to Casbin policy: (ben, articles, publish)? Casbin policy to Your app: allow: an editor. Your app to User: 200, published by ben. Who may do what is in the policy, not in the routes.</desc>
 <line class="alc-life" x1="100" y1="52" x2="100" y2="366"/>
 <g class="alc-actor"><rect x="18" y="10" width="164" height="42" rx="8"/><text x="100" y="36">User</text></g>

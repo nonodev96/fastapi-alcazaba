@@ -63,6 +63,7 @@ jobs:
       CLUSTER_URL: redis://localhost:16382
       MEMCACHED_URL: localhost:11211
       DYNAMODB_URL: http://localhost:8000
+      OPA_URL: http://localhost:8181
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -78,6 +79,12 @@ jobs:
             docker exec valkey-cluster valkey-cli -p 16382 cluster info | grep -q cluster_state:ok && break
             sleep 1
           done
+      # OPA listens on localhost only by default: --addr for the published port to reach it.
+      - name: Start Open Policy Agent
+        run: |
+          docker run -d --name opa -p 8181:8181 openpolicyagent/opa:1.21.4@sha256:12420358d3f22a0cd2424ddc44a16e292ecb42825d3dfbca779986006822a3f6 \
+            run --server --addr 0.0.0.0:8181
+          for _ in $(seq 30); do curl -sf http://localhost:8181/health && break; sleep 1; done
       - uses: $/.github/actions/python
         with:
           python-version: ${{ matrix.python }}

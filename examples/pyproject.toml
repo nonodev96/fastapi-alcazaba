@@ -1,2 +1,6 @@
 [tool.ruff]
 extend = "../pyproject.toml"
+
+[tool.ruff.format]
+# A trailing comma keeps one item per line (scripts/check_signatures.py adds it to signatures).
+skip-magic-trailing-comma = false

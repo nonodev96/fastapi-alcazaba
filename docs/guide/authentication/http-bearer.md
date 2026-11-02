@@ -21,5 +21,7 @@ bearer = auth.use(HTTPBearerStrategy(find_token))
 ```
 
 A token that isn't RFC 6750's syntax, or longer than 4 KiB, fails without reaching `verify`.
+`scopes_of(user)` gives the scopes it grants (its row's, the introspection's `scope`), for the
+routes that need some: [Scopes](index.md#scopes).
 Keep digests of the tokens, not the tokens. Behind a JWTStrategy, JWTs go to that one and opaque
 tokens to this one.

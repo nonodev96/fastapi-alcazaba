@@ -41,12 +41,13 @@ The key features are:
 - **The FastAPI way:** dependencies, decorators and middlewares that show in the OpenAPI docs,
   with types your editor completes.
 - **Standards:** problem details (RFC 9457), `Cache-Status` (RFC 9211), the IETF's `RateLimit`
-  headers, Standard Webhooks, Casbin policies and OpenTelemetry.
+  headers, Standard Webhooks, Casbin, Cedar and Open Policy Agent policies, and OpenTelemetry.
 - **Tested hard:** against real servers on Python 3.11 to 3.14, with fuzzing and mutation
   testing.
 - **Many tools, one package:** a response cache, rate and concurrency limits, idempotency keys,
-  authentication strategies, API keys and tokens, authorization, sessions and CSRF, an audit
-  trail, upload checks, webhooks, scheduled jobs, a task queue, circuit breakers, maintenance
+  authentication strategies, API keys and tokens, passkeys and a second factor (TOTP),
+  authorization,
+  accounting and quotas, sessions and CSRF, an audit trail, upload checks, webhooks, scheduled jobs, a task queue, circuit breakers, maintenance
   mode and feature flags. [See them all](features/tools.md).
 
 [Get started](guide/index.md){ .md-button .md-button--primary }
@@ -155,10 +156,14 @@ Each backend and integration needs a library of its own, which an extra installs
 | `otel` | the OpenTelemetry API | [metrics and traces](guide/observability.md#metrics-and-traces) |
 | `crypto` | cryptography | [encrypted entries](guide/cache.md#encrypted-entries) |
 | `zstd` | backports.zstd, before Python 3.14 | [zstd compression](guide/cache.md#compression) |
-| `casbin` | PyCasbin | the enforcers of [`FastAPICasbin`](guide/authz.md) |
+| `casbin` | PyCasbin | the enforcers of [`FastAPIAuthz`](guide/authorization/casbin.md) |
+| `cedar` | cedarpy | [`CedarEnforcer`](guide/authorization/cedar.md) |
+| `opa` | httpx2 | [`OPAEnforcer`](guide/authorization/opa.md) |
 | `auth-strategy-jwt` | PyJWT, with cryptography | [`JWTStrategy`](guide/authentication/jwt.md) |
 | `auth-strategy-oauth2` | httpx2 | [`OAuth2Strategy`](guide/authentication/oauth2.md) |
+| `auth-strategy-oidc` | httpx2, PyJWT | [`OIDCStrategy`](guide/authentication/oidc.md) |
 | `auth-strategy-saml` | signxml | [`SAMLStrategy`](guide/authentication/saml.md) |
+| `auth-strategy-unkey` | httpx2 | [`UnkeyStrategy`](guide/authentication/unkey.md) |
 | `auth-strategy-http-bearer` | nothing more | [`HTTPBearerStrategy`](guide/authentication/http-bearer.md) |
 | `all` | all of the above | |
 

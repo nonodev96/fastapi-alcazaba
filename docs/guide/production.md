@@ -15,9 +15,13 @@ pip install "fastapi-alcazaba[otel]"    # OpenTelemetry metrics
 pip install "fastapi-alcazaba[crypto]"  # encrypted entries
 pip install "fastapi-alcazaba[zstd]"    # zstd compression before Python 3.14
 pip install "fastapi-alcazaba[casbin]"  # authorization with Casbin
+pip install "fastapi-alcazaba[cedar]"   # authorization with Cedar
+pip install "fastapi-alcazaba[opa]"     # authorization by Open Policy Agent
 pip install "fastapi-alcazaba[auth-strategy-jwt]"     # JWTStrategy
 pip install "fastapi-alcazaba[auth-strategy-oauth2]"  # OAuth2Strategy
+pip install "fastapi-alcazaba[auth-strategy-oidc]"    # OIDCStrategy
 pip install "fastapi-alcazaba[auth-strategy-saml]"    # SAMLStrategy
+pip install "fastapi-alcazaba[auth-strategy-unkey]"   # UnkeyStrategy
 pip install "fastapi-alcazaba[sqlalchemy]"            # pagination queries for SQLAlchemy
 ```
 

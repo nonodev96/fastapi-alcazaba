@@ -44,16 +44,24 @@ memcache = ["aiomcache>=0.8.2"]
 dynamodb = ["aiobotocore>=2.13.1"]
 # Casbin's maintained distribution: the old `casbin` one stopped at 1.43, under the same module.
 casbin = ["pycasbin>=2.0"]
+# Cedar policies (fastapi_alcazaba.authz.cedar), through cedarpy's bindings of Cedar's engine.
+cedar = ["cedarpy>=4.12"]
+# Open Policy Agent (fastapi_alcazaba.authz.opa), asked through its REST API with httpx2.
+opa = ["httpx2>=2.15.1"]
 # Authentication strategies: JWTs (PyJWT, with cryptography for RS256, ES256...) and OAuth2 logins.
 auth-strategy-jwt = ["pyjwt[crypto]>=2.10"]
 auth-strategy-oauth2 = ["httpx2>=2.15.1"]
+# OpenID Connect logins (OIDCStrategy): OAuth2Strategy's httpx2, and PyJWT to verify the ID tokens.
+auth-strategy-oidc = ["httpx2>=2.15.1", "pyjwt[crypto]>=2.10"]
+# API keys managed by Unkey (UnkeyStrategy, UnkeyKeys), through its API with httpx2.
+auth-strategy-unkey = ["httpx2>=2.15.1"]
 # Nothing more: HTTPBearerStrategy only needs FastAPI. There for every strategy to have its extra.
 auth-strategy-http-bearer = []
 # SAML 2.0 single sign-on: signxml verifies the XML signatures (with lxml and cryptography).
 auth-strategy-saml = ["signxml>=5.2"]
 # The queries of the pagination strategies, for SQLAlchemy 2 (fastapi_alcazaba.pagination.sqlalchemy).
 sqlalchemy = ["sqlalchemy>=2.0"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-http-bearer,auth-strategy-saml,sqlalchemy]"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,sqlalchemy]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"
@@ -127,6 +135,10 @@ include = ["fastapi_alcazaba", "tests", "examples", "fuzz", "README.md", "CHANGE
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.format]
+# A trailing comma keeps one item per line (scripts/check_signatures.py adds it to signatures).
+skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 select = [
@@ -214,7 +226,7 @@ addopts = "--benchmark-skip"
 # A test still running after this many seconds prints the stack of every thread: where it hangs.
 faulthandler_timeout = 120
 markers = [
-    "integration: needs real servers (REDIS_URL, VALKEY_URL, CLUSTER_URL, MEMCACHED_URL, DYNAMODB_URL)",
+    "integration: needs real servers (REDIS_URL, VALKEY_URL, CLUSTER_URL, MEMCACHED_URL, DYNAMODB_URL, OPA_URL, OIDC_LIVE_*)",
     "e2e: runs the example app in uvicorn processes against a real Valkey (VALKEY_URL)",
     "benchmark: performance measurements (pytest-benchmark)",
     "cache_options: keyword arguments for FastAPICache.init() in test_decorator",

@@ -76,6 +76,7 @@ nav:
   - Features:
       - features/index.md
       - The tools: features/tools.md
+      - Scope and stability: features/scope.md
       - Performance: features/performance.md
   - Learn:
       - learn/index.md
@@ -86,12 +87,22 @@ nav:
               - HTTPBearerStrategy: guide/authentication/http-bearer.md
               - JWTStrategy: guide/authentication/jwt.md
               - OAuth2Strategy: guide/authentication/oauth2.md
+              - OIDCStrategy: guide/authentication/oidc.md
               - SAMLStrategy: guide/authentication/saml.md
               - SessionStrategy: guide/authentication/session.md
+              - UnkeyStrategy: guide/authentication/unkey.md
               - Your own strategy: guide/authentication/your-own.md
+          - Accounting: guide/accounting.md
           - API keys, tokens and codes: guide/auth.md
           - Audit trail: guide/audit.md
-          - Authorization with Casbin: guide/authz.md
+          - Authorization:
+              - guide/authorization/index.md
+              - In process:
+                  - Casbin: guide/authorization/casbin.md
+                  - Cedar: guide/authorization/cedar.md
+              - As a separate service:
+                  - guide/authorization/service.md
+                  - Open Policy Agent: guide/authorization/opa.md
           - Backends: guide/backends.md
           - Background work: guide/background.md
           - Checking uploads: guide/uploads.md
@@ -108,26 +119,38 @@ nav:
               - PaginationScroll: guide/pagination/scroll.md
               - PaginationStreaming: guide/pagination/streaming.md
               - With SQLAlchemy: guide/pagination/sqlalchemy.md
+          - Passkeys: guide/passkeys.md
           - Production setup: guide/production.md
           - Rate and concurrency limits: guide/limits.md
           - Response cache: guide/cache.md
+          - Second factor: guide/two-factor.md
           - Security model and resilience: guide/security-model.md
           - Sessions, CSRF and security headers: guide/browser.md
           - Webhooks and outbound calls: guide/webhooks.md
       - Examples:
           - examples/index.md
           - A browser app: examples/browser_app.md
+          - Accounting: examples/accounting.md
           - API keys, tokens and codes: examples/auth.md
           - Audit trail: examples/audit.md
           - Authentication strategies:
               - examples/auth_strategies/index.md
               - JWTStrategy: examples/auth_strategies/jwt.md
               - OAuth2Strategy: examples/auth_strategies/oauth2.md
+              - OIDCStrategy: examples/auth_strategies/oidc.md
               - SessionStrategy: examples/auth_strategies/session.md
               - HTTPBearerStrategy: examples/auth_strategies/http-bearer.md
               - SAMLStrategy: examples/auth_strategies/saml.md
+              - UnkeyStrategy: examples/auth_strategies/unkey.md
               - Your own strategy: examples/auth_strategies/your-own.md
-          - Authorization with Casbin: examples/authz.md
+          - Authorization:
+              - examples/authorization/index.md
+              - In process:
+                  - Casbin: examples/authorization/casbin.md
+                  - Cedar: examples/authorization/cedar.md
+              - As a separate service:
+                  - examples/authorization/service.md
+                  - Open Policy Agent: examples/authorization/opa.md
           - Background work: examples/background.md
           - Checking uploads: examples/uploads.md
           - Errors and observability: examples/observability.md
@@ -142,8 +165,10 @@ nav:
               - PaginationKeyset: examples/pagination/keyset.md
               - PaginationScroll: examples/pagination/scroll.md
               - PaginationStreaming: examples/pagination/streaming.md
+          - Passkeys: examples/passkeys.md
           - Rate and concurrency limits: examples/limits.md
           - Response cache: examples/cache.md
+          - Second factor: examples/two_factor.md
           - Webhooks in and out: examples/webhooks.md
   - Reference:
       - reference/index.md
@@ -154,8 +179,9 @@ nav:
       - Idempotency keys: reference/idempotency.md
       - Authentication strategies: reference/authentication.md
       - API keys, tokens and codes: reference/auth.md
-      - Authorization with Casbin: reference/authz.md
+      - Authorization: reference/authz.md
       - Sessions, CSRF and security headers: reference/browser.md
+      - Accounting: reference/accounting.md
       - Audit trail: reference/audit.md
       - Checking uploads: reference/uploads.md
       - Webhooks and outbound calls: reference/webhooks.md

@@ -11,9 +11,25 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from fuzz import audit_fuzzer, compression_fuzzer, cursors_fuzzer, uploads_fuzzer, webhooks_fuzzer
+from fuzz import (
+    audit_fuzzer,
+    compression_fuzzer,
+    cursors_fuzzer,
+    sessions_fuzzer,
+    uploads_fuzzer,
+    webauthn_fuzzer,
+    webhooks_fuzzer,
+)
 
-TARGETS = [audit_fuzzer, compression_fuzzer, cursors_fuzzer, uploads_fuzzer, webhooks_fuzzer]
+TARGETS = [
+    audit_fuzzer,
+    compression_fuzzer,
+    cursors_fuzzer,
+    sessions_fuzzer,
+    uploads_fuzzer,
+    webauthn_fuzzer,
+    webhooks_fuzzer,
+]
 
 
 def target(module: ModuleType) -> Callable[[bytes], None]:
@@ -46,6 +62,20 @@ def test_random_inputs(module: ModuleType, data: bytes) -> None:
         ),
         (audit_fuzzer, b'{"x": NaN, "y": -Infinity}'),
         (audit_fuzzer, b"[" * 100_000),  # too deep for json itself
+        # CBOR nested past the limit, a length past the end, a map of a 2^64 entries.
+        (webauthn_fuzzer, b"\x81" * 100 + b"\x00"),
+        (webauthn_fuzzer, b"\x5b" + b"\xff" * 8),
+        (webauthn_fuzzer, b"\xbb" + b"\xff" * 8),
+        # Authenticator data with AT and a credential id longer than the data.
+        (webauthn_fuzzer, b"\x00" * 32 + b"\x41" + b"\x00" * 4 + b"\x00" * 16 + b"\xff\xff"),
+        (webauthn_fuzzer, b"\x00" * 32 + b"\x10" + b"\x00" * 4),  # backed up, not eligible
+        # Sessions: not JSON, the wrong types, a bool for a time, an old record, in the future.
+        (sessions_fuzzer, b"\xff\xfe"),
+        (sessions_fuzzer, b'{"data": {}, "created": true, "seen": 1}'),
+        (sessions_fuzzer, b'{"data": {}, "created": 1800000000, "seen": 1800000000}'),
+        (sessions_fuzzer, b'{"data": [], "created": 1, "seen": 1, "started": 1}'),
+        (sessions_fuzzer, b'["data"]'),
+        (sessions_fuzzer, b'{"data": {"user_id": "ana"}, "created": 1800000000, "seen": 1}'),
     ],
 )
 def test_known_cases(module: ModuleType, data: bytes) -> None:

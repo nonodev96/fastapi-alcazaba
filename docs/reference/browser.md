@@ -13,6 +13,10 @@ In the guide: [Server-side sessions](../guide/browser.md#server-side-sessions), 
 
 ::: fastapi_alcazaba.security.ServerSession
 
+::: fastapi_alcazaba.security.UserSessions
+
+::: fastapi_alcazaba.security.SessionInfo
+
 ::: fastapi_alcazaba.security.CSRFMiddleware
 
 ::: fastapi_alcazaba.security.SecurityHeadersMiddleware

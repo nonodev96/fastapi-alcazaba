@@ -7,6 +7,115 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-02
+
+### Added
+
+- Fuzz targets for WebAuthn's parsers (CBOR, authenticator data, base64url) and for the
+  sessions as the backend holds them (a session's record, a user's index).
+- Scope and stability: a page of what Alcazaba is for and leaves to others, and which tools are
+  stable and which experimental (those new in 0.6), whose guides say so at the top.
+- OIDCStrategy is tested against a real provider (Keycloak) when `OIDC_LIVE_*` are set: the
+  login through its form, a code used twice, a callback without the state cookie.
+- Passkeys: `FastAPIWebAuthn` (with the `crypto` extra) registers passkeys and security keys and
+  logs in with them, as WebAuthn Level 2 says: challenges random, bound to the ceremony and the
+  user, used once; the origin, the RP ID's hash, the user present and verified, the signature
+  (ES256, EdDSA, RS256) and the counter (a cloned authenticator is refused). Logins without a
+  username, by the user handle, or a second factor for a known user. CBOR and COSE are read by
+  the library, strictly; attestation isn't checked (`attestation: "none"`). `Passkey` is what to
+  store, a public key. With `audit=`, each ceremony is an event. An example app: a site without
+  passwords, and each user's devices.
+- Each user's sessions: `UserSessions`, given to `ServerSessionMiddleware(users=...)`, lists a
+  user's sessions (when they started and were last seen, the browser, the address, which is the
+  request's) and ends one, or all of them: `end_all` also refuses every session of the user that
+  started before, those its index missed too. At most `max_sessions` per user.
+- Step-up is `fastapi_alcazaba.auth.stepup`'s (`mark`, `verified_at`, `require_recent`), which
+  `FastAPITOTP` and `FastAPIWebAuthn` share: a TOTP code or a passkey.
+- A second factor: `FastAPITOTP` (with the `crypto` extra) checks the codes of authenticator
+  apps (RFC 6238; SHA1, SHA256 or SHA512, 6 or 8 digits), each code once in every process, with
+  a lockout after `max_attempts` wrong ones. `enroll()` gives the `otpauth://` URI and the
+  secret sealed with AES-256-GCM for its user, to store instead of the secret.
+  `recovery_codes()` and `use_recovery_code()` handle codes for a lost phone, kept as HMACs and
+  used once. `mark()` and `require_recent()` are step-up: a route that needs a second factor of
+  the last minutes in this session, the same user's. With `audit=`, each code checked is an
+  event. An example app: the password, then the app's code or a recovery code, and a recent one
+  to delete the account.
+- Scopes: `FastAPIAuth.authenticate()` checks the scopes of `Security(dependency,
+  scopes=[...])`, FastAPI's, which the OpenAPI schema shows, and of `scopes=`. The strategy that
+  found the user grants those of its credentials: `JWTStrategy` the token's `scope` and `scp`
+  (`scope_claims=` for others), `HTTPBearerStrategy` those of `scopes_of(user)`, a strategy of
+  your own with `self.grant(connection, scopes)`; one missing is a 403 with
+  `WWW-Authenticate: Bearer error="insufficient_scope"`. `granted_scopes(request)` tells a route
+  what was granted.
+- The audit trail of authentication and authorization: `FastAPIAuth(audit=)` records failed
+  authentications (`auth.failure`), OAuth2, OpenID Connect and SAML logins (`auth.login`) and
+  missing scopes (`auth.scope`); `FastAPIAuthz(audit=)` and `AuthzMiddleware(audit=)` the
+  requests their policy refuses (`authz.denied`) and those the engine couldn't decide
+  (`authz.unavailable`). `actor=` tells who a user or subject is; `subject_id` by default.
+- OpenID Connect: `OIDCStrategy`, with the new `auth-strategy-oidc` extra (httpx2 and PyJWT),
+  logs people in with an OpenID Connect provider and verifies its ID token as OpenID Connect
+  Core says: the signature with the provider's JWKS (asymmetric algorithms only, keys fetched
+  again on rotation, at most every 30 seconds for unknown `kid`s), `iss`, `aud`, `azp`, `exp`,
+  `iat`, the login's `nonce` (sent and kept in the state cookie), `at_hash` and, with `max_age`,
+  `auth_time`. `await discover()` reads the issuer's discovery document, whose issuer must be
+  the one configured; `userinfo=True` reads the userinfo endpoint and refuses another subject's.
+  An example app: a login with any OpenID Connect provider, then a session.
+- Unkey: `UnkeyStrategy`, with the new `auth-strategy-unkey` extra (httpx2), authenticates by
+  API keys that Unkey keeps, verified on every request through its API (v2), with their
+  permissions (Unkey's query syntax), credits (`cost`) and rate limits. A key that doesn't exist,
+  is disabled or expired fails (401); one without the permissions gets a 403, one over its rate
+  limit a 429 with `Retry-After`, one out of credits a 429 or a 402; Unkey down is a 503, never
+  let through. `UnkeyClient` calls it with a root key, a deadline and a circuit breaker;
+  `UnkeyKeys` issues keys (credits, refills, rate limits, permissions, an external ID) and
+  deletes them. An example app: keys made at sign-up.
+- Accounting: `fastapi_alcazaba.accounting.FastAPIAccounting` meters what each subject (a user,
+  an API key, a tenant) uses of each meter per calendar hour, day or month (UTC), and holds it to
+  its `Quota`, a number or a function of the subject (its plan). `meter(name)` charges a request
+  before the endpoint, checked and counted in one atomic operation on every backend; over the
+  quota, a 429 with `Retry-After` or a 402, and the `RateLimit` headers on every response.
+  `meter(name, amount=None)` gives the endpoint a `Metering` to add what it uses (tokens, bytes),
+  charged when it ends. Server errors are refunded, client errors stay charged. Each charge is a
+  `UsageRecord`, sent to sinks (the `fastapi_alcazaba.accounting.usage` logger by default) for
+  billing, also when the backend fails; `usage()` reads a subject's counter, `record()` charges
+  what a job used. An example app: tenants with plans, metered searches and tokens.
+- Cedar policies: `fastapi_alcazaba.authz.cedar.CedarEnforcer`, with the new `cedar` extra
+  (cedarpy), for `FastAPIAuthz` and `AuthzMiddleware`. Requests become Cedar's (principal, action,
+  resource), each resource named by the route gets an `id` attribute for `like`, and `enforce`
+  takes whole entities with their attributes (the user the authentication loaded, the row the
+  route read) and Cedar's `context`. Policies are validated against a schema when one is given,
+  and a policy that can't be evaluated refuses the request: Cedar alone skips it, so a failing
+  `forbid` would let the request through. `enforce` is a coroutine, and `entities_of` may be one
+  too, for entities read from the database; an entity given twice with different contents raises
+  ValueError instead of picking either. An example app: a team's documents, read and edited by
+  their attributes.
+
+- Open Policy Agent: `fastapi_alcazaba.authz.opa.OPAEnforcer`, with the new `opa` extra
+  (httpx2), asks an OPA that runs as a service of its own through its REST API, with the input
+  `{"subject", "resource", "action", "context"}`. Only a result of `true` allows; an undefined
+  rule refuses with a warning, and a result that isn't a boolean or a query OPA refuses (a 4xx)
+  raise RuntimeError. Its own client gives each query a deadline (`timeout`, 1 second) and OPA
+  a circuit breaker; a token (`SecretStr`) for `--authentication=token`. An example app: a shop
+  whose orders and refunds a Rego policy decides, tested against a real OPA in CI.
+- `PolicyUnavailable`: an enforcer raises it when its engine doesn't answer, and the request gets
+  a 503 (`Authorization unavailable`), a WebSocket 1013 (try again later), counted as
+  `unavailable` in the `fastapi_alcazaba.authz` metric; `authz.enforce()` in a route raises an
+  HTTPException 503. Any other exception of an enforcer is still a 500.
+
+### Changed
+
+- A request is authenticated once: the dependencies that ask `FastAPIAuth` for the same
+  strategies get the user the first one found, instead of running them again (an API key
+  verified twice, Unkey's credits spent twice).
+- `OAuth2Strategy` is built on `AuthorizationCodeFlow`, which it shares with `OIDCStrategy`; its
+  docs say that it doesn't verify an `id_token`. A state cookie that isn't one the strategy set
+  is refused instead of raising.
+- `FastAPICasbin` is `FastAPIAuthz` and `CasbinMiddleware` is `AuthzMiddleware`: they take any
+  engine's enforcer, Casbin's or Cedar's. The authorization guide and examples are split into
+  "In process" (Casbin, Cedar) and "As a separate service" (Open Policy Agent).
+- `FastAPIAuthz` and `AuthzMiddleware` await an `enforce` that is a coroutine function, for
+  engines that answer through the network, and `FastAPIAuthz.enforce`, `refusal` and
+  `path_refusal` are coroutines: `await authz.enforce(user, "drafts", "read")` in a route.
+
 ## [0.5.0] - 2026-10-31
 
 ### Changed

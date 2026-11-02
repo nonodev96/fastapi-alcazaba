@@ -40,6 +40,21 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "One-time codes verified, by outcome: success, wrong, missing (expired or used), "
         "exhausted (too many guesses), malformed, unchecked",
     ),
+    "webauthn": (
+        "{ceremony}",
+        "WebAuthn ceremonies checked, by ceremony (register, authenticate) and outcome: success, "
+        "challenge, origin, rp_id, user_presence, user_verification, signature, counter, "
+        "algorithm, backup, user_handle, malformed, unchecked",
+    ),
+    "totp.verifications": (
+        "{attempt}",
+        "TOTP codes verified, by outcome: success, wrong, replayed (used already), malformed, "
+        "locked (too many wrong ones), unchecked (the backend failed)",
+    ),
+    "totp.recovery": (
+        "{attempt}",
+        "Recovery codes tried, by outcome: used, wrong, replayed, locked, unchecked",
+    ),
     "lock.lost": ("{lock}", "Locks lost while held: their renewals couldn't keep up"),
     "health.checks": ("{check}", "Readiness checks, by check and status: ok, fail"),
     "concurrency": (
@@ -92,10 +107,17 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "Authentications of FastAPIAuth, by strategy and outcome: success, failure (credentials "
         "there but refused), unauthenticated (no strategy found a user; the strategies tried)",
     ),
+    "auth.unkey": (
+        "{verification}",
+        "Keys UnkeyStrategy verified, by strategy and Unkey's code: VALID, NOT_FOUND, DISABLED, "
+        "EXPIRED, INSUFFICIENT_PERMISSIONS, FORBIDDEN, RATE_LIMITED, USAGE_EXCEEDED; unavailable "
+        "(Unkey didn't answer)",
+    ),
     "authz": (
         "{request}",
-        "Casbin decisions of FastAPICasbin and CasbinMiddleware, by outcome: allowed, denied, "
-        "unauthenticated (no subject, refused without asking the policy)",
+        "Policy decisions of FastAPIAuthz and AuthzMiddleware, by outcome: allowed, denied, "
+        "unauthenticated (no subject, refused without asking the policy), unavailable (the engine "
+        "didn't answer)",
     ),
     "csrf.refused": (
         "{request}",
@@ -124,6 +146,16 @@ COUNTERS: dict[str, tuple[str, str]] = {
     "tasks.reclaimed": (
         "{task}",
         "Tasks taken over from workers that stopped answering, by queue",
+    ),
+    "accounting": (
+        "{request}",
+        "Requests metered by FastAPIAccounting, by meter and outcome: allowed, exceeded (over "
+        "its quota), unchecked (the backend failed), refunded (a server error: not served)",
+    ),
+    "accounting.usage": ("{unit}", "Units charged by FastAPIAccounting, by meter"),
+    "accounting.undelivered": (
+        "{record}",
+        "Usage records a sink didn't write, by sink and reason: error, timeout",
     ),
     "audit": ("{event}", "Audit events, by action and outcome: success, failure, denied"),
     "audit.undelivered": (
@@ -245,6 +277,15 @@ class Metrics:
             raise ValueError(f"unknown counter {name!r}")
         if self.enabled:
             self._instrument(name, COUNTERS[name], histogram=False).add(1, _attributes(attributes))
+
+    def add(self, name: str, amount: int, **attributes: str) -> None:
+        """Add `amount` to the counter `fastapi_alcazaba.<name>` (one of COUNTERS): units, not
+        events."""
+        if name not in COUNTERS:
+            raise ValueError(f"unknown counter {name!r}")
+        if self.enabled:
+            instrument = self._instrument(name, COUNTERS[name], histogram=False)
+            instrument.add(amount, _attributes(attributes))
 
     def record(self, name: str, value: float, **attributes: str) -> None:
         """Record `value` on the histogram `fastapi_alcazaba.<name>` (one of HISTOGRAMS)."""

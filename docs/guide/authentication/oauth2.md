@@ -1,13 +1,15 @@
 # OAuth2Strategy
 
-Logins with GitHub, Google or any OAuth2 or OpenID Connect provider:
-`pip install "fastapi-alcazaba[auth-strategy-oauth2]"`.
+Logins with GitHub or any OAuth2 provider:
+`pip install "fastapi-alcazaba[auth-strategy-oauth2]"`. For an OpenID Connect provider (Google,
+Entra ID, Keycloak…), [`OIDCStrategy`](oidc.md) verifies its ID token too.
 
 In an app: [the example](../../examples/auth_strategies/oauth2.md). How strategies are tried, and the code of a login with GitHub: [Strategies](index.md#strategies).
 Every argument: [the API reference](../../reference/authentication.md#fastapi_alcazaba.auth.strategies.oauth2.OAuth2Strategy).
 
-`OAuth2Strategy` logs people in with the authorization code flow and PKCE, for any OAuth2 or
-OpenID Connect provider (GitHub, Google, Keycloak…):
+`OAuth2Strategy` logs people in with the authorization code flow and PKCE, for any OAuth2
+provider (GitHub, GitLab…). It doesn't verify an `id_token` the provider may send: don't rely on
+its claims, and use `OIDCStrategy`, which does, for OpenID Connect providers.
 
 - **The login:** `redirect()` sends the browser to the provider with a random `state`; the state
   and the PKCE verifier wait in a cookie for 10 minutes (`__Host-`, HttpOnly, SameSite=Lax).

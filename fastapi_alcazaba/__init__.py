@@ -7,9 +7,10 @@ The main class of each tool is importable from here; the rest of a tool, from it
 
 from importlib.metadata import PackageNotFoundError, version
 
+from fastapi_alcazaba.accounting import FastAPIAccounting
 from fastapi_alcazaba.audit import FastAPIAudit
-from fastapi_alcazaba.auth import FastAPIAPIKeys, FastAPIAuth
-from fastapi_alcazaba.authz import FastAPICasbin
+from fastapi_alcazaba.auth import FastAPIAPIKeys, FastAPIAuth, FastAPITOTP, FastAPIWebAuthn
+from fastapi_alcazaba.authz import FastAPIAuthz
 from fastapi_alcazaba.backends import Backend
 from fastapi_alcazaba.background import FastAPILeader, FastAPIScheduler, FastAPITaskQueue
 from fastapi_alcazaba.core import (
@@ -54,11 +55,14 @@ __all__ = [
     "Coder",
     "DEFAULT_VARY_HEADERS",
     "FastAPIAPIKeys",
+    "FastAPIAccounting",
     "FastAPIAudit",
     "FastAPIAuth",
     "FastAPIBreaker",
     "FastAPICache",
-    "FastAPICasbin",
+    "FastAPITOTP",
+    "FastAPIWebAuthn",
+    "FastAPIAuthz",
     "FastAPIConcurrencyLimiter",
     "FastAPIFeatureFlags",
     "FastAPILeader",

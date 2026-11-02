@@ -264,8 +264,70 @@ ANIMATIONS: dict[str, Animation] = {
         ),
         "Codes for people, keys for programs, only digests stored",
     ),
+    "authorization": Animation(
+        "Authorization",
+        "What it's for: a policy, not checks spread over the routes, decides who may do what,"
+        " with the engine in the process (Casbin, Cedar) or as a service apart.",
+        ("User", "Your app", "Policy engine"),
+        (
+            request(0, 1, "bob: PUT /articles/7"),
+            request(1, 2, "may bob PUT /articles/7?"),
+            reply(2, 1, "deny"),
+            refused(1, 0, "403 Forbidden"),
+            request(0, 1, "GET /users/%0A"),
+            refused(1, 0, "400, before asking"),
+        ),
+        "One dependency, whatever engine holds the policy",
+    ),
+    "authz_cedar": Animation(
+        "Cedar",
+        "What it's for: policies on attributes (a document's team and owner, who's a contractor)"
+        " where a forbid beats every permit, validated against a schema.",
+        ("User", "Your app", "Cedar policies"),
+        (
+            request(0, 1, "eva: GET /documents/2"),
+            request(1, 2, "eva read Document 2?"),
+            Note(1, "a forbid beats a permit"),
+            reply(2, 1, "deny: confidential"),
+            refused(1, 0, "404, as if missing"),
+            request(0, 1, "ben: GET /documents/2"),
+            reply(1, 0, "200, Budget 2027"),
+        ),
+        "Attributes decide, and a forbid beats every permit",
+    ),
+    "authz_service": Animation(
+        "As a separate service",
+        "What it's for: one policy decision point that every service asks over the network,"
+        " deployed and audited in one place.",
+        ("Your app", "Other service", "Policy service"),
+        (
+            request(0, 2, "may ana PUT /articles/7?"),
+            reply(2, 0, "allow"),
+            request(1, 2, "may ana refund order 9?"),
+            reply(2, 1, "deny"),
+            Note(1, "down: refuse, never allow"),
+        ),
+        "One policy for every service, asked over the network",
+    ),
+    "authz_opa": Animation(
+        "Open Policy Agent",
+        "What it's for: a Rego policy in a service of its own decides, over the network, who reads"
+        " each order and who refunds it.",
+        ("User", "Your app", "Open Policy Agent"),
+        (
+            request(0, 1, "sam: refund order 2"),
+            request(1, 2, "shop.allow, total 250?"),
+            reply(2, 1, "false: over 100"),
+            refused(1, 0, "403 Forbidden"),
+            request(0, 1, "max: refund order 2"),
+            request(1, 2, "shop.allow, a manager?"),
+            reply(2, 1, "true"),
+            reply(1, 0, "200, refunded"),
+        ),
+        "The policy lives in a service of its own, asked on each request",
+    ),
     "authz": Animation(
-        "Authorization with Casbin",
+        "Casbin",
         "What it's for: a Casbin policy (roles and their permissions) decides who may do what,"
         " for each route or each action, instead of checks spread over the code.",
         ("User", "Your app", "Casbin policy"),
@@ -296,6 +358,57 @@ ANIMATIONS: dict[str, Animation] = {
             refused(1, 0, "403, cross-site"),
         ),
         "Sessions on the server; forms only from your own pages",
+    ),
+    "accounting": Animation(
+        "Accounting",
+        "What it's for: what each tenant uses per period, held to its plan's quotas, with a record"
+        " of every charge for billing.",
+        ("Tenant", "Your app", "Counters"),
+        (
+            request(0, 1, "acme: GET /search"),
+            request(1, 2, "+1 search, if under 3"),
+            reply(2, 1, "3 of 3"),
+            reply(1, 0, "200, a record for billing"),
+            request(0, 1, "acme: GET /search"),
+            request(1, 2, "+1 search, if under 3"),
+            reply(2, 1, "no: 3 of 3"),
+            refused(1, 0, "429, at midnight"),
+        ),
+        "Each tenant held to its plan, every charge recorded",
+    ),
+    "passkeys": Animation(
+        "Passkeys",
+        "What it's for: logins without a password, signed by the user's device for this site"
+        " only, which a phishing page can't relay.",
+        ("Browser", "Your app", "Challenges"),
+        (
+            request(0, 1, "POST /login/options"),
+            request(1, 2, "a random challenge"),
+            reply(1, 0, "challenge, rpId"),
+            Note(0, "Touch ID signs it"),
+            request(0, 1, "POST /login, signature"),
+            request(1, 2, "used once?"),
+            reply(1, 0, "200, logged in"),
+            refused(1, 0, "a phishing site: 401"),
+        ),
+        "Signed for this site only: nothing a phishing page can use",
+    ),
+    "two_factor": Animation(
+        "Second factor",
+        "What it's for: a code of the user's authenticator app after the password, each code"
+        " once, and a recent one for what can't be undone.",
+        ("User", "Your app", "Codes used"),
+        (
+            request(0, 1, "password: ana"),
+            reply(1, 0, "next: the app's code"),
+            request(0, 1, "code 013263"),
+            request(1, 2, "used already?"),
+            reply(2, 1, "no: now it is"),
+            reply(1, 0, "logged in, mfa now"),
+            request(0, 1, "the same code, elsewhere"),
+            refused(1, 0, "401 Wrong code"),
+        ),
+        "A code of the app, after the password: each one once",
     ),
     "audit": Animation(
         "Audit trail",
@@ -444,6 +557,23 @@ ANIMATIONS: dict[str, Animation] = {
         ),
         "Logged in with GitHub: your app never sees the password",
     ),
+    "auth_oidc": Animation(
+        "OIDCStrategy",
+        "What it's for: logins with an OpenID Connect provider (Keycloak, Google, Entra ID…),"
+        " whose ID token is verified before your code trusts its claims.",
+        ("Browser", "Your app", "Provider"),
+        (
+            request(0, 1, "GET /login"),
+            reply(1, 0, "302, state, PKCE, nonce"),
+            request(0, 2, "log in at the provider"),
+            reply(2, 0, "302 → callback ?code=…"),
+            request(0, 1, "GET /auth/callback"),
+            request(1, 2, "code + verifier → ID token"),
+            Note(1, "signature, iss, aud, nonce ✓"),
+            reply(1, 0, "session cookie, 303 /me"),
+        ),
+        "The ID token verified: from the provider, for this app, this login",
+    ),
     "auth_session": Animation(
         "SessionStrategy",
         "What it's for: a browser stays logged in after a login, holding only a random id; who"
@@ -476,6 +606,23 @@ ANIMATIONS: dict[str, Animation] = {
             refused(1, 0, "401: refused at once"),
         ),
         "The token says nothing by itself: delete its row, and it's dead",
+    ),
+    "auth_unkey": Animation(
+        "UnkeyStrategy",
+        "What it's for: API keys that Unkey keeps and checks on every request, with their"
+        " permissions, credits and rate limits.",
+        ("Script", "Your app", "Unkey"),
+        (
+            request(0, 1, "GET /documents, docs_…"),
+            request(1, 2, "verifyKey, documents.read"),
+            reply(2, 1, "VALID, 99 credits"),
+            reply(1, 0, "200 [documents]"),
+            request(0, 1, "POST /documents"),
+            request(1, 2, "verifyKey, documents.write"),
+            reply(2, 1, "INSUFFICIENT_PERMISSIONS"),
+            refused(1, 0, "403 Forbidden"),
+        ),
+        "Unkey keeps the keys, and answers for each request",
     ),
     "auth_saml": Animation(
         "SAMLStrategy",

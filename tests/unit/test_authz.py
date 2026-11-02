@@ -1,4 +1,4 @@
-"""FastAPICasbin and CasbinMiddleware: Casbin's policy decides, per route or for every request."""
+"""FastAPIAuthz and AuthzMiddleware: Casbin's policy decides, per route or for every request."""
 
 import base64
 import binascii
@@ -24,8 +24,8 @@ from starlette.requests import HTTPConnection
 from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
-from fastapi_alcazaba import FastAPICasbin, FastAPIProblemDetails
-from fastapi_alcazaba.authz import WEBSOCKET, CasbinMiddleware
+from fastapi_alcazaba import FastAPIAuthz, FastAPIProblemDetails
+from fastapi_alcazaba.authz import WEBSOCKET, AuthzMiddleware, PolicyUnavailable
 from fastapi_alcazaba.telemetry.metrics import Metrics
 
 RBAC = """
@@ -78,7 +78,7 @@ def user_header(x_user: Annotated[str | None, Header()] = None) -> str | None:
     return x_user
 
 
-def articles_app(authz: FastAPICasbin) -> FastAPI:
+def articles_app(authz: FastAPIAuthz) -> FastAPI:
     app = FastAPI()
     router = APIRouter(dependencies=[Depends(authz)])
 
@@ -112,7 +112,7 @@ def articles_app(authz: FastAPICasbin) -> FastAPI:
 
 @pytest.fixture(name="client")
 def fixture_client() -> TestClient:
-    return TestClient(articles_app(FastAPICasbin(rbac(), subject=user_header)))
+    return TestClient(articles_app(FastAPIAuthz(rbac(), subject=user_header)))
 
 
 class TestPathAndMethod:
@@ -151,7 +151,7 @@ class TestPathAndMethod:
         )
         enforcer = casbin.Enforcer(model(deny))
         enforcer.add_policies([["bob", "*", "GET", "allow"], ["bob", "/articles", "GET", "deny"]])
-        client = TestClient(articles_app(FastAPICasbin(enforcer, subject=user_header)))
+        client = TestClient(articles_app(FastAPIAuthz(enforcer, subject=user_header)))
         assert client.get("/articles", headers=as_user("bob")).status_code == 403
         assert client.get("/articles%0A", headers=as_user("bob")).status_code == 400
 
@@ -163,7 +163,7 @@ class TestPathAndMethod:
                 seen.append(values)
                 return True
 
-        api = articles_app(FastAPICasbin(Recorder(), subject=user_header))
+        api = articles_app(FastAPIAuthz(Recorder(), subject=user_header))
         app = FastAPI()
         app.mount("/api", api)
         client = TestClient(app, root_path="/v1")
@@ -173,9 +173,7 @@ class TestPathAndMethod:
 
 class TestAnonymous:
     def test_requests_without_a_subject_are_checked_as_anonymous(self) -> None:
-        authz = FastAPICasbin(
-            rbac(), subject=user_header, anonymous="*anonymous", challenge="Basic"
-        )
+        authz = FastAPIAuthz(rbac(), subject=user_header, anonymous="*anonymous", challenge="Basic")
         client = TestClient(articles_app(authz))
         assert client.get("/catalog").json() == ["olive oil"]
         refused = client.get("/articles")
@@ -184,7 +182,7 @@ class TestAnonymous:
 
     def test_anonymous_is_a_name(self) -> None:
         with pytest.raises(ValueError, match="anonymous"):
-            FastAPICasbin(rbac(), anonymous="")
+            FastAPIAuthz(rbac(), anonymous="")
 
 
 class TestRequire:
@@ -198,7 +196,7 @@ class TestRequire:
     def test_returns_none_for_anonymous_requests_let_through(self) -> None:
         enforcer = rbac()
         enforcer.add_policy("*anonymous", "articles", "read")
-        authz = FastAPICasbin(enforcer, subject=user_header, anonymous="*anonymous")
+        authz = FastAPIAuthz(enforcer, subject=user_header, anonymous="*anonymous")
         app = FastAPI()
 
         @app.get("/articles")
@@ -215,7 +213,7 @@ class TestRequire:
         enforcer = rbac()
         # No colon in the names: keyMatch2 reads ":7" as a parameter.
         enforcer.add_policies([["ana", "projects/7", "delete"], ["ana", "{literal}", "read"]])
-        authz = FastAPICasbin(enforcer, subject=user_header)
+        authz = FastAPIAuthz(enforcer, subject=user_header)
         app = FastAPI()
 
         @app.delete("/projects/{project_id}")
@@ -236,7 +234,7 @@ class TestRequire:
         assert client.get("/literal", headers=as_user("ana")).status_code == 200
 
     def test_a_missing_path_parameter_is_an_error(self) -> None:
-        authz = FastAPICasbin(rbac(), subject=user_header)
+        authz = FastAPIAuthz(rbac(), subject=user_header)
         app = FastAPI()
 
         project = authz.require("projects/{project_id}", "list")
@@ -254,11 +252,11 @@ class TestRequire:
     )
     def test_values_are_checked_when_declared(self, values: tuple[str, ...]) -> None:
         with pytest.raises(ValueError):  # noqa: PT011  # each has its own message
-            FastAPICasbin(rbac()).require(*values)
+            FastAPIAuthz(rbac()).require(*values)
 
     def test_values_are_strings(self) -> None:
         with pytest.raises(TypeError, match="strings, not int"):
-            FastAPICasbin(rbac()).require("articles", 1)  # type: ignore[arg-type]
+            FastAPIAuthz(rbac()).require("articles", 1)  # type: ignore[arg-type]
 
 
 class TestSubject:
@@ -271,7 +269,7 @@ class TestSubject:
         ) -> str | None:
             return tokens.get(credentials.credentials) if credentials else None
 
-        client = TestClient(articles_app(FastAPICasbin(rbac(), subject=current_user)))
+        client = TestClient(articles_app(FastAPIAuthz(rbac(), subject=current_user)))
         alice = {"Authorization": "Bearer token-of-alice"}
         assert client.put("/articles/1", headers=alice).status_code == 200
         bob = {"Authorization": "Bearer token-of-bob"}
@@ -280,7 +278,7 @@ class TestSubject:
         assert operation["security"] == [{"HTTPBearer": []}]
 
     def test_by_default_the_user_of_starlettes_authentication(self) -> None:
-        app = articles_app(FastAPICasbin(rbac()))
+        app = articles_app(FastAPIAuthz(rbac()))
         app.add_middleware(AuthenticationMiddleware, backend=BasicAuth())
         client = TestClient(app)
         assert client.put("/articles/1", auth=("alice", "secret")).status_code == 200
@@ -288,7 +286,7 @@ class TestSubject:
         assert client.put("/articles/1").status_code == 401
 
     def test_without_starlettes_authentication_the_default_is_an_error(self) -> None:
-        client = TestClient(articles_app(FastAPICasbin(rbac())))
+        client = TestClient(articles_app(FastAPIAuthz(rbac())))
         with pytest.raises(RuntimeError, match="AuthenticationMiddleware, which isn't installed"):
             client.get("/articles")
 
@@ -304,16 +302,31 @@ class TestSubject:
         def person(age: Annotated[int, Header()]) -> Person:
             return Person(age)
 
-        client = TestClient(articles_app(FastAPICasbin(enforcer, subject=person)))
+        client = TestClient(articles_app(FastAPIAuthz(enforcer, subject=person)))
         assert client.get("/articles", headers={"Age": "30"}).status_code == 200
         assert client.get("/articles", headers={"Age": "12"}).status_code == 403
+
+
+class PolicyService:
+    """Stands in for a policy engine that runs as a service: asked through the network."""
+
+    def __init__(self, policy: casbin.Enforcer, *, fails: Exception | None = None) -> None:
+        self.policy = policy
+        self.fails = fails
+        self.asked: list[tuple[Any, ...]] = []
+
+    async def enforce(self, *values: Any) -> bool:
+        if self.fails is not None:
+            raise self.fails
+        self.asked.append(values)
+        return bool(self.policy.enforce(*values))
 
 
 class TestEnforcers:
     async def test_an_async_enforcer_sees_its_changes_at_once(self) -> None:
         enforcer = casbin.AsyncEnforcer(model())
         await enforcer.add_policies(POLICY)
-        authz = FastAPICasbin(enforcer, subject=user_header)
+        authz = FastAPIAuthz(enforcer, subject=user_header)
         app = articles_app(authz)
 
         @app.post("/roles/{user}/{role}")
@@ -325,32 +338,123 @@ class TestEnforcers:
         client.post("/roles/carol/reader")
         assert client.get("/articles", headers=as_user("carol")).status_code == 200
 
+    async def test_an_engine_that_answers_through_the_network_is_awaited(self) -> None:
+        """A policy service: its enforce is a coroutine function, for routes, require, checks in
+        the route and the middleware."""
+        service = PolicyService(rbac())
+        authz = FastAPIAuthz(service, subject=user_header)
+        client = TestClient(articles_app(authz))
+        assert client.put("/articles/1", headers=as_user("alice")).status_code == 200
+        assert client.put("/articles/1", headers=as_user("bob")).status_code == 403
+        assert client.post("/articles/1/publish", headers=as_user("bob")).status_code == 403
+        assert await authz.enforce("alice", "articles", "publish")
+        middleware = TestClient(middleware_app(enforcer=service))
+        assert middleware.put("/articles/1", auth=("alice", "secret")).status_code == 200
+        assert middleware.put("/articles/1", auth=("bob", "secret")).status_code == 403
+        assert len(service.asked) == 6  # each one asked, once
+
+    def test_an_enforcer_that_raises_refuses(self) -> None:
+        """Any other exception than PolicyUnavailable is a 500, never the route."""
+        service = PolicyService(rbac(), fails=ConnectionError("a bug of the enforcer"))
+        app = articles_app(FastAPIAuthz(service, subject=user_header))
+        client = TestClient(app, raise_server_exceptions=False)
+        assert client.put("/articles/1", headers=as_user("alice")).status_code == 500
+        middleware = TestClient(middleware_app(enforcer=service), raise_server_exceptions=False)
+        assert middleware.put("/articles/1", auth=("alice", "secret")).status_code == 500
+
     def test_a_disabled_enforcer_lets_everything_through(self, client: TestClient) -> None:
         enforcer = rbac()
         enforcer.enable_enforce(False)
-        client = TestClient(articles_app(FastAPICasbin(enforcer, subject=user_header)))
+        client = TestClient(articles_app(FastAPIAuthz(enforcer, subject=user_header)))
         assert client.put("/articles/1", headers=as_user("mallory")).status_code == 200
 
     def test_a_broken_policy_fails_closed(self) -> None:
         domains = RBAC.replace("r = sub, obj, act", "r = sub, dom, obj, act")
         client = TestClient(
-            articles_app(FastAPICasbin(casbin.Enforcer(model(domains)), subject=user_header)),
+            articles_app(FastAPIAuthz(casbin.Enforcer(model(domains)), subject=user_header)),
             raise_server_exceptions=False,
         )
         assert client.get("/articles", headers=as_user("alice")).status_code == 500
 
     def test_problem_details(self) -> None:
-        app = articles_app(FastAPICasbin(rbac(), subject=user_header))
+        app = articles_app(FastAPIAuthz(rbac(), subject=user_header))
         FastAPIProblemDetails().install(app)
         refused = TestClient(app).put("/articles/1", headers=as_user("bob"))
         assert refused.status_code == 403
         assert refused.headers["content-type"] == "application/problem+json"
 
 
+class TestUnavailable:
+    """An engine that doesn't answer: a 503, neither the route nor a 403."""
+
+    service = PolicyService(rbac(), fails=PolicyUnavailable("the policy service doesn't answer"))
+
+    def test_routes_get_a_503(self, caplog: pytest.LogCaptureFixture) -> None:
+        authz = FastAPIAuthz(self.service, subject=user_header)
+        app = articles_app(authz)
+
+        @app.get("/drafts")
+        async def drafts(user: Annotated[str | None, Depends(user_header)]) -> bool:
+            return await authz.enforce(user, "drafts", "read")
+
+        client = TestClient(app)
+        with caplog.at_level(logging.WARNING, logger="fastapi_alcazaba.authz.enforcer"):
+            refused = client.put("/articles/1", headers=as_user("alice"))
+        assert refused.status_code == 503
+        assert refused.json() == {"detail": "Authorization unavailable"}
+        assert "the policy service doesn't answer" in caplog.text
+        assert client.post("/articles/1/publish", headers=as_user("alice")).status_code == 503
+        assert client.get("/drafts", headers=as_user("alice")).status_code == 503
+
+    def test_anonymous_requests_too(self) -> None:
+        authz = FastAPIAuthz(self.service, subject=user_header, anonymous="*anonymous")
+        assert TestClient(articles_app(authz)).get("/catalog").status_code == 503
+
+    def test_the_middleware(self) -> None:
+        client = TestClient(middleware_app(enforcer=self.service, anonymous="*anonymous"))
+        assert client.put("/articles/1", auth=("alice", "secret")).status_code == 503
+        assert client.get("/catalog").status_code == 503
+        with pytest.raises(WebSocketDisconnect) as refused, client.websocket_connect("/ws"):
+            pass
+        assert refused.value.code == 1013  # try again later
+
+    def test_websockets_are_told_to_try_again_later(self) -> None:
+        authz = FastAPIAuthz(self.service, subject=user_header)
+        app = FastAPI()
+
+        @app.websocket("/ws", dependencies=[Depends(authz)])
+        async def chat(websocket: WebSocket) -> None:
+            await websocket.accept()
+
+        with (
+            pytest.raises(WebSocketDisconnect) as refused,
+            TestClient(app).websocket_connect("/ws", headers=as_user("alice")),
+        ):
+            pass
+        assert refused.value.code == 1013
+
+    def test_counted(self) -> None:
+        reader = InMemoryMetricReader()
+        metrics = Metrics(meter_provider=MeterProvider(metric_readers=[reader]))
+        authz = FastAPIAuthz(self.service, subject=user_header, metrics=metrics)
+        TestClient(articles_app(authz)).get("/articles", headers=as_user("bob"))
+        data = reader.get_metrics_data()
+        assert data is not None
+        outcomes = [
+            (point.attributes or {}).get("fastapi_alcazaba.outcome")
+            for resource in data.resource_metrics
+            for scope in resource.scope_metrics
+            for metric in scope.metrics
+            if metric.name == "fastapi_alcazaba.authz"
+            for point in getattr(metric.data, "data_points", [])
+        ]
+        assert outcomes == ["unavailable"]
+
+
 class TestWebSockets:
     @pytest.fixture(name="ws_client")
     def fixture_ws_client(self) -> TestClient:
-        authz = FastAPICasbin(rbac(), subject=user_header)
+        authz = FastAPIAuthz(rbac(), subject=user_header)
         app = FastAPI()
 
         @app.websocket("/ws", dependencies=[Depends(authz)])
@@ -412,7 +516,7 @@ def middleware_app(**options: Any) -> FastAPI:
         await websocket.send_text("hello")
         await websocket.close()
 
-    app.add_middleware(CasbinMiddleware, enforcer=options.pop("enforcer", rbac()), **options)
+    app.add_middleware(AuthzMiddleware, enforcer=options.pop("enforcer", rbac()), **options)
     app.add_middleware(AuthenticationMiddleware, backend=BasicAuth())
     return app
 
@@ -459,7 +563,7 @@ class TestMiddleware:
 
         app = FastAPI()
         app.put("/articles/{article_id}")(lambda article_id: article_id)
-        app.add_middleware(CasbinMiddleware, enforcer=rbac())
+        app.add_middleware(AuthzMiddleware, enforcer=rbac())
         app.add_middleware(AuthenticationMiddleware, backend=NamedAuth())
         assert TestClient(app).put("/articles/1").status_code == 403
 
@@ -500,7 +604,7 @@ class TestMiddleware:
 
     def test_needs_starlettes_authentication(self) -> None:
         app = FastAPI()
-        app.add_middleware(CasbinMiddleware, enforcer=rbac())
+        app.add_middleware(AuthzMiddleware, enforcer=rbac())
         with pytest.raises(RuntimeError, match="AuthenticationMiddleware"):
             TestClient(app).get("/articles")
 
@@ -512,7 +616,7 @@ class TestMiddleware:
 def test_decisions_are_counted(caplog: pytest.LogCaptureFixture) -> None:
     reader = InMemoryMetricReader()
     metrics = Metrics(meter_provider=MeterProvider(metric_readers=[reader]))
-    client = TestClient(articles_app(FastAPICasbin(rbac(), subject=user_header, metrics=metrics)))
+    client = TestClient(articles_app(FastAPIAuthz(rbac(), subject=user_header, metrics=metrics)))
     with caplog.at_level(logging.DEBUG, logger="fastapi_alcazaba.authz.enforcer"):
         client.get("/articles", headers=as_user("bob"))
         client.put("/articles/1", headers=as_user("bob"))
@@ -529,5 +633,5 @@ def test_decisions_are_counted(caplog: pytest.LogCaptureFixture) -> None:
     }
     assert counted == {"allowed": 1, "denied": 1, "unauthenticated": 1}
     assert [record.getMessage() for record in caplog.records] == [
-        "Casbin refused ('bob', '/articles/1', 'PUT')"
+        "The policy refused ('bob', '/articles/1', 'PUT')"
     ]

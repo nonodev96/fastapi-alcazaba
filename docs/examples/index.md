@@ -20,6 +20,26 @@ Valkey lets every process share it. Only the background work needs one.
 
     Keys stored as digests with scopes, one-time login codes and revoked tokens.
 
+-   :material-fingerprint:{ .lg .middle } __[Passkeys](passkeys.md)__
+
+    ---
+
+    A site without passwords: sign-ups and logins by passkey, and the devices each user is
+    logged in on.
+
+-   :material-cellphone-key:{ .lg .middle } __[Second factor](two_factor.md)__
+
+    ---
+
+    An authenticator app after the password, recovery codes, and a recent code to delete the
+    account.
+
+-   :material-counter:{ .lg .middle } __[Accounting](accounting.md)__
+
+    ---
+
+    Searches and tokens metered per tenant, held to its plan, each charge a record for billing.
+
 -   :material-clipboard-text-clock:{ .lg .middle } __[Audit trail](audit.md)__
 
     ---
@@ -33,11 +53,13 @@ Valkey lets every process share it. Only the background work needs one.
     An app per strategy: JWTs, logins with GitHub, sessions, bearer tokens, SAML single sign-on
     and API keys; and three of them on one app.
 
--   :material-account-key:{ .lg .middle } __[Authorization with Casbin](authz.md)__
+-   :material-account-key:{ .lg .middle } __[Authorization](authorization/index.md)__
 
     ---
 
-    A newsroom whose policy says who reads, writes, publishes and grants roles.
+    A newsroom whose Casbin policy says who reads, writes, publishes and grants roles, a team's
+    documents whose Cedar policies decide by their attributes, and a shop whose refunds Open
+    Policy Agent decides, asked over the network.
 
 -   :material-calendar-clock:{ .lg .middle } __[Background work](background.md)__
 

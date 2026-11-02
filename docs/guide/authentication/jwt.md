@@ -43,4 +43,7 @@ idp = auth.use(
 - **Revoked tokens:** `blocklist=` refuses the tokens revoked in a `TokenBlocklist` (see "Revoked
   tokens and one-time codes").
 - **Issuing:** `issue(subject, expires_in=900)` signs one, with `iat`, `exp` and a random `jti`.
+- **Scopes:** the token grants those of its `scope` (a string separated by spaces) and `scp` (a
+  list) claims, for the routes that need some ([Scopes](index.md#scopes)); `scope_claims=`
+  names others. A claim that isn't scopes refuses the token.
 - **OpenAPI:** it shows in the schema, for the docs' Authorize button.

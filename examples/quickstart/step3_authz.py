@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
-from fastapi_alcazaba import FastAPICache, FastAPICasbin, FastAPIRateLimiter
+from fastapi_alcazaba import FastAPIAuthz, FastAPICache, FastAPIRateLimiter
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.response_cache import cache
 
@@ -41,7 +41,7 @@ def current_user(
 
 here = Path(__file__).parent
 enforcer = casbin.Enforcer(str(here / "model.conf"), str(here / "policy.csv"))
-authz = FastAPICasbin(enforcer, subject=current_user)
+authz = FastAPIAuthz(enforcer, subject=current_user)
 
 
 @app.get(

@@ -40,7 +40,8 @@ test: deps
 	$(BIN)/coverage report
 
 INTEGRATION_ENV = REDIS_URL=redis://127.0.0.1:16379/15 VALKEY_URL=valkey://127.0.0.1:16380/15 \
-	CLUSTER_URL=redis://127.0.0.1:16382 MEMCACHED_URL=127.0.0.1:21211 DYNAMODB_URL=http://127.0.0.1:18000
+	CLUSTER_URL=redis://127.0.0.1:16382 MEMCACHED_URL=127.0.0.1:21211 DYNAMODB_URL=http://127.0.0.1:18000 \
+	OPA_URL=http://127.0.0.1:18181
 
 # Throwaway servers on high ports (stop them with `make services-down`).
 services-up:
@@ -50,11 +51,13 @@ services-up:
 		valkey-server --port 16382 --cluster-enabled yes --cluster-announce-ip 127.0.0.1
 	docker run -d --rm --name fastapi-alcazaba-test-memcached -p 127.0.0.1:21211:11211 memcached:1.6
 	docker run -d --rm --name fastapi-alcazaba-test-dynamodb -p 127.0.0.1:18000:8000 amazon/dynamodb-local:3.3.2
+	docker run -d --rm --name fastapi-alcazaba-test-opa -p 127.0.0.1:18181:8181 openpolicyagent/opa:1.21.4 \
+		run --server --addr 0.0.0.0:8181
 	sleep 2 && docker exec fastapi-alcazaba-test-cluster valkey-cli -p 16382 cluster addslotsrange 0 16383
 
 services-down:
 	docker stop fastapi-alcazaba-test-redis fastapi-alcazaba-test-valkey fastapi-alcazaba-test-cluster \
-		fastapi-alcazaba-test-memcached fastapi-alcazaba-test-dynamodb
+		fastapi-alcazaba-test-memcached fastapi-alcazaba-test-dynamodb fastapi-alcazaba-test-opa
 
 test-integration: deps
 	$(INTEGRATION_ENV) $(BIN)/pytest -m integration
@@ -71,9 +74,13 @@ docs: deps
 	$(BIN)/python -m pip install --quiet --group docs
 	$(BIN)/mkdocs build --strict
 
+# The documentation at http://$(DOCS_ADDR), rebuilt on every change (DOCS_ADDR=0.0.0.0:8000 to
+# reach it from other machines).
+DOCS_ADDR ?= 127.0.0.1:8000
+
 docs-serve: deps
 	$(BIN)/python -m pip install --quiet --group docs
-	$(BIN)/mkdocs serve
+	$(BIN)/mkdocs serve --dev-addr $(DOCS_ADDR)
 
 # The sdist and the wheel, in dist/.
 build: clean deps

@@ -33,4 +33,5 @@ class APIKeyStrategy(Strategy):
 
 
 auth.use(APIKeyStrategy(keys))
+# For routes that need scopes, grant those of the key: self.grant(connection, record.scopes)
 ```

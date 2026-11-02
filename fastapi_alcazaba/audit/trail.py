@@ -71,6 +71,7 @@ from starlette.status import WS_1008_POLICY_VIOLATION
 
 from fastapi_alcazaba.core.canonical import MAX_SAFE_INTEGER, canonical_json
 from fastapi_alcazaba.core.integrity import Secrets, secret_list
+from fastapi_alcazaba.core.logs import outputs
 from fastapi_alcazaba.observability.request_id import request_id
 from fastapi_alcazaba.telemetry.metrics import Metrics
 from fastapi_alcazaba.telemetry.tracing import traceparent
@@ -407,22 +408,6 @@ class AuditSink(Protocol):
     async def write(self, event: AuditEvent) -> None: ...
 
 
-def _outputs(log: logging.Logger, level: int) -> bool:
-    """Whether a record of `level` on `log` reaches a handler that writes it."""
-    if not log.isEnabledFor(level):
-        return False
-    current: logging.Logger | None = log
-    while current is not None:
-        for handler in current.handlers:
-            if not isinstance(handler, logging.NullHandler) and level >= handler.level:
-                return True
-        if not current.propagate:
-            return False
-        current = current.parent
-    last_resort = logging.lastResort  # what logging uses when there's no handler at all
-    return last_resort is not None and level >= last_resort.level
-
-
 class LoggingAuditSink:
     """Writes each event as one line of JSON to the logger `log` (a name or a Logger), at
     `level`; handlers that format their own JSON find the event in the record's `audit` attribute
@@ -439,7 +424,7 @@ class LoggingAuditSink:
         self._warned = False
 
     async def write(self, event: AuditEvent) -> None:
-        if not self._warned and not _outputs(self.logger, self.level):
+        if not self._warned and not outputs(self.logger, self.level):
             self._warned = True
             logger.warning(
                 "Audit events are being lost: the logger %r outputs nothing at level %s. "

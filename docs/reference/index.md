@@ -24,7 +24,7 @@ and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to 
 
     ---
 
-    The twelve strategies, with their parameters and pages. In `fastapi_alcazaba.pagination`.
+    The seven strategies, with their parameters and pages. In `fastapi_alcazaba.pagination`.
 
 -   :material-speedometer:{ .lg .middle } __[Rate and concurrency limits](limits.md)__
 
@@ -51,14 +51,16 @@ and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to 
 
     ---
 
-    API keys stored as digests, revoked tokens and one-time codes.
+    API keys stored as digests, revoked tokens, one-time codes, the second factor (TOTP) and
+    passkeys (WebAuthn).
     In `fastapi_alcazaba.auth`.
 
--   :material-account-key:{ .lg .middle } __[Authorization with Casbin](authz.md)__
+-   :material-account-key:{ .lg .middle } __[Authorization](authz.md)__
 
     ---
 
-    A Casbin policy per route or for every request: `FastAPICasbin` and `CasbinMiddleware`.
+    A Casbin, Cedar or Open Policy Agent policy per route or for every request: `FastAPIAuthz`,
+    `AuthzMiddleware`, `CedarEnforcer` and `OPAEnforcer`.
     In `fastapi_alcazaba.authz`.
 
 -   :material-shield-lock:{ .lg .middle } __[Sessions, CSRF and security headers](browser.md)__
@@ -67,6 +69,13 @@ and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to 
 
     What a cookie-based app needs: server-side sessions, CSRF protection, headers and body limits.
     In `fastapi_alcazaba.security`.
+
+-   :material-counter:{ .lg .middle } __[Accounting](accounting.md)__
+
+    ---
+
+    `FastAPIAccounting`, its quotas, usage reports and records, and their sinks.
+    In `fastapi_alcazaba.accounting`.
 
 -   :material-clipboard-text-clock:{ .lg .middle } __[Audit trail](audit.md)__
 

@@ -285,7 +285,7 @@ In the [interactive docs](http://127.0.0.1:8000/docs), the `PUT` endpoint now ha
 
 ### Recap
 
-**`FastAPICasbin`** takes the enforcer, which reads the model and the policy, and `subject`: a
+**`FastAPIAuthz`** takes the enforcer, which reads the model and the policy, and `subject`: a
 dependency that says who makes the request. `current_user` stands in for your authentication
 here; with yours, it decodes a JWT or reads a session.
 
@@ -306,7 +306,7 @@ request without a token gets a 401 before the policy is asked; one that the poli
 
     The path and the method aren't the only things to ask about: `authz.require("prices",
     "change")` asks whether the user may change prices, whatever the route.
-    [Authorization with Casbin](authz.md#casbin-policies) tells how, and how to open routes
+    [Casbin](authorization/casbin.md#casbin-policies) tells how, and how to open routes
     to visitors without an account.
 
 ## Recap
@@ -316,7 +316,7 @@ can't flood it, and whose prices only the staff can change:
 
 - `FastAPICache.init()` in the lifespan, and `@cache(...)` under the route's decorator.
 - `FastAPIRateLimiter(...)` in a route's dependencies.
-- `FastAPICasbin(enforcer, subject=...)` in a route's dependencies, with a Casbin model and
+- `FastAPIAuthz(enforcer, subject=...)` in a route's dependencies, with a Casbin model and
   policy.
 
 !!! info "In production"

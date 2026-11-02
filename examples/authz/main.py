@@ -4,7 +4,7 @@
 
 Anybody reads the published articles; writers write drafts, editors edit and publish them, and
 admins give people roles. Who may do what is in policy.csv (`p` lines: what a role may do; `g`
-lines: who has which role, and which roles include others), checked by FastAPICasbin: on the path
+lines: who has which role, and which roles include others), checked by FastAPIAuthz: on the path
 and method of a route (`Depends(authz)`), or on a named action (`Depends(authz.require(...))`).
 
 The policy is read from files here; in production, from a database through one of Casbin's
@@ -23,7 +23,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
-from fastapi_alcazaba import FastAPICasbin
+from fastapi_alcazaba import FastAPIAuthz
 
 HERE = Path(__file__).parent
 
@@ -80,9 +80,9 @@ async def current_user(
 
 # Routes open to visitors when the policy says so: the policy knows them as "*anonymous", a name
 # no user can have (the * isn't allowed in user names), so nobody signs up to get its rules.
-authz = FastAPICasbin(enforcer, subject=current_user, anonymous="*anonymous")
+authz = FastAPIAuthz(enforcer, subject=current_user, anonymous="*anonymous")
 # Routes for people with an account: a 401 without one, before asking the policy.
-members = FastAPICasbin(enforcer, subject=current_user)
+members = FastAPIAuthz(enforcer, subject=current_user)
 Visitor = Annotated[str | None, Depends(authz)]
 Member = Annotated[str, Depends(members)]
 
@@ -96,22 +96,22 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(lifespan=lifespan)
 
 
-def reads_drafts(user: str | None) -> bool:
+async def reads_drafts(user: str | None) -> bool:
     # A check inside the route: the route is open to everybody, the drafts aren't.
-    return user is not None and authz.enforce(user, "drafts", "read")
+    return user is not None and await authz.enforce(user, "drafts", "read")
 
 
 @app.get("/articles")
 async def list_articles(user: Visitor) -> list[Article]:
     """The published articles; the drafts too for those who may read them."""
-    drafts = reads_drafts(user)
+    drafts = await reads_drafts(user)
     return [article for article in db.articles.values() if article.published_by or drafts]
 
 
 @app.get("/articles/{article_id}")
 async def read_article(article_id: int, user: Visitor) -> Article:
     article = db.articles.get(article_id)
-    if article is None or not (article.published_by or reads_drafts(user)):
+    if article is None or not (article.published_by or await reads_drafts(user)):
         raise HTTPException(404, "No such article")  # for readers, a draft doesn't exist
     return article
 
@@ -128,7 +128,7 @@ async def edit_article(article_id: int, draft: Draft, user: Member) -> Article:
     article = db.articles.get(article_id)
     if article is None:
         raise HTTPException(404, "No such article")
-    if article.author != user and not authz.enforce(user, "articles", "edit"):
+    if article.author != user and not await authz.enforce(user, "articles", "edit"):
         raise HTTPException(403, "Only its author or an editor edits an article")
     article.title, article.body = draft.title, draft.body
     return article

@@ -61,6 +61,9 @@ class JWTStrategy(Strategy):
     :param cookie: also reads the token from this cookie, for browsers.
     :param signing_key: what `issue` signs with, for asymmetric algorithms (the private key); by
         default the first `key`, for HMAC ones.
+    :param scope_claims: the claims whose scopes the token grants, for the routes that need some
+        (`Security(..., scopes=[...])`): RFC 9068's `scope`, a string of them separated by
+        spaces, and `scp`, a list (Entra ID, Okta); `permissions` for Auth0's.
     :param name: what `FastAPIAuth.authenticate` calls it by.
     """
 
@@ -81,6 +84,7 @@ class JWTStrategy(Strategy):
         cookie: str | None = None,
         signing_key: Secrets | None = None,
         jwks_lifespan: float = 300,
+        scope_claims: Sequence[str] = ("scope", "scp"),
         name: str = "jwt",
     ) -> None:
         super().__init__(name)
@@ -111,6 +115,7 @@ class JWTStrategy(Strategy):
         self.verify = verify
         self.blocklist = blocklist
         self.cookie = cookie
+        self.scope_claims = list(scope_claims)
         self._keys: list[Any] = []
         if key is not None:
             self._keys = secret_list(key) if hmac else [_key(key)]
@@ -132,6 +137,7 @@ class JWTStrategy(Strategy):
             str(claims["jti"]), subject=_subject(claims), issued_at=claims["iat"]
         ):
             raise AuthenticationFailed("the token was revoked")
+        self.grant(connection, _scopes(claims, self.scope_claims))
         if self.verify is None:
             return claims
         user = await call(self.verify, claims)
@@ -209,6 +215,20 @@ def _key(key: Secrets) -> Any:
     if isinstance(key, list | tuple):
         raise ValueError("only HMAC secrets rotate; give one key")
     return key.get_secret_value() if hasattr(key, "get_secret_value") else key
+
+
+def _scopes(claims: dict[str, Any], names: Sequence[str]) -> list[str]:
+    """The scopes of `claims`' `names`: strings of them separated by spaces, or lists."""
+    scopes: list[str] = []
+    for name in names:
+        value = claims.get(name)
+        if isinstance(value, str):
+            scopes += value.split()
+        elif isinstance(value, list):
+            scopes += value  # grant() refuses what isn't a scope token
+        elif value is not None:
+            raise AuthenticationFailed(f"the token's {name} isn't a string nor a list")
+    return scopes
 
 
 def _subject(claims: dict[str, Any]) -> str | None:

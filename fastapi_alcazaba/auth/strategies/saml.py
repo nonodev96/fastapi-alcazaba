@@ -138,6 +138,8 @@ class SAMLStrategy(Strategy):
     :param name: what `FastAPIAuth.authenticate` calls it by, and the cookie's name.
     """
 
+    logs_in = True
+
     def __init__(
         self,
         *,

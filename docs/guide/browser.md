@@ -62,6 +62,45 @@ async def logout(request: Request) -> RedirectResponse:
 - WebSockets get `websocket.session` too, read-only (`rotate_session` and `clear_session` raise
   there). A plain ASGI middleware: streaming responses still stream.
 
+### Each user's sessions
+
+!!! warning "Experimental"
+    `UserSessions` is new in 0.6: its API may still change in any release.
+
+```python
+from fastapi_alcazaba.security import ServerSessionMiddleware, UserSessions
+
+user_sessions = UserSessions()  # the sessions whose data has "user_id", as SessionStrategy's
+app.add_middleware(ServerSessionMiddleware, users=user_sessions)
+
+
+@app.get("/devices")
+async def devices(request: Request, user: CurrentUser) -> list[SessionInfo]:
+    return await user_sessions.list(user.id, request=request)
+
+
+@app.post("/password")
+async def change_password(request: Request, form: NewPassword, user: CurrentUser) -> None:
+    await db.users.set_password(user.id, form.password)
+    await user_sessions.end_all(user.id, request=request, keep_current=True)
+```
+
+- **Listed:** `list(user_id)` gives the user's live sessions, the newest first: when each
+  started and was last seen, the browser's `User-Agent` and the client's address when it
+  started (`record_client=False` for neither), and which is the request's (`current`). Its `ref`
+  names it to `end(user_id, ref)`, which only ends the user's own; it isn't the session's id,
+  which only its cookie holds.
+- **Ending all of them** ("log out everywhere", a new password, a stolen phone):
+  `end_all(user_id)` ends every session in the index, and refuses, from then on, every session of
+  the user that started before, those the index missed too. `keep_current=True` keeps the
+  request's, with a new id. It costs one more read for each request with a user.
+- **Kept with the sessions:** the middleware keeps an index of each user's sessions in the
+  backend, sealed like them, when they start, rotate and end, holding a lock (where the backend
+  has locks) so that two logins at once don't leave one out. At most `max_sessions` (50): a login
+  past it ends the oldest.
+- **When the backend fails** to tell whether a session was ended, the session is refused: fail
+  closed.
+
 ## CSRF protection
 
 A page on another site can make the user's browser send a form, or a `fetch`, to your app, and

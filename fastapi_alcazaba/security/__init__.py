@@ -7,6 +7,8 @@ from fastapi_alcazaba.security.headers import DEFAULT_SECURITY_HEADERS, Security
 from fastapi_alcazaba.security.sessions import (
     ServerSession,
     ServerSessionMiddleware,
+    SessionInfo,
+    UserSessions,
     clear_session,
     rotate_session,
 )
@@ -20,4 +22,6 @@ __all__ = [
     "SecurityHeadersMiddleware",
     "ServerSession",
     "ServerSessionMiddleware",
+    "SessionInfo",
+    "UserSessions",
 ]
