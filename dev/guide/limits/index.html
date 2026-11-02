@@ -5015,7 +5015,7 @@ limiter counts requests per window; this counts the ones in flight:</p>
   a <code>slot()</code> inside the stream there.</li>
 <li><strong>Failures:</strong> if the backend fails, each process counts the slots on its own (<code>fail_open=True</code>,
   the default: at most <code>limit</code> per process run); <code>fail_open=False</code> refuses with a 503 instead
-  (<code>slot()</code> raises <code>BackendUnavailable</code>). memcached can't hold locks.</li>
+  (<code>slot()</code> raises <code>BackendUnavailable</code>).</li>
 <li><strong>Limits:</strong> like any lock on a cache-like store, a holder that stalls for longer than <code>ttl</code>
   loses its slot while it still runs, and someone else may take it. Taking a slot when most are
   busy costs a round trip per busy slot tried.</li>

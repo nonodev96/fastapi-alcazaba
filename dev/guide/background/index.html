@@ -4994,8 +4994,8 @@ app, and each tick once across them all:</p>
 <ul>
 <li><strong>Once per tick:</strong> at each tick, the processes claim it in the backend, with an atomic counter
   named after the job and the tick, and only the first runs it. A lock held while the job runs
-  keeps a run that outlasts its interval from overlapping the next tick in another process
-  (memcached can't hold locks: there, each tick still runs once, but long runs may overlap).
+  keeps a run that outlasts its interval from overlapping the next tick in another process (on a
+  backend of your own without locks, each tick still runs once, but long runs may overlap).
   The ticks are the same in every process: <code>every(minutes=5)</code> runs at :00, :05… (UTC), so keep
   the servers' clocks in sync (NTP). <code>exclusive=False</code> runs a job in every process.</li>
 <li><strong>Cron:</strong> five fields (minute, hour, day of the month, month, day of the week, Sunday being 0 or
@@ -5110,7 +5110,7 @@ given times (that's the scheduler):</p>
   leadership ends and must let the cancellation through. An exception is logged with its
   traceback; the process keeps leading.</li>
 <li><strong>Failures:</strong> while the backend is down nobody is elected, and a leader that can't renew steps
-  down when its lock expires: no leader is better than two. memcached can't hold locks.</li>
+  down when its lock expires: no leader is better than two.</li>
 <li><strong>Limits:</strong> a leader that stalls for longer than <code>ttl</code> (a long pause, a network partition) can
   overlap the next one for a moment. Check <code>is_leader</code> between the steps of long work, and keep
   that work idempotent.</li>
@@ -5131,9 +5131,10 @@ given times (that's the scheduler):</p>
 <li><strong>Expiry and renewal:</strong> a lock expires after <code>ttl</code> seconds, so a holder that dies doesn't keep it
   forever; while it's held, a background task renews it every <code>ttl / 3</code>.</li>
 <li><strong>Only the holder</strong> releases or renews it: each acquisition has a random token, checked by a Lua
-  script on Redis, Valkey and GLIDE and by conditional writes on DynamoDB (in memory, within one
-  process). memcached can't hold locks. On DynamoDB, expiry compares the clocks of the app's
-  servers: keep them in sync (NTP). A custom backend written for 0.1 has no <code>extend_lock</code>: use
+  script on Redis, Valkey and GLIDE, by conditional writes on DynamoDB and by <code>gets</code> + <code>cas</code> on
+  memcached (in memory, within one process). memcached counts whole seconds: a lock there lasts
+  up to two seconds more than its <code>ttl</code>, never less. On DynamoDB, expiry compares the clocks of
+  the app's servers: keep them in sync (NTP). A custom backend written for 0.1 has no <code>extend_lock</code>: use
   <code>renew=False</code> there, with a <code>ttl</code> longer than the work.</li>
 <li><strong>Waiting:</strong> <code>wait=0</code> (the default) tries once, <code>wait=5</code> keeps trying for 5 seconds,
   <code>wait=None</code> as long as it takes. <code>acquire()</code> and <code>release()</code> work without <code>async with</code>.</li>

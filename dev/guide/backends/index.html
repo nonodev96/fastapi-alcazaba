@@ -4870,7 +4870,7 @@
   (<code>await GlideClient.create(...)</code> or <code>GlideClusterClient</code>).</li>
 <li><strong>TieredBackend(remote, local_ttl=5):</strong> a per-process memory level in front of any of these
   (see "Two-level cache").</li>
-<li><strong>MemcachedBackend(client):</strong> aiomcache. Can't tell the remaining time to live.</li>
+<li><strong>MemcachedBackend(client):</strong> aiomcache.</li>
 <li><strong>DynamoBackend(table_name, region, endpoint_url=None):</strong> aiobotocore; <code>await backend.init()</code>
   first. Enable TTL on the <code>ttl</code> attribute of the table. <code>endpoint_url</code> for DynamoDB Local or
   LocalStack.</li>
@@ -4879,9 +4879,8 @@
 <thead>
 <tr>
 <th>Backend</th>
-<th>Clear a namespace</th>
+<th>Clear a namespace or a tag</th>
 <th>Locks</th>
-<th>Tags</th>
 <th>Rate limiter</th>
 </tr>
 </thead>
@@ -4890,41 +4889,55 @@
 <td>InMemory</td>
 <td>yes</td>
 <td>(one process)</td>
-<td>yes</td>
 <td>(one process)</td>
 </tr>
 <tr>
 <td>Redis, Valkey, GLIDE</td>
-<td>yes (<code>SCAN</code> + <code>UNLINK</code>)</td>
-<td>yes</td>
+<td>yes (<code>SCAN</code> + <code>UNLINK</code>; tag sets)</td>
 <td>yes</td>
 <td>yes, one Lua script</td>
 </tr>
 <tr>
 <td>Memcached</td>
-<td>no</td>
-<td>no</td>
-<td>no</td>
+<td>yes (generations)</td>
+<td>yes (<code>add</code>, <code>gets</code> + <code>cas</code>)</td>
 <td>yes, adding and taking back what doesn't fit</td>
 </tr>
 <tr>
 <td>DynamoDB</td>
-<td>no</td>
+<td>yes (generations)</td>
 <td>yes (conditional writes)</td>
-<td>no</td>
 <td>yes, a conditional write</td>
 </tr>
 <tr>
 <td>Tiered</td>
 <td>like its shared backend</td>
 <td>like its shared backend</td>
-<td>like its shared backend</td>
 <td>in its shared backend</td>
 </tr>
 </tbody>
 </table>
-<p>Without locks, <code>Lock</code>, the concurrency limiter and the second factor (<code>FastAPITOTP</code>) refuse the
-backend, and <code>distributed_lock</code> is skipped with a warning.</p>
+<p>Every backend tells a hit how long its entry has left, for <code>max-age</code> and <code>early_refresh</code>.</p>
+<p><strong>Generations.</strong> memcached and DynamoDB can't list keys, so they don't delete a namespace's or a
+tag's entries: each namespace or tag that was cleared has a generation, a random token under a key
+of its own, and each cached response records the generations it was stored under. A clear writes
+a new token, and the entries stored before it are no longer served; they expire in their own time.
+So <code>clear(namespace=...)</code> and <code>invalidate_tags</code> return 0 there: what they hid can't be counted.</p>
+<ul>
+<li>A hit reads the entry and its namespaces' generations at once (one round trip; two for a tagged
+  entry). An entry computed while a clear ran isn't served either.</li>
+<li>Only namespaces with fewer than 8 <code>:</code> can be cleared (the default keys have two); a deeper one
+  raises <code>ValueError</code>.</li>
+<li>memcached may evict a generation: its entries are then recomputed, never served stale.
+  DynamoDB reads are eventually consistent: a clear may take a moment to be seen.</li>
+<li>State (locks, counters, sessions, revoked tokens…) isn't in any namespace, as with every
+  backend: no clear touches it.</li>
+</ul>
+<p><strong>memcached's locks</strong> last whole seconds: up to two more than their <code>ttl</code>, never less.</p>
+<p>A backend of your own may lack locks or tags (<code>supports_locks</code>, <code>supports_tags</code>): <code>Lock</code>, the
+concurrency limiter, <code>IdempotencyMiddleware</code> and the second factor (<code>FastAPITOTP</code>) refuse it when
+they're set up, <code>distributed_lock</code> is skipped with a warning, and <code>@cache(tags=...)</code> stores
+untagged entries with a warning.</p>
 <p>Valkey example with valkey-py:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">import</span><span class="w"> </span><span class="nn">valkey.asyncio</span>
 </span><span id="__span-0-2">
