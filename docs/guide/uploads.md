@@ -46,6 +46,46 @@ the `content_type` found in its bytes, its `size`, its `width` and `height` (ima
   `txt.exe`), `<>:"|?*` replaced, without leading dots or dashes, `_` in front of the names Windows
   reserves (`CON`, `NUL`, `COM1`...), and at most 255 bytes, keeping the extension. For display and
   `Content-Disposition`; store files under names of your own (`CheckedFile.extension`).
-- **What it doesn't do:** look inside the files. A PDF can carry scripts, Office documents
-  macros, archives may expand to far more than their size, and the frames of a GIF aren't counted.
-  Allow HTML, SVG or XML only to serve them as attachments from another domain.
+- **What it doesn't do by itself:** look inside the files. A PDF can carry scripts, Office
+  documents macros, archives may expand to far more than their size, and the frames of a GIF
+  aren't counted. Allow HTML, SVG or XML only to serve them as attachments from another domain.
+  A malware scanner looks inside them: see below.
+
+## Scanning for malware
+
+```python
+from fastapi_alcazaba.uploads import ClamAVScanner, FastAPIUploads
+
+scanner = ClamAVScanner("tcp://clamav:3310")  # or "unix:///run/clamav/clamd.ctl"
+uploads = FastAPIUploads(
+    types=OFFICE_DOCUMENTS,
+    scanner=scanner,
+    on_infected=quarantine,  # optional: (file, result) -> None, before the 422
+)
+app.include_router(health_router({"clamav": HealthCheck(scanner.ping, critical=False)}))
+```
+
+`pip install "fastapi-alcazaba[clamav]"`: nothing more is installed, `ClamAVScanner` speaks
+clamd's protocol itself.
+
+- **After the other checks:** only a file of an accepted type, size and pixels is scanned: the
+  scanner never gets a 2 GB upload or an unknown type.
+- **ClamAV:** the file goes to clamd (ClamAV's daemon) with its `INSTREAM` command, in chunks
+  over TCP or a Unix socket, never through a shared disk; `ping()` is a health check. Run clamd
+  next to the app (the `clamav/clamav` image), with `freshclam` keeping its signatures up to
+  date; give it about 1 GB of memory, and raise its `StreamMaxLength` (25 MB by default) above
+  `max_size`, or larger files can't be scanned.
+- **Infected:** a 422 `File rejected`, which doesn't say what was found; the threat's name is
+  logged, and counted (`fastapi_alcazaba.uploads`, outcome `infected`). `on_infected(file,
+  result)`, sync or async, runs before: to keep the file in quarantine, or alert someone.
+- **Fails closed:** when the scanner doesn't answer within `scan_timeout` (30 s) or can't scan
+  the file, the upload gets a 503 (`scan_failed`). `scan_fail_open=True` accepts it unscanned
+  instead (`unscanned`, logged).
+- **Your own scanner:** anything with `async scan(file) -> ScanResult` (a commercial engine, a
+  sandbox service); the file comes at its start.
+- **What it can't do:** a scanner knows the malware it has signatures for. A script in a PDF or
+  a macro written for you goes through: keep the other precautions (attachments, another
+  domain).
+
+Files uploaded straight to S3 get the same checks with
+[`check_uploaded`](storage.md#checking-what-was-uploaded).

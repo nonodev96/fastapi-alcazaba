@@ -158,7 +158,9 @@ COUNTERS: dict[str, tuple[str, str]] = {
     "uploads": (
         "{file}",
         "Uploads checked by FastAPIUploads, by outcome: accepted, too_large, too_many_pixels, "
-        "unsupported, unreadable (an image without readable dimensions), empty",
+        "unsupported, unreadable (an image without readable dimensions), empty, infected (its "
+        "scanner found malware), scan_failed (it couldn't scan: refused), unscanned (it couldn't "
+        "scan: accepted, scan_fail_open)",
     ),
     "outbox": (
         "{message}",

@@ -74,7 +74,7 @@ def test_path_style_for_other_services() -> None:
         secret_key=SecretStr("secret-of-minio"),
         endpoint="http://localhost:9000",
     )
-    url = minio.upload_url("a.txt", now=NOW)
+    url = minio.upload_url("a.txt", size=3, now=NOW).url
     assert url.startswith("http://localhost:9000/uploads/a.txt?")
     assert minio.upload_form("a.txt", max_size=10, now=NOW).url == "http://localhost:9000/uploads/"
 
@@ -150,7 +150,7 @@ def test_form_bounds() -> None:
     with pytest.raises(ValueError, match="not both"):
         example().upload_form("a", max_size=1, content_type="a/b", content_type_prefix="a/")
     with pytest.raises(ValueError, match="aware"):
-        example().upload_url("a", now=datetime(2013, 5, 24))  # noqa: DTZ001
+        example().upload_url("a", size=1, now=datetime(2013, 5, 24))  # noqa: DTZ001
 
 
 def test_the_secret_isnt_in_the_url() -> None:

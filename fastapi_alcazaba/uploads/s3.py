@@ -8,11 +8,14 @@ Signature Version 4, which the browser uses directly. Needs nothing more.
     form = s3.upload_form(f"avatars/{user.id}", max_size=2_000_000, content_type_prefix="image/")
     # the browser posts the file to form["url"] with form["fields"]: S3 refuses one too large
 
+    upload = s3.upload_url(f"scans/{scan.id}", size=declared_size, sha256=declared_sha256)
+    # the client PUTs exactly that many bytes to upload.url, with upload.headers
+
     url = s3.download_url(f"invoices/{invoice.id}.pdf", filename="invoice.pdf", expires=60)
 
 The bucket stays private: each URL is for one object, one method, and a few minutes. Check what
-was uploaded before using it (`FastAPIUploads`, reading it from the bucket): the form bounds its
-size and its declared type, not what it is.
+was uploaded before using it (`check_uploaded`, which reads it back and deletes it when it fails
+`FastAPIUploads`'s checks): the form and the URL bound its size, not what it is.
 """
 
 import base64
@@ -53,6 +56,14 @@ def _check_key(key: str) -> str:
     if any(ord(char) < 32 or ord(char) == 127 for char in key):
         raise ValueError("an object key has no control characters")
     return key
+
+
+@dataclass(frozen=True, slots=True)
+class PresignedUpload:
+    """A PUT the client makes: to `url`, with `headers` (signed: S3 refuses other values)."""
+
+    url: str
+    headers: dict[str, str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,12 +165,33 @@ class S3Presigner:
         self,
         key: str,
         *,
+        size: int,
+        sha256: str | bytes | None = None,
+        content_type: str | None = None,
         expires: int = 300,
         now: datetime | None = None,
-    ) -> str:
-        """A URL that PUTs the object `key` for `expires` seconds, whatever its size: prefer
-        `upload_form`, which bounds it."""
-        return self._presign("PUT", key, expires, {}, now)
+    ) -> PresignedUpload:
+        """A PUT of the object `key`, for `expires` seconds, of exactly `size` bytes (its
+        `Content-Length` is signed: the service refuses any other), and with `sha256` (the
+        file's SHA-256, hex or raw), whose `x-amz-checksum-sha256` the service checks against
+        the bytes it gets (S3, MinIO, R2). The client sends `headers` as they are. Overwrites
+        what's under `key`: give each upload a key of its own."""
+        if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+            raise ValueError("size is the file's length in bytes")
+        headers = {"content-length": str(size)}
+        if sha256 is not None:
+            digest = bytes.fromhex(sha256) if isinstance(sha256, str) else sha256
+            if len(digest) != 32:
+                raise ValueError("sha256 is a SHA-256 digest: 64 hex digits, or 32 bytes")
+            headers["x-amz-checksum-sha256"] = base64.b64encode(digest).decode()
+        if content_type is not None:
+            headers["content-type"] = content_type
+        url = self._presign("PUT", key, expires, {}, now, headers)
+        return PresignedUpload(url, headers)
+
+    def delete_url(self, key: str, *, expires: int = 60, now: datetime | None = None) -> str:
+        """A URL that DELETEs the object `key`, for the app (`check_uploaded`), never a client."""
+        return self._presign("DELETE", key, expires, {}, now)
 
     def upload_form(
         self,
@@ -222,16 +254,22 @@ class S3Presigner:
         expires: int,
         extra: dict[str, str],
         now: datetime | None,
+        headers: dict[str, str] | None = None,
     ) -> str:
         _check_key(key)
         now = self._now(now)
         stamp, day = now.strftime("%Y%m%dT%H%M%SZ"), now.strftime("%Y%m%d")
+        signed = {
+            "host": self.host,
+            **{name.lower(): value for name, value in (headers or {}).items()},
+        }
+        names = sorted(signed)
         query = {
             "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
             "X-Amz-Credential": f"{self.access_key}/{self._scope(day)}",
             "X-Amz-Date": stamp,
             "X-Amz-Expires": str(self._expires(expires)),
-            "X-Amz-SignedHeaders": "host",
+            "X-Amz-SignedHeaders": ";".join(names),
             **extra,
         }
         if self._token is not None:
@@ -240,8 +278,9 @@ class S3Presigner:
         canonical_query = "&".join(
             f"{_encode(name)}={_encode(value)}" for name, value in sorted(query.items())
         )
+        canonical_headers = "".join(f"{name}:{signed[name].strip()}\n" for name in names)
         canonical = "\n".join(
-            [method, path, canonical_query, f"host:{self.host}", "", "host", _UNSIGNED]
+            [method, path, canonical_query, canonical_headers, ";".join(names), _UNSIGNED]
         )
         to_sign = "\n".join(
             [

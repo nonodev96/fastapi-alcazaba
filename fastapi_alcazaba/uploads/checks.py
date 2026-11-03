@@ -19,18 +19,29 @@ SVG is XML, and XML (like HTML) can carry scripts that run when a browser opens 
 apart from plain text and never counted as an image.
 """
 
+import asyncio
 import codecs
+import logging
 import re
 import struct
 import unicodedata
 import zlib
 from collections.abc import Callable, Collection, Generator
 from dataclasses import dataclass
-from typing import TypeVar
+from inspect import isawaitable
+from typing import TYPE_CHECKING, TypeVar
 
 from fastapi import HTTPException, UploadFile
 
 from fastapi_alcazaba.telemetry.metrics import Metrics
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable
+
+    from fastapi_alcazaba.uploads.scanning import Scanner, ScanResult
+
+logger: logging.Logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 T = TypeVar("T")
 
@@ -513,10 +524,14 @@ class FastAPIUploads:
     endpoint runs, the multipart parser has already stored the whole request, so keep its size
     down with `BodySizeLimitMiddleware` on the route as well.
 
-    It doesn't look inside the files: a PDF can carry scripts, an Office document macros (the
-    macro-enabled types are told apart from the others), ZIP and GZIP archives may expand to far
-    more than their size, and the frames of a GIF aren't counted. HTML, SVG and XML run scripts in
-    a browser: allow them only to serve them from another domain, as attachments.
+    It doesn't look inside the files, but a `scanner` does (ClamAV, `ClamAVScanner`): it runs on
+    each file that passed the other checks. One it finds infected gets a 422 ("File rejected",
+    never the threat's name, which is logged); when it can't scan (down, too slow), the upload gets
+    a 503, unless `scan_fail_open`. A scanner only knows the malware it has signatures for: a PDF
+    can still carry scripts, an Office document macros (the macro-enabled types are told apart
+    from the others), ZIP and GZIP archives may expand to far more than their size, and the
+    frames of a GIF aren't counted. HTML, SVG and XML run scripts in a browser: allow them only to
+    serve them from another domain, as attachments.
 
     :param types: the types accepted, from `KNOWN_TYPES` (`IMAGES`, `OFFICE_DOCUMENTS`...).
     :param max_size: the largest file accepted, in bytes; larger ones get a 413.
@@ -524,6 +539,13 @@ class FastAPIUploads:
         for no limit. Images whose dimensions can't be read get a 415 either way.
     :param metrics: where to count the outcomes (`fastapi_alcazaba.uploads`); FastAPICache's by
         default.
+    :param scanner: scans each file that passed the other checks (`ClamAVScanner`, or anything
+        with `async scan(file) -> ScanResult`).
+    :param scan_timeout: seconds the scanner may take; past them, it couldn't scan.
+    :param scan_fail_open: when the scanner can't scan, accept the file (counted as
+        `unscanned`, logged) instead of a 503.
+    :param on_infected: `on_infected(file, result)`, sync or async, before the 422: to keep the
+        file in quarantine, alert someone. What it raises is logged; the file is refused anyway.
     """
 
     def __init__(
@@ -533,6 +555,10 @@ class FastAPIUploads:
         max_size: int = 10 * 1024 * 1024,
         max_pixels: int | None = 40_000_000,
         metrics: Metrics | None = None,
+        scanner: "Scanner | None" = None,
+        scan_timeout: float = 30.0,
+        scan_fail_open: bool = False,
+        on_infected: "Callable[[UploadFile, ScanResult], Awaitable[None] | None] | None" = None,
     ) -> None:
         accepted = frozenset((types,) if isinstance(types, str) else types)
         if not accepted:
@@ -544,10 +570,18 @@ class FastAPIUploads:
             raise ValueError("max_size must be at least 1 byte")
         if max_pixels is not None and max_pixels < 1:
             raise ValueError("max_pixels must be at least 1 (or None for no limit)")
+        if scan_timeout <= 0:
+            raise ValueError("scan_timeout must be positive")
+        if (scan_fail_open or on_infected is not None) and scanner is None:
+            raise ValueError("scan_fail_open and on_infected go with a scanner")
         self.types = accepted
         self.max_size = max_size
         self.max_pixels = max_pixels
         self._metrics = metrics
+        self.scanner = scanner
+        self.scan_timeout = scan_timeout
+        self.scan_fail_open = scan_fail_open
+        self.on_infected = on_infected
 
     async def __call__(self, file: UploadFile) -> CheckedFile:
         return await self.check(file)
@@ -588,10 +622,44 @@ class FastAPIUploads:
             if self.max_pixels is not None and width * height > self.max_pixels:
                 raise self._refuse(413, "Image too large", "too_many_pixels")
         await file.seek(0)
+        outcome = "accepted"
+        if self.scanner is not None:
+            outcome = await self._scan(file)
+            await file.seek(0)
         metrics = self._metrics_now()
-        metrics.count("uploads", outcome="accepted")
+        metrics.count("uploads", outcome=outcome)
         metrics.record("uploads.size", size, content_type=kind)
         return CheckedFile(file, kind, size, safe_filename(file.filename), width, height)
+
+    async def _scan(self, file: UploadFile) -> str:
+        """Scan the file: "accepted", or "unscanned" when the scanner couldn't and
+        `scan_fail_open`; an HTTPException when it's infected, or couldn't be scanned."""
+        assert self.scanner is not None  # noqa: S101  # checked by the caller
+        try:
+            async with asyncio.timeout(self.scan_timeout):
+                result = await self.scanner.scan(file)
+        except Exception as exc:  # down, too slow, or a scanner of the app's that failed
+            if not self.scan_fail_open:
+                logger.warning("Upload refused: it couldn't be scanned", exc_info=exc)
+                raise self._refuse(503, "File scanning unavailable", "scan_failed") from None
+            logger.warning("Upload accepted without a scan (scan_fail_open)", exc_info=exc)
+            return "unscanned"
+        if result.clean:
+            return "accepted"
+        logger.warning(
+            "Upload refused: the scanner found %s in %r",
+            result.threat,
+            safe_filename(file.filename),
+        )
+        if self.on_infected is not None:
+            await file.seek(0)
+            try:
+                reaction = self.on_infected(file, result)
+                if isawaitable(reaction):
+                    await reaction
+            except Exception:  # the file is refused anyway
+                logger.exception("on_infected failed")
+        raise self._refuse(422, "File rejected", "infected")
 
     def _refuse(self, status: int, detail: str, outcome: str) -> HTTPException:
         self._metrics_now().count("uploads", outcome=outcome)

@@ -66,11 +66,15 @@ webhooks = ["httpx2>=2.15.1"]
 passwords = ["httpx2>=2.15.1"]
 # Nothing more: HTTPBearerStrategy only needs FastAPI. There for every strategy to have its extra.
 auth-strategy-http-bearer = []
+# Scanning uploads with ClamAV (ClamAVScanner): clamd's protocol, with nothing more to install.
+clamav = []
+# Checking files uploaded straight to S3 (check_uploaded), downloaded with httpx2.
+uploads = ["httpx2>=2.15.1"]
 # SAML 2.0 single sign-on: signxml verifies the XML signatures (with lxml and cryptography).
 auth-strategy-saml = ["signxml>=5.2"]
 # The queries of the pagination strategies, for SQLAlchemy 2 (fastapi_alcazaba.pagination.sqlalchemy).
 sqlalchemy = ["sqlalchemy>=2.0"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy,webhooks]"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy,webhooks,clamav,uploads]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"

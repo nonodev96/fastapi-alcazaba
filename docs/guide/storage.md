@@ -50,11 +50,48 @@ await fetch(form.url, { method: "POST", body });
 
 - **Bounded by the service:** a file smaller than `min_size` (1 byte) or larger than `max_size`
   is refused by S3, as is one that declares another type than `content_type`, or one not
-  starting with `content_type_prefix`. `upload_url` signs a PUT instead, of any size: prefer the
-  form.
+  starting with `content_type_prefix`.
 - **A key of its own for each upload:** a form overwrites what's under its key.
-- **Checked before use:** the form bounds the size and the declared type, not what the file is.
-  Read it back from the bucket and [check it](uploads.md) before using it, or serving it.
+
+For a client that PUTs (an app, a script), `upload_url` signs a PUT of exactly the size the
+client declared, and of its SHA-256 when it gives one:
+
+```python
+@app.post("/scans")
+async def new_scan(body: NewScan, user: CurrentUser) -> PresignedUpload:
+    if body.size > 50_000_000:
+        raise HTTPException(413, "File too large")
+    return s3.upload_url(f"scans/{user.id}/{uuid4()}", size=body.size, sha256=body.sha256)
+```
+
+The client sends the returned `headers` as they are: `Content-Length` and `x-amz-checksum-sha256`
+are signed, so S3 (MinIO, R2) refuses any other length (403), and bytes whose checksum isn't the
+one given (400).
+
+## Checking what was uploaded
+
+Neither the form nor the URL say what the file is. `check_uploaded` reads it back from the
+bucket, runs [`FastAPIUploads`](uploads.md)'s checks on it, its malware scanner too, and deletes it
+when it fails them (`pip install "fastapi-alcazaba[uploads]"`):
+
+```python
+from fastapi_alcazaba.uploads.direct import check_uploaded
+
+
+@app.post("/scans/{key:path}/done")
+async def scan_done(key: str) -> dict[str, str]:
+    checked = await check_uploaded(uploads, s3, key)  # 413, 415, 422: and deleted
+    await checked.file.close()
+    return {"type": checked.content_type}
+```
+
+- At most `max_size` + 1 bytes are read: a larger object is "too large" without reading the rest.
+- Refused (413, 415, 422): deleted from the bucket with a signed DELETE, and the HTTPException
+  goes on. Not scanned (503, the scanner down): kept, to check later. No such object: 404; the
+  service failing: 502.
+- The returned `CheckedFile` holds the bytes read (in memory up to 1 MiB, then on disk): close it
+  when done.
+- Not yet: multipart (resumable) uploads.
 
 ## Downloads
 

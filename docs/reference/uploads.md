@@ -19,3 +19,15 @@ In the guide: [Checking uploads](../guide/uploads.md), [Object storage](../guide
 ::: fastapi_alcazaba.uploads.S3Presigner
 
 ::: fastapi_alcazaba.uploads.UploadForm
+
+::: fastapi_alcazaba.uploads.ClamAVScanner
+
+::: fastapi_alcazaba.uploads.ScanResult
+
+::: fastapi_alcazaba.uploads.Scanner
+
+::: fastapi_alcazaba.uploads.ScannerUnavailable
+
+::: fastapi_alcazaba.uploads.PresignedUpload
+
+::: fastapi_alcazaba.uploads.direct.check_uploaded

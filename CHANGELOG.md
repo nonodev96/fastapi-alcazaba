@@ -97,6 +97,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (shared through the cache's backend), which reveal the newest events removed;
   `FastAPIAudit.checkpoint()`, `last_checkpoint()`. `fastapi-alcazaba audit verify` and
   `audit keygen`.
+- Uploads: `FastAPIUploads(scanner=...)` scans each file that passed the other checks;
+  `ClamAVScanner` speaks clamd's protocol (`INSTREAM`, `ping()`) with nothing more installed
+  (the `clamav` extra); infected files get a 422 and `on_infected`; a scanner down or slow, a
+  503 unless `scan_fail_open`. Counted as `infected`, `scan_failed`, `unscanned`.
+- Uploads: `S3Presigner.upload_url(key, size=..., sha256=...)` signs the length and the checksum
+  (`PresignedUpload`, with the headers to send); before, it signed a PUT of any size.
+  `delete_url()`. `check_uploaded()` (the `uploads` extra) reads an object back, checks it like
+  `FastAPIUploads` and deletes it when it fails.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
