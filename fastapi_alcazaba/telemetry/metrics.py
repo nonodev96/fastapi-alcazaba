@@ -9,7 +9,8 @@ Instruments (attributes in brackets):
 - fastapi_alcazaba.backend.duration: seconds per backend call [fastapi_alcazaba.operation]
 - fastapi_alcazaba.backend.errors: failed backend calls [fastapi_alcazaba.operation, error.type]
 - fastapi_alcazaba.rate_limit: requests seen by a FastAPIRateLimiter [fastapi_alcazaba.outcome:
-  allowed, limited, unchecked (the backend failed); fastapi_alcazaba.limiter: its name or route]
+  allowed, limited, unchecked (the backend failed), exempt; fastapi_alcazaba.limiter: its name or
+  route]
 - fastapi_alcazaba.breaker.calls: calls through a FastAPIBreaker [fastapi_alcazaba.outcome:
   success, failure, refused; fastapi_alcazaba.breaker: its name]
 - fastapi_alcazaba.breaker.transitions: a FastAPIBreaker opening or closing again

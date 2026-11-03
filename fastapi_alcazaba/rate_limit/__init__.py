@@ -7,6 +7,7 @@ from fastapi_alcazaba.rate_limit.concurrency import (
 )
 from fastapi_alcazaba.rate_limit.limiter import (
     FastAPIRateLimiter,
+    RateLimitStatus,
     client_ip,
     client_network,
     too_many_requests,
@@ -18,5 +19,6 @@ __all__ = [
     "ConcurrencyLimitExceeded",
     "FastAPIConcurrencyLimiter",
     "FastAPIRateLimiter",
+    "RateLimitStatus",
     "too_many_requests",
 ]

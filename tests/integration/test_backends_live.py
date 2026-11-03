@@ -423,6 +423,32 @@ async def test_rate_limiter(backend: Backend, prefix: str) -> None:
     assert await limiter.hit(other) is None
 
 
+async def test_rate_limiter_controls(backend: Backend, prefix: str) -> None:
+    """Status without spending, reset after a login, limits by plan, exemptions."""
+    shared = Cache(backend, prefix=prefix)
+    attempts = FastAPIRateLimiter(times=3, minutes=15, name="login", cache=shared)
+    request = Request({"type": "http", "path": "/login", "client": ("192.0.2.1", 1234)})
+    for _ in range(3):
+        assert await attempts.hit(request, key="ana") is None
+    assert (await attempts.status(request, key="ana")).remaining == 0
+    assert await attempts.hit(request, key="ana") is not None
+    await attempts.reset(request, key="ana")
+    assert (await attempts.status(request, key="ana")).remaining == 3
+    assert await attempts.hit(request, key="ana") is None
+
+    def by_plan(connection: Any) -> int:
+        return 5 if connection.client.host == "192.0.2.9" else 1
+
+    plans = FastAPIRateLimiter(
+        times=by_plan, minutes=1, name="plans", cache=shared, exempt={"192.0.2.7"}
+    )
+    pro = Request({"type": "http", "path": "/", "client": ("192.0.2.9", 1)})
+    results = [await plans.hit(pro) for _ in range(6)]
+    assert sum(result is None for result in results) == 5
+    exempt = Request({"type": "http", "path": "/", "client": ("192.0.2.7", 1)})
+    assert all([await plans.hit(exempt) is None for _ in range(10)])
+
+
 async def test_user_sessions(backend: Backend, prefix: str) -> None:
     """Each user's sessions on a real backend: logins at once, all indexed (its locks), listed,
     and ended everywhere but here."""

@@ -85,6 +85,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fails or takes longer than `refresh_timeout`. `Cache-Status` says `detail=stale-while-revalidate`
   or `stale-if-error`; lookups are counted as `stale` and `stale_if_error`. Before,
   `stale_while_revalidate` only added the Cache-Control directive.
+- Rate limiter: `times` may be a function of the request (limits by plan or API key tier, in
+  the `RateLimit` headers too); `exempt=` identities or a predicate (counted as `exempt`, logged
+  once per identity); `reset()` forgets what a client spent (after a successful login);
+  `status()` reads a budget without spending any (`RateLimitStatus`); both by request, or by
+  `identity` for named limiters.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns

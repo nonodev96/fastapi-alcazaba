@@ -97,12 +97,53 @@ async def login(request: Request, form: Annotated[LoginForm, Form()]) -> Token:
     account = unicodedata.normalize("NFKC", form.username).strip().casefold()
     if (wait := await login_attempts.hit(request, key=account)) is not None:
         too_many_requests(request, wait)
+    user = await check_password(account, form.password)
+    if user is None:
+        raise HTTPException(401, "Wrong username or password")
+    # The right password: the failed attempts before it don't count against the next login.
+    await login_attempts.reset(request, key=account)
     ...
 ```
 
 Normalise the key exactly as the login looks the account up. A limit per account also lets
 anyone lock that account out for the window with five wrong passwords: pair it with the limit
 per IP, and keep the window short.
+
+### Adjusting limits at run time
+
+```python
+PLANS = {"free": 100, "pro": 5_000}
+
+
+async def requests_per_hour(request: Request) -> int:
+    return PLANS[(await current_account(request)).plan]
+
+
+api = FastAPIRateLimiter(
+    times=requests_per_hour,  # each request's client gets its plan's limit
+    hours=1,
+    identifier=api_key_id,
+    exempt={"monitoring"},  # or a predicate of the request
+    name="api",
+)
+
+status = await api.status(request)  # RateLimitStatus(limit=5000, remaining=4210, reset=1800)
+await api.reset(identity="key_123", cache=app_cache)  # from an admin page, without its request
+```
+
+- **Limits per request:** `times` may be a function of the request (sync or async), e.g. by plan
+  or API key tier. The `RateLimit` headers carry each request's limit (`q=`); a client whose plan
+  changes keeps what it spent in the window. Without a `name`, the policy is `per-<window>`.
+- **Exemptions:** `exempt` takes identities (what `identifier` returns) or a predicate. Their
+  requests aren't counted and get no headers; each is counted as `exempt` in
+  `fastapi_alcazaba.rate_limit`, and logged (INFO) the first time a process sees the identity.
+- **Reading a budget:** `status(request)` gives the limit, what fits now and for how long no more
+  is sure to, without spending any (an account page, a `GET /quota`).
+- **Resetting:** `reset(request, key=...)` forgets what a client spent, in the backend, for every
+  process. Other processes that refuse it without asking the backend (it had nothing left) do so
+  until its budget would have refilled.
+- **Without the request:** `status` and `reset` take `identity=` (and `cache=`) when the limiter
+  has a `name`; without one, its budget is the route's, which only a request names.
 
 ## Concurrency limits
 

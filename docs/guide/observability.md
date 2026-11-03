@@ -305,7 +305,7 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.entry.size` | `fastapi_alcazaba.namespace` |
 | `fastapi_alcazaba.backend.duration` | `fastapi_alcazaba.operation` (get, set, delete, incr, lock, unlock, extend_lock, tag, incr_window) |
 | `fastapi_alcazaba.backend.errors` | `fastapi_alcazaba.operation`, `error.type` |
-| `fastapi_alcazaba.rate_limit` | `fastapi_alcazaba.outcome` (allowed, limited, unchecked), `fastapi_alcazaba.limiter` (its name, or the route) |
+| `fastapi_alcazaba.rate_limit` | `fastapi_alcazaba.outcome` (allowed, limited, unchecked, exempt), `fastapi_alcazaba.limiter` (its name, or the route) |
 | `fastapi_alcazaba.breaker.calls` | `fastapi_alcazaba.outcome` (success, failure, refused), `fastapi_alcazaba.breaker` |
 | `fastapi_alcazaba.breaker.transitions` | `fastapi_alcazaba.state` (open, closed), `fastapi_alcazaba.breaker` |
 | `fastapi_alcazaba.breaker.open` (gauge) | `fastapi_alcazaba.breaker`: 1 while it's open |
