@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from fastapi_alcazaba.backends.tiered import shared_backend
 from fastapi_alcazaba.background.tasks import FastAPITaskQueue, current_task
 from fastapi_alcazaba.outbound.transports import ResilientTransport, SSRFGuardTransport
 from fastapi_alcazaba.response_cache.caches import Cache, resolve_cache
@@ -195,7 +196,7 @@ class WebhookSender:
         before its first attempt (or once it expired)."""
         cache = self._cache()
         key = self._key("delivery", endpoint_id, message_id)
-        raw = await cache.guard.run("get", lambda: cache.backend.get(key))
+        raw = await cache.guard.run("get", lambda: shared_backend(cache.backend).get(key))
         if raw is None:
             return None
         try:
@@ -217,8 +218,12 @@ class WebhookSender:
         cache = self._cache()
         failures_key = self._key("failures", endpoint_id)
         disabled_key = self._key("disabled", endpoint_id)
-        failures = await cache.guard.run("get", lambda: cache.backend.get_counter(failures_key))
-        disabled = await cache.guard.run("get", lambda: cache.backend.get(disabled_key))
+        failures = await cache.guard.run(
+            "get", lambda: shared_backend(cache.backend).get_counter(failures_key)
+        )
+        disabled = await cache.guard.run(
+            "get", lambda: shared_backend(cache.backend).get(disabled_key)
+        )
         return EndpointHealth(endpoint_id, int(failures), disabled is not None)
 
     async def enable(self, endpoint_id: str) -> None:
@@ -234,7 +239,7 @@ class WebhookSender:
         cache = self._cache()
         key = self._key("disabled", endpoint_id)
         stamp = str(time.time()).encode()
-        await cache.guard.run("set", lambda: cache.backend.set(key, stamp, None))
+        await cache.guard.run("set", lambda: shared_backend(cache.backend).set(key, stamp, None))
 
     async def aclose(self) -> None:
         """Closes the client it made (not one it was given): in the lifespan, at shutdown."""
@@ -309,7 +314,7 @@ class WebhookSender:
         cache = self._cache()
         key = self._key("failures", endpoint_id)
         failures = await cache.guard.run(
-            "incr", lambda: cache.backend.incr(key, 1, self.record_ttl)
+            "incr", lambda: shared_backend(cache.backend).incr(key, 1, self.record_ttl)
         )
         if gone or failures >= self.disable_after:
             await self.disable(endpoint_id)
@@ -339,12 +344,16 @@ class WebhookSender:
         cache = self._cache()
         key = self._key("delivery", endpoint_id, message_id)
         value = json.dumps(record).encode()
-        await cache.guard.run("set", lambda: cache.backend.set(key, value, self.record_ttl))
+        await cache.guard.run(
+            "set", lambda: shared_backend(cache.backend).set(key, value, self.record_ttl)
+        )
 
     @staticmethod
     async def _delete(cache: Cache, key: str) -> None:
-        await cache.guard.run("delete", lambda: cache.backend.clear(key=key))
+        await cache.guard.run("delete", lambda: shared_backend(cache.backend).clear(key=key))
 
+    # Records and endpoint states are read and written in the shared backend: a TieredBackend's
+    # copy in this process would be another process's old news.
     def _cache(self) -> Cache:
         if self.cache is not None:
             return self.cache
