@@ -31,4 +31,6 @@ In the guide: [Scheduled jobs](../guide/background.md#scheduled-jobs), [Task que
 
 ::: fastapi_alcazaba.background.outbox.OutboxMessage
 
+::: fastapi_alcazaba.background.outbox.GivenUpMessage
+
 ::: fastapi_alcazaba.background.outbox.OutboxRelay

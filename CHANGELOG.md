@@ -46,6 +46,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `object_storage_check`, not critical by default. With them: `FastAPITaskQueue.counts()` and
   `measure()`, `SQLAlchemyOutbox.backlog()` and `measure()`, `FastAPIBroadcast.connected` and
   `ping()`, `FastAPILeader.campaigning`, `SMTPSender.check()`.
+- Outbox: `OutboxRelay(retention=7 days)` deletes the messages sent long ago, in batches of
+  `purge_batch`, every `purge_interval`; `SQLAlchemyOutbox.purge()` on demand. Messages given up on
+  are listed by `given_up()` (without their payload), sent again by `requeue()` or deleted by
+  `discard()`.
+- Outbox: each message keeps the trace context of where it was written, and each delivery is a
+  span (`fastapi_alcazaba.outbox <topic>`) linked to it; counters `fastapi_alcazaba.outbox`
+  (delivered, retried, given_up) and `fastapi_alcazaba.outbox.purged`.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
@@ -107,6 +114,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   is refused as malformed. A task can't take keyword arguments named `unique_key`. A 0.7 worker
   runs tasks enqueued with a `unique_key` and leaves the key, which expires with the task's
   deadline.
+
+- The outbox is no longer experimental. Its table changed: a nullable column `traceparent`
+  (`String(55)`), and indexes `ix_<table>_due` (`sent`, `next_try`) and `ix_<table>_failed`
+  instead of those on `next_try` and `sent`. Migrate it, or keep the old table with
+  `outbox_table(metadata, traceparent=False)` (the indexes only change how fast it is).
+- Outbox: the relay purges the messages sent more than 7 days ago by default
+  (`retention=None` keeps them).
 
 ### Deprecated
 

@@ -311,9 +311,6 @@ async def listen(websocket: WebSocket, room: int) -> None:
 
 ## Outbox
 
-!!! warning "Experimental"
-    New in 0.7: its API may still change in any release.
-
 A change saved and the message that announces it (to the task queue, a webhook, another service)
 go together or not at all: the message is written in the same database transaction as the change,
 and a relay delivers it afterwards, at least once. With the `sqlalchemy` extra.
@@ -365,3 +362,27 @@ async def relay_outbox() -> None:
 - **In order, by one relay:** the oldest due messages first, `batch` at a time. Run the relay
   in one process ([leader election](#leader-election)).
 - **Payloads** are JSON, 256 KiB at most: ids and what changed, not files.
+- **The table doesn't grow without bound:** `run()` deletes the messages sent more than `retention`
+  seconds ago (7 days), every `purge_interval` (an hour), `purge_batch` (1000) at a time, each
+  batch in a short transaction of its own. Those given up on stay. `retention=None` keeps
+  everything; `outbox.purge(older_than)` purges on demand.
+- **Messages given up on** are listed by `outbox.given_up()` (id, topic, attempts, when written and
+  given up, last error; not the payload), and `outbox.requeue(ids)` (all of them without ids) sends
+  them again with their attempts reset, or `outbox.discard(ids)` deletes them.
+- **Traced end to end:** a message keeps the trace context of where it was written (its
+  `traceparent` column), and each delivery is a span of its own (`fastapi_alcazaba.outbox
+  <topic>`) linked to it: from the request to the delivery, and on to the task the delivery
+  enqueues, which links to the delivery. Failures are recorded on the span.
+- **Counted:** `fastapi_alcazaba.outbox` (delivered, retried, given_up; by outbox and topic) and
+  `fastapi_alcazaba.outbox.purged`; a [`BacklogMonitor`](observability.md#backlog-gauges)
+  measures how many wait and since when. Metrics and traces go to FastAPICache's providers when
+  it's set up, to the global ones otherwise.
+- **Indexes:** `ix_<table>_due` on (`sent`, `next_try`), which serves the relay, the backlog and the
+  purge, and `ix_<table>_failed`. Async sessions (`async_sessionmaker`, asyncpg) and plain ones
+  (in a thread) work alike; the tests run on SQLite and PostgreSQL.
+
+!!! note "From 0.7"
+    The table changed in 0.8: a nullable column `traceparent` (`String(55)`), and the indexes above
+    instead of those on `next_try` and `sent`. Add them in a migration (Alembic's autogenerate
+    finds them), or keep the table as it was with `outbox_table(metadata, traceparent=False)`,
+    without the trace context.

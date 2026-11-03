@@ -287,7 +287,9 @@ Then Alcazaba adds to them:
   inside. Each run of a scheduled job is the root of a trace of its own
   (`fastapi_alcazaba.scheduler <job>`, failures recorded), so what the job does (queries, calls)
   is grouped under it instead of scattered. So is each run of a task (`fastapi_alcazaba.task
-  <task>`, with its queue, ID and attempt), linked to the span that enqueued it.
+  <task>`, with its queue, ID and attempt), linked to the span that enqueued it, and each delivery
+  of the outbox (`fastapi_alcazaba.outbox <topic>`, with its outbox, message ID and attempt),
+  linked to the span that wrote the message.
 - **On the request's span:** the events `fastapi_alcazaba.rate_limit` (a request limited or
   unchecked), `fastapi_alcazaba.breaker.refused`, `.opened` and `.closed`,
   `fastapi_alcazaba.outbound.refused` (an outbound call to an origin whose breaker is open) and
@@ -345,6 +347,8 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.tasks.duration` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` |
 | `fastapi_alcazaba.tasks.backlog` (gauge) | `fastapi_alcazaba.queue`, `fastapi_alcazaba.state` (queued, delayed): set by a `BacklogMonitor` |
 | `fastapi_alcazaba.tasks.dead_letters` (gauge) | `fastapi_alcazaba.queue`: set by a `BacklogMonitor` |
+| `fastapi_alcazaba.outbox` | `fastapi_alcazaba.outbox` (its table), `fastapi_alcazaba.topic`, `fastapi_alcazaba.outcome` (delivered, retried, given_up) |
+| `fastapi_alcazaba.outbox.purged` | `fastapi_alcazaba.outbox`: messages sent long ago that the relay deleted |
 | `fastapi_alcazaba.outbox.backlog` (gauge) | `fastapi_alcazaba.outbox` (its table): set by a `BacklogMonitor` |
 | `fastapi_alcazaba.outbox.oldest_age` (gauge) | `fastapi_alcazaba.outbox`: seconds, set by a `BacklogMonitor` |
 | `fastapi_alcazaba.tasks.reclaimed` | `fastapi_alcazaba.queue`: tasks taken over from workers that stopped answering |
