@@ -79,6 +79,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `verify_logout_token()`. `client_auth="private_key_jwt"` with `client_key` (RFC 7523): no
   client secret. The raw ID token is in `request.state.id_token` at the callback. CI runs the
   Keycloak live tests, with the realm in `tests/integration/keycloak`.
+- Response cache: `@cache(stale_while_revalidate=...)` serves an expired entry at once and
+  refreshes it after the response (a background task of the response in endpoints, while their
+  dependencies are open; one process, once); `stale_if_error=...` serves it when computing
+  fails or takes longer than `refresh_timeout`. `Cache-Status` says `detail=stale-while-revalidate`
+  or `stale-if-error`; lookups are counted as `stale` and `stale_if_error`. Before,
+  `stale_while_revalidate` only added the Cache-Control directive.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns

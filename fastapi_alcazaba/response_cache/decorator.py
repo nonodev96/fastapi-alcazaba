@@ -16,6 +16,7 @@ from typing import Any, ParamSpec, Protocol, TypeVar, cast, overload
 from fastapi.concurrency import run_in_threadpool
 from fastapi.dependencies.utils import get_typed_return_annotation, get_typed_signature
 from pydantic import TypeAdapter
+from starlette.background import BackgroundTasks
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_304_NOT_MODIFIED
@@ -55,6 +56,21 @@ R = TypeVar("R")
 _in_flight: dict[tuple[int, str], "asyncio.Future[bytes | None]"] = {}
 _warned_coders: set[type[Coder]] = set()
 _UNUSABLE = object()
+# Entries being refreshed in the background by this process, by event loop and key, and the
+# asyncio tasks doing it outside routes (kept: the loop only holds weak references to tasks).
+_revalidating: set[tuple[int, str]] = set()
+_refreshes: set["asyncio.Task[None]"] = set()
+
+
+@dataclass(frozen=True)
+class _Found:
+    """An entry read: its time left (as the backend tells it, less the stale windows), and how
+    many seconds past `expire` it is when it's stale (None when it's fresh)."""
+
+    ttl: int
+    payload: bytes
+    stale_for: int | None = None
+
 
 Tags = Iterable[str] | Callable[..., Iterable[str]]
 
@@ -77,7 +93,14 @@ def _locate_param(sig: Signature, dep: Parameter, to_inject: list[Parameter]) ->
     If not found, returns the injectable parameter, and adds it to the to_inject list.
 
     """
-    param = next((p for p in sig.parameters.values() if p.annotation is dep.annotation), None)
+
+    def same(annotation: Any) -> bool:
+        if dep.annotation is BackgroundTasks:
+            # fastapi.BackgroundTasks is Starlette's subclass; FastAPI fills one such parameter.
+            return isinstance(annotation, type) and issubclass(annotation, BackgroundTasks)
+        return annotation is dep.annotation
+
+    param = next((p for p in sig.parameters.values() if same(p.annotation)), None)
     if param is None:
         to_inject.append(dep)
         param = dep
@@ -244,6 +267,10 @@ def _hit(ttl: int | None) -> str:
     return f"hit; ttl={ttl}" if ttl is not None and ttl > 0 else "hit"
 
 
+def _max_age(ttl: int) -> int | None:
+    return ttl if ttl > 0 else None
+
+
 def _directives(value: str) -> list[str]:
     return [directive.strip() for directive in value.split(",") if directive.strip()]
 
@@ -389,6 +416,8 @@ class _Endpoint:
     distributed_lock: bool | None
     early_refresh: float | None
     tags: Tags | None
+    stale_if_error: int | None = None
+    refresh_timeout: float | None = None
     cache_control: tuple[str, ...] | None = None
     #: The Cache this function was decorated with (Cache.cached); None: FastAPICache's.
     instance: Cache | None = None
@@ -416,8 +445,10 @@ class _CachedCall:
         request: Request | None,
         response: Response | None,
         run: Callable[[], Awaitable[Any]],
+        background: BackgroundTasks | None = None,
     ) -> None:
         self.endpoint = endpoint
+        self.background = background
         self.args = args
         self.kwargs = kwargs
         self.request = request
@@ -469,34 +500,111 @@ class _CachedCall:
         await self._build_key()
 
         stale: bytes | None = None
+        fallback: _Found | None = None  # an expired entry to serve if computing fails
         if "no-cache" in directives:
             self.forward = "request"  # the client's Cache-Control didn't let us use an entry
-        elif (entry := await self._read()) is not None:
-            ttl, payload = entry
-            if self._refresh_early(ttl):
-                stale = payload
+        elif (found := await self._read()) is not None:
+            if found.stale_for is not None:
+                served = self._stale(found)
+                if served is not _UNUSABLE:
+                    return served
+                if self.endpoint.stale_if_error and found.stale_for <= self.endpoint.stale_if_error:
+                    fallback = found
                 self.forward = "stale"
-            elif (served := self._serve(payload, _hit(ttl), ttl if ttl > 0 else None)) is not (
-                _UNUSABLE
-            ):
+            elif self._refresh_early(found.ttl):
+                stale = found.payload
+                self.forward = "stale"
+            elif (
+                served := self._serve(found.payload, _hit(found.ttl), _max_age(found.ttl))
+            ) is not (_UNUSABLE):
                 self._lookup("hit")
                 return served
         self._lookup("refresh" if stale is not None else "miss")
-        if stale is None:
+        if stale is None and fallback is None:
             return await self._miss()
         try:
-            return await self._miss()
+            if fallback is None:
+                return await self._miss()
+            async with asyncio.timeout(self.endpoint.refresh_timeout):
+                return await self._miss()
         except Exception:
-            # Refreshing early is optional: until it expires, the entry we have is still valid.
-            logger.warning(
-                "Early refresh of %r failed; serving the cached value",
-                self.cache_key,
-                exc_info=True,
-            )
-            served = self._serve(stale, "hit", None)
+            if fallback is not None:
+                # stale-if-error: what we have, rather than the error.
+                logger.warning(
+                    "Computing %r failed; serving the entry that expired %d s ago",
+                    self.cache_key,
+                    fallback.stale_for,
+                    exc_info=True,
+                )
+                self._lookup("stale_if_error")
+                status = f"hit; ttl={-(fallback.stale_for or 0)}; detail=stale-if-error"
+                served = self._serve(fallback.payload, status, None)
+            else:
+                # Refreshing early is optional: until it expires, the entry is still valid.
+                logger.warning(
+                    "Early refresh of %r failed; serving the cached value",
+                    self.cache_key,
+                    exc_info=True,
+                )
+                served = self._serve(stale or b"", "hit", None)
             if served is _UNUSABLE:
                 raise
             return served
+
+    def _stale(self, found: "_Found") -> Any:
+        """stale-while-revalidate: the expired entry at once, refreshed after the response,
+        when it's within the window; _UNUSABLE otherwise."""
+        window = self.endpoint.stale_while_revalidate
+        if not window or found.stale_for is None or found.stale_for > window:
+            return _UNUSABLE
+        status = f"hit; ttl={-found.stale_for}; detail=stale-while-revalidate"
+        served = self._serve(found.payload, status, None)
+        if served is _UNUSABLE:
+            return _UNUSABLE
+        self._lookup("stale")
+        flight = (id(asyncio.get_running_loop()), self.cache_key)
+        if flight not in _revalidating:  # one refresh per process; the lock: one across them
+            _revalidating.add(flight)
+            if self.background is not None:
+                # After the response is sent, before the request's dependencies are closed.
+                self.background.add_task(self._revalidate, flight)
+            else:
+                task = asyncio.get_running_loop().create_task(self._revalidate(flight))
+                _refreshes.add(task)
+                task.add_done_callback(_refreshes.discard)
+        return served
+
+    async def _revalidate(self, flight: tuple[int, str]) -> None:
+        """Compute and store the entry again, if no other process is doing it."""
+        lock_key, token = f"{self.cache_key}:revalidate", secrets.token_hex(16)
+        try:
+            locked = not self.backend.supports_locks or await self.guard.run(
+                "lock",
+                lambda: self.backend.acquire_lock(lock_key, token, self.options.lock_timeout),
+            )
+            if not locked:
+                return  # another process refreshes it
+            try:
+                before = list(self.response.raw_headers) if self.response is not None else []
+                result = await self.run()
+                outcome, payload = self._encode(result, _added_headers(self.response, before))
+                if payload is not None and not await self._store(payload):
+                    outcome = "failed"
+                size = len(payload) if outcome == "stored" and payload else None
+                self.metrics.store(outcome, self.endpoint.namespace, size)
+            finally:
+                if self.backend.supports_locks:
+                    await self.guard.run(
+                        "unlock", lambda: self.backend.release_lock(lock_key, token)
+                    )
+        except Exception:
+            logger.warning(
+                "Refreshing %r in the background failed: it's served stale until it expires",
+                self.cache_key,
+                exc_info=True,
+            )
+        finally:
+            _revalidating.discard(flight)
 
     # region Key
 
@@ -550,7 +658,13 @@ class _CachedCall:
         else:
             logger.warning("Backend %s of %r failed", operation, self.cache_key, exc_info=exc)
 
-    async def _read(self) -> tuple[int, bytes] | None:
+    def _stale_windows(self) -> int:
+        """Seconds an entry is kept past `expire`, to be served stale."""
+        if not self.expire:
+            return 0
+        return max(self.endpoint.stale_while_revalidate or 0, self.endpoint.stale_if_error or 0)
+
+    async def _read(self) -> _Found | None:
         try:
             ttl, stored = await self.guard.run(
                 "get", lambda: self.backend.get_with_ttl(self.cache_key)
@@ -571,7 +685,12 @@ class _CachedCall:
         if payload is None:
             logger.warning("Ignoring cache entry %r: it can't be decompressed", self.cache_key)
             return None
-        return ttl, payload
+        extra = self._stale_windows()
+        if not extra or ttl <= 0:  # no stale windows, or a lifetime the backend doesn't know
+            return _Found(ttl, payload)
+        if ttl > extra:
+            return _Found(ttl - extra, payload)
+        return _Found(0, payload, stale_for=extra - ttl)
 
     def _refresh_early(self, ttl: int) -> bool:
         """Probabilistic early refresh: in the last `early_refresh` part of the lifetime, recompute
@@ -601,9 +720,8 @@ class _CachedCall:
         packed = payload if compressor is None else compressor.compress(payload)
         stored = packed if self.protector is None else self.protector.seal(self.cache_key, packed)
         try:
-            await self.guard.run(
-                "set", lambda: self.backend.set(self.cache_key, stored, self.expire)
-            )
+            lifetime = self.expire + self._stale_windows() if self.expire else self.expire
+            await self.guard.run("set", lambda: self.backend.set(self.cache_key, stored, lifetime))
         except BackendUnavailable as exc:
             self._backend_failed("set", exc)
             return False
@@ -611,7 +729,7 @@ class _CachedCall:
         if tags and self.backend.supports_tags:
             try:
                 await self.guard.run(
-                    "tag", lambda: self.backend.add_tags(self.cache_key, tags, self.expire)
+                    "tag", lambda: self.backend.add_tags(self.cache_key, tags, lifetime)
                 )
             except BackendUnavailable as exc:
                 self._backend_failed("tag", exc)
@@ -746,8 +864,12 @@ class _CachedCall:
         try:
             # Another process may have stored the value and released the lock between our miss
             # and our acquire: check again before computing it (double-checked locking).
-            entry = await self._read()
-            if entry is not None and (served := self._serve_entry(entry)) is not _UNUSABLE:
+            found = await self._read()
+            if (
+                found is not None
+                and found.stale_for is None
+                and (served := self._serve_entry(found)) is not _UNUSABLE
+            ):
                 return served
             return await self._compute()
         finally:
@@ -764,19 +886,19 @@ class _CachedCall:
         while (remaining := deadline - loop.time()) > 0:
             await asyncio.sleep(min(delay, remaining))
             delay = min(delay * 2, 0.4)
-            if (entry := await self._read()) is not None:
-                served = self._serve_entry(entry)
+            # A stale one is what the other process is replacing: wait for the new one.
+            if (found := await self._read()) is not None and found.stale_for is None:
+                served = self._serve_entry(found)
                 if served is not _UNUSABLE:
                     return served
         return _UNUSABLE
 
-    def _serve_entry(self, entry: tuple[int, bytes]) -> Any:
+    def _serve_entry(self, found: _Found) -> Any:
         """Serve an entry another process stored. The calls waiting for this one in the same
         process (single flight) reuse it instead of computing it again."""
-        ttl, payload = entry
-        served = self._serve(payload, _hit(ttl), ttl if ttl > 0 else None)
+        served = self._serve(found.payload, _hit(found.ttl), _max_age(found.ttl))
         if served is not _UNUSABLE:
-            self.payload = payload
+            self.payload = found.payload
         return served
 
     # endregion
@@ -894,6 +1016,8 @@ def cache(
     tags: Tags | None = None,
     instance: Cache | None = None,
     cache_control: str | None = None,
+    stale_if_error: int | None = None,
+    refresh_timeout: float | None = None,
 ) -> _CacheDecorator:
     """Cache the result of an endpoint, or of any function, sync or async.
 
@@ -911,7 +1035,14 @@ def cache(
         response `private`; `()` when the response is the same for everybody.
     :param respect_cache_control: let clients skip the cache with Cache-Control no-cache or
         no-store.
-    :param stale_while_revalidate: adds that directive to Cache-Control.
+    :param stale_while_revalidate: seconds past `expire` during which the expired entry is
+        served at once and refreshed after the response, by one process; also sent as that
+        directive of Cache-Control. In an endpoint, the refresh is a background task of the
+        response: the request's dependencies are still open.
+    :param stale_if_error: seconds past `expire` during which the expired entry is served when
+        computing a new one raises, or takes longer than `refresh_timeout`.
+    :param refresh_timeout: seconds computing may take while an expired entry can be served
+        (`stale_if_error`); past them it's cancelled and the expired entry served.
     :param cache_control: the Cache-Control directives to send ("public, s-maxage=600"), with
         `max-age` the time the entry has left unless they give one; by default, the endpoint's
         own Cache-Control, or `max-age`. An entry of one user is `private` whatever they say.
@@ -929,6 +1060,14 @@ def cache(
         raise ValueError("early_refresh is a fraction of the lifetime, between 0 and 1")
     if max_value_size is not None and max_value_size < 1:
         raise ValueError("max_value_size must be at least 1 byte")
+    for name, window in (
+        ("stale_while_revalidate", stale_while_revalidate),
+        ("stale_if_error", stale_if_error),
+    ):
+        if window is not None and window < 1:
+            raise ValueError(f"{name} is 1 second or more")
+    if refresh_timeout is not None and (refresh_timeout <= 0 or not stale_if_error):
+        raise ValueError("refresh_timeout is positive, and goes with stale_if_error")
     directives = None if cache_control is None else _check_cache_control(cache_control)
 
     injected_request = Parameter(
@@ -939,6 +1078,11 @@ def cache(
     injected_response = Parameter(
         name=f"{injected_dependency_namespace}_response",
         annotation=Response,
+        kind=Parameter.KEYWORD_ONLY,
+    )
+    injected_background = Parameter(
+        name=f"{injected_dependency_namespace}_background",
+        annotation=BackgroundTasks,
         kind=Parameter.KEYWORD_ONLY,
     )
     endpoint_vary = None if vary_headers is None else normalise_headers(vary_headers)
@@ -952,6 +1096,12 @@ def cache(
         to_inject: list[Parameter] = []
         request_param = _locate_param(wrapped_signature, injected_request, to_inject)
         response_param = _locate_param(wrapped_signature, injected_response, to_inject)
+        # Where stale-while-revalidate's refresh goes: after the response, in the request.
+        background_param = (
+            _locate_param(wrapped_signature, injected_background, to_inject)
+            if stale_while_revalidate
+            else None
+        )
         return_type = get_typed_return_annotation(func)
         if exclude_params:
             _check_excluded_params(wrapped_signature, exclude_params)
@@ -974,6 +1124,8 @@ def cache(
             tags=static_tags if static_tags is not None else tags,
             cache_control=directives,
             instance=instance,
+            stale_if_error=stale_if_error,
+            refresh_timeout=refresh_timeout,
         )
 
         @wraps(func)
@@ -986,6 +1138,7 @@ def cache(
                 call_kwargs = dict(kwargs)
                 call_kwargs.pop(injected_request.name, None)
                 call_kwargs.pop(injected_response.name, None)
+                call_kwargs.pop(injected_background.name, None)
                 if iscoroutinefunction(func):
                     return await func(*args, **call_kwargs)  # type: ignore[arg-type,no-any-return]
                 # sync: wrap in a thread, as FastAPI does
@@ -994,7 +1147,14 @@ def cache(
             copy_kwargs = kwargs.copy()
             request = cast(Request | None, copy_kwargs.pop(request_param.name, None))
             response = cast(Response | None, copy_kwargs.pop(response_param.name, None))
-            call = _CachedCall(endpoint, args, copy_kwargs, request, response, ensure_async_func)
+            background = (
+                cast(BackgroundTasks | None, copy_kwargs.pop(background_param.name, None))
+                if background_param is not None
+                else None
+            )
+            call = _CachedCall(
+                endpoint, args, copy_kwargs, request, response, ensure_async_func, background
+            )
             return cast(R | Response, await call.execute())
 
         signature = _augment_signature(wrapped_signature, *to_inject)

@@ -54,7 +54,9 @@ Call it once, at startup (in the `lifespan`).
 | `exclude_params` | `None` | arguments left out of the key (a nonce, a database session…) |
 | `vary_headers` | from `init` | `()` for responses that are the same for everybody |
 | `respect_cache_control` | from `init` | |
-| `stale_while_revalidate` | `None` | adds that `Cache-Control` directive |
+| `stale_while_revalidate` | `None` | seconds past `expire` an entry is served at once and refreshed in the background (see [below](#serving-stale-entries)); also that `Cache-Control` directive |
+| `stale_if_error` | `None` | seconds past `expire` an entry is served when computing a new one fails |
+| `refresh_timeout` | `None` | seconds computing may take while `stale_if_error` can serve: past them, the stale entry |
 | `cache_control` | `None` | the `Cache-Control` directives to send (see [below](#cache-control)) |
 | `single_flight` | from `init` | |
 | `max_value_size` | from `init` | |
@@ -112,6 +114,37 @@ counters, revoked tokens, one-time codes and idempotency records are kept apart,
 `{prefix}!` instead of `{prefix}:`, so no `clear()` frees a held lock, resets a limit or takes a
 revocation back; `InMemoryBackend` keeps them apart too, so caching many responses never evicts
 them.
+
+## Serving stale entries
+
+When a fresh value is slow or can't be had, an expired one is often better than waiting or an
+error:
+
+```python
+@app.get("/prices")
+@cache(expire=60, stale_while_revalidate=300, stale_if_error=3600, refresh_timeout=2)
+async def prices(db: Annotated[AsyncSession, Depends(session)]) -> list[Price]: ...
+```
+
+- **stale-while-revalidate:** up to 300 seconds after it expires, the entry is served at once
+  (`Cache-Status: Alcazaba; hit; ttl=-12; detail=stale-while-revalidate`), and the endpoint
+  runs again after the response, to store a fresh one. One process does it (a lock in the
+  backend, tried once), once (the other requests meanwhile get the stale entry too). In an
+  endpoint, the refresh is a background task of the response: it runs once the response is
+  sent, before the request's dependencies are closed, so the database session above is still
+  open. A refresh that fails is logged; the next request tries again.
+- **stale-if-error:** up to an hour after it expires, a request computes a fresh value as on a
+  miss, but when the endpoint raises, or takes longer than `refresh_timeout` (it's cancelled
+  then), the expired entry is served instead
+  (`Cache-Status: Alcazaba; hit; ttl=-1800; detail=stale-if-error`). Past the window, the error
+  goes through.
+- **How:** entries are stored for `expire` plus the longest of both windows, and a read tells a
+  fresh entry from a stale one by the time it has left. Signed, encrypted and compressed
+  entries, tags, invalidation, single flight and the distributed lock work as for any entry: an
+  invalidated entry isn't served stale.
+- **Counted** in `fastapi_alcazaba.lookups` as `stale` and `stale_if_error`. Stale responses get
+  no `max-age`: browsers and CDNs don't keep them as fresh.
+- Without an `expire` (entries that never expire), nothing is ever stale.
 
 ## Several caches, dependency injection and `get_or_set`
 

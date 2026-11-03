@@ -300,7 +300,7 @@ Then Alcazaba adds to them:
 
 | Metric | Attributes |
 | --- | --- |
-| `fastapi_alcazaba.lookups` | `fastapi_alcazaba.result` (hit, miss, refresh, bypass), `fastapi_alcazaba.namespace` |
+| `fastapi_alcazaba.lookups` | `fastapi_alcazaba.result` (hit, miss, refresh, bypass, stale (served while it's refreshed), stale_if_error (served because computing failed)), `fastapi_alcazaba.namespace` |
 | `fastapi_alcazaba.stores` | `fastapi_alcazaba.outcome` (stored, uncacheable, too_large, unencodable, failed), `fastapi_alcazaba.namespace` |
 | `fastapi_alcazaba.entry.size` | `fastapi_alcazaba.namespace` |
 | `fastapi_alcazaba.backend.duration` | `fastapi_alcazaba.operation` (get, set, delete, incr, lock, unlock, extend_lock, tag, incr_window) |

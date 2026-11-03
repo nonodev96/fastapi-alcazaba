@@ -609,3 +609,35 @@ def _counts(backend: Backend) -> bool:
 def _lock_expiry(backend: Backend) -> float:
     """How long to wait for a lock of 0.05 seconds to expire: memcached counts whole seconds."""
     return 2.5 if type(shared_backend(backend)).__name__ == "MemcachedBackend" else 0.2
+
+
+async def test_stale_entries(backend: Backend, prefix: str) -> None:
+    """Expired, an entry is served at once by both processes and refreshed by one of them
+    (stale-while-revalidate); and served when computing fails (stale-if-error)."""
+    caches = [Cache(backend, prefix=prefix, single_flight=False) for _ in range(2)]
+    calls: list[int] = []
+    failing = [False]
+
+    async def value() -> int:
+        calls.append(1)
+        await asyncio.sleep(0.2)
+        if failing[0]:
+            raise ConnectionError("the database is down")
+        return len(calls)
+
+    options: dict[str, Any] = {"expire": 1, "namespace": "stale", "vary_headers": ()}
+    revalidated = [c.cached(stale_while_revalidate=30, **options)(value) for c in caches]
+    assert await revalidated[0]() == 1
+    await asyncio.sleep(2.2)  # expired, within the window
+    assert list(await asyncio.gather(*(each() for each in revalidated * 2))) == [1] * 4
+    await asyncio.sleep(0.5)  # the refresh, in the background of one process
+    assert len(calls) == 2
+    assert await revalidated[1]() == 2
+
+    erring = caches[0].cached(stale_if_error=30, namespace="erring", expire=1, vary_headers=())(
+        value
+    )
+    first = await erring()
+    await asyncio.sleep(2.2)
+    failing[0] = True
+    assert await erring() == first
