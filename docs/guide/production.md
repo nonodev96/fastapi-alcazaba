@@ -99,6 +99,38 @@ pydantic-settings`). Every parameter that takes a key or a secret also takes pyd
 `SecretStr` (or `SecretBytes`) as it is, so the value stays out of the settings' repr and of
 tracebacks until Alcazaba uses it. The other snippets read theirs from the same `settings`.
 
+## Alerts
+
+With the metrics exported (see [Metrics and traces](observability.md#metrics-and-traces)) and a
+[`BacklogMonitor`](observability.md#backlog-gauges) running, these catch what piles up silently.
+In Prometheus' terms, as the OpenTelemetry Collector's Prometheus exporter names them by default
+(dots become underscores; seconds get `_seconds`, and the 0-or-1 gauges, of unit `1`, `_ratio`);
+the thresholds are a start:
+
+```yaml
+groups:
+  - name: fastapi-alcazaba
+    rules:
+      - alert: TasksDeadLettered  # a task gave up: look at it, requeue or discard it
+        expr: max by (fastapi_alcazaba_queue) (fastapi_alcazaba_tasks_dead_letters) > 0
+        for: 10m
+      - alert: TasksPilingUp  # the workers aren't keeping up
+        expr: max by (fastapi_alcazaba_queue) (fastapi_alcazaba_tasks_backlog{fastapi_alcazaba_state="queued"}) > 1000
+        for: 15m
+      - alert: OutboxStuck  # messages that should have gone out minutes ago
+        expr: max by (fastapi_alcazaba_outbox) (fastapi_alcazaba_outbox_oldest_age_seconds) > 300
+        for: 5m
+      - alert: NobodyLeads  # the outbox relay (or what the leader runs) isn't running anywhere
+        expr: sum by (fastapi_alcazaba_leader) (fastapi_alcazaba_leader_is_leader_ratio) == 0
+        for: 2m
+      - alert: BreakerOpen  # a dependency is failing
+        expr: max by (fastapi_alcazaba_breaker) (fastapi_alcazaba_breaker_open_ratio) == 1
+        for: 5m
+```
+
+Add the [checks of Alcazaba's components](observability.md#checks-of-alcazabas-components) to
+`/health/ready` too: they show in each probe what's degraded.
+
 ## Next steps
 
 - [Backends](backends.md): Redis, Valkey, GLIDE, memcached, DynamoDB, and a copy in each process

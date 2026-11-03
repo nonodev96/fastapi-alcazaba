@@ -21,6 +21,18 @@ In the guide: [Problem details](../guide/observability.md#problem-details), [Req
 
 ::: fastapi_alcazaba.observability.HealthCheck
 
+::: fastapi_alcazaba.observability.task_queue_check
+
+::: fastapi_alcazaba.observability.broadcast_check
+
+::: fastapi_alcazaba.observability.leader_check
+
+::: fastapi_alcazaba.observability.smtp_check
+
+::: fastapi_alcazaba.observability.object_storage_check
+
+::: fastapi_alcazaba.observability.BacklogMonitor
+
 ::: fastapi_alcazaba.observability.JSONFormatter
 
 ::: fastapi_alcazaba.observability.logging_config

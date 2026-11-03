@@ -187,6 +187,74 @@ health check, e.g. the target group of an ECS service) at `/health/ready`.
 - The endpoints are left out of the OpenAPI schema unless `include_in_schema=True`; responses
   carry `Cache-Control: no-store`.
 
+### Checks of Alcazaba's components
+
+Ready-made checks for what Alcazaba runs, to add to the router. Each is a `HealthCheck` that isn't
+critical by default (a backlog or a mail server that's down make the app `degraded`, not unready);
+`critical=True` and `timeout=` change that.
+
+```python
+from fastapi_alcazaba.observability import (
+    broadcast_check,
+    health_router,
+    leader_check,
+    object_storage_check,
+    smtp_check,
+    task_queue_check,
+)
+
+app.include_router(
+    health_router(
+        {
+            "database": database,
+            "tasks": task_queue_check(queue, max_backlog=10_000, max_dead_letters=0),
+            "broadcast": broadcast_check(broadcast),
+            "outbox_leader": leader_check(leader),
+            "smtp": smtp_check(smtp_sender),
+            "storage": object_storage_check(presigner, "health/probe"),
+        },
+        reuse_for=10,  # the SMTP and storage checks open a connection each time
+    )
+)
+```
+
+- **`task_queue_check`:** the queue's backend answers, the tasks that haven't finished are at most
+  `max_backlog`, and the dead letters at most `max_dead_letters` (0: any fails).
+- **`broadcast_check`:** Redis answers a PING, and the subscription isn't reconnecting
+  (`FastAPIBroadcast.connected`).
+- **`leader_check`:** this process takes part in the election (`FastAPILeader.campaigning`).
+  Whether anyone leads can't be seen from one process: alert on the sum of
+  `fastapi_alcazaba.leader.is_leader` across them.
+- **`smtp_check`:** connects, starts TLS, logs in and says NOOP (`SMTPSender.check()`), sending
+  nothing.
+- **`object_storage_check`:** reads the first byte of `key` with a URL the `S3Presigner` signs: the
+  service, the credentials and the bucket at once. Upload a small object for it; the presigner's
+  user only needs to read it.
+- Their errors are logged, never returned, as for every check.
+
+## Backlog gauges
+
+The work piling up is measured by a `BacklogMonitor`, every `interval` seconds, and by nothing
+without one: each measure costs a call to the backend or the database.
+
+```python
+from fastapi_alcazaba.observability import BacklogMonitor
+
+monitor = BacklogMonitor(queue, outbox, interval=30, timeout=5)
+app = FastAPI(lifespan=monitor.lifespan)  # or start() and stop() in your lifespan
+```
+
+It sets `fastapi_alcazaba.tasks.backlog` (by queue and state: queued, delayed),
+`fastapi_alcazaba.tasks.dead_letters`, `fastapi_alcazaba.outbox.backlog` and
+`fastapi_alcazaba.outbox.oldest_age` (seconds since the oldest message not sent was written). A
+source that fails or takes longer than `timeout` is logged, and the others are measured all the
+same. Every process may run one: the values are the same, alert on their maximum. Without metrics
+(no OpenTelemetry SDK) there's no reason to start one. `queue.counts()` and `outbox.backlog()` give
+the same numbers to your own code.
+
+Two gauges need no monitor, as the process knows them: `fastapi_alcazaba.breaker.open` (1 while a
+`FastAPIBreaker` is open) and `fastapi_alcazaba.leader.is_leader` (1 in the process that leads).
+
 ## Metrics and traces
 
 Alcazaba logs under `fastapi_alcazaba.*` with a `NullHandler`, as libraries do: its warnings (a
@@ -238,7 +306,9 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.rate_limit` | `fastapi_alcazaba.outcome` (allowed, limited, unchecked), `fastapi_alcazaba.limiter` (its name, or the route) |
 | `fastapi_alcazaba.breaker.calls` | `fastapi_alcazaba.outcome` (success, failure, refused), `fastapi_alcazaba.breaker` |
 | `fastapi_alcazaba.breaker.transitions` | `fastapi_alcazaba.state` (open, closed), `fastapi_alcazaba.breaker` |
+| `fastapi_alcazaba.breaker.open` (gauge) | `fastapi_alcazaba.breaker`: 1 while it's open |
 | `fastapi_alcazaba.scheduler.runs` | `fastapi_alcazaba.outcome` (ran, failed, skipped, overlapping, unchecked), `fastapi_alcazaba.job` |
+| `fastapi_alcazaba.scheduler.duration` | `fastapi_alcazaba.job`, `fastapi_alcazaba.outcome` (ran, failed) |
 | `fastapi_alcazaba.idempotency` | `fastapi_alcazaba.outcome` (stored, replayed, conflict, mismatch, not_kept, invalid, too_large, unchecked) |
 | `fastapi_alcazaba.tokens.checks` | `fastapi_alcazaba.outcome` (valid, revoked, unchecked) |
 | `fastapi_alcazaba.refresh` | `fastapi_alcazaba.outcome` (issued, rotated, grace, malformed, unknown, forged, expired, revoked, reused, wrong_client, unchecked): any reused or wrong_client is a stolen token |
@@ -252,6 +322,7 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.health.check.duration` | `fastapi_alcazaba.check` |
 | `fastapi_alcazaba.concurrency` | `fastapi_alcazaba.outcome` (acquired, local: counted in the process while the backend failed, refused, unavailable), `fastapi_alcazaba.limiter` |
 | `fastapi_alcazaba.leader.transitions` | `fastapi_alcazaba.leader`, `fastapi_alcazaba.event` (elected, lost, resigned) |
+| `fastapi_alcazaba.leader.is_leader` (gauge) | `fastapi_alcazaba.leader`: 1 in the process that leads, 0 in the others |
 | `fastapi_alcazaba.maintenance.refused` | requests refused during maintenance |
 | `fastapi_alcazaba.flags.evaluations` | `fastapi_alcazaba.flag`, `fastapi_alcazaba.result` (on, off, default) |
 | `fastapi_alcazaba.problems` | `fastapi_alcazaba.status`, `fastapi_alcazaba.kind` (http_exception, problem, validation, unhandled) |
@@ -272,6 +343,10 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.tasks.enqueued` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task` |
 | `fastapi_alcazaba.tasks` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` (succeeded, retried, failed, interrupted, cancelled (dropped without running); for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered) |
 | `fastapi_alcazaba.tasks.duration` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` |
+| `fastapi_alcazaba.tasks.backlog` (gauge) | `fastapi_alcazaba.queue`, `fastapi_alcazaba.state` (queued, delayed): set by a `BacklogMonitor` |
+| `fastapi_alcazaba.tasks.dead_letters` (gauge) | `fastapi_alcazaba.queue`: set by a `BacklogMonitor` |
+| `fastapi_alcazaba.outbox.backlog` (gauge) | `fastapi_alcazaba.outbox` (its table): set by a `BacklogMonitor` |
+| `fastapi_alcazaba.outbox.oldest_age` (gauge) | `fastapi_alcazaba.outbox`: seconds, set by a `BacklogMonitor` |
 | `fastapi_alcazaba.tasks.reclaimed` | `fastapi_alcazaba.queue`: tasks taken over from workers that stopped answering |
 | `fastapi_alcazaba.passwords` | `fastapi_alcazaba.outcome` (success, wrong, locked, unknown, malformed, too_long, unchecked; reset_used, reset_unknown, reset_replaced, reset_malformed, reset_unchecked): a burst of wrong or locked is someone guessing |
 | `fastapi_alcazaba.mail` | `fastapi_alcazaba.outcome` (sent, failed) |

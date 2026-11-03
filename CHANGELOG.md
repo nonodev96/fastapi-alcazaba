@@ -36,6 +36,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Task queue: `status(task_id)` (`TaskStatus`: pending, running, retrying, succeeded, dead,
   cancelled, with attempts, last error and times, never the arguments), `cancel(task_id)` for a
   task that hasn't started, `dead_letter_count()`, and `status_ttl` (a day).
+- Gauges: `fastapi_alcazaba.tasks.backlog` and `.tasks.dead_letters`, `.outbox.backlog` and
+  `.outbox.oldest_age`, measured by a `BacklogMonitor(queue, outbox, interval=30)` the app starts
+  (nothing costs a backend call without one); `.breaker.open` and `.leader.is_leader`, set by the
+  breakers and leaders as they change. A histogram of scheduled job durations,
+  `fastapi_alcazaba.scheduler.duration`.
+- Health checks of Alcazaba's components for `health_router`: `task_queue_check` (with
+  `max_backlog` and `max_dead_letters`), `broadcast_check`, `leader_check`, `smtp_check` and
+  `object_storage_check`, not critical by default. With them: `FastAPITaskQueue.counts()` and
+  `measure()`, `SQLAlchemyOutbox.backlog()` and `measure()`, `FastAPIBroadcast.connected` and
+  `ping()`, `FastAPILeader.campaigning`, `SMTPSender.check()`.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
