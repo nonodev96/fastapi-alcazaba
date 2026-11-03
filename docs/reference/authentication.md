@@ -16,6 +16,10 @@ In the guide: [Strategies](../guide/authentication/index.md#strategies). In an a
 
 ::: fastapi_alcazaba.auth.strategies.jwt.JWTStrategy
 
+::: fastapi_alcazaba.auth.strategies.jwt.JWTKey
+
+::: fastapi_alcazaba.auth.strategies.jwt.JWKSUnavailable
+
 ::: fastapi_alcazaba.auth.strategies.oauth2.OAuth2Strategy
 
 ::: fastapi_alcazaba.auth.strategies.oidc.OIDCStrategy

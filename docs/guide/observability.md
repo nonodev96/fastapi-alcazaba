@@ -262,6 +262,7 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.webhooks` | `fastapi_alcazaba.outcome` (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable) |
 | `fastapi_alcazaba.api_keys` | `fastapi_alcazaba.outcome` (accepted, malformed, unknown, wrong_secret, expired, insufficient_scope) |
 | `fastapi_alcazaba.auth` | `fastapi_alcazaba.strategy`, `fastapi_alcazaba.outcome` (success, failure: credentials there but refused, unauthenticated: no strategy found a user) |
+| `fastapi_alcazaba.auth.jwks` | `fastapi_alcazaba.strategy`, `fastapi_alcazaba.outcome` (fetched, failed): failures mean the provider's keys are getting old; past `jwks_stale` its tokens get a 503 |
 | `fastapi_alcazaba.auth.unkey` | `fastapi_alcazaba.strategy`, `fastapi_alcazaba.code` (Unkey's: VALID, NOT_FOUND, RATE_LIMITED, USAGE_EXCEEDED…; unavailable): a burst of NOT_FOUND is someone guessing keys |
 | `fastapi_alcazaba.authz` | `fastapi_alcazaba.outcome` (allowed, denied, unauthenticated, unavailable): a burst of denied is someone probing, of unavailable a policy service that is down |
 | `fastapi_alcazaba.csrf.refused` | `fastapi_alcazaba.kind` (http, websocket), `fastapi_alcazaba.reason` (fetch_site, origin, no_source, token) |

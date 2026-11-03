@@ -159,7 +159,7 @@ Each backend and integration needs a library of its own, which an extra installs
 | `casbin` | PyCasbin | the enforcers of [`FastAPIAuthz`](guide/authorization/casbin.md) |
 | `cedar` | cedarpy | [`CedarEnforcer`](guide/authorization/cedar.md) |
 | `opa` | httpx2 | [`OPAEnforcer`](guide/authorization/opa.md) |
-| `auth-strategy-jwt` | PyJWT, with cryptography | [`JWTStrategy`](guide/authentication/jwt.md) |
+| `auth-strategy-jwt` | PyJWT, with cryptography; httpx2 | [`JWTStrategy`](guide/authentication/jwt.md) |
 | `auth-strategy-oauth2` | httpx2 | [`OAuth2Strategy`](guide/authentication/oauth2.md) |
 | `auth-strategy-oidc` | httpx2, PyJWT | [`OIDCStrategy`](guide/authentication/oidc.md) |
 | `auth-strategy-saml` | signxml | [`SAMLStrategy`](guide/authentication/saml.md) |

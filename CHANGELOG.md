@@ -18,6 +18,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `TokenBlocklist.revoke_session(sid, ttl=...)` and `is_revoked(..., session=...)`: every token of
   one login. `JWTStrategy` with a blocklist refuses tokens whose `sid` was revoked.
 - `JWTStrategy.can_issue`: whether `issue` can sign.
+- `JWTKey` and `JWTStrategy(keys=[...])`: signing keys of any type (HMAC, RSA, RSA-PSS, EC,
+  EdDSA) rotate. Each key is pinned to one algorithm; the first signs and its `kid` goes in the
+  tokens' header; a token is verified with the key its `kid` names; an old key verifies until its
+  `until`. HMAC and asymmetric keys may be mixed, to move from HS256 to RS256 without logging
+  anyone out. `jwks()` gives the public keys as a JWKS, for other services; `keys` lists them.
+- `JWTStrategy` with `jwks_url`: `jwks_timeout` (3 s for the whole fetch), `jwks_stale` (keys kept
+  an hour past their lifespan while the provider can't be reached), `jwks_client` and `aclose()`.
+  Fetches are counted in `fastapi_alcazaba.auth.jwks`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
   (HTML, CSV, an image, a `JSONResponse` with its headers) is stored whole, status, headers and
   body, with any coder; before, with `JsonCoder`, a `JSONResponse` came back as its body alone and
@@ -61,6 +69,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   entry that this version cleared, until the deploy ends.
 - The tools that refuse a backend without locks say that every backend shipped with
   fastapi-alcazaba can hold them.
+- `JWTStrategy` puts a `kid` in the header of the tokens it issues. Tokens without one (issued
+  before) still verify, with the keys whose `kid` wasn't given.
+- `JWTStrategy` fetches a provider's JWKS with httpx2 (now in the `auth-strategy-jwt` extra), not
+  with PyJWT's blocking client: asynchronously, with a deadline of 3 s and a circuit breaker, at
+  most every 30 s for a `kid` it doesn't have, one fetch at a time. When the keys can't be had, the
+  request gets a 503 (WebSocket 1013) instead of a 401; an unknown `kid` is still a 401.
+- `jwks_url` must be HTTPS (or http://localhost), as for `OIDCStrategy`, and its `algorithms` are
+  asymmetric: RS256, ES256, PS256 and EdDSA by default (before, HS256 had to be replaced).
+- Keys given to `JWTStrategy` are parsed when it's set up: a key that isn't one for its algorithm
+  is refused then, not on the first token.
+
+### Deprecated
+
+- `JWTStrategy(signing_key=...)`: give `keys=[JWTKey(private_key, algorithm=...)]`.
 
 ## [0.7.1] - 2026-11-02
 
