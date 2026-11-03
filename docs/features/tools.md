@@ -117,8 +117,8 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
 
     ---
 
-    Password resets, codes and receipts over SMTP with TLS, in messages nothing can add a header
-    or a recipient to.
+    Password resets, codes and receipts with their invoice, over SMTP with TLS or Amazon SES's
+    API, in messages nothing can add a header or a recipient to.
 
 -   :material-webhook:{ .lg .middle } __[Webhooks and outbound calls](../guide/webhooks.md)__
 

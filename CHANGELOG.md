@@ -105,6 +105,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`PresignedUpload`, with the headers to send); before, it signed a PUT of any size.
   `delete_url()`. `check_uploaded()` (the `uploads` extra) reads an object back, checks it like
   `FastAPIUploads` and deletes it when it fails.
+- E-mail: attachments (`Attachment(content, filename, content_type)`, `attachments=` in
+  `FastAPIMail.message` and `send`). The name goes through `safe_filename`, so it can't add a
+  header; the content type is checked (`type/subtype`, never `multipart/*` nor `message/*`) or
+  guessed from the name; 10 attachments a message (`MAX_ATTACHMENTS`) and
+  `max_attachments_size` bytes together (10 MiB).
+- E-mail: `SESSender` sends through Amazon SES's API (SESv2 `SendEmail`, the raw message), with
+  the credentials of AWS's chain (the `ses` extra, aiobotocore). `connect()`, `aclose()`.
+- E-mail: `SMTPSender(connections=...)` and `aclose()`.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
@@ -133,6 +141,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- `SMTPSender` sends in threads of its own (`connections`, 4 by default), not in Starlette's
+  threadpool, which the app's sync endpoints and dependencies share. `SMTPSender.check()` is a
+  coroutine.
 - The endpoint's own `Cache-Control` is kept on misses and hits; before, the cache replaced it
   with `max-age`. An entry of one user is still `private`. To get the old header, don't set one on
   the response, or give `cache_control`.

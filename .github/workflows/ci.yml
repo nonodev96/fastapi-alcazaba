@@ -57,6 +57,10 @@ jobs:
       dynamodb:
         image: amazon/dynamodb-local:3.3.2
         ports: ["8000:8000"]
+      # Mailpit: SMTP on 1025, its API on 8025, to read the messages back.
+      mailpit:
+        image: axllent/mailpit:v1.32.0
+        ports: ["11025:1025", "18025:8025"]
       postgres:
         image: postgres:17
         ports: ["5432:5432"]
@@ -80,6 +84,8 @@ jobs:
       OIDC_LIVE_USERNAME: ana
       OIDC_LIVE_PASSWORD: test-only-password-of-the-ci-realm
       MINIO_URL: http://localhost:19000
+      MAILPIT_URL: http://localhost:18025
+      MAILPIT_SMTP_PORT: "11025"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

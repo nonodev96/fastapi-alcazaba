@@ -370,8 +370,8 @@ def smtp_check(
     (`SMTPSender.check()`: nothing is sent). Each probe opens a connection: keep `reuse_for` of
     the router a few seconds, or the check off the probes that run every second."""
 
-    def smtp() -> None:
-        sender.check()
+    async def smtp() -> None:
+        await sender.check()
 
     return HealthCheck(smtp, critical=critical, timeout=timeout)
 

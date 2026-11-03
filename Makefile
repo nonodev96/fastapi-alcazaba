@@ -45,7 +45,7 @@ INTEGRATION_ENV = REDIS_URL=redis://127.0.0.1:16379/15 VALKEY_URL=valkey://127.0
 	OIDC_LIVE_ISSUER=http://localhost:18090/realms/alcazaba OIDC_LIVE_CLIENT_ID=alcazaba-example \
 	OIDC_LIVE_CLIENT_SECRET=test-only-client-secret-of-the-ci-realm OIDC_LIVE_USERNAME=ana \
 	OIDC_LIVE_PASSWORD=test-only-password-of-the-ci-realm MINIO_URL=http://127.0.0.1:19000 \
-	CLAMAV_URL=tcp://127.0.0.1:13310
+	CLAMAV_URL=tcp://127.0.0.1:13310 MAILPIT_URL=http://127.0.0.1:18025 MAILPIT_SMTP_PORT=11025
 
 # Throwaway servers on high ports (stop them with `make services-down`).
 services-up:
@@ -66,6 +66,8 @@ services-up:
 	docker run -d --rm --name fastapi-alcazaba-test-minio -p 127.0.0.1:19000:9000 \
 		-e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
 		minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+	docker run -d --rm --name fastapi-alcazaba-test-mailpit -p 127.0.0.1:11025:1025 \
+		-p 127.0.0.1:18025:8025 axllent/mailpit:v1.32.0
 	# clamd loads its signatures for a minute or two before it answers (not in CI: too heavy).
 	docker run -d --rm --name fastapi-alcazaba-test-clamav -p 127.0.0.1:13310:3310 clamav/clamav:1.4
 	sleep 2 && docker exec fastapi-alcazaba-test-cluster valkey-cli -p 16382 cluster addslotsrange 0 16383
@@ -74,7 +76,7 @@ services-down:
 	docker stop fastapi-alcazaba-test-redis fastapi-alcazaba-test-valkey fastapi-alcazaba-test-cluster \
 		fastapi-alcazaba-test-memcached fastapi-alcazaba-test-dynamodb fastapi-alcazaba-test-opa \
 		fastapi-alcazaba-test-postgres fastapi-alcazaba-test-keycloak fastapi-alcazaba-test-minio \
-		fastapi-alcazaba-test-clamav
+		fastapi-alcazaba-test-clamav fastapi-alcazaba-test-mailpit
 
 test-integration: deps
 	$(INTEGRATION_ENV) $(BIN)/pytest -m integration

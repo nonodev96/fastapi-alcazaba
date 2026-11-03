@@ -1,8 +1,11 @@
-"""FastAPIMail and SMTPSender: messages that can't forge a header or a recipient, sent over SMTP
-with TLS (STARTTLS and implicit) to a small server that speaks it, with a certificate made here."""
+"""FastAPIMail, SMTPSender and SESSender: messages that can't forge a header or a recipient, with
+attachments, sent over SMTP with TLS (STARTTLS and implicit) to a small server that speaks it, with
+a certificate made here, in threads of the sender's own; and to SES's API, stubbed."""
 
+import asyncio
 import base64
 import datetime
+import smtplib
 import socket
 import socketserver
 import ssl
@@ -10,7 +13,7 @@ import tempfile
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
-from email import message_from_bytes
+from email import message_from_bytes, policy
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +25,14 @@ from cryptography.x509.oid import NameOID
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 
-from fastapi_alcazaba.mail import FastAPIMail, MailNotSent, MemoryMailSender, SMTPSender
+from fastapi_alcazaba.mail import (
+    Attachment,
+    FastAPIMail,
+    MailNotSent,
+    MemoryMailSender,
+    SESSender,
+    SMTPSender,
+)
 from fastapi_alcazaba.telemetry import Metrics
 from tests.unit.test_metrics import points
 
@@ -258,7 +268,36 @@ class TestSMTP:
         with pytest.raises(MailNotSent, match="ConnectionRefusedError"):
             await FastAPIMail(sender, from_address="a@example.com").send("b@example.com", "s", "t")
 
+    async def test_in_threads_of_its_own(
+        self,
+        tls: tuple[ssl.SSLContext, ssl.SSLContext],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Not Starlette's threadpool, which sync endpoints share: `connections` at once."""
+        names: list[str] = []
+        send_message = smtplib.SMTP.send_message
+
+        def recorded(client: smtplib.SMTP, *args: Any, **kwargs: Any) -> Any:
+            names.append(threading.current_thread().name)
+            return send_message(client, *args, **kwargs)
+
+        monkeypatch.setattr(smtplib.SMTP, "send_message", recorded)
+        with serve(tls[0]) as server:
+            mail = smtp_mail(server, tls[1], connections=2)
+            await asyncio.gather(*(mail.send("ana@example.com", "Hi", "x") for _ in range(5)))
+            sender = mail.sender
+            assert isinstance(sender, SMTPSender)
+            await sender.aclose()
+            await sender.aclose()
+            await mail.send("ana@example.com", "Hi again", "x")  # threads of its own again
+            await sender.aclose()
+        assert len(server.received) == 6
+        assert all(name.startswith("fastapi-alcazaba-smtp") for name in names)
+        assert len(set(names[:5])) <= 2
+
     def test_configuration(self) -> None:
+        with pytest.raises(ValueError, match="connections"):
+            SMTPSender("localhost", connections=0)
         with pytest.raises(ValueError, match="only for localhost"):
             SMTPSender("smtp.example.com", tls="none")
         with pytest.raises(ValueError, match="starttls"):
@@ -350,3 +389,177 @@ class TestMessages:
             a["fastapi_alcazaba.outcome"]: v for a, v in points(reader, "fastapi_alcazaba.mail")
         }
         assert counted == {"failed": 1, "sent": 1}
+
+
+class TestAttachments:
+    def mail(self, **options: Any) -> tuple[FastAPIMail, MemoryMailSender]:
+        sender = MemoryMailSender()
+        return FastAPIMail(sender, from_address="no-reply@example.com", **options), sender
+
+    async def test_attached_after_the_alternatives(self) -> None:
+        mail, sender = self.mail()
+        pdf = b"%PDF-1.7\n..."
+        await mail.send(
+            "ana@example.com",
+            "Your invoice",
+            "Attached.",
+            html="<p>Attached.</p>",
+            attachments=[
+                Attachment(pdf, "Invoice 2026-001.pdf"),
+                Attachment(b"a,b\n1,2\n", "report.csv", "text/csv"),
+                Attachment(b"\x00\x01", "data"),
+            ],
+        )
+        (message,) = sender.messages
+        assert message.get_content_type() == "multipart/mixed"
+        plain, html = message.get_body(("plain",)), message.get_body(("html",))
+        assert plain is not None
+        assert html is not None
+        assert plain.get_content() == "Attached.\n"
+        assert html.get_content() == "<p>Attached.</p>\n"
+        files = [
+            (a.get_filename(), a.get_content_type(), a.get_payload(decode=True))
+            for a in message.iter_attachments()
+        ]
+        assert files == [
+            ("Invoice 2026-001.pdf", "application/pdf", pdf),
+            ("report.csv", "text/csv", b"a,b\n1,2\n"),
+            ("data", "application/octet-stream", b"\x00\x01"),
+        ]
+
+    def test_names_that_would_add_headers_or_paths(self) -> None:
+        mail, _ = self.mail()
+        message = mail.message(
+            "ana@example.com",
+            "Files",
+            "x",
+            attachments=[
+                Attachment(b"x", "invoice.pdf\r\nBcc: eve@example.com"),
+                Attachment(b"x", "../../etc/passwd"),
+                Attachment(b"x", "\u202etxt.exe"),
+                Attachment(b"x", "\r\n"),
+                Attachment(b"x", "factura añoñ.pdf"),
+            ],
+        )
+        names = [part.get_filename() for part in message.iter_attachments()]
+        assert names == [
+            "invoice.pdfBcc_ eve@example.com",
+            "passwd",
+            "txt.exe",
+            "attachment",
+            "factura añoñ.pdf",
+        ]
+        wire = message.as_bytes(policy=policy.SMTP)
+        assert b"\r\nBcc:" not in wire
+        assert message_from_bytes(wire)["Bcc"] is None
+
+    @pytest.mark.parametrize(
+        "content_type",
+        [
+            "text/html; charset=utf-8",
+            "application/pdf\r\nBcc: x",
+            "pdf",
+            "multipart/mixed",
+            "message/rfc822",
+            "a/" + "b" * 200,
+        ],
+    )
+    def test_content_types(self, content_type: str) -> None:
+        mail, _ = self.mail()
+        with pytest.raises(ValueError, match="content type"):
+            mail.message(
+                "a@example.com", "s", "t", attachments=[Attachment(b"x", "a", content_type)]
+            )
+
+    def test_limits(self) -> None:
+        mail, _ = self.mail(max_attachments_size=10)
+        ten = [Attachment(b"12345", "a"), Attachment(b"12345", "b")]
+        assert (
+            len(list(mail.message("a@example.com", "s", "t", attachments=ten).iter_attachments()))
+            == 2
+        )
+        with pytest.raises(ValueError, match="more than 10 bytes"):
+            mail.message("a@example.com", "s", "t", attachments=[*ten, Attachment(b"1", "c")])
+        with pytest.raises(ValueError, match="10 attachments at most"):
+            self.mail()[0].message(
+                "a@example.com", "s", "t", attachments=[Attachment(b"", "a")] * 11
+            )
+        with pytest.raises(TypeError, match="bytes"):
+            mail.message("a@example.com", "s", "t", attachments=[Attachment("text", "a")])  # type: ignore[arg-type]
+        with pytest.raises(ValueError, match="negative"):
+            self.mail(max_attachments_size=-1)
+
+
+class TestSES:
+    @staticmethod
+    def sender(**options: Any) -> SESSender:
+        return SESSender(
+            "eu-west-1",
+            aws_access_key_id="test",
+            aws_secret_access_key="test",  # noqa: S106  # no AWS is called: the client is stubbed
+            **options,
+        )
+
+    async def test_the_raw_message(self) -> None:
+        from botocore.stub import ANY, Stubber
+
+        sender = self.sender(configuration_set="transactional")
+        mail = FastAPIMail(sender, from_address="no-reply@example.com")
+        client = await sender.connect()
+        assert await sender.connect() is client
+        sent: list[bytes] = []
+        with Stubber(client) as stubber:
+            stubber.add_response(
+                "send_email",
+                {"MessageId": "ses-1"},
+                {"Content": {"Raw": {"Data": ANY}}, "ConfigurationSetName": "transactional"},
+            )
+            client.meta.events.register(
+                "before-parameter-build.sesv2.SendEmail",
+                lambda params, **_: sent.append(params["Content"]["Raw"]["Data"]),
+            )
+            message_id = await mail.send(
+                "ana@example.com",
+                "Invoice",
+                "Attached.",
+                attachments=[Attachment(b"%PDF", "a.pdf")],
+            )
+            stubber.assert_no_pending_responses()
+        assert len(sent) == 1
+        data = sent[0]
+        assert b"\r\n" in data
+        assert b"\n" not in data.replace(b"\r\n", b"")
+        parsed = message_from_bytes(data, policy=policy.default)
+        assert parsed["Message-ID"] == message_id
+        assert [a.get_filename() for a in parsed.iter_attachments()] == ["a.pdf"]
+        await sender.aclose()
+        await sender.aclose()
+
+    async def test_refused(self) -> None:
+        from botocore.stub import Stubber
+
+        sender = self.sender()
+        client = await sender.connect()
+        with Stubber(client) as stubber:
+            stubber.add_client_error(
+                "send_email", "MessageRejected", "Email address is not verified."
+            )
+            with pytest.raises(MailNotSent, match="MessageRejected: Email address is not verified"):
+                await FastAPIMail(sender, from_address="a@example.com").send(
+                    "b@example.com", "s", "t"
+                )
+        await sender.aclose()
+
+    async def test_unreachable(self) -> None:
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
+        from botocore.config import Config
+
+        sender = self.sender(
+            endpoint_url=f"http://127.0.0.1:{port}",
+            config=Config(retries={"max_attempts": 1}, connect_timeout=1),
+        )
+        with pytest.raises(MailNotSent, match="EndpointConnectionError"):
+            await FastAPIMail(sender, from_address="a@example.com").send("b@example.com", "s", "t")
+        await sender.aclose()

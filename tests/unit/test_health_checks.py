@@ -152,21 +152,21 @@ class TestSMTP:
             sender = SMTPSender(
                 "localhost", port, username="user", password=PASSWORD, ssl_context=tls[1]
             )
-            assert await passes_in_thread(smtp_check(sender))
+            assert await passes(smtp_check(sender))
             assert server.received == []  # nothing sent
             wrong = SMTPSender(
                 "localhost", port, username="user", password=PASSWORD + "-wrong", ssl_context=tls[1]
             )
-            assert not await passes_in_thread(smtp_check(wrong))
+            assert not await passes(smtp_check(wrong))
             with pytest.raises(MailNotSent, match="SMTPAuthenticationError"):
-                wrong.check()
+                await wrong.check()
 
     async def test_nobody_listening(self) -> None:
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             port = probe.getsockname()[1]
         sender = SMTPSender("localhost", port, timeout=1)
-        assert not await passes_in_thread(smtp_check(sender))
+        assert not await passes(smtp_check(sender))
 
     async def test_a_server_that_refuses_noop(
         self,
@@ -185,7 +185,7 @@ class TestSMTP:
                 ssl_context=tls[1],
             )
             with pytest.raises(MailNotSent, match="SMTPResponseException"):
-                sender.check()
+                await sender.check()
 
     async def test_tls_refused_closes_the_connection(
         self,
@@ -194,7 +194,8 @@ class TestSMTP:
         with serve(tls[0]) as server:
             sender = SMTPSender("localhost", server.server_address[1], timeout=2)
             with pytest.raises(MailNotSent, match="SSL"):
-                sender.check()  # the system's authorities don't vouch for the test's certificate
+                # The system's authorities don't vouch for the test's certificate.
+                await sender.check()
 
 
 class Bucket(http.server.BaseHTTPRequestHandler):

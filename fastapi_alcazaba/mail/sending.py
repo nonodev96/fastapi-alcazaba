@@ -1,5 +1,6 @@
-"""Transactional e-mail: a password reset, a sign-in code, a receipt. Over SMTP, which every
-provider speaks (Amazon SES, SendGrid, Postmark, Mailgun, your own server), with TLS.
+"""Transactional e-mail: a password reset, a sign-in code, a receipt with its invoice attached.
+Over SMTP, which every provider speaks (Amazon SES, SendGrid, Postmark, Mailgun, your own server),
+with TLS; or a provider's HTTP API (`SESSender`).
 
     mail = FastAPIMail(
         SMTPSender("email-smtp.eu-west-1.amazonaws.com", username=settings.smtp_user,
@@ -13,26 +14,35 @@ The body is never logged: it holds links and codes that open doors. A message th
 raises MailNotSent: send from a task of the queue (`FastAPITaskQueue`), which tries again.
 """
 
+import asyncio
 import logging
+import mimetypes
+import re
 import smtplib
 import ssl
 from collections import deque
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import formatdate, make_msgid, parseaddr
 from typing import Protocol
 
 from pydantic import SecretStr
-from starlette.concurrency import run_in_threadpool
 
 from fastapi_alcazaba.telemetry.metrics import Metrics
+from fastapi_alcazaba.uploads.checks import safe_filename
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 #: Recipients of one message at most: transactional mail is for one person, or a few.
 MAX_RECIPIENTS = 50
+#: Attachments of one message at most.
+MAX_ATTACHMENTS = 10
+#: A content type without parameters (RFC 6838's restricted names): `application/pdf`, `text/csv`.
+_CONTENT_TYPE = re.compile(r"[a-z0-9][a-z0-9!#$&^_.+-]{0,126}/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}")
 #: Headers a message may not be given: they're the library's, or would forge where it comes from.
 _RESERVED = frozenset(
     {"from", "to", "cc", "bcc", "subject", "date", "message-id", "sender", "return-path"}
@@ -46,9 +56,26 @@ class MailNotSent(Exception):
 
 class MailSender(Protocol):
     """Where messages go: `send` gets each one, whole, and raises MailNotSent when it isn't
-    sent."""
+    sent. A provider's HTTP API is one more: `SESSender`, or a class of yours with this
+    method."""
 
     async def send(self, message: EmailMessage) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class Attachment:
+    """A file attached to a message.
+
+    :param content: its bytes.
+    :param filename: the name the recipient sees; made safe with `safe_filename` (no path, no
+        line breaks nor control characters), "attachment" when nothing is left.
+    :param content_type: its type, `application/pdf`; guessed from the name when None,
+        `application/octet-stream` when the name doesn't tell.
+    """
+
+    content: bytes
+    filename: str
+    content_type: str | None = None
 
 
 def _address(value: str, what: str) -> str:
@@ -72,6 +99,9 @@ class FastAPIMail:
     :param sender: where they go: an `SMTPSender`, or `MemoryMailSender` in tests.
     :param from_address: the `From` of every message (`"Example <no-reply@example.com>"`).
     :param reply_to: the address replies go to, when it isn't `from_address`.
+    :param max_attachments_size: the bytes of a message's attachments, together, at most (before
+        base64, which adds a third: providers count it, SES up to 40 MB, most others 10 to
+        25 MB).
     :param metrics: where to count the messages (`fastapi_alcazaba.mail`), by outcome;
         FastAPICache's by default.
     """
@@ -82,11 +112,15 @@ class FastAPIMail:
         *,
         from_address: str,
         reply_to: str | None = None,
+        max_attachments_size: int = 10 * 1024 * 1024,
         metrics: Metrics | None = None,
     ) -> None:
+        if max_attachments_size < 0:
+            raise ValueError("max_attachments_size can't be negative")
         self.sender = sender
         self.from_address = _address(from_address, "from_address")
         self.reply_to = _address(reply_to, "reply_to") if reply_to is not None else None
+        self.max_attachments_size = max_attachments_size
         self._metrics = metrics
 
     def message(
@@ -97,10 +131,13 @@ class FastAPIMail:
         *,
         html: str | None = None,
         headers: Mapping[str, str] | None = None,
+        attachments: Sequence[Attachment] = (),
     ) -> EmailMessage:
         """The message, to `to` (an address or a few), with `text` and `html` as alternatives;
         `headers` adds others (`List-Unsubscribe`...), never those of the sender or the
-        recipients. Raises ValueError for what would forge a header or a recipient."""
+        recipients; `attachments` after them. Raises ValueError for what would forge a header or
+        a recipient, and for attachments over the limits."""
+        files = self._attachments(attachments)
         recipients = [to] if isinstance(to, str) else list(to)
         if not 1 <= len(recipients) <= MAX_RECIPIENTS:
             raise ValueError(f"a message has 1 to {MAX_RECIPIENTS} recipients")
@@ -124,7 +161,35 @@ class FastAPIMail:
         message.set_content(text)
         if html is not None:
             message.add_alternative(html, subtype="html")
+        for content, filename, content_type in files:
+            maintype, _, subtype = content_type.partition("/")
+            message.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
         return message
+
+    def _attachments(self, attachments: Sequence[Attachment]) -> list[tuple[bytes, str, str]]:
+        """(content, safe name, content type) of each attachment, checked."""
+        if len(attachments) > MAX_ATTACHMENTS:
+            raise ValueError(f"a message has {MAX_ATTACHMENTS} attachments at most")
+        files = []
+        for attachment in attachments:
+            if not isinstance(attachment.content, bytes):
+                raise TypeError("an attachment's content is bytes")
+            filename = safe_filename(attachment.filename, default="attachment")
+            content_type = (
+                attachment.content_type
+                or mimetypes.guess_type(filename, strict=False)[0]
+                or "application/octet-stream"
+            ).lower()
+            if not _CONTENT_TYPE.fullmatch(content_type) or content_type.startswith(
+                ("multipart/", "message/")
+            ):
+                raise ValueError(f"not an attachment's content type: {content_type!r}")
+            files.append((attachment.content, filename, content_type))
+        if sum(len(content) for content, _, _ in files) > self.max_attachments_size:
+            raise ValueError(
+                f"the attachments take more than {self.max_attachments_size} bytes together"
+            )
+        return files
 
     async def send(
         self,
@@ -134,10 +199,13 @@ class FastAPIMail:
         *,
         html: str | None = None,
         headers: Mapping[str, str] | None = None,
+        attachments: Sequence[Attachment] = (),
     ) -> str:
         """Build and send a message (see `message`); its Message-ID. Raises MailNotSent when it
         isn't sent."""
-        message = self.message(to, subject, text, html=html, headers=headers)
+        message = self.message(
+            to, subject, text, html=html, headers=headers, attachments=attachments
+        )
         try:
             await self.sender.send(message)
         except MailNotSent:
@@ -158,7 +226,8 @@ class FastAPIMail:
 
 
 class SMTPSender:
-    """Sends over SMTP, in a thread, a connection each message, always encrypted: STARTTLS
+    """Sends over SMTP, a connection each message, in threads of its own (not Starlette's, which
+    the app's sync endpoints and dependencies share), always encrypted: STARTTLS
     on port 587 (the default), implicit TLS with `tls="implicit"` (port 465). The server's
     certificate is checked against the system's authorities; plain SMTP is only for
     `localhost` (`tls="none"`: a development server such as Mailpit).
@@ -170,6 +239,8 @@ class SMTPSender:
     :param tls: "starttls", "implicit", or "none" for localhost.
     :param timeout: seconds for each step of the conversation.
     :param ssl_context: the TLS context, for a server with an authority of its own.
+    :param connections: messages sent at once, each in a thread and a connection of its own; the
+        others wait for one of them.
     """
 
     def __init__(
@@ -182,7 +253,10 @@ class SMTPSender:
         tls: str = "starttls",
         timeout: float = 10.0,
         ssl_context: ssl.SSLContext | None = None,
+        connections: int = 4,
     ) -> None:
+        if connections < 1:
+            raise ValueError("connections must be at least 1")
         if tls not in ("starttls", "implicit", "none"):
             raise ValueError('tls is "starttls", "implicit" or "none"')
         if tls == "none" and host not in ("localhost", "127.0.0.1", "::1"):
@@ -196,14 +270,32 @@ class SMTPSender:
         self.tls = tls
         self.timeout = timeout
         self.ssl_context = ssl_context or ssl.create_default_context()
+        self.connections = connections
+        self._executor: ThreadPoolExecutor | None = None
 
     async def send(self, message: EmailMessage) -> None:
-        await run_in_threadpool(self._send, message)
+        await self._in_thread(self._send, message)
 
-    def check(self) -> None:
+    async def check(self) -> None:
         """Connect, start TLS, log in and say NOOP, as a send would, without sending anything;
-        raises MailNotSent when any step fails. Blocking: for a health check, which runs it in a
-        thread (`smtp_check`)."""
+        raises MailNotSent when any step fails (for a health check: `smtp_check`)."""
+        await self._in_thread(self._check)
+
+    async def aclose(self) -> None:
+        """Let go of the threads, once the messages being sent are; the next `send` starts
+        others."""
+        executor, self._executor = self._executor, None
+        if executor is not None:
+            await asyncio.to_thread(executor.shutdown)
+
+    async def _in_thread(self, function: Callable[..., None], *args: object) -> None:
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(
+                self.connections, thread_name_prefix="fastapi-alcazaba-smtp"
+            )
+        await asyncio.get_running_loop().run_in_executor(self._executor, function, *args)
+
+    def _check(self) -> None:
         try:
             with self._connect() as client:
                 code, _ = client.noop()

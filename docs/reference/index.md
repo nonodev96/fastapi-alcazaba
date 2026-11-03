@@ -95,7 +95,8 @@ and what it raises. The [Tutorial - User Guide](../guide/index.md) tells how to 
 
     ---
 
-    `FastAPIMail`, which builds messages nothing can add headers to, and `SMTPSender`.
+    `FastAPIMail`, which builds messages nothing can add headers to, with their attachments;
+    `SMTPSender` and `SESSender`.
     In `fastapi_alcazaba.mail`.
 
 -   :material-webhook:{ .lg .middle } __[Webhooks and outbound calls](webhooks.md)__

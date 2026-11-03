@@ -68,13 +68,15 @@ passwords = ["httpx2>=2.15.1"]
 auth-strategy-http-bearer = []
 # Scanning uploads with ClamAV (ClamAVScanner): clamd's protocol, with nothing more to install.
 clamav = []
+# Sending mail through Amazon SES's API (SESSender), with aiobotocore.
+ses = ["aiobotocore>=2.13.1"]
 # Checking files uploaded straight to S3 (check_uploaded), downloaded with httpx2.
 uploads = ["httpx2>=2.15.1"]
 # SAML 2.0 single sign-on: signxml verifies the XML signatures (with lxml and cryptography).
 auth-strategy-saml = ["signxml>=5.2"]
 # The queries of the pagination strategies, for SQLAlchemy 2 (fastapi_alcazaba.pagination.sqlalchemy).
 sqlalchemy = ["sqlalchemy>=2.0"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy,webhooks,clamav,uploads]"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy,webhooks,clamav,uploads,ses]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"
@@ -112,7 +114,7 @@ dev = [
     "python-multipart>=0.0.32",
     "ruff>=0.17.1",
     "shellcheck-py>=0.11.0.1",
-    "types-aiobotocore[dynamodb]>=3.9.2",
+    "types-aiobotocore[dynamodb,sesv2]>=3.9.2",
     "uvicorn>=0.54.0",
     "zizmor>=1.31.1",
 ]
