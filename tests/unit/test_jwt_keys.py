@@ -328,10 +328,6 @@ class TestRotation:
                 {"keys": [JWTKey(SECRET, algorithm="HS256")], "algorithms": ["HS256"]},
                 "no algorithms",
             ),
-            (
-                {"keys": [JWTKey(SECRET, algorithm="HS256")], "signing_key": SECRET},
-                "no signing_key",
-            ),
             ({"keys": [JWTKey(SECRET, algorithm="HS256")], "key": SECRET}, "one of them"),
             ({"key": SECRET, "algorithms": ["HS999"]}, "unknown algorithms"),
         ],

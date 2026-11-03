@@ -150,8 +150,7 @@ await queue.cancel(task_id)  # True: it hadn't started
   `running`, `retrying` (waiting for its next attempt), `succeeded`, `dead` (with its `reason`)
   or `cancelled`, with its attempts, the type of its last error and when it was enqueued and last
   changed; never its arguments. Each task's record is written by the scripts that move the task,
-  and kept `status_ttl` (a day) after it ends; then `status()` gives None. Tasks enqueued by 0.7
-  get one when they start.
+  and kept `status_ttl` (a day) after it ends; then `status()` gives None.
 - **Cancelling:** `cancel(task_id)` makes sure a task that hasn't started (pending, delayed or
   waiting for a retry) never runs, and frees its `unique_key`; a running or finished one isn't
   cancelled (False). A worker about to start it and `cancel` have one winner. The task counts in
@@ -380,9 +379,3 @@ async def relay_outbox() -> None:
 - **Indexes:** `ix_<table>_due` on (`sent`, `next_try`), which serves the relay, the backlog and the
   purge, and `ix_<table>_failed`. Async sessions (`async_sessionmaker`, asyncpg) and plain ones
   (in a thread) work alike; the tests run on SQLite and PostgreSQL.
-
-!!! note "From 0.7"
-    The table changed in 0.8: a nullable column `traceparent` (`String(55)`), and the indexes above
-    instead of those on `next_try` and `sent`. Add them in a migration (Alembic's autogenerate
-    finds them), or keep the table as it was with `outbox_table(metadata, traceparent=False)`,
-    without the trace context.

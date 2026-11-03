@@ -35,6 +35,7 @@ from fastapi_alcazaba.auth import (
 )
 from fastapi_alcazaba.auth.strategies import JWTStrategy, OAuth2Strategy
 from fastapi_alcazaba.auth.strategies.base import call
+from fastapi_alcazaba.auth.strategies.jwt import JWTKey
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.security import ServerSessionMiddleware
 from fastapi_alcazaba.telemetry.metrics import Metrics
@@ -364,8 +365,7 @@ class TestJWTStrategy:
         public = private.public_key().public_bytes(
             serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
         )
-        with pytest.warns(DeprecationWarning, match="signing_key is deprecated"):
-            strategy = JWTStrategy(public, algorithms=["RS256"], signing_key=pem)
+        strategy = JWTStrategy(keys=[JWTKey(pem, algorithm="RS256")])
         assert (await strategy.decode(strategy.issue("ana")))["sub"] == "ana"
         verifier = JWTStrategy(public, algorithms=["RS256"])
         with pytest.raises(RuntimeError, match="a key that signs"):

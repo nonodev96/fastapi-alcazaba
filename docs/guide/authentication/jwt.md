@@ -80,7 +80,8 @@ tokens = auth.use(
 - **Key ids:** each token names its key in its header (`kid`), and is verified with that key
   only. A `kid` is the RFC 7638 thumbprint of a public key by default, or an HMAC of a constant
   for a secret, which reveals nothing of it; `JWTKey(..., kid="2026-11")` gives one. Tokens
-  without a `kid`, issued before 0.8, are tried with the keys whose `kid` wasn't given.
+  without a `kid`, or with one no key has (another issuer's own ids), are tried with the keys
+  whose `kid` wasn't given.
 - **Private or public:** a private key signs, and its public part verifies; a public key only
   verifies (`can_issue` is then False): a service that checks another's tokens.
 - **From HS256 to RS256:** HMAC and asymmetric keys can be in one list, since each verifies with
@@ -95,8 +96,7 @@ async def jwks() -> dict[str, list[dict[str, Any]]]:
     return tokens.jwks()
 ```
 
-`key=` and `algorithms=` keep working for one key (or a list of HMAC secrets). `signing_key=` is
-deprecated: `keys=[JWTKey(private_key, algorithm=...)]` says the same.
+`key=` and `algorithms=` are the short form for one key (or a list of HMAC secrets).
 
 ## An identity provider's keys
 

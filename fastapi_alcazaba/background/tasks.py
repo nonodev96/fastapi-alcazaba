@@ -369,7 +369,7 @@ class TaskStatus:
     error: str | None
     #: Why it's dead: failed, abandoned, stale, unknown_task or invalid_arguments.
     reason: str | None
-    #: None for a task enqueued before 0.8.
+    #: None when its record was written by someone else without it.
     enqueued_at: datetime | None
     updated_at: datetime | None
 

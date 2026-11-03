@@ -266,19 +266,6 @@ class TestUniqueKeys:
         with pytest.raises(ValueError, match="unique_key"):
             await queue.enqueue("job", unique_key=unique_key)
 
-    async def test_a_0_7_worker_leaves_it_to_expire(self, world: World) -> None:
-        """A task without `unique` (from 0.7) runs; one with it is read by 0.7 as any other."""
-        queue = world.queue()
-        runs: list[int] = []
-
-        @queue.task("job")
-        async def job() -> None:
-            runs.append(1)
-
-        await world.plant(queue, {"p": sealed(queue, body("job"))})
-        async with queue:
-            await eventually(lambda: runs == [1])
-
     @pytest.mark.parametrize("unique", ["UPPERCASE" * 4, 7, "abc"])
     async def test_a_malformed_digest_is_refused(self, world: World, unique: Any) -> None:
         queue = world.queue()
@@ -401,7 +388,7 @@ class TestStatus:
         assert [dead.reason for dead in await queue.dead_letters()] == ["replayed"]
         assert await state(queue, original["id"]) == "succeeded"
 
-    async def test_a_task_of_0_7_gets_one_when_it_runs(self, world: World) -> None:
+    async def test_a_task_without_a_record_gets_one_when_it_runs(self, world: World) -> None:
         queue = world.queue()
         release = asyncio.Event()
 
@@ -411,7 +398,7 @@ class TestStatus:
 
         planted = body("job")
         await world.plant(queue, {"p": sealed(queue, planted)})
-        assert await queue.status(planted["id"]) is None  # enqueued by 0.7: no record
+        assert await queue.status(planted["id"]) is None  # written by hand: no record
         async with queue:
             await eventually(lambda: _is(queue, planted["id"], "running"))
             found = await queue.status(planted["id"])

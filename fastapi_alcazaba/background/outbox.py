@@ -73,15 +73,14 @@ MAX_PAYLOAD = 256 * 1024
 _TRACEPARENT = 55
 
 
-def outbox_table(metadata: MetaData, name: str = "outbox", *, traceparent: bool = True) -> Table:
+def outbox_table(metadata: MetaData, name: str = "outbox") -> Table:
     """The outbox's table, in your metadata (its migrations create it): each message's id, topic,
     payload (JSON), when it was written, the attempts at delivering it, when it may be tried
-    again, when it was sent (or given up on), and the trace context of where it was written.
-
-    :param traceparent: with the column `traceparent`, which links each delivery to the request
-        that wrote the message; False for a table made before 0.8, without it.
-    """
-    columns = [
+    again, when it was sent (or given up on), and the trace context of where it was written
+    (which links each delivery to the request that wrote the message)."""
+    return Table(
+        name,
+        metadata,
         Column("id", String(32), primary_key=True),
         Column("topic", String(200), nullable=False),
         Column("payload", Text, nullable=False),
@@ -91,13 +90,7 @@ def outbox_table(metadata: MetaData, name: str = "outbox", *, traceparent: bool 
         Column("sent", Float, nullable=True),
         Column("failed", Float, nullable=True),
         Column("error", String(500), nullable=True),
-    ]
-    if traceparent:
-        columns.append(Column("traceparent", String(_TRACEPARENT), nullable=True))
-    return Table(
-        name,
-        metadata,
-        *columns,
+        Column("traceparent", String(_TRACEPARENT), nullable=True),
         # What the relay (sent IS NULL AND next_try <= now), the backlog (sent IS NULL) and the
         # purge (sent < cutoff) read: on next_try alone, every sent row would match the relay's.
         Index(f"ix_{name}_due", "sent", "next_try"),
@@ -170,7 +163,6 @@ class SQLAlchemyOutbox:
     def __init__(self, table: Table, sessions: Callable[[], AnySession]) -> None:
         self.table = table
         self.sessions = sessions
-        self._traced = "traceparent" in table.c
 
     async def add(self, session: AnySession, topic: str, payload: Any) -> str:
         """Write a message in `session`'s transaction: it's sent once the transaction commits,
@@ -190,7 +182,7 @@ class SQLAlchemyOutbox:
             "attempts": 0,
             "next_try": now,
         }
-        if self._traced and (context := current_traceparent()) and len(context) <= _TRACEPARENT:
+        if (context := current_traceparent()) and len(context) <= _TRACEPARENT:
             values["traceparent"] = context
         result = session.execute(self.table.insert().values(**values))
         if asyncio.iscoroutine(result):
@@ -219,7 +211,7 @@ class SQLAlchemyOutbox:
                 payload,
                 row["attempts"],
                 row["created"],
-                row.get("traceparent"),
+                row["traceparent"],
             )
             found.append(message)
         return found

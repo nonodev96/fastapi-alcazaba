@@ -98,8 +98,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   entry that this version cleared, until the deploy ends.
 - The tools that refuse a backend without locks say that every backend shipped with
   fastapi-alcazaba can hold them.
-- `JWTStrategy` puts a `kid` in the header of the tokens it issues. Tokens without one (issued
-  before) still verify, with the keys whose `kid` wasn't given.
+- `JWTStrategy` puts a `kid` in the header of the tokens it issues. Tokens without one, or with
+  one no key has, are tried with the keys whose `kid` wasn't given.
+- `JWTStrategy(signing_key=...)` is gone: `keys=[JWTKey(private_key, algorithm=...)]`.
 - `JWTStrategy` fetches a provider's JWKS with httpx2 (now in the `auth-strategy-jwt` extra), not
   with PyJWT's blocking client: asynchronously, with a deadline of 3 s and a circuit breaker, at
   most every 30 s for a `kid` it doesn't have, one fetch at a time. When the keys can't be had, the
@@ -108,23 +109,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   asymmetric: RS256, ES256, PS256 and EdDSA by default (before, HS256 had to be replaced).
 - Keys given to `JWTStrategy` are parsed when it's set up: a key that isn't one for its algorithm
   is refused then, not on the first token.
-
 - Task queue: each task has a status record in the backend (a small hash, kept a day after it
   ends). Tasks need an ID of 32 hex digits, as `enqueue` gives them: a task planted with another
-  is refused as malformed. A task can't take keyword arguments named `unique_key`. A 0.7 worker
-  runs tasks enqueued with a `unique_key` and leaves the key, which expires with the task's
-  deadline.
-
-- The outbox is no longer experimental. Its table changed: a nullable column `traceparent`
-  (`String(55)`), and indexes `ix_<table>_due` (`sent`, `next_try`) and `ix_<table>_failed`
-  instead of those on `next_try` and `sent`. Migrate it, or keep the old table with
-  `outbox_table(metadata, traceparent=False)` (the indexes only change how fast it is).
+  is refused as malformed. A task can't take keyword arguments named `unique_key`.
+- The outbox is no longer experimental. Its table has a column `traceparent`, and indexes
+  `ix_<table>_due` (`sent`, `next_try`) and `ix_<table>_failed` instead of those on `next_try`
+  and `sent`.
 - Outbox: the relay purges the messages sent more than 7 days ago by default
   (`retention=None` keeps them).
-
-### Deprecated
-
-- `JWTStrategy(signing_key=...)`: give `keys=[JWTKey(private_key, algorithm=...)]`.
 
 ## [0.7.1] - 2026-11-02
 

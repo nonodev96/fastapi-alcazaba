@@ -14,7 +14,7 @@ from opentelemetry.sdk.metrics.export import InMemoryMetricReader
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from sqlalchemy import MetaData, inspect, select
+from sqlalchemy import MetaData, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -313,24 +313,6 @@ class TestTable:
             "ix_messages_failed": ["failed"],
         }
         assert "traceparent" in table.c
-
-    async def test_a_table_without_traceparent(self, clock: Clock) -> None:
-        shop = Shop()
-        metadata = MetaData()
-        table = outbox_table(metadata, "old_outbox", traceparent=False)
-        metadata.create_all(shop.engine)
-        outbox = SQLAlchemyOutbox(table, shop.sessions)
-        provider = TracerProvider()
-        tracer = provider.get_tracer("app")
-        with tracer.start_as_current_span("request"), shop.sessions() as session, session.begin():
-            await outbox.add(session, "t", {})
-        (message,) = await outbox.due(10)
-        assert message.traceparent is None
-        assert "traceparent" not in [
-            column["name"] for column in inspect(shop.engine).get_columns("old_outbox")
-        ]
-        del clock
-        shop.close()
 
 
 @pytest.fixture(name="async_outbox")

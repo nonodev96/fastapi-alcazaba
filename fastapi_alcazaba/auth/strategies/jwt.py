@@ -27,7 +27,6 @@ import json
 import logging
 import secrets
 import time
-import warnings
 from collections.abc import Callable, Sequence
 from datetime import datetime
 from typing import Any
@@ -320,8 +319,8 @@ class JWTStrategy(Strategy):
     :param keys: `JWTKey`s, each with its algorithm: the first one signs (when it can) and
         doesn't retire, all of them verify, until their `until`. HMAC and asymmetric keys may be
         mixed (from HS256 to RS256). A token is verified with the key its `kid` names; one
-        without a `kid`, or with one no key has, with the keys whose `kid` wasn't given (tokens
-        issued before 0.8 have none).
+        without a `kid`, or with one no key has (another issuer's own ids), with the keys whose
+        `kid` wasn't given.
     :param jwks_url: the provider's JWKS (HTTPS) instead of keys: its keys are fetched, by the
         `kid` of each token, and kept for `jwks_lifespan` seconds; a `kid` it doesn't have makes
         it fetched again, at most every 30 seconds. Needs `audience` and `issuer`: the provider
@@ -338,8 +337,6 @@ class JWTStrategy(Strategy):
     :param blocklist: refuses the tokens revoked there (by `jti`, by `sid` for one login, and by
         `sub` and `iat` for "log out everywhere"); tokens then need a `jti` and an `iat`.
     :param cookie: also reads the token from this cookie, for browsers.
-    :param signing_key: deprecated: `keys=[JWTKey(private_key, algorithm=...)]`. What `issue`
-        signs with, for `key` with asymmetric algorithms (the private key).
     :param jwks_lifespan: seconds the provider's keys are kept before they're fetched again.
     :param jwks_stale: seconds more they're used while the JWKS can't be fetched; then the
         requests get a 503 until it can.
@@ -368,7 +365,6 @@ class JWTStrategy(Strategy):
         verify: Callable[[dict[str, Any]], Any] | None = None,
         blocklist: TokenBlocklist | None = None,
         cookie: str | None = None,
-        signing_key: Secrets | None = None,
         jwks_lifespan: float = 300,
         jwks_stale: float = 3600,
         jwks_timeout: float = 3.0,
@@ -384,14 +380,6 @@ class JWTStrategy(Strategy):
             raise ValueError(
                 f"the blocklist keeps revocations {blocklist.leeway} s past exp, less than the "
                 f"leeway ({leeway} s): give it TokenBlocklist(leeway={leeway}) at least"
-            )
-        if signing_key is not None:
-            if keys is not None:
-                raise ValueError("with keys, the first one signs: no signing_key")
-            warnings.warn(
-                "signing_key is deprecated: give keys=[JWTKey(private_key, algorithm=...)]",
-                DeprecationWarning,
-                stacklevel=2,
             )
         self._keys: list[JWTKey] = []
         self._remote: _RemoteKeys | None = None
@@ -421,9 +409,6 @@ class JWTStrategy(Strategy):
                     client=jwks_client,
                 )
         self._signer: JWTKey | None = self._keys[0] if self._keys else None
-        if signing_key is not None:
-            one = secret_list(signing_key)[0] if accepted[0].startswith("HS") else signing_key
-            self._signer = _legacy(_single(one), accepted)
         self.algorithms = list(dict.fromkeys(accepted))
         self.audience = audience
         self.issuer = issuer
@@ -661,8 +646,8 @@ def _single(key: Any) -> Any:
 
 
 def _legacy(key: Any, algorithms: list[str]) -> JWTKey:
-    """A key of `key=` or `signing_key=`: every algorithm of `algorithms` verifies with it, and
-    its `kid` counts as not given."""
+    """A key of `key=`: every algorithm of `algorithms` verifies with it, and its `kid` counts
+    as not given."""
     made = JWTKey(key, algorithm=algorithms[0])
     made.kid_given = False
     made.algorithms = tuple(algorithms)
