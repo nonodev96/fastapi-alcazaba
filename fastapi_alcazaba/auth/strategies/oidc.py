@@ -32,8 +32,8 @@ from typing import Any, Literal
 from fastapi import HTTPException
 from pydantic import SecretStr
 
-from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, call
-from fastapi_alcazaba.auth.strategies.oauth2 import AuthorizationCodeFlow, _json, _secure
+from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, _secure, call
+from fastapi_alcazaba.auth.strategies.oauth2 import AuthorizationCodeFlow, _json
 
 try:
     import jwt

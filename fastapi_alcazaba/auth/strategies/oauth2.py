@@ -31,7 +31,7 @@ import hmac
 import secrets
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal
-from urllib.parse import quote, urlencode, urlsplit
+from urllib.parse import quote, urlencode
 
 from fastapi import HTTPException
 from pydantic import SecretStr
@@ -39,7 +39,7 @@ from starlette.requests import HTTPConnection
 from starlette.responses import RedirectResponse
 from starlette.status import HTTP_502_BAD_GATEWAY
 
-from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, Strategy, call
+from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, Strategy, _secure, call
 from fastapi_alcazaba.security._cookies import CookieSettings, cookie_values
 
 try:
@@ -285,14 +285,6 @@ class OAuth2Strategy(AuthorizationCodeFlow):
         if user is None:
             raise AuthenticationFailed("verify() refused the login")
         return user
-
-
-def _secure(url: str) -> bool:
-    """HTTPS, or plain HTTP to this machine (a provider in development)."""
-    parts = urlsplit(url)
-    if parts.scheme == "https":
-        return True
-    return parts.scheme == "http" and parts.hostname in ("localhost", "127.0.0.1", "::1")
 
 
 def _json(response: Any) -> dict[str, Any]:

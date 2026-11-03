@@ -28,6 +28,7 @@ import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Collection, Mapping
 from typing import TYPE_CHECKING, Annotated, Any, TypeVar
+from urllib.parse import urlsplit
 
 from fastapi import HTTPException, Security, WebSocketException
 from fastapi.security import SecurityScopes
@@ -339,3 +340,11 @@ class FastAPIAuth:
 
             metrics = FastAPICache.get_metrics()
         metrics.count("auth", outcome=outcome, strategy=strategy)
+
+
+def _secure(url: str) -> bool:
+    """HTTPS, or plain HTTP to this machine (a provider in development)."""
+    parts = urlsplit(url)
+    if parts.scheme == "https":
+        return True
+    return parts.scheme == "http" and parts.hostname in ("localhost", "127.0.0.1", "::1")

@@ -9,6 +9,7 @@ import time
 from typing import Any
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric import ec
 from starlette.requests import Request
 
 from fastapi_alcazaba import BackendUnavailable, Cache, FastAPIAudit, FastAPICache
@@ -23,7 +24,7 @@ from fastapi_alcazaba.auth import (
 from fastapi_alcazaba.auth import refresh as refresh_module
 from fastapi_alcazaba.auth import tokens as tokens_module
 from fastapi_alcazaba.auth.refresh import format_token, parse_token
-from fastapi_alcazaba.auth.strategies.jwt import JWTStrategy
+from fastapi_alcazaba.auth.strategies.jwt import JWTKey, JWTStrategy
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 
 JWT_SECRET = "jwt-secret-of-at-least-32-bytes!!!"  # noqa: S105  # the tests' own
@@ -437,8 +438,9 @@ class WithoutLocks(InMemoryBackend):
 
 class TestSetup:
     def test_a_strategy_that_cant_sign(self) -> None:
+        private = ec.generate_private_key(ec.SECP256R1())
         public = JWTStrategy(
-            "-----BEGIN PUBLIC KEY-----\n...", algorithms=["RS256"], blocklist=TokenBlocklist()
+            keys=[JWTKey(private.public_key(), algorithm="ES256")], blocklist=TokenBlocklist()
         )
         with pytest.raises(ValueError, match="can't sign"):
             RefreshTokens(public, secret=SECRET)

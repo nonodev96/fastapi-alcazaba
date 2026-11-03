@@ -11,7 +11,7 @@ from starlette.responses import Response
 
 from fastapi_alcazaba import Cache, FastAPIBreaker, FastAPICache, FastAPIScheduler
 from fastapi_alcazaba.auth import RefreshTokens, TokenBlocklist, TokenPair
-from fastapi_alcazaba.auth.strategies.jwt import JWTStrategy
+from fastapi_alcazaba.auth.strategies.jwt import JWTKey, JWTStrategy
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.pagination.cursor import CursorPage, PaginationCursor
 from fastapi_alcazaba.pagination.keyset import KeysetPage, PaginationKeyset
@@ -110,6 +110,15 @@ async def test_refresh_token_types() -> None:
     assert_type(await refresh.revoke(pair.refresh_token), bool)
 
 
+async def test_jwt_key_types() -> None:
+    strategy = JWTStrategy(keys=[JWTKey("k" * 32, algorithm="HS256", kid="k1")])
+    assert_type(strategy.keys, list[JWTKey])
+    assert_type(strategy.keys[0].kid, str)
+    assert_type(strategy.jwks(), dict[str, list[dict[str, Any]]])
+    assert_type(await strategy.decode(strategy.issue("ana")), dict[str, Any])
+    await strategy.aclose()
+
+
 async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checked
     # pylint: disable=no-member  # wrong on purpose: mypy must refuse each of these calls
     await async_function("1")  # type: ignore[arg-type]
@@ -128,3 +137,5 @@ async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checke
     await refresh.issue(1)  # type: ignore[arg-type]
     await refresh.exchange("token", client=1)  # type: ignore[arg-type]
     RefreshTokens(JWTStrategy("j" * 32), secret="r" * 32, grace="10")  # type: ignore[arg-type]
+    JWTKey("k" * 32)  # type: ignore[call-arg]  # pylint: disable=missing-kwoa
+    JWTStrategy(keys=[JWTKey("k" * 32, algorithm="HS256")], jwks_stale="1")  # type: ignore[arg-type]

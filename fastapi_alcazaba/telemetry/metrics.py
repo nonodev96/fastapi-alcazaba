@@ -119,6 +119,11 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "Authentications of FastAPIAuth, by strategy and outcome: success, failure (credentials "
         "there but refused), unauthenticated (no strategy found a user; the strategies tried)",
     ),
+    "auth.jwks": (
+        "{fetch}",
+        "Fetches of a JWKS by JWTStrategy, by strategy and outcome: fetched, failed (no answer, "
+        "not a 200, not a JWKS with a usable key: the keys fetched before are kept a while)",
+    ),
     "auth.unkey": (
         "{verification}",
         "Keys UnkeyStrategy verified, by strategy and Unkey's code: VALID, NOT_FOUND, DISABLED, "

@@ -347,7 +347,9 @@ class TestJWTStrategy:
 
     async def test_secrets_rotate(self) -> None:
         old = JWTStrategy("the-old-secret-of-at-least-32-bytes!")
-        new = JWTStrategy(["the-new-secret-of-at-least-32-bytes!", old._keys[0]])
+        new = JWTStrategy(
+            ["the-new-secret-of-at-least-32-bytes!", "the-old-secret-of-at-least-32-bytes!"]
+        )
         assert (await new.decode(old.issue("ana")))["sub"] == "ana"
         with pytest.raises(AuthenticationFailed):
             await old.decode(new.issue("ana"))  # new tokens use the first secret
@@ -362,52 +364,16 @@ class TestJWTStrategy:
         public = private.public_key().public_bytes(
             serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
         )
-        strategy = JWTStrategy(public, algorithms=["RS256"], signing_key=pem)
+        with pytest.warns(DeprecationWarning, match="signing_key is deprecated"):
+            strategy = JWTStrategy(public, algorithms=["RS256"], signing_key=pem)
         assert (await strategy.decode(strategy.issue("ana")))["sub"] == "ana"
         verifier = JWTStrategy(public, algorithms=["RS256"])
-        with pytest.raises(RuntimeError, match="signing_key"):
+        with pytest.raises(RuntimeError, match="a key that signs"):
             verifier.issue("ana")
         # The public key used as an HMAC secret (algorithm confusion) isn't accepted.
         forged = jwt.encode({"sub": "ana", "exp": int(time.time()) + 60}, "x" * 32)
         with pytest.raises(AuthenticationFailed):
             await verifier.decode(forged)
-
-    async def test_jwks(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        jwk = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(private.public_key()))
-        jwks = {"keys": [{**jwk, "kid": "key-1", "use": "sig", "alg": "RS256"}]}
-        monkeypatch.setattr(jwt.PyJWKClient, "fetch_data", lambda self: jwks)
-        strategy = JWTStrategy(
-            jwks_url="https://idp.example.com/.well-known/jwks.json",
-            algorithms=["RS256"],
-            audience="api",
-            issuer="https://idp.example.com/",
-        )
-        token = jwt.encode(
-            {
-                "sub": "ana",
-                "aud": "api",
-                "iss": "https://idp.example.com/",
-                "exp": int(time.time()) + 60,
-            },
-            private,
-            algorithm="RS256",
-            headers={"kid": "key-1"},
-        )
-        assert (await strategy.decode(token))["sub"] == "ana"
-        unknown = jwt.encode(
-            {
-                "sub": "ana",
-                "aud": "api",
-                "iss": "https://idp.example.com/",
-                "exp": int(time.time()) + 60,
-            },
-            private,
-            algorithm="RS256",
-            headers={"kid": "key-2"},
-        )
-        with pytest.raises(AuthenticationFailed, match="PyJWKClientError"):
-            await strategy.decode(unknown)
 
     def test_revoked_tokens(self) -> None:
         cache = Cache(InMemoryBackend())

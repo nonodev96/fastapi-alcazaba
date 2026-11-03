@@ -48,8 +48,9 @@ casbin = ["pycasbin>=2.0"]
 cedar = ["cedarpy>=4.12"]
 # Open Policy Agent (fastapi_alcazaba.authz.opa), asked through its REST API with httpx2.
 opa = ["httpx2>=2.15.1"]
-# Authentication strategies: JWTs (PyJWT, with cryptography for RS256, ES256...) and OAuth2 logins.
-auth-strategy-jwt = ["pyjwt[crypto]>=2.10"]
+# Authentication strategies: JWTs (PyJWT, with cryptography for RS256, ES256...; httpx2 fetches a
+# provider's JWKS) and OAuth2 logins.
+auth-strategy-jwt = ["httpx2>=2.15.1", "pyjwt[crypto]>=2.10"]
 auth-strategy-oauth2 = ["httpx2>=2.15.1"]
 # OpenID Connect logins (OIDCStrategy): OAuth2Strategy's httpx2, and PyJWT to verify the ID tokens.
 auth-strategy-oidc = ["httpx2>=2.15.1", "pyjwt[crypto]>=2.10"]
