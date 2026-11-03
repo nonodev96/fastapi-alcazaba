@@ -200,21 +200,41 @@ class SMTPSender:
     async def send(self, message: EmailMessage) -> None:
         await run_in_threadpool(self._send, message)
 
+    def check(self) -> None:
+        """Connect, start TLS, log in and say NOOP, as a send would, without sending anything;
+        raises MailNotSent when any step fails. Blocking: for a health check, which runs it in a
+        thread (`smtp_check`)."""
+        try:
+            with self._connect() as client:
+                code, _ = client.noop()
+                if code != 250:
+                    raise smtplib.SMTPResponseException(code, b"NOOP refused")
+        except (smtplib.SMTPException, OSError, ssl.SSLError) as exc:
+            raise MailNotSent(f"{type(exc).__name__}: {str(exc)[:200]}") from exc
+
+    def _connect(self) -> smtplib.SMTP:
+        """A connection, past TLS and the login."""
+        if self.tls == "implicit":
+            client: smtplib.SMTP = smtplib.SMTP_SSL(
+                self.host, self.port, timeout=self.timeout, context=self.ssl_context
+            )
+        else:
+            client = smtplib.SMTP(self.host, self.port, timeout=self.timeout)
+        try:
+            client.ehlo()
+            if self.tls == "starttls":
+                client.starttls(context=self.ssl_context)
+                client.ehlo()
+            if self.username is not None and self._password is not None:
+                client.login(self.username, self._password.get_secret_value())
+        except BaseException:
+            client.close()
+            raise
+        return client
+
     def _send(self, message: EmailMessage) -> None:
         try:
-            if self.tls == "implicit":
-                client: smtplib.SMTP = smtplib.SMTP_SSL(
-                    self.host, self.port, timeout=self.timeout, context=self.ssl_context
-                )
-            else:
-                client = smtplib.SMTP(self.host, self.port, timeout=self.timeout)
-            with client:
-                client.ehlo()
-                if self.tls == "starttls":
-                    client.starttls(context=self.ssl_context)
-                    client.ehlo()
-                if self.username is not None and self._password is not None:
-                    client.login(self.username, self._password.get_secret_value())
+            with self._connect() as client:
                 refused = client.send_message(message)
         except (smtplib.SMTPException, OSError, ssl.SSLError) as exc:
             raise MailNotSent(f"{type(exc).__name__}: {str(exc)[:200]}") from exc

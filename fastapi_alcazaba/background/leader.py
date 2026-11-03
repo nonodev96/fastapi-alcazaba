@@ -78,6 +78,11 @@ class FastAPILeader:
         self._check = min(ttl / 10, 1.0)
 
     @property
+    def campaigning(self) -> bool:
+        """Whether this process takes part in the elections: started, and its campaign alive."""
+        return self._campaign is not None and not self._campaign.done()
+
+    @property
     def is_leader(self) -> bool:
         """Whether this process leads now."""
         lock = self._lock
@@ -112,6 +117,7 @@ class FastAPILeader:
         cache = resolve_cache(self.cache)
         # Its waits aren't recorded: the followers try it over and over.
         lock = Lock(cache, f"leader:{self.name}", ttl=self.ttl, record_wait=False)
+        cache.metrics.set("leader.is_leader", 0, leader=self.name)
         loop = asyncio.get_running_loop()
         self._stopping = False
         self._campaign = loop.create_task(self._campaign_loop(lock), name=f"leader {self.name}")
@@ -170,6 +176,7 @@ class FastAPILeader:
         logger.info("This process leads %r", self.name)
         metrics, event = lock.cache.metrics, "resigned"
         metrics.count("leader.transitions", leader=self.name, event="elected")
+        metrics.set("leader.is_leader", 1, leader=self.name)
         loop = asyncio.get_running_loop()
         tasks = [
             loop.create_task(self._guarded(func), name=f"leader {self.name}: {_name_of(func)}")
@@ -183,6 +190,7 @@ class FastAPILeader:
                 event = "lost"
         finally:
             metrics.count("leader.transitions", leader=self.name, event=event)
+            metrics.set("leader.is_leader", 0, leader=self.name)
             self._lock = None
             for task in tasks:
                 task.cancel()

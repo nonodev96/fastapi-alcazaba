@@ -40,6 +40,7 @@ try:
         Table,
         Text,
         and_,
+        func,
         select,
         update,
     )
@@ -151,6 +152,25 @@ class SQLAlchemyOutbox:
             )
             found.append(message)
         return found
+
+    async def backlog(self) -> tuple[int, float | None]:
+        """How many messages aren't sent yet, and when the oldest of them was written (None for
+        none): one query."""
+        table = self.table
+        query = select(func.count(), func.min(table.c.created)).where(table.c.sent.is_(None))
+        count, oldest = await self._run(lambda session: session.execute(query).one())
+        return int(count), oldest
+
+    async def measure(self) -> None:
+        """Set the gauges of its backlog (`outbox.backlog`, `outbox.oldest_age`): what a
+        `BacklogMonitor` calls."""
+        from fastapi_alcazaba.response_cache.caches import FastAPICache
+
+        count, oldest = await self.backlog()
+        metrics = FastAPICache.get_metrics()
+        age = max(0.0, time.time() - oldest) if oldest is not None else 0.0
+        metrics.set("outbox.backlog", count, outbox=self.table.name)
+        metrics.set("outbox.oldest_age", age, outbox=self.table.name)
 
     async def sent(self, message_id: str) -> None:
         await self._update(message_id, sent=time.time())

@@ -402,6 +402,7 @@ class FastAPIScheduler:
                 lock = None
         try:
             with self._tracer().job(job.name, tick.isoformat()) as span:
+                started = time.monotonic()
                 try:
                     if _is_async(job.func):
                         await job.func()
@@ -410,9 +411,21 @@ class FastAPIScheduler:
                 except Exception as exc:
                     logger.exception("Scheduled job %r failed", job.name)
                     metrics.scheduler_run("failed", job.name)
+                    metrics.record(
+                        "scheduler.duration",
+                        time.monotonic() - started,
+                        job=job.name,
+                        outcome="failed",
+                    )
                     record_failure(span, exc)
                 else:
                     metrics.scheduler_run("ran", job.name)
+                    metrics.record(
+                        "scheduler.duration",
+                        time.monotonic() - started,
+                        job=job.name,
+                        outcome="ran",
+                    )
         finally:
             if lock is not None:
                 await lock.release()

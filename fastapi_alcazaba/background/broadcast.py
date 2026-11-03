@@ -120,6 +120,19 @@ class FastAPIBroadcast:
         self._changed = asyncio.Event()  # the channels to subscribe to changed
         self._closed = False
 
+    @property
+    def connected(self) -> bool | None:
+        """Whether its subscription to Redis is up: None when it isn't listening (no subscriber in
+        this process, no client, or closed), False while it reconnects."""
+        if self.client is None or self._listener is None or self._listener.done():
+            return None
+        return self._pubsub is not None
+
+    async def ping(self) -> None:
+        """Ask Redis for a PONG through its client; raises when it doesn't answer."""
+        if self.client is not None:
+            await self.client.ping()
+
     async def publish(self, channel: str, data: Any) -> None:
         """Send `data` (JSON) to the subscribers of `channel`, in every process. Raises when
         Redis fails: the message isn't sent."""

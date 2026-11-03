@@ -345,3 +345,20 @@ async def test_a_hung_task_times_out(processes: Processes) -> None:
     found = await queue.status(task_id)
     assert found is not None
     assert (found.state, found.reason, found.error) == ("dead", "failed", "TimeoutError")
+
+
+async def test_counts_for_the_gauges_and_the_health_check(processes: Processes) -> None:
+    from fastapi_alcazaba.observability import task_queue_check
+
+    queue = processes.queue()
+    queue.task("job")(_nothing)
+    await queue.enqueue("job")
+    await queue.enqueue("job", delay=60)
+    assert await queue.counts() == {"queued": 1, "delayed": 1, "dead_letters": 0}
+    await queue.measure()
+    assert await task_queue_check(queue, max_backlog=2).check() is True  # type: ignore[misc]
+    assert await task_queue_check(queue, max_backlog=1).check() is False  # type: ignore[misc]
+
+
+async def _nothing() -> None:
+    pass

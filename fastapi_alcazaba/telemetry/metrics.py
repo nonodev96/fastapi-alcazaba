@@ -187,6 +187,25 @@ HISTOGRAMS: dict[str, tuple[str, str]] = {
     "health.check.duration": ("s", "Duration of the readiness checks, by check"),
     "uploads.size": ("By", "Size of the uploads accepted, by content_type (the detected one)"),
     "tasks.duration": ("s", "Duration of task runs, by queue, task and outcome"),
+    "scheduler.duration": ("s", "Duration of scheduled job runs, by job and outcome: ran, failed"),
+}
+#: Gauges set with `Metrics.set()`: the last value, by attributes. Those of backlogs are measured
+#: by a BacklogMonitor, and by nothing without one.
+GAUGES: dict[str, tuple[str, str]] = {
+    "tasks.backlog": (
+        "{task}",
+        "Tasks of a FastAPITaskQueue not finished, by queue and state: queued (waiting or "
+        "running), delayed (waiting for their time or a retry)",
+    ),
+    "tasks.dead_letters": ("{task}", "Dead letters of a FastAPITaskQueue, by queue"),
+    "outbox.backlog": ("{message}", "Messages of an outbox not sent yet, by outbox (its table)"),
+    "outbox.oldest_age": (
+        "s",
+        "Seconds since the oldest message of an outbox not sent yet was written (0 for none), by "
+        "outbox",
+    ),
+    "breaker.open": ("1", "Whether a FastAPIBreaker is open (1) or closed (0), by breaker"),
+    "leader.is_leader": ("1", "Whether this process leads (1) or not (0), by leader"),
 }
 
 try:
@@ -281,6 +300,7 @@ class Metrics:
             self._breaker_transitions.add(
                 1, {"fastapi_alcazaba.state": state, "fastapi_alcazaba.breaker": breaker}
             )
+            self.set("breaker.open", 1 if state == "open" else 0, breaker=breaker)
 
     def scheduler_run(self, outcome: str, job: str) -> None:
         if self.enabled:
@@ -312,6 +332,21 @@ class Metrics:
         if self.enabled:
             instrument = self._instrument(name, HISTOGRAMS[name], histogram=True)
             instrument.record(value, _attributes(attributes))
+
+    def set(self, name: str, value: float, **attributes: str) -> None:
+        """Set the gauge `fastapi_alcazaba.<name>` (one of GAUGES) to `value` for these
+        attributes."""
+        if name not in GAUGES:
+            raise ValueError(f"unknown gauge {name!r}")
+        if self.enabled:
+            instrument = self._instruments.get(name)
+            if instrument is None:
+                unit, description = GAUGES[name]
+                instrument = self._meter.create_gauge(
+                    f"fastapi_alcazaba.{name}", unit=unit, description=description
+                )
+                self._instruments[name] = instrument
+            instrument.set(value, _attributes(attributes))
 
     def _instrument(self, name: str, spec: tuple[str, str], *, histogram: bool) -> Any:
         instrument = self._instruments.get(name)

@@ -315,6 +315,11 @@ PENDING_SCRIPT = "return redis.call('XLEN', KEYS[1]) + redis.call('ZCARD', KEYS[
 # KEYS[1]: dead letters.
 DEAD_COUNT_SCRIPT = "return redis.call('XLEN', KEYS[1])"
 
+# KEYS[1]: stream; KEYS[2]: delayed tasks; KEYS[3]: dead letters. {queued, delayed, dead}.
+COUNTS_SCRIPT = """
+return {redis.call('XLEN', KEYS[1]), redis.call('ZCARD', KEYS[2]), redis.call('XLEN', KEYS[3])}
+"""
+
 # A stopping worker leaves the group, unless it still holds tasks (others reclaim them later).
 # KEYS[1]: stream; ARGV[1]: group; ARGV[2]: consumer.
 LEAVE_SCRIPT = """
@@ -1319,6 +1324,24 @@ class FastAPITaskQueue:
         self._ready()
         keys = [self._stream, self._delayed]
         return int(await self._eval("task_pending", PENDING_SCRIPT, keys))
+
+    async def counts(self) -> dict[str, int]:
+        """The tasks `queued` (waiting for a worker, or running), `delayed` (waiting for their time
+        or a retry) and `dead_letters`, in one call."""
+        self._ready()
+        keys = [self._stream, self._delayed, self._dead]
+        queued, delayed, dead = await self._eval("task_counts", COUNTS_SCRIPT, keys)
+        return {"queued": int(queued), "delayed": int(delayed), "dead_letters": int(dead)}
+
+    async def measure(self) -> None:
+        """Set the gauges of its backlog (`tasks.backlog`, `tasks.dead_letters`): what a
+        `BacklogMonitor` calls."""
+        counts = await self.counts()
+        assert self._resolved is not None  # noqa: S101  # resolved by counts()
+        metrics = self._resolved.metrics
+        for state in ("queued", "delayed"):
+            metrics.set("tasks.backlog", counts[state], queue=self.name, state=state)
+        metrics.set("tasks.dead_letters", counts["dead_letters"], queue=self.name)
 
     async def dead_letter_count(self) -> int:
         """How many dead letters there are."""

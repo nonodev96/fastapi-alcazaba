@@ -17,10 +17,12 @@ import inspect
 import logging
 import threading
 import time
+import urllib.error
+import urllib.request
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -30,6 +32,13 @@ from starlette.status import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 from fastapi_alcazaba.backends.base import Backend
 from fastapi_alcazaba.response_cache.caches import Cache, get_cache
 from fastapi_alcazaba.telemetry.metrics import Metrics
+
+if TYPE_CHECKING:
+    from fastapi_alcazaba.background.broadcast import FastAPIBroadcast
+    from fastapi_alcazaba.background.leader import FastAPILeader
+    from fastapi_alcazaba.background.tasks import FastAPITaskQueue
+    from fastapi_alcazaba.mail.sending import SMTPSender
+    from fastapi_alcazaba.uploads.s3 import S3Presigner
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -273,3 +282,122 @@ def health_router(
         responses={HTTP_503_SERVICE_UNAVAILABLE: {"description": "A critical check failed"}},
     )
     return router
+
+
+# Ready-made checks of Alcazaba's components. Each is a HealthCheck that isn't critical by
+# default: a backlog, a mail server or a bucket that's down degrade the app ("degraded", 200),
+# they don't take every instance out of the load balancer. `critical=True` when they should.
+
+
+def task_queue_check(
+    queue: "FastAPITaskQueue",
+    *,
+    max_backlog: int | None = None,
+    max_dead_letters: int | None = None,
+    critical: bool = False,
+    timeout: float | None = None,
+) -> HealthCheck:
+    """Fails when the queue's backend doesn't answer, when more than `max_backlog` tasks haven't
+    finished (queued, running or delayed), or when there are more than `max_dead_letters` dead
+    letters (0: any)."""
+    if (max_backlog is not None and max_backlog < 0) or (
+        max_dead_letters is not None and max_dead_letters < 0
+    ):
+        raise ValueError("max_backlog and max_dead_letters can't be negative")
+
+    async def task_queue() -> bool:
+        counts = await queue.counts()
+        backlog = counts["queued"] + counts["delayed"]
+        if max_backlog is not None and backlog > max_backlog:
+            logger.warning(
+                "The queue %r holds %d tasks (max_backlog %d)", queue.name, backlog, max_backlog
+            )
+            return False
+        if max_dead_letters is not None and counts["dead_letters"] > max_dead_letters:
+            logger.warning(
+                "The queue %r has %d dead letters (max_dead_letters %d)",
+                queue.name,
+                counts["dead_letters"],
+                max_dead_letters,
+            )
+            return False
+        return True
+
+    return HealthCheck(task_queue, critical=critical, timeout=timeout)
+
+
+def broadcast_check(
+    broadcast: "FastAPIBroadcast",
+    *,
+    critical: bool = False,
+    timeout: float | None = None,
+) -> HealthCheck:
+    """Fails while its subscription to Redis reconnects, or when Redis doesn't answer a PING."""
+
+    async def broadcast_connection() -> bool:
+        if broadcast.connected is False:
+            logger.warning("The broadcast's subscription is reconnecting")
+            return False
+        await broadcast.ping()
+        return True
+
+    return HealthCheck(broadcast_connection, critical=critical, timeout=timeout)
+
+
+def leader_check(
+    leader: "FastAPILeader",
+    *,
+    critical: bool = False,
+    timeout: float | None = None,
+) -> HealthCheck:
+    """Fails when this process doesn't take part in the elections (not started, or its campaign
+    died). Whether anyone leads is for an alert across processes: the sum of
+    `fastapi_alcazaba.leader.is_leader` is 0."""
+
+    async def leader_election() -> bool:
+        return leader.campaigning
+
+    return HealthCheck(leader_election, critical=critical, timeout=timeout)
+
+
+def smtp_check(
+    sender: "SMTPSender",
+    *,
+    critical: bool = False,
+    timeout: float | None = None,
+) -> HealthCheck:
+    """Fails when the SMTP server doesn't answer, refuses TLS or the credentials
+    (`SMTPSender.check()`: nothing is sent). Each probe opens a connection: keep `reuse_for` of
+    the router a few seconds, or the check off the probes that run every second."""
+
+    def smtp() -> None:
+        sender.check()
+
+    return HealthCheck(smtp, critical=critical, timeout=timeout)
+
+
+def object_storage_check(
+    presigner: "S3Presigner",
+    key: str,
+    *,
+    critical: bool = False,
+    timeout: float | None = None,
+) -> HealthCheck:
+    """Fails when the first byte of the object `key` can't be read with a URL the presigner
+    signs: the service down, the credentials refused or expired, the object missing. Upload a
+    small object for it (`health/probe`)."""
+    if not key:
+        raise ValueError("give the key of an object the check reads")
+
+    def object_storage() -> bool:
+        url = presigner.download_url(key, expires=60)
+        request = urllib.request.Request(url, headers={"Range": "bytes=0-0"})  # noqa: S310
+        # The router abandons the check at its timeout; this one bounds each socket operation.
+        try:
+            with urllib.request.urlopen(request, timeout=timeout or 10) as response:  # noqa: S310
+                return response.status in (200, 206)
+        except urllib.error.HTTPError as exc:
+            exc.close()  # it holds the connection
+            raise
+
+    return HealthCheck(object_storage, critical=critical, timeout=timeout)
