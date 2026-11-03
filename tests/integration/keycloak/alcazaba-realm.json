@@ -1,0 +1,35 @@
+{
+  "realm": "alcazaba",
+  "enabled": true,
+  "sslRequired": "none",
+  "clients": [
+    {
+      "clientId": "alcazaba-example",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "test-only-client-secret-of-the-ci-realm",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:8006/auth/callback"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8006/logged-out",
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "ana",
+      "enabled": true,
+      "email": "ana@example.com",
+      "emailVerified": true,
+      "firstName": "Ana",
+      "lastName": "Tester",
+      "credentials": [
+        {"type": "password", "value": "test-only-password-of-the-ci-realm", "temporary": false}
+      ]
+    }
+  ]
+}

@@ -19,18 +19,28 @@ pip install "fastapi-alcazaba[auth-strategy-oidc]".
 The login is OAuth2Strategy's (the authorization code flow with PKCE and a `state`), plus a
 `nonce`; the ID token's signature (with the provider's JWKS), `iss`, `aud`, `azp`, `exp`, `iat`,
 `nonce`, `at_hash` and `auth_time` are checked before `verify` sees its claims.
+
+Logging out: `logout_url()` sends the browser to the provider's `end_session_endpoint`
+(RP-Initiated Logout), and `backchannel_logout_endpoint()` takes the provider's logout tokens
+(Back-Channel Logout) and ends the app's sessions of that login. The app may authenticate with a
+private key (`client_auth="private_key_jwt"`) instead of a client secret.
 """
 
 import base64
 import hashlib
 import hmac
+import logging
 import secrets
 import time
-from collections.abc import Callable, Mapping, Sequence
-from typing import Any, Literal
+from collections.abc import Awaitable, Callable, Mapping, Sequence
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Literal
+from urllib.parse import urlencode
 
 from fastapi import HTTPException
 from pydantic import SecretStr
+from starlette.requests import HTTPConnection, Request
+from starlette.responses import JSONResponse, Response
 
 from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, _secure, call
 from fastapi_alcazaba.auth.strategies.oauth2 import AuthorizationCodeFlow, _json
@@ -42,8 +52,33 @@ except ImportError as exc:  # pragma: no cover  # the extra isn't installed
         'OIDCStrategy needs PyJWT: pip install "fastapi-alcazaba[auth-strategy-oidc]"'
     ) from exc
 
-#: The longest ID token read.
+logger: logging.Logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+if TYPE_CHECKING:
+    from fastapi_alcazaba.auth.strategies.jwt import JWTKey
+    from fastapi_alcazaba.response_cache.caches import Cache
+    from fastapi_alcazaba.security.sessions import UserSessions
+
+#: The longest ID token (or logout token) read.
 MAX_ID_TOKEN = 16_384
+#: The event a logout token carries (OpenID Connect Back-Channel Logout 1.0, 2.4).
+BACKCHANNEL_LOGOUT_EVENT = "http://schemas.openid.net/event/backchannel-logout"
+#: Seconds a logout token may be old (its `iat`), and its `jti` is remembered for replays.
+LOGOUT_TOKEN_LIFETIME = 300
+_CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
+
+
+@dataclass(frozen=True, slots=True)
+class LogoutToken:
+    """A logout token the provider sent, verified: which login to end (`sid`), or every login of
+    the user (`sub`, without `sid`)."""
+
+    sub: str | None
+    sid: str | None
+    jti: str
+
+
 #: Seconds between two fetches of the JWKS for a key it doesn't have: a token with a made-up `kid`
 #: doesn't make the app fetch it on every request.
 JWKS_REFETCH = 30
@@ -79,10 +114,15 @@ class OIDCStrategy(AuthorizationCodeFlow):
     `issuer` must be `issuer` exactly. Endpoints given here aren't read from it, and with all of
     them (`authorization_url`, `token_url`, `jwks_url`) there's nothing to discover.
 
+    The raw ID token of a login is in `request.state.id_token` once the callback is
+    authenticated: keep it in the session for `logout_url(id_token_hint=...)`. The claims have
+    the provider's session id (`sid`): keep it as `oidc_sid` in the session for back-channel
+    logout to find it (`UserSessions`).
+
     :param name: what `FastAPIAuth.authenticate` calls it by, and the cookie's name.
     :param issuer: the provider's issuer identifier, as its ID tokens have it in `iss`.
     :param client_id: the app's id at the provider: the ID tokens' audience.
-    :param client_secret: the app's secret at the provider.
+    :param client_secret: the app's secret at the provider; None with `private_key_jwt`.
     :param redirect_uri: the callback's absolute URL, as registered at the provider.
     :param scopes: what to ask for; `openid` is required.
     :param verify: `verify(claims, userinfo)`: your user, or None to refuse the login. `claims`
@@ -99,7 +139,13 @@ class OIDCStrategy(AuthorizationCodeFlow):
     :param userinfo_url: the userinfo endpoint, instead of discovery's.
     :param jwks_url: the provider's keys, instead of discovery's.
     :param jwks_lifespan: seconds the keys are kept before they're fetched again.
-    :param client_auth: how the app authenticates to the token endpoint: `basic` or `post`.
+    :param client_auth: how the app authenticates to the token endpoint: `basic` or `post` (with
+        the client secret), or `private_key_jwt` (a JWT signed with `client_key`, RFC 7523: no
+        shared secret; the provider has the public key, e.g. from the app's `jwks()`).
+    :param client_key: the private key of `private_key_jwt`: a `JWTKey` (RS256, ES256, EdDSA...).
+    :param post_logout_redirect_uris: where `logout_url` may send the browser back to, as
+        registered at the provider; any other is refused.
+    :param end_session_url: the provider's logout page, instead of discovery's.
     :param params: more parameters for the login page (`prompt`, `login_hint`...).
     :param secure: the cookie is Secure (browsers accept it from http://localhost too).
     :param timeout: seconds for each call to the provider.
@@ -112,7 +158,7 @@ class OIDCStrategy(AuthorizationCodeFlow):
         name: str,
         issuer: str,
         client_id: str,
-        client_secret: str | SecretStr,
+        client_secret: str | SecretStr | None = None,
         redirect_uri: str,
         scopes: Sequence[str] = ("openid", "email", "profile"),
         verify: Callable[[dict[str, Any], dict[str, Any] | None], Any] | None = None,
@@ -125,12 +171,22 @@ class OIDCStrategy(AuthorizationCodeFlow):
         userinfo_url: str | None = None,
         jwks_url: str | None = None,
         jwks_lifespan: float = 3600,
-        client_auth: Literal["basic", "post"] = "basic",
+        client_auth: Literal["basic", "post", "private_key_jwt"] = "basic",
+        client_key: "JWTKey | None" = None,
+        post_logout_redirect_uris: Sequence[str] = (),
+        end_session_url: str | None = None,
         params: Mapping[str, str] | None = None,
         secure: bool = True,
         timeout: float = 10.0,
         client: Any = None,
     ) -> None:
+        if client_auth not in ("basic", "post", "private_key_jwt"):
+            raise ValueError("client_auth is basic, post or private_key_jwt")
+        if client_auth == "private_key_jwt":
+            if client_key is None or not client_key.can_sign or client_key.symmetric:
+                raise ValueError("private_key_jwt signs with client_key: an asymmetric private key")
+        elif client_secret is None:
+            raise ValueError(f"client_auth={client_auth!r} needs the client_secret")
         if "openid" not in scopes:
             raise ValueError("an OpenID Connect login asks for the openid scope")
         if not algorithms or any(algorithm not in _AT_HASH for algorithm in algorithms):
@@ -152,9 +208,12 @@ class OIDCStrategy(AuthorizationCodeFlow):
             timeout=timeout,
             client=client,
         )
-        for url in (issuer, authorization_url, token_url, userinfo_url, jwks_url):
+        for url in (issuer, authorization_url, token_url, userinfo_url, jwks_url, end_session_url):
             if url is not None and not _secure(url):
                 raise ValueError(f"the provider's URLs are HTTPS (or http://localhost): {url}")
+        self.client_key = client_key
+        self.post_logout_redirect_uris = list(post_logout_redirect_uris)
+        self.end_session_url = end_session_url
         self.issuer = issuer
         self.verify = verify
         self.userinfo = userinfo
@@ -192,6 +251,7 @@ class OIDCStrategy(AuthorizationCodeFlow):
             ("token_url", "token_endpoint"),
             ("userinfo_url", "userinfo_endpoint"),
             ("jwks_url", "jwks_uri"),
+            ("end_session_url", "end_session_endpoint"),
         ):
             endpoint = config.get(key)
             if endpoint is not None and (not isinstance(endpoint, str) or not _secure(endpoint)):
@@ -210,13 +270,20 @@ class OIDCStrategy(AuthorizationCodeFlow):
         nonce = secrets.token_urlsafe(32)
         return {"nonce": nonce}, [nonce]
 
-    async def _finish(self, tokens: dict[str, Any], kept: list[str]) -> Any:
+    async def _finish(
+        self,
+        tokens: dict[str, Any],
+        kept: list[str],
+        connection: HTTPConnection,
+    ) -> Any:
         id_token = tokens.get("id_token")
         if not isinstance(id_token, str):
             raise AuthenticationFailed("the provider sent no ID token")
         claims = await self.verify_id_token(
             id_token, nonce=kept[0] if kept else "", access_token=tokens["access_token"]
         )
+        # For the app to keep: logout_url(id_token_hint=...) sends it back to the provider.
+        connection.state.id_token = id_token
         userinfo = None
         if self.userinfo:
             url = self._endpoint(self.userinfo_url, "userinfo")
@@ -230,6 +297,168 @@ class OIDCStrategy(AuthorizationCodeFlow):
         if user is None:
             raise AuthenticationFailed("verify() refused the login")
         return user
+
+    def _authenticate_client(self, form: dict[str, str], headers: dict[str, str], url: str) -> None:
+        if self.client_auth != "private_key_jwt":
+            super()._authenticate_client(form, headers, url)
+            return
+        assert self.client_key is not None  # noqa: S101  # checked when it was set up
+        now = int(time.time())
+        assertion = self.client_key.encode(
+            {
+                "iss": self.client_id,
+                "sub": self.client_id,
+                "aud": url,  # the token endpoint, as OpenID Connect Core 9 says
+                "jti": secrets.token_urlsafe(16),
+                "iat": now,
+                "exp": now + 60,
+            }
+        )
+        form |= {
+            "client_id": self.client_id,
+            "client_assertion_type": _CLIENT_ASSERTION_TYPE,
+            "client_assertion": assertion,
+        }
+
+    def logout_url(
+        self,
+        *,
+        id_token_hint: str | None = None,
+        logout_hint: str | None = None,
+        post_logout_redirect_uri: str | None = None,
+        state: str | None = None,
+    ) -> str:
+        """The provider's logout page (RP-Initiated Logout 1.0) for the browser to go to after the
+        app ended its own session. `id_token_hint` is the login's ID token
+        (`request.state.id_token` at the callback): the provider then knows whose session to end
+        without asking. `post_logout_redirect_uri` must be one of `post_logout_redirect_uris`;
+        `state` comes back with it."""
+        url = self._endpoint(self.end_session_url, "end_session")
+        if (
+            post_logout_redirect_uri is not None
+            and post_logout_redirect_uri not in self.post_logout_redirect_uris
+        ):
+            raise ValueError(
+                "post_logout_redirect_uri isn't one of post_logout_redirect_uris: an open "
+                "redirect otherwise"
+            )
+        query = {
+            "client_id": self.client_id,
+            **({"id_token_hint": id_token_hint} if id_token_hint is not None else {}),
+            **({"logout_hint": logout_hint} if logout_hint is not None else {}),
+            **(
+                {"post_logout_redirect_uri": post_logout_redirect_uri}
+                if post_logout_redirect_uri is not None
+                else {}
+            ),
+            **({"state": state} if state is not None else {}),
+        }
+        separator = "&" if "?" in url else "?"
+        return f"{url}{separator}{urlencode(query)}"
+
+    async def verify_logout_token(self, logout_token: str) -> LogoutToken:
+        """The logout token's claims, verified as Back-Channel Logout 1.0 (2.6) says: signed by a
+        key of the provider's JWKS with one of `algorithms`, from `issuer`, for this app, issued
+        in the last LOGOUT_TOKEN_LIFETIME seconds, with a `jti`, the logout event, a `sub` or a
+        `sid`, and no `nonce`. Raises AuthenticationFailed otherwise. Replays aren't checked
+        here: `backchannel_logout_endpoint` does."""
+        if len(logout_token) > MAX_ID_TOKEN:
+            raise AuthenticationFailed("the logout token is too long")
+        try:
+            header = jwt.get_unverified_header(logout_token)
+        except jwt.PyJWTError as exc:
+            raise AuthenticationFailed(f"invalid logout token ({type(exc).__name__})") from None
+        algorithm = header.get("alg")
+        if algorithm not in self.algorithms:
+            raise AuthenticationFailed(
+                f"the logout token's algorithm isn't accepted: {algorithm!r}"
+            )
+        if header.get("typ") not in (None, "JWT", "logout+jwt"):
+            raise AuthenticationFailed("the logout token's typ isn't logout+jwt")
+        key = await self._signing_key(header.get("kid"))
+        try:
+            claims: dict[str, Any] = jwt.decode(
+                logout_token,
+                key,
+                algorithms=[algorithm],
+                audience=self.client_id,
+                issuer=self.issuer,
+                leeway=self.leeway,
+                options={"require": ["iss", "aud", "iat", "jti"]},
+            )
+        except jwt.PyJWTError as exc:
+            raise AuthenticationFailed(f"invalid logout token ({type(exc).__name__})") from None
+        iat = claims["iat"]
+        if (
+            not isinstance(iat, int | float)
+            or time.time() - iat > LOGOUT_TOKEN_LIFETIME + self.leeway
+        ):
+            raise AuthenticationFailed("the logout token is too old")
+        events = claims.get("events")
+        if not isinstance(events, dict) or not isinstance(
+            events.get(BACKCHANNEL_LOGOUT_EVENT), dict
+        ):
+            raise AuthenticationFailed("the logout token has no back-channel logout event")
+        if "nonce" in claims:
+            raise AuthenticationFailed("a logout token has no nonce: an ID token was sent")
+        sub, sid, jti = claims.get("sub"), claims.get("sid"), claims["jti"]
+        if not (isinstance(sub, str) or isinstance(sid, str)) or not isinstance(jti, str):
+            raise AuthenticationFailed("the logout token names no sub nor sid")
+        return LogoutToken(
+            sub if isinstance(sub, str) else None, sid if isinstance(sid, str) else None, jti
+        )
+
+    def backchannel_logout_endpoint(
+        self,
+        sessions: "UserSessions",
+        *,
+        user_id: Callable[[str], Awaitable[Any] | Any] | None = None,
+        cache: "Cache | None" = None,
+    ) -> Callable[[Request], Awaitable[Response]]:
+        """The endpoint the provider POSTs logout tokens to (Back-Channel Logout 1.0), to mount
+        at the URL registered there: `app.post("/auth/backchannel-logout")(endpoint)`.
+
+        A valid token ends the app's sessions of that login: those whose `oidc_sid` is its `sid`
+        (`UserSessions.end_sid`: keep the ID token's `sid` there at login), or, for a token with
+        a `sub` and no `sid`, every session of the user (`end_all`). `user_id(sub)` (sync or
+        async) gives the app's user id of the provider's `sub` (the `sub` itself by default;
+        None: nothing to end).
+        Each token is taken once (its `jti`, kept in `cache`'s backend, the app's or
+        FastAPICache's, for LOGOUT_TOKEN_LIFETIME seconds). Answers 200, or 400 with
+        `invalid_request` (the reason is logged, not sent), with `Cache-Control: no-store`.
+        """
+        from fastapi_alcazaba.backends.tiered import shared_backend
+        from fastapi_alcazaba.response_cache.caches import get_cache
+
+        async def backchannel_logout(request: Request) -> Response:
+            headers = {"Cache-Control": "no-store"}
+            try:
+                form = await request.form()
+                token = form.get("logout_token")
+                if not isinstance(token, str):
+                    raise AuthenticationFailed("no logout_token")
+                logout = await self.verify_logout_token(token)
+                found = cache if cache is not None else get_cache(request)
+                backend = shared_backend(found.backend)
+                digest = hashlib.sha256(f"{self.issuer}\x00{logout.jti}".encode()).hexdigest()
+                key = found.state_key("oidc_logout", digest)
+                expire = 2 * (LOGOUT_TOKEN_LIFETIME + int(self.leeway))
+                seen = await found.guard.run("incr", lambda: backend.incr(key, 1, expire))
+                if seen > 1:
+                    raise AuthenticationFailed("the logout token was used already")
+            except AuthenticationFailed as exc:
+                logger.warning("Refused a back-channel logout of %s: %s", self.name, exc)
+                return JSONResponse({"error": "invalid_request"}, 400, headers=headers)
+            if logout.sid is not None:  # that login only, not the user's others
+                ended = await sessions.end_sid(logout.sid)
+            else:
+                assert logout.sub is not None  # noqa: S101  # verify_logout_token checked it
+                user = await call(user_id, logout.sub) if user_id is not None else logout.sub
+                ended = await sessions.end_all(user) if user is not None else 0
+            logger.info("Back-channel logout of %s: %d sessions ended", self.name, ended)
+            return Response(status_code=200, headers=headers)
+
+        return backchannel_logout
 
     async def verify_id_token(
         self,

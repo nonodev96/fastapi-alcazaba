@@ -482,7 +482,12 @@ class UserSessions:
     - **The index** holds each session's backend key (a digest: not a cookie), and its
       `User-Agent` and address when it started (`record_client=False` for neither).
 
+    - **Logins at an OpenID Connect provider:** a session whose data has `sid_key` (the
+      provider's `sid` of the login) can be ended by it, `end_sid`, which the provider's
+      back-channel logout calls (`OIDCStrategy.backchannel_logout_endpoint`).
+
     :param user_key: the key of the session's data that holds its user's ID.
+    :param sid_key: the key of the session's data that holds the provider's session id.
     :param max_sessions: sessions a user may have at once.
     :param record_client: keep the `User-Agent` and the address of each session.
     :param cache: where the sessions are; the request's (`get_cache`) by default.
@@ -492,6 +497,7 @@ class UserSessions:
         self,
         *,
         user_key: str = "user_id",
+        sid_key: str = "oidc_sid",
         max_sessions: int = 50,
         record_client: bool = True,
         cache: Cache | None = None,
@@ -499,6 +505,7 @@ class UserSessions:
         if max_sessions < 1:
             raise ValueError("max_sessions is 1 or more")
         self.user_key = user_key
+        self.sid_key = sid_key
         self.max_sessions = max_sessions
         self.record_client = record_client
         self.cache = cache
@@ -538,7 +545,8 @@ class UserSessions:
     ) -> None:
         """Keep the index as the request left the session: started, rotated, ended, or with
         another user. A failure is logged: `end_all` refuses what the index misses."""
-        before = json.loads(loaded.original).get(self.user_key)
+        original = json.loads(loaded.original)
+        before = original.get(self.user_key)
         after = session.get(self.user_key) if session else None
         new_key = key_of(cache, session.new_id) if session.new_id is not None else None
         current = new_key or (loaded.key if session else None)
@@ -547,9 +555,17 @@ class UserSessions:
             if loaded.key is not None and before is not None and moved:
                 old = _ref(loaded.key)
                 await self._change(cache, before, lambda index: index.pop(old, None))
-            if current is not None and after is not None and moved:
-                new = {_ref(current): self._entry(current, scope)}
+            sid = session.get(self.sid_key) if session else None
+            sid = sid if isinstance(sid, str) and sid else None
+            if (
+                current is not None
+                and after is not None
+                and (moved or sid != original.get(self.sid_key))
+            ):
+                new = {_ref(current): self._entry(current, scope, sid)}
                 await self._change(cache, after, lambda index: index.update(new))
+                if sid is not None:
+                    await self._set_sid(cache, sid, after)
         except BackendUnavailable as exc:
             logger.warning("Couldn't keep the index of the user's sessions", exc_info=exc)
 
@@ -634,6 +650,37 @@ class UserSessions:
         await self._change(cache, user_id, only_kept)
         return ended
 
+    async def end_sid(self, sid: str, *, request: HTTPConnection | None = None) -> int:
+        """End the sessions of the provider's login `sid` (whose data had it as `sid_key`); how
+        many. 0 when no session has it (or the backend lost what said whose it is)."""
+        cache = self._cache(request)
+        backend = shared_backend(cache.backend)
+        key = self._key(cache, "sid", sid)
+        stored = await cache.guard.run("get", lambda: backend.get(key))
+        protector = cache.options.protector
+        user = protector.open(key, stored) if protector and stored is not None else stored
+        if user is None:
+            return 0
+        user_id = user.decode(errors="replace")
+        ended = [
+            ref
+            for ref, entry in (await self._index(cache, user_id)).items()
+            if entry.get("sid") == sid
+        ]
+        for ref in ended:
+            await self.end(user_id, ref, request=request)
+        await cache.guard.run("delete", lambda: backend.clear(key=key))
+        return len(ended)
+
+    async def _set_sid(self, cache: Cache, sid: str, user_id: Any) -> None:
+        """Whose the provider's login `sid` is, for `end_sid`."""
+        backend = shared_backend(cache.backend)
+        key = self._key(cache, "sid", sid)
+        value = str(user_id).encode()
+        protector = cache.options.protector
+        stored = protector.seal(key, value) if protector is not None else value
+        await cache.guard.run("set", lambda: backend.set(key, stored, self.max_age))
+
     # The index.
 
     def _cache(self, request: HTTPConnection | None) -> Cache:
@@ -647,8 +694,10 @@ class UserSessions:
         digest = hashlib.sha256(json.dumps([kind, str(user_id)]).encode()).hexdigest()
         return cache.state_key(self.namespace or "session", f"{kind}:{digest}")
 
-    def _entry(self, key: str, scope: Scope) -> dict[str, Any]:
+    def _entry(self, key: str, scope: Scope, sid: str | None = None) -> dict[str, Any]:
         entry: dict[str, Any] = {"key": key, "since": int(time.time())}
+        if sid is not None:
+            entry["sid"] = sid
         if self.record_client:
             agent = dict(scope.get("headers", [])).get(b"user-agent")
             client = scope.get("client")

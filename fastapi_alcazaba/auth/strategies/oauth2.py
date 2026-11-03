@@ -74,24 +74,22 @@ class AuthorizationCodeFlow(Strategy):
         *,
         name: str,
         client_id: str,
-        client_secret: str | SecretStr,
+        client_secret: str | SecretStr | None,
         redirect_uri: str,
         scopes: Sequence[str],
-        client_auth: Literal["basic", "post"],
+        client_auth: str,
         params: Mapping[str, str] | None,
         secure: bool,
         timeout: float,
         client: Any,
     ) -> None:
         super().__init__(name)
-        if client_auth not in ("basic", "post"):
-            raise ValueError("client_auth is basic or post")
         self.authorization_url: str | None = None
         self.token_url: str | None = None
         self.userinfo_url: str | None = None
         self.client_id = client_id
         self.client_secret = (
-            client_secret if isinstance(client_secret, SecretStr) else SecretStr(client_secret)
+            SecretStr(client_secret) if isinstance(client_secret, str) else client_secret
         )
         self.redirect_uri = redirect_uri
         self.scopes = list(scopes)
@@ -146,14 +144,19 @@ class AuthorizationCodeFlow(Strategy):
         if not (state and expected and hmac.compare_digest(state.encode(), expected.encode())):
             raise AuthenticationFailed("the state doesn't match the one sent (or expired)")
         tokens = await self._tokens(code, verifier)
-        return await self._finish(tokens, kept)
+        return await self._finish(tokens, kept, connection)
 
     def _start(self) -> tuple[dict[str, str], list[str]]:
         """What the login page gets besides the code flow's parameters, and what the cookie
         keeps for the callback after the state and the verifier (tokens without dots)."""
         return {}, []
 
-    async def _finish(self, tokens: dict[str, Any], kept: list[str]) -> Any:
+    async def _finish(
+        self,
+        tokens: dict[str, Any],
+        kept: list[str],
+        connection: HTTPConnection,
+    ) -> Any:
         """The user of a login whose code gave `tokens`; `kept` is what `_start` kept."""
         raise NotImplementedError
 
@@ -170,6 +173,20 @@ class AuthorizationCodeFlow(Strategy):
             "code_verifier": verifier,
         }
         headers = {"Accept": "application/json"}
+        token_url = self._endpoint(self.token_url, "token")
+        self._authenticate_client(form, headers, token_url)
+        response = await self._call("POST", token_url, data=form, headers=headers)
+        tokens = _json(response)
+        if response.status_code != 200 or not isinstance(tokens.get("access_token"), str):
+            error = tokens.get("error", f"HTTP {response.status_code}")
+            raise AuthenticationFailed(f"the code wasn't exchanged: {str(error)[:100]!r}")
+        return tokens
+
+    def _authenticate_client(self, form: dict[str, str], headers: dict[str, str], url: str) -> None:
+        """Add the app's credentials to a request to the token endpoint `url` (what a signed
+        assertion is for: `OIDCStrategy`'s private_key_jwt)."""
+        del url
+        assert self.client_secret is not None  # noqa: S101  # checked when it was set up
         secret = self.client_secret.get_secret_value()
         if self.client_auth == "basic":
             # RFC 6749, section 2.3.1: each part form-encoded first.
@@ -177,13 +194,6 @@ class AuthorizationCodeFlow(Strategy):
             headers["Authorization"] = "Basic " + base64.b64encode(credentials.encode()).decode()
         else:
             form |= {"client_id": self.client_id, "client_secret": secret}
-        token_url = self._endpoint(self.token_url, "token")
-        response = await self._call("POST", token_url, data=form, headers=headers)
-        tokens = _json(response)
-        if response.status_code != 200 or not isinstance(tokens.get("access_token"), str):
-            error = tokens.get("error", f"HTTP {response.status_code}")
-            raise AuthenticationFailed(f"the code wasn't exchanged: {str(error)[:100]!r}")
-        return tokens
 
     async def _profile(self, url: str, access_token: str) -> dict[str, Any]:
         headers = {"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
@@ -255,6 +265,8 @@ class OAuth2Strategy(AuthorizationCodeFlow):
         timeout: float = 10.0,
         client: Any = None,
     ) -> None:
+        if client_auth not in ("basic", "post"):
+            raise ValueError("client_auth is basic or post")
         super().__init__(
             name=name,
             client_id=client_id,
@@ -275,7 +287,12 @@ class OAuth2Strategy(AuthorizationCodeFlow):
         self.userinfo_url = userinfo_url
         self.verify = verify
 
-    async def _finish(self, tokens: dict[str, Any], kept: list[str]) -> Any:
+    async def _finish(
+        self,
+        tokens: dict[str, Any],
+        kept: list[str],
+        connection: HTTPConnection,
+    ) -> Any:
         profile = None
         if self.userinfo_url is not None:
             profile = await self._profile(self.userinfo_url, tokens["access_token"])

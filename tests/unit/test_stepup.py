@@ -179,3 +179,33 @@ class TestAudit:
             ("auth.stepup", "failure", "wrong_method", "pwd"),
         ]
         assert all(event.actor == "ana" for event in sink.events)
+
+
+class FakeConnection:
+    """What stepup reads of a request: its scope's session."""
+
+    def __init__(self, session: dict[str, Any]) -> None:
+        self.scope = {"session": session}
+
+
+@pytest.mark.parametrize(
+    ("mark", "at", "method"),
+    [
+        ({"user": "ana", "at": 1.5, "method": "totp"}, 1.5, "totp"),
+        ({"user": "ana", "at": True, "method": "totp"}, None, None),  # not a time
+        ({"user": "ana", "at": 2, "method": 7}, 2.0, None),  # not a method
+        ({"user": "ben", "at": 2, "method": "totp"}, None, None),  # someone else's
+        ("not a mark", None, None),
+    ],
+)
+def test_marks_as_the_session_holds_them(mark: Any, at: float | None, method: str | None) -> None:
+    connection: Any = FakeConnection({stepup._SESSION_KEY: mark})  # pylint: disable=protected-access
+    assert stepup.verified_at(connection, "ana") == at
+    assert stepup.verified_with(connection, "ana") == method
+
+
+def test_without_sessions() -> None:
+    connection: Any = FakeConnection({})
+    connection.scope = {}
+    with pytest.raises(RuntimeError, match="needs ServerSessionMiddleware"):
+        stepup.verified_at(connection, "ana")
