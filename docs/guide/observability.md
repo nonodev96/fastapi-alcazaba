@@ -270,7 +270,7 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.uploads` | `fastapi_alcazaba.outcome` (accepted, too_large, too_many_pixels, unsupported, unreadable, empty) |
 | `fastapi_alcazaba.uploads.size` | `fastapi_alcazaba.content_type` (the detected one): bytes of the uploads accepted |
 | `fastapi_alcazaba.tasks.enqueued` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task` |
-| `fastapi_alcazaba.tasks` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` (succeeded, retried, failed, interrupted; for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered) |
+| `fastapi_alcazaba.tasks` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` (succeeded, retried, failed, interrupted, cancelled (dropped without running); for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered) |
 | `fastapi_alcazaba.tasks.duration` | `fastapi_alcazaba.queue`, `fastapi_alcazaba.task`, `fastapi_alcazaba.outcome` |
 | `fastapi_alcazaba.tasks.reclaimed` | `fastapi_alcazaba.queue`: tasks taken over from workers that stopped answering |
 | `fastapi_alcazaba.passwords` | `fastapi_alcazaba.outcome` (success, wrong, locked, unknown, malformed, too_long, unchecked; reset_used, reset_unknown, reset_replaced, reset_malformed, reset_unchecked): a burst of wrong or locked is someone guessing |

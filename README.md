@@ -40,7 +40,7 @@ Redis, Valkey, memcached or DynamoDB), one format of errors and one set of metri
 | [Object storage](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/storage/) | `uploads` | signed URLs and upload forms for S3, R2 or MinIO, without an SDK |
 | [E-mail](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/mail/) | `mail` | password resets, codes and receipts over SMTP with TLS, without forged headers |
 | [Pagination](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/pagination/) | `pagination` | page numbers, offsets, ranges, cursors, keysets, scrolls and streams, cached page by page |
-| [Background work](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/background/) | `background` | a task queue, scheduled jobs, locks, leader election, broadcast to every process and an outbox |
+| [Background work](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/background/) | `background` | a task queue (timeouts, unique tasks, status, a command line), scheduled jobs, locks, leader election, broadcast to every process and an outbox |
 | [Operations](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/operations/) | `operations` | circuit breakers, maintenance mode and feature flags |
 | [Observability](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/observability/) | `observability`, `telemetry` | problem details, request IDs, timeouts, health checks, OpenTelemetry, logs as JSON |
 | [Accounting](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/accounting/) | `accounting` | what each user, API key or tenant uses per period, held to its plan's quotas, a record per charge for billing |

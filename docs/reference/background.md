@@ -11,6 +11,8 @@ In the guide: [Scheduled jobs](../guide/background.md#scheduled-jobs), [Task que
 
 ::: fastapi_alcazaba.background.DeadLetter
 
+::: fastapi_alcazaba.background.TaskStatus
+
 ::: fastapi_alcazaba.background.QueueFull
 
 ::: fastapi_alcazaba.background.FastAPILeader

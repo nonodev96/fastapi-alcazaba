@@ -26,6 +26,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `JWTStrategy` with `jwks_url`: `jwks_timeout` (3 s for the whole fetch), `jwks_stale` (keys kept
   an hour past their lifespan while the provider can't be reached), `jwks_client` and `aclose()`.
   Fetches are counted in `fastapi_alcazaba.auth.jwks`.
+- Task queue: `@queue.task(timeout=...)` cancels a run that takes longer, as a failure with
+  `TimeoutError` (retried or to the dead letters), so a hung task no longer holds a worker's slot
+  for good.
+- Task queue: `retry_on` and `give_up_on` choose the exceptions that are retried; the others send
+  the task to the dead letters at once.
+- Task queue: `enqueue(..., unique_key=...)` adds at most one task per key while one waits, runs or
+  waits for a retry, and returns its ID otherwise: a message the outbox delivers twice runs once.
+- Task queue: `status(task_id)` (`TaskStatus`: pending, running, retrying, succeeded, dead,
+  cancelled, with attempts, last error and times, never the arguments), `cancel(task_id)` for a
+  task that hasn't started, `dead_letter_count()`, and `status_ttl` (a day).
+- The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
+  dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
   (HTML, CSV, an image, a `JSONResponse` with its headers) is stored whole, status, headers and
   body, with any coder; before, with `JsonCoder`, a `JSONResponse` came back as its body alone and
@@ -79,6 +91,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   asymmetric: RS256, ES256, PS256 and EdDSA by default (before, HS256 had to be replaced).
 - Keys given to `JWTStrategy` are parsed when it's set up: a key that isn't one for its algorithm
   is refused then, not on the first token.
+
+- Task queue: each task has a status record in the backend (a small hash, kept a day after it
+  ends). Tasks need an ID of 32 hex digits, as `enqueue` gives them: a task planted with another
+  is refused as malformed. A task can't take keyword arguments named `unique_key`. A 0.7 worker
+  runs tasks enqueued with a `unique_key` and leaves the key, which expires with the task's
+  deadline.
 
 ### Deprecated
 

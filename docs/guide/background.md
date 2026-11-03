@@ -118,6 +118,79 @@ async def create_user(user: NewUser) -> None:
 - **Small on purpose:** no results, priorities or workflows. Each run is the root of a trace of its
   own, linked to the span of the request that enqueued it.
 
+### Keeping it healthy
+
+```python
+@queue.task(
+    retries=5,
+    timeout=30,  # seconds a run may take
+    retry_on=(httpx.TransportError,),  # only these are retried
+    give_up_on=(ValueError,),  # these go to the dead letters at once
+)
+async def send_invoice(invoice_id: int) -> None: ...
+
+
+task_id = await queue.enqueue(send_invoice, 42, unique_key="invoice-42")
+await queue.status(task_id)  # TaskStatus(state="pending", attempts=0, ...)
+await queue.cancel(task_id)  # True: it hadn't started
+```
+
+- **Timeouts:** a run that takes longer than `timeout` is cancelled and fails with `TimeoutError`:
+  retried, or to the dead letters, and its worker takes other tasks. Without one, a task that hangs
+  holds one of the `concurrency` slots for good: heartbeats keep it from being taken over. A sync
+  task's thread can't be stopped: it's left to finish, outside the count.
+- **Which errors retry:** `retry_on` lists those that are (all by default), `give_up_on` those that
+  never are; either way the task goes to the dead letters at once, reason `failed`.
+- **Unique tasks:** with `unique_key`, while a task enqueued with it waits, runs or waits for a
+  retry, `enqueue` returns its ID and adds nothing: a message the outbox delivers twice, a request
+  the client retries, run once. Once it succeeds, goes to the dead letters or is cancelled, the key
+  is free (a requeued dead letter doesn't take it again). Many processes enqueuing with one key at
+  once add one task. The backend keeps a digest of the key, not the key.
+- **Status:** `status(task_id)` says where a task is: `pending` (waiting, delayed, requeued),
+  `running`, `retrying` (waiting for its next attempt), `succeeded`, `dead` (with its `reason`)
+  or `cancelled`, with its attempts, the type of its last error and when it was enqueued and last
+  changed; never its arguments. Each task's record is written by the scripts that move the task,
+  and kept `status_ttl` (a day) after it ends; then `status()` gives None. Tasks enqueued by 0.7
+  get one when they start.
+- **Cancelling:** `cancel(task_id)` makes sure a task that hasn't started (pending, delayed or
+  waiting for a retry) never runs, and frees its `unique_key`; a running or finished one isn't
+  cancelled (False). A worker about to start it and `cancel` have one winner. The task counts in
+  `pending()` until a worker drops it.
+- **Dead letters:** `dead_letter_count()` besides `dead_letters()`, `requeue_dead_letters()` and
+  `discard_dead_letters()`.
+
+### From a shell
+
+`fastapi-alcazaba tasks` does the same from a shell, where the app's settings are. Point it at
+the queue (`module:attribute`), or at a function that sets up what it needs and returns it: a queue
+on FastAPICache has no backend until the app's lifespan runs, which the command doesn't (it would
+start workers).
+
+```python
+# myapp/worker.py
+async def queue_for_cli() -> FastAPITaskQueue:
+    FastAPICache.init(
+        RedisBackend(redis.from_url(settings.redis_url)),
+        prefix="myapp",
+        signing_key=settings.cache_signing_key,
+    )
+    return queue
+```
+
+```bash
+fastapi-alcazaba tasks myapp.worker queues                     # every queue of the module
+fastapi-alcazaba tasks myapp.worker:queue_for_cli pending
+fastapi-alcazaba tasks myapp.worker:queue_for_cli dead-letters -n 20
+fastapi-alcazaba tasks myapp.worker:queue_for_cli requeue --all  # or their IDs
+fastapi-alcazaba tasks myapp.worker:queue_for_cli discard 1730000000000-0
+fastapi-alcazaba tasks myapp.worker:queue_for_cli status 3f2a…
+fastapi-alcazaba tasks myapp.worker:queue_for_cli cancel 3f2a…
+```
+
+`--json` (before the command) prints JSON. It exits with 1 when a task isn't found or wasn't
+cancelled, and 2 for a wrong target or arguments. The current directory is importable, as with
+uvicorn; `queues` needs the module's queues to have their cache (`FastAPITaskQueue(cache)`).
+
 ## Leader election
 
 `FastAPILeader` elects one process among all those sharing the backend, for work that must run in
@@ -268,7 +341,8 @@ async def place(form: Order) -> dict[str, int]:
 
 
 async def deliver(message: OutboxMessage) -> None:
-    await queue.enqueue(order_placed, message.id, message.payload)  # skips ids it has seen
+    # Delivered twice (the relay stopped before marking it sent): enqueued once.
+    await queue.enqueue(order_placed, message.payload, unique_key=message.id)
 
 
 relay = OutboxRelay(outbox, deliver)
