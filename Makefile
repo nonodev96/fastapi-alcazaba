@@ -41,7 +41,7 @@ test: deps
 
 INTEGRATION_ENV = REDIS_URL=redis://127.0.0.1:16379/15 VALKEY_URL=valkey://127.0.0.1:16380/15 \
 	CLUSTER_URL=redis://127.0.0.1:16382 MEMCACHED_URL=127.0.0.1:21211 DYNAMODB_URL=http://127.0.0.1:18000 \
-	OPA_URL=http://127.0.0.1:18181
+	OPA_URL=http://127.0.0.1:18181 POSTGRES_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:15432/postgres
 
 # Throwaway servers on high ports (stop them with `make services-down`).
 services-up:
@@ -53,11 +53,14 @@ services-up:
 	docker run -d --rm --name fastapi-alcazaba-test-dynamodb -p 127.0.0.1:18000:8000 amazon/dynamodb-local:3.3.2
 	docker run -d --rm --name fastapi-alcazaba-test-opa -p 127.0.0.1:18181:8181 openpolicyagent/opa:1.21.4 \
 		run --server --addr 0.0.0.0:8181
+	docker run -d --rm --name fastapi-alcazaba-test-postgres -p 127.0.0.1:15432:5432 \
+		-e POSTGRES_PASSWORD=postgres postgres:17
 	sleep 2 && docker exec fastapi-alcazaba-test-cluster valkey-cli -p 16382 cluster addslotsrange 0 16383
 
 services-down:
 	docker stop fastapi-alcazaba-test-redis fastapi-alcazaba-test-valkey fastapi-alcazaba-test-cluster \
-		fastapi-alcazaba-test-memcached fastapi-alcazaba-test-dynamodb fastapi-alcazaba-test-opa
+		fastapi-alcazaba-test-memcached fastapi-alcazaba-test-dynamodb fastapi-alcazaba-test-opa \
+		fastapi-alcazaba-test-postgres
 
 test-integration: deps
 	$(INTEGRATION_ENV) $(BIN)/pytest -m integration

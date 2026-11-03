@@ -81,8 +81,12 @@ Changelog = "https://github.com/nonodev96/fastapi-alcazaba/blob/main/CHANGELOG.m
 [dependency-groups]
 dev = [
     "actionlint-py>=1.7.12.25",
+    # The outbox's async path: SQLite in the unit tests, PostgreSQL in the integration suite.
+    "aiosqlite>=0.22.1",
+    "asyncpg>=0.32.0",
     "coverage[toml]>=7.16.2",
     "cyclonedx-python-lib[json-validation]>=11.12",
+    "greenlet>=3.5.6",  # SQLAlchemy's async sessions
     "fakeredis[lua]>=2.40.0",
     "hypothesis>=6.170.5",
     "httpx2>=2.15.1",

@@ -57,6 +57,14 @@ jobs:
       dynamodb:
         image: amazon/dynamodb-local:3.3.2
         ports: ["8000:8000"]
+      postgres:
+        image: postgres:17
+        ports: ["5432:5432"]
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s
+          --health-retries 15
     env:
       REDIS_URL: redis://localhost:6379/15
       VALKEY_URL: valkey://localhost:6380/15
@@ -64,6 +72,7 @@ jobs:
       MEMCACHED_URL: localhost:11211
       DYNAMODB_URL: http://localhost:8000
       OPA_URL: http://localhost:8181
+      POSTGRES_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
