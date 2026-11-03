@@ -5,7 +5,14 @@ from fastapi_alcazaba.background.broadcast import FastAPIBroadcast, Message
 from fastapi_alcazaba.background.leader import FastAPILeader
 from fastapi_alcazaba.background.locks import Lock, LockNotAcquired
 from fastapi_alcazaba.background.scheduler import FastAPIScheduler
-from fastapi_alcazaba.background.tasks import DeadLetter, FastAPITaskQueue, QueueFull, TaskStatus
+from fastapi_alcazaba.background.tasks import (
+    DeadLetter,
+    FastAPITaskQueue,
+    QueueFull,
+    RunningTask,
+    TaskStatus,
+    current_task,
+)
 
 __all__ = [
     "DeadLetter",
@@ -17,5 +24,7 @@ __all__ = [
     "LockNotAcquired",
     "Message",
     "QueueFull",
+    "RunningTask",
     "TaskStatus",
+    "current_task",
 ]

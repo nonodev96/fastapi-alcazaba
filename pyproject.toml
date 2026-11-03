@@ -60,6 +60,8 @@ auth-strategy-oauth2 = ["httpx2>=2.15.1"]
 auth-strategy-oidc = ["httpx2>=2.15.1", "pyjwt[crypto]>=2.10"]
 # API keys managed by Unkey (UnkeyStrategy, UnkeyKeys), through its API with httpx2.
 auth-strategy-unkey = ["httpx2>=2.15.1"]
+# Sending webhooks (WebhookSender), with httpx2.
+webhooks = ["httpx2>=2.15.1"]
 # Passwords checked against those leaked (PwnedPasswords), with httpx2; hashing needs nothing.
 passwords = ["httpx2>=2.15.1"]
 # Nothing more: HTTPBearerStrategy only needs FastAPI. There for every strategy to have its extra.
@@ -68,7 +70,7 @@ auth-strategy-http-bearer = []
 auth-strategy-saml = ["signxml>=5.2"]
 # The queries of the pagination strategies, for SQLAlchemy 2 (fastapi_alcazaba.pagination.sqlalchemy).
 sqlalchemy = ["sqlalchemy>=2.0"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy]"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy,webhooks]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"

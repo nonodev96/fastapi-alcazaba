@@ -110,6 +110,12 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "replayed, rejected (signature or timestamp), malformed, too_large, unchecked (backend "
         "down, accepted), unavailable (refused)",
     ),
+    "webhooks.deliveries": (
+        "{attempt}",
+        "Attempts of WebhookSender, by outcome: delivered, retrying (tried again later), failed "
+        "(its retries spent), disabled (the attempt that disabled its endpoint), skipped (the "
+        "endpoint disabled or gone)",
+    ),
     "api_keys": (
         "{request}",
         "API keys checked, by outcome: accepted, malformed, unknown, wrong_secret, expired, "

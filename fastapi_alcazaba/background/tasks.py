@@ -50,6 +50,7 @@ import time
 import uuid
 from collections.abc import AsyncGenerator, AsyncIterator, Callable, Iterable
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from types import TracebackType
@@ -351,6 +352,27 @@ class DeadLetter:
     error: str | None
     attempts: int
     failed_at: datetime
+
+
+@dataclass(frozen=True)
+class RunningTask:
+    """The task this code runs in, for `current_task()`."""
+
+    id: str
+    #: The task's name.
+    task: str
+    #: This run's number: 1 the first time, 2 at the first retry...
+    attempt: int
+    #: Attempts it may have: its retries and the first.
+    attempts: int
+
+
+_running_task: ContextVar[RunningTask | None] = ContextVar("fastapi_alcazaba_task", default=None)
+
+
+def current_task() -> RunningTask | None:
+    """The task being run, when called from one (sync tasks' threads included); None otherwise."""
+    return _running_task.get()
 
 
 @dataclass(frozen=True)
@@ -1157,6 +1179,8 @@ class FastAPITaskQueue:
             self.name, task.name, body["id"], body["attempt"], body.get("trace")
         ) as span:
             deadline = asyncio.timeout(task.timeout)
+            running = RunningTask(body["id"], task.name, body["attempt"] + 1, task.retries + 1)
+            token = _running_task.set(running)
             try:
                 async with deadline:
                     if _is_async(task.func):
@@ -1183,6 +1207,8 @@ class FastAPITaskQueue:
             else:
                 self._ran(task, "succeeded", started)
                 await self._ack(entry, body, "succeeded")
+            finally:
+                _running_task.reset(token)
 
     def _ran(self, task: _Task, outcome: str, started: float) -> None:
         assert self._resolved is not None  # noqa: S101  # resolved by start()
