@@ -1,7 +1,7 @@
 # Webhooks and outbound calls
 
-Webhooks signed and verified the Standard Webhooks way, and calls to other services with a deadline,
-a circuit breaker and SSRF protection.
+Webhooks verified (Standard Webhooks, GitHub, Stripe, Slack) and signed the Standard Webhooks way,
+and calls to other services with a deadline, a circuit breaker and SSRF protection.
 
 In an app: [the example](../examples/webhooks.md). Every class and function: [the API reference](../reference/webhooks.md).
 
@@ -59,6 +59,47 @@ await client.post(url, content=body, headers=signer.sign(body))
   accept it.
 - **Without a dependency:** `webhooks.verify(headers, body)` checks the signature and the
   timestamp (not replays), for queues and scripts.
+
+### Ed25519 signatures (v1a)
+
+Standard Webhooks also signs with Ed25519 (`webhook-signature: v1a,<base64>`): receivers verify
+with the sender's public key alone, so no shared secret leaks from a receiver. With the `crypto`
+extra:
+
+```python
+private, public = WebhookSigner.generate_key_pair()  # "whsk_...", "whpk_..."
+signer = WebhookSigner(private)  # or [hmac_secret, private]: v1 and v1a in one header
+webhooks = FastAPIWebhooks(public)  # the receiver's: verifies, can't sign
+```
+
+A `whsk_` key is the base64 of the 32-byte seed (or libsodium's 64 bytes, seed and public key).
+
+### GitHub, Stripe and Slack
+
+`scheme=` verifies the webhooks of these senders with the same checks: the raw body and its size
+limit, constant time, the tolerance on timestamps, replay marks, rotation with a list of secrets,
+and one 401 for every failure.
+
+```python
+github = FastAPIWebhooks(settings.github_webhook_secret, scheme="github")
+stripe = FastAPIWebhooks(settings.stripe_webhook_secret, scheme="stripe")  # "whsec_..." as given
+slack = FastAPIWebhooks(settings.slack_signing_secret, scheme="slack")
+```
+
+| Scheme | What's checked | `message.id` | `message.timestamp` |
+| --- | --- | --- | --- |
+| `github` | `X-Hub-Signature-256: sha256=<HMAC of the body>` | `X-GitHub-Delivery` | None |
+| `stripe` | `Stripe-Signature: t=<time>,v1=<HMAC of "time.body">` (any of its `v1`) | a digest of what's signed | `t` |
+| `slack` | `X-Slack-Signature: v0=<HMAC of "v0:time:body">`, `X-Slack-Request-Timestamp` | a digest of what's signed | the header |
+
+- **GitHub signs no time:** a delivery is refused again only within the replay window (twice
+  `tolerance`, plus a minute); a capture sent later goes through. Keep the endpoint idempotent on
+  `message.id`, the delivery id, which redeliveries keep.
+- **Stripe's secret** is used as the string it gives you, `whsec_` included (not decoded as
+  Standard Webhooks' are); its event id is in the body (`message.json()["id"]`).
+- **Slack** sends slash commands and interactions as forms: take the body with
+  `await request.form()` after the dependency (it keeps the body), not as form parameters.
+- Their secrets are at least 16 characters.
 
 ## Outbound calls
 

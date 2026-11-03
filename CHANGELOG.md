@@ -53,6 +53,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Outbox: each message keeps the trace context of where it was written, and each delivery is a
   span (`fastapi_alcazaba.outbox <topic>`) linked to it; counters `fastapi_alcazaba.outbox`
   (delivered, retried, given_up) and `fastapi_alcazaba.outbox.purged`.
+- Webhooks: `FastAPIWebhooks(secret, scheme=...)` verifies GitHub's (`X-Hub-Signature-256`),
+  Stripe's (`Stripe-Signature`) and Slack's (`X-Slack-Signature`) webhooks with the same checks
+  as Standard Webhooks': raw body and size limit, constant time, timestamp tolerance, replay
+  marks, rotation, one 401. Standard Webhooks' Ed25519 signatures (`v1a`): `whpk_` public keys
+  verify, `whsk_` private keys sign, `WebhookSigner.generate_key_pair()`. The `webhooks` counter
+  has the scheme. `WebhookMessage.timestamp` is None for GitHub, which signs no time.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
