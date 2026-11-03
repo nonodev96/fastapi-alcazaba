@@ -113,6 +113,37 @@ async def delete_account(...) -> None: ...
   same way (`webauthn.mark`), and either `require_recent` takes a code or a passkey; both are
   `fastapi_alcazaba.auth.stepup`'s.
 
+### By factor, and for tokens
+
+```python
+from fastapi_alcazaba.auth.stepup import require_recent
+
+passkey_only = require_recent(current_user_id, max_age=300, methods={"passkey"}, audit=audit)
+
+# API clients with the provider's tokens: its auth_time, amr and acr decide.
+claims = auth.authenticate("oidc_tokens")  # returns the token's claims
+recent_mfa = require_recent(
+    current_user_id, max_age=600, claims=claims, methods={"hwk", "otp"}, acr_values={"urn:mfa"}
+)
+```
+
+- **Which factor:** `methods` lists those that count: the method the session was marked with
+  (`"passkey"`, `"totp"`, or yours: `stepup.mark(request, user_id, "password")`), or for tokens
+  their `amr` values (RFC 8176: `"hwk"` a hardware key, `"otp"`, `"mfa"`…).
+  `stepup.verified_with(request, user_id)` says which one the session holds.
+- **The front end knows what to do:** a session that falls short gets a 403 problem
+  (`type: "urn:fastapi-alcazaba:problem:step-up"`, with `max_age` and `methods`; install
+  [`FastAPIProblemDetails`](observability.md#problem-details) to get it as
+  `application/problem+json`).
+- **Tokens:** with `claims=` (a dependency that returns the token's claims when there's one), the
+  token's `auth_time` must be within `max_age`, an `amr` among `methods`, and its `acr` among
+  `acr_values`. Otherwise a 401 with RFC 9470's challenge:
+  `WWW-Authenticate: Bearer error="insufficient_user_authentication", ..., max_age="600",
+  acr_values="urn:mfa"`, for the client to send the user back to the provider with those.
+- **Audited:** with `audit=`, each check is an `auth.stepup` event: the user, the method, how old,
+  and the reason when it's refused (`none`, `too_old`, `wrong_method`, `no_auth_time`,
+  `wrong_acr`).
+
 ## In the audit trail
 
 With `audit=`, each code checked is an `auth.mfa` event and each recovery code tried an

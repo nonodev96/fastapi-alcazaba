@@ -66,6 +66,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `disable()`; `delivery()` records without bodies or secrets. The `webhooks` extra; the counter
   `fastapi_alcazaba.webhooks.deliveries`.
 - Task queue: `current_task()` (`RunningTask`: id, name, attempt, attempts) inside a task.
+- Step-up by factor: `require_recent(..., methods={"passkey"})` wants a given method;
+  `claims=` checks tokens' `auth_time`, `amr` and `acr` (`acr_values`) and answers RFC 9470's
+  `insufficient_user_authentication` challenge; refusals are problems the front end can read
+  (`urn:fastapi-alcazaba:problem:step-up`); `audit=` records each check (`auth.stepup`).
+  `stepup.verified_with()`. The wrappers of `FastAPITOTP` and `FastAPIWebAuthn` take the same
+  options.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns

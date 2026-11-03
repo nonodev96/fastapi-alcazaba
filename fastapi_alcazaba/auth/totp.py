@@ -344,10 +344,12 @@ class FastAPITOTP:
         self,
         user_id: Callable[..., Any],
         max_age: int = 300,
+        **options: Any,
     ) -> Callable[..., Any]:
         """A dependency that needs a second factor (this one, or a passkey) of the last
-        `max_age` seconds in this session: `stepup.require_recent`."""
-        return stepup.require_recent(user_id, max_age)
+        `max_age` seconds in this session: `stepup.require_recent`, with its `methods`,
+        `claims`, `acr_values` and `audit`."""
+        return stepup.require_recent(user_id, max_age, **options)
 
     # What they share.
 

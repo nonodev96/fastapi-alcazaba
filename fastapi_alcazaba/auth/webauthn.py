@@ -565,10 +565,16 @@ class FastAPIWebAuthn:
         for the routes of `require_recent`, and give the session a new id."""
         stepup.mark(request, user_id, "passkey")
 
-    def require_recent(self, user_id: Callable[..., Any], max_age: int = 300) -> Callable[..., Any]:
+    def require_recent(
+        self,
+        user_id: Callable[..., Any],
+        max_age: int = 300,
+        **options: Any,
+    ) -> Callable[..., Any]:
         """A dependency that needs a second factor (a passkey, or a TOTP code) of the last
-        `max_age` seconds in this session: `stepup.require_recent`."""
-        return stepup.require_recent(user_id, max_age)
+        `max_age` seconds in this session: `stepup.require_recent`, with its `methods` (e.g.
+        `{"passkey"}` for passkeys only), `claims`, `acr_values` and `audit`."""
+        return stepup.require_recent(user_id, max_age, **options)
 
     # What they share.
 
