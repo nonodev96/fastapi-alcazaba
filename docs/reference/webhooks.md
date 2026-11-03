@@ -1,6 +1,6 @@
 # Webhooks and outbound calls
 
-Standard Webhooks in and out, and httpx transports with deadlines, breakers and SSRF checks.
+Webhooks in (Standard Webhooks, GitHub, Stripe, Slack) and out, and httpx transports with deadlines, breakers and SSRF checks.
 In `fastapi_alcazaba.webhooks` and `fastapi_alcazaba.outbound`.
 
 In the guide: [Signed webhooks](../guide/webhooks.md#signed-webhooks), [Outbound calls](../guide/webhooks.md#outbound-calls). In an app: [the example](../examples/webhooks.md).
@@ -10,6 +10,16 @@ In the guide: [Signed webhooks](../guide/webhooks.md#signed-webhooks), [Outbound
 ::: fastapi_alcazaba.webhooks.WebhookSigner
 
 ::: fastapi_alcazaba.webhooks.WebhookMessage
+
+::: fastapi_alcazaba.webhooks.sender.WebhookSender
+
+::: fastapi_alcazaba.webhooks.sender.WebhookEndpoint
+
+::: fastapi_alcazaba.webhooks.sender.WebhookDelivery
+
+::: fastapi_alcazaba.webhooks.sender.EndpointHealth
+
+::: fastapi_alcazaba.webhooks.sender.WebhookDeliveryFailed
 
 ::: fastapi_alcazaba.outbound.ResilientTransport
 

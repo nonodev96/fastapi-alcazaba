@@ -13,6 +13,10 @@ In the guide: [Scheduled jobs](../guide/background.md#scheduled-jobs), [Task que
 
 ::: fastapi_alcazaba.background.TaskStatus
 
+::: fastapi_alcazaba.background.current_task
+
+::: fastapi_alcazaba.background.RunningTask
+
 ::: fastapi_alcazaba.background.QueueFull
 
 ::: fastapi_alcazaba.background.FastAPILeader

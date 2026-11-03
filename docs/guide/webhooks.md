@@ -1,7 +1,7 @@
 # Webhooks and outbound calls
 
-Webhooks verified (Standard Webhooks, GitHub, Stripe, Slack) and signed the Standard Webhooks way,
-and calls to other services with a deadline, a circuit breaker and SSRF protection.
+Webhooks verified (Standard Webhooks, GitHub, Stripe, Slack), signed and sent the Standard Webhooks
+way, and calls to other services with a deadline, a circuit breaker and SSRF protection.
 
 In an app: [the example](../examples/webhooks.md). Every class and function: [the API reference](../reference/webhooks.md).
 
@@ -100,6 +100,67 @@ slack = FastAPIWebhooks(settings.slack_signing_secret, scheme="slack")
 - **Slack** sends slash commands and interactions as forms: take the body with
   `await request.form()` after the dependency (it keeps the body), not as form parameters.
 - Their secrets are at least 16 characters.
+
+## Sending webhooks
+
+`WebhookSender` delivers webhooks to the URLs your users register, through the
+[task queue](background.md#task-queue): signed the Standard Webhooks way, through the SSRF guard,
+retried with backoff until the receiver takes them, at least once. With the `webhooks` extra.
+
+```python
+from fastapi_alcazaba.background.outbox import OutboxMessage, OutboxRelay
+from fastapi_alcazaba.webhooks import WebhookEndpoint, WebhookSender
+
+
+async def endpoint(endpoint_id: str) -> WebhookEndpoint | None:
+    row = await endpoints_table.get(endpoint_id)  # yours: the URL and the secret the user got
+    return WebhookEndpoint(row.url, row.secret) if row is not None else None
+
+
+sender = WebhookSender(queue, endpoint)  # before the queue starts: it registers its task
+
+
+# The webhook is written with the change, in its transaction, and sent once it's committed.
+@app.post("/orders/{order_id}/pay")
+async def pay(order_id: int) -> None:
+    async with async_session() as session, session.begin():
+        ...  # the change
+        for endpoint_id in await subscribed(session, "order.paid"):
+            event = {"type": "order.paid", "data": {"order_id": order_id}}
+            await outbox.add(session, "webhook", {"endpoint": endpoint_id, "event": event})
+
+
+async def deliver(message: OutboxMessage) -> None:
+    payload = message.payload
+    await sender.send(payload["endpoint"], payload["event"], message_id=message.id)
+
+
+relay = OutboxRelay(outbox, deliver)
+```
+
+- **At least once, one id:** each (endpoint, message) is one task of the queue, enqueued once
+  while it's pending (`unique_key`): a message the outbox relays twice is delivered once, and every
+  attempt carries the same `webhook-id`, for the receiver to deduplicate on. The body is
+  serialised once, at `send()`; each attempt is signed afresh.
+- **Retries:** a 2xx is delivered; any other status or a transport error is tried again, `retries`
+  times (8) with exponential backoff and jitter from `backoff` (5 s) up to `max_backoff` (6 h).
+  Then the task goes to the queue's dead letters, where `requeue_dead_letters()` or
+  `fastapi-alcazaba tasks ... requeue` sends it again.
+- **Safe destinations:** its own client refuses URLs that resolve to private, loopback or
+  metadata addresses (`SSRFGuardTransport`; `allow=` for an internal receiver), doesn't follow
+  redirects, gives each attempt `timeout` seconds (10) and reads at most 64 KiB of the answer,
+  only for its status. `client=` gives yours instead, and the guard is then yours to add.
+- **Endpoints that keep failing:** after `disable_after` (20) failed attempts in a row, or at
+  once when the receiver answers 410 Gone, the endpoint is disabled: its deliveries are skipped,
+  not retried. `health(endpoint_id)` says how many failures in a row and whether it's disabled;
+  `enable()` turns it back on (send the skipped messages again), `disable()` turns it off.
+- **Records:** `delivery(endpoint_id, message_id)` gives its state as of its last attempt
+  (retrying, succeeded, failed, skipped), the attempts, the last status code and error type, and
+  when; never the body nor the secret. Kept `record_ttl` (7 days).
+- **Secrets stay with you:** the queue carries the endpoint's id, the message's id and the body;
+  `endpoints()` is asked for the URL and the secret at each attempt, so a rotated secret or a
+  changed URL is used at once, and an endpoint deleted skips its deliveries.
+- One sender per queue; `await sender.aclose()` at shutdown closes its client.
 
 ## Outbound calls
 

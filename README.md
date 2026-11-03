@@ -35,7 +35,7 @@ Redis, Valkey, memcached or DynamoDB), one format of errors and one set of metri
 | [Second factor](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/two-factor/) | `auth` | authenticator apps' codes (TOTP) after the password, recovery codes, step-up for sensitive actions |
 | [Authorization](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/authorization/) | `authz` | `FastAPIAuthz`: a Casbin, Cedar or Open Policy Agent policy decides who may do what, per route or for every request |
 | [Browser apps](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/browser/) | `security` | server-side sessions (each user's, listed and ended), CSRF protection, security headers and body size |
-| [Webhooks and outbound calls](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/webhooks/) | `webhooks`, `outbound` | Standard Webhooks signatures; deadlines, breakers and SSRF protection for httpx |
+| [Webhooks and outbound calls](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/webhooks/) | `webhooks`, `outbound` | webhooks verified (Standard Webhooks, GitHub, Stripe, Slack) and sent (signed, retried, SSRF-guarded); deadlines, breakers and SSRF protection for httpx |
 | [Uploads](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/uploads/) | `uploads` | the real type from the bytes, size, image dimensions, safe names |
 | [Object storage](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/storage/) | `uploads` | signed URLs and upload forms for S3, R2 or MinIO, without an SDK |
 | [E-mail](https://nonodev96.github.io/fastapi-alcazaba/latest/guide/mail/) | `mail` | password resets, codes and receipts over SMTP with TLS, without forged headers |

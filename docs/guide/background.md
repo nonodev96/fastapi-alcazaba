@@ -155,6 +155,8 @@ await queue.cancel(task_id)  # True: it hadn't started
   waiting for a retry) never runs, and frees its `unique_key`; a running or finished one isn't
   cancelled (False). A worker about to start it and `cancel` have one winner. The task counts in
   `pending()` until a worker drops it.
+- **Inside a task:** `current_task()` gives its id, name, this run's attempt (1, 2…) and how
+  many it may have, e.g. to record "the last attempt failed" without counting on your own.
 - **Dead letters:** `dead_letter_count()` besides `dead_letters()`, `requeue_dead_letters()` and
   `discard_dead_letters()`.
 

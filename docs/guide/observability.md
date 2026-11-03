@@ -332,6 +332,7 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.request_ids` | `fastapi_alcazaba.source` (incoming, generated, rejected): many rejected may be a misconfigured proxy, or someone forging log lines |
 | `fastapi_alcazaba.outbound.breaker` | `fastapi_alcazaba.event` (opened, refused), `server.address` |
 | `fastapi_alcazaba.outbound.ssrf.blocked` | `fastapi_alcazaba.reason` (scheme, host, port, address) |
+| `fastapi_alcazaba.webhooks.deliveries` | `fastapi_alcazaba.outcome` (delivered, retrying, failed, disabled, skipped): attempts of `WebhookSender` |
 | `fastapi_alcazaba.webhooks` | `fastapi_alcazaba.scheme` (standard, github, stripe, slack), `fastapi_alcazaba.outcome` (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable) |
 | `fastapi_alcazaba.api_keys` | `fastapi_alcazaba.outcome` (accepted, malformed, unknown, wrong_secret, expired, insufficient_scope) |
 | `fastapi_alcazaba.auth` | `fastapi_alcazaba.strategy`, `fastapi_alcazaba.outcome` (success, failure: credentials there but refused, unauthenticated: no strategy found a user) |

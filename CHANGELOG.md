@@ -59,6 +59,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   marks, rotation, one 401. Standard Webhooks' Ed25519 signatures (`v1a`): `whpk_` public keys
   verify, `whsk_` private keys sign, `WebhookSigner.generate_key_pair()`. The `webhooks` counter
   has the scheme. `WebhookMessage.timestamp` is None for GitHub, which signs no time.
+- `WebhookSender`: webhooks to the URLs users register, through the task queue: signed the
+  Standard Webhooks way, through the SSRF guard, retried with backoff, at least once with one
+  `webhook-id`, enqueued once per endpoint and message (from the outbox: never for a rolled-back
+  change). Endpoints that keep failing (or answer 410) are disabled; `health()`, `enable()`,
+  `disable()`; `delivery()` records without bodies or secrets. The `webhooks` extra; the counter
+  `fastapi_alcazaba.webhooks.deliveries`.
+- Task queue: `current_task()` (`RunningTask`: id, name, attempt, attempts) inside a task.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
