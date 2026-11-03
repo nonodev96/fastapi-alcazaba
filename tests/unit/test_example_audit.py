@@ -109,7 +109,7 @@ def test_verifying_the_trail(client: TestClient) -> None:
     recent.events[0] = dataclasses.replace(first, actor="u2")  # someone rewrites who did it
     problems = client.get("/audit/verify", headers=ADA).json()["problems"]
     assert problems == [
-        f"event {first.id!r} doesn't match its signature: altered, or not written with this key"
+        f"event {first.id!r} doesn't match its signature: altered, or not written with these keys"
     ]
 
 

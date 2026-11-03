@@ -36,12 +36,14 @@ from fastapi_alcazaba.audit import (
     verify_audit_trail,
 )
 from fastapi_alcazaba.audit import trail as audit_module
+from fastapi_alcazaba.audit.keys import audit_keys
 from fastapi_alcazaba.audit.trail import MAX_ITEMS, MAX_STRING, REDACTED
 from fastapi_alcazaba.core import canonical_json
 from fastapi_alcazaba.core.logs import outputs
 from fastapi_alcazaba.observability import RequestIDMiddleware
 from fastapi_alcazaba.telemetry import Metrics
 
+ALTERED = "doesn't match its signature: altered, or not written with these keys"
 KEY = "k" * 32
 OLD_KEY = "o" * 32
 ALICE = {"Authorization": "Bearer alice-token"}
@@ -677,9 +679,12 @@ async def test_signatures_any_language_can_check(audit: FastAPIAudit) -> None:
     data = event.to_dict()
     del data["signature"]
 
-    # HMAC-SHA256 of "fastapi_alcazaba/audit2", a NUL byte and the event's RFC 8785 JSON.
-    signed = b"fastapi_alcazaba/audit2\0" + canonical_json(data)
-    assert event.signature == hmac.new(KEY.encode(), signed, hashlib.sha256).hexdigest()
+    # HMAC-SHA256 of "fastapi_alcazaba/audit3", a NUL byte and the event's RFC 8785 JSON, after
+    # the algorithm and the key's id.
+    signed = b"fastapi_alcazaba/audit3\0" + canonical_json(data)
+    algorithm, kid, value = (event.signature or "").split(":")
+    assert (algorithm, len(kid)) == ("hs256", 11)
+    assert value == hmac.new(KEY.encode(), signed, hashlib.sha256).hexdigest()
 
 
 async def test_what_json_parsers_would_read_otherwise(audit: FastAPIAudit) -> None:
@@ -713,13 +718,7 @@ async def test_lines_that_aren_t_i_json_are_reported_as_altered(audit: FastAPIAu
 
     problems = verify_audit_trail(altered, KEY)
 
-    assert (
-        problems
-        == [
-            f"event {event.id!r} doesn't match its signature: altered, or not written with this key"
-        ]
-        * 3
-    )
+    assert problems == [f"event {event.id!r} {ALTERED}"] * 3
 
 
 async def test_without_a_key_events_are_numbered_but_not_signed(trail: MemoryAuditSink) -> None:
@@ -739,9 +738,9 @@ async def test_altered_and_forged_events_are_found(audit: FastAPIAudit) -> None:
     problems = verify_audit_trail([first, altered, forged, garbled], KEY)
 
     assert problems == [
-        f"event {second.id!r} doesn't match its signature: altered, or not written with this key",
-        f"event {forged.id!r} doesn't match its signature: altered, or not written with this key",
-        f"event {first.id!r} doesn't match its signature: altered, or not written with this key",
+        f"event {second.id!r} {ALTERED}",
+        f"event {forged.id!r} {ALTERED}",
+        f"event {first.id!r} {ALTERED}",
     ]
 
 
@@ -761,7 +760,8 @@ async def test_events_rewritten_with_the_key_break_the_chain(audit: FastAPIAudit
         changed = dataclasses.replace(event, **changes, signature=None)
         data = changed.to_dict()
         del data["signature"]
-        return dataclasses.replace(changed, signature=audit_module._mac(KEY.encode(), data))
+        key = audit_keys(KEY)[0]
+        return dataclasses.replace(changed, signature=key.sign(audit_module._signed(data)))
 
     swapped = resigned(third, sequence=2)  # the second removed, the third renumbered
     twin = resigned(second, resource="user:99")

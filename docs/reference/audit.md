@@ -19,4 +19,8 @@ In the guide: [Audit trail](../guide/audit.md). In an app: [the example](../exam
 
 ::: fastapi_alcazaba.audit.verify_audit_trail
 
+::: fastapi_alcazaba.audit.last_checkpoint
+
+::: fastapi_alcazaba.audit.generate_audit_key_pair
+
 ::: fastapi_alcazaba.audit.SENSITIVE_WORDS

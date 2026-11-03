@@ -667,3 +667,21 @@ async def test_stale_entries(backend: Backend, prefix: str) -> None:
     await asyncio.sleep(2.2)
     failing[0] = True
     assert await erring() == first
+
+
+async def test_audit_checkpoints(backend: Backend, prefix: str) -> None:
+    """Two processes' checkpoints list each other's heads through the backend."""
+    from fastapi_alcazaba.audit import FastAPIAudit, MemoryAuditSink, verify_audit_trail
+
+    shared = Cache(backend, prefix=prefix)
+    trail = MemoryAuditSink()
+    key = "an-hmac-secret-of-at-least-32-bytes!"
+    first, second = (
+        FastAPIAudit([trail], signing_key=key, cache=shared, name=prefix) for _ in range(2)
+    )
+    await first.log("user.update")
+    await first.checkpoint()
+    await second.log("user.update")
+    checkpoint = await second.checkpoint()
+    assert set(checkpoint.details["heads"]) == {first._stream, second._stream}
+    assert verify_audit_trail(list(trail.events), key) == []

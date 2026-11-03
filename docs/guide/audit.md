@@ -51,18 +51,16 @@ async def delete_invoice(
   the log pipeline ship it to storage that can't be rewritten. If that logger outputs nothing (no
   handler, the root logger at WARNING), it says so once. `sinks=` takes others: any object with
   `async def write(event)`, such as one inserting into a table, and `MemoryAuditSink` for tests.
-- **Signed and chained:** with a `signing_key` (32 bytes or more, the same in every process; a
-  list to rotate it, the first signs), each event is signed with HMAC-SHA256 and carries the
-  signature of the previous one of its stream (one per process), numbered.
-  `verify_audit_trail(events, key)` lists the events altered, forged, missing or out of their
-  chain, from `AuditEvent`s or the JSON lines read back. The signature covers
-  `fastapi_alcazaba/audit2`, a NUL byte and the event's
+- **Signed and chained:** with a `signing_key` (the same in every process), each event is signed
+  and carries the signature of the previous one of its stream (one per process), numbered.
+  `verify_audit_trail(events, keys)` lists the events altered, forged, missing or out of their
+  chain, from `AuditEvent`s or the JSON lines read back. The signature is
+  `<algorithm>:<kid>:<value>` of `fastapi_alcazaba/audit3`, a NUL byte and the event's
   [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785) canonical JSON without its `signature`
   (`fastapi_alcazaba.core.canonical_json`): any language with a JCS library checks it the
   same way, a SIEM or an auditor's script included. For that, details keep to I-JSON: integers
-  beyond 2⁵³ are recorded as text, lone surrogates as U+FFFD. It can't tell that the newest events were
-  removed, and whoever has the key can rewrite the trail: keep it from the people whose actions
-  are recorded.
+  beyond 2⁵³ are recorded as text, lone surrogates as U+FFFD. See "Verifying it" below for the
+  keys and the newest events.
 - **Authentication and authorization:** `FastAPIAuth(audit=audit)` records failed
   authentications, OAuth2, OpenID Connect and SAML logins, and missing scopes
   ([In the audit trail](authentication/index.md#in-the-audit-trail)); `FastAPIAuthz(audit=audit)`
@@ -73,12 +71,57 @@ async def delete_invoice(
   even when its request is cancelled meanwhile. The action isn't undone or refused for it: when an
   action mustn't happen unrecorded, write the record in the action's own database transaction.
 
+## Verifying it
+
+An HMAC secret signs and verifies alike: whoever checks the trail could rewrite it. An Ed25519
+key pair separates both: the app signs with the private key, the auditor verifies with the
+public one, which can't sign.
+
+```bash
+fastapi-alcazaba audit keygen audit-private.pem audit-public.pem  # the private one: 0600
+```
+
+```python
+audit = FastAPIAudit(
+    signing_key=settings.audit_private_key,  # PEM; or [new, old] while it's rotated
+    checkpoint_interval=300,  # a checkpoint every five minutes, through the cache's backend
+)
+```
+
+```bash
+fastapi-alcazaba audit verify audit-2026-11-*.log --key audit-public.pem --key audit-public-2025.pem
+# events: 18342 in 6 streams
+# last checkpoint: 2026-11-03T17:55:02+00:00
+# ok
+```
+
+- **Keys:** `signing_key` is an Ed25519 private key (PEM, or cryptography's object;
+  `generate_audit_key_pair()`) or an HMAC secret of 32 bytes or more. Each signature names its
+  algorithm and key (`ed25519:<kid>:…`, `hs256:<kid>:…`), so `verify_audit_trail(events, keys)`
+  takes every key the events span (public keys, or the secrets) and checks each event with its
+  own. **Rotating:** sign with the new key (`[new, old]`), keep giving the verifier the old public
+  key for the events it signed; HMAC to Ed25519 the same way.
+- **Checkpoints:** every `checkpoint_interval` seconds (with the next event), a process writes an
+  `audit.checkpoint` event listing the newest event (its number and signature) of every stream
+  of the trail, as each process last published it in the cache's backend (under its lock;
+  `cache=`, FastAPICache's by default; without one, its own stream only). A stream whose newest
+  events were removed then ends before what a later checkpoint saw, and the verifier says so; so
+  it does when a whole stream is missing, or an event was replaced by one signed again. What came
+  after the last checkpoint can still be removed unnoticed: `last_checkpoint(events)` (and the
+  command) says when that was. Send the checkpoints also somewhere the app can't rewrite (a
+  second sink), and the window shrinks to `checkpoint_interval`.
+- **The command:** `fastapi-alcazaba audit verify FILE…` reads the events from JSON lines (after
+  a log line's prefix too; other lines are skipped), `-` for stdin; `--key PEM` for public keys,
+  `--hmac-env NAME` for a secret in an environment variable (never on the command line);
+  `--json` for scripts. It exits with 1 when something's wrong.
+- **From Python:**
+
 ```python
 import json
 
-from fastapi_alcazaba.audit import verify_audit_trail
+from fastapi_alcazaba.audit import last_checkpoint, verify_audit_trail
 
 with open("audit.log") as lines:
     events = [json.loads(line) for line in lines]
-problems = verify_audit_trail(events, settings.audit_signing_key)
+problems = verify_audit_trail(events, [public_key_pem, old_public_key_pem])
 ```

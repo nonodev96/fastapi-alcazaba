@@ -90,6 +90,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   once per identity); `reset()` forgets what a client spent (after a successful login);
   `status()` reads a budget without spending any (`RateLimitStatus`); both by request, or by
   `identity` for named limiters.
+- Audit trail: Ed25519 signing keys (`generate_audit_key_pair()`), whose public key verifies and
+  can't sign; signatures name their algorithm and key (`ed25519:<kid>:…`, `hs256:<kid>:…`, over
+  `fastapi_alcazaba/audit3`), so a trail over several rotations verifies with all their keys.
+  `checkpoint_interval`: signed `audit.checkpoint` events listing every process's newest event
+  (shared through the cache's backend), which reveal the newest events removed;
+  `FastAPIAudit.checkpoint()`, `last_checkpoint()`. `fastapi-alcazaba audit verify` and
+  `audit keygen`.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns

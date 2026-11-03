@@ -33,11 +33,13 @@ What goes in, and what doesn't:
   authorization, cookie, session...) and the strings that look like credentials (`Bearer ...`,
   JWTs, private keys) become "[redacted]". Values that aren't JSON (objects, bytes) are recorded
   by their type, strings are cut at 500 characters, and containers at 50 items and 4 levels.
-- Integrity: with a `signing_key`, each event is signed (HMAC-SHA256 of its RFC 8785 canonical
-  JSON, which any language can compute again) and chained to the previous one of its stream (one
-  per process), and `verify_audit_trail()` finds the events altered, forged, removed or reordered.
-  It can't tell that the newest events were removed, and whoever has the key can rewrite the
-  trail: keep it from those whose actions are recorded.
+- Integrity: with a `signing_key`, each event is signed (of its RFC 8785 canonical JSON, which
+  any language can compute again) and chained to the previous one of its stream (one per
+  process), and `verify_audit_trail()` (or `fastapi-alcazaba audit verify`) finds the events
+  altered, forged, removed or reordered. An Ed25519 key lets an auditor verify with the public
+  key alone, which can't sign; an HMAC secret signs and verifies alike. With
+  `checkpoint_interval`, signed checkpoints list the newest event of every process's stream, so
+  that removing the newest events is found too, up to the last checkpoint.
 - Delivery: a sink that fails, or takes longer than `timeout`, is logged with the event (so that
   it isn't lost) and counted, and the other sinks still get it. The action isn't undone or refused
   for it: when an action mustn't happen unrecorded, write the record in its database transaction.
@@ -48,7 +50,6 @@ import dataclasses
 import decimal
 import enum
 import hashlib
-import hmac
 import json
 import logging
 import math
@@ -62,19 +63,22 @@ from collections.abc import AsyncIterator, Callable, Collection, Iterable, Mappi
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time
-from typing import Any, Literal, Protocol, get_args
+from typing import TYPE_CHECKING, Any, Literal, Protocol, get_args
 
 from fastapi.exceptions import RequestValidationError, WebSocketRequestValidationError
 from starlette.exceptions import HTTPException, WebSocketException
 from starlette.requests import HTTPConnection
 from starlette.status import WS_1008_POLICY_VIOLATION
 
+from fastapi_alcazaba.audit.keys import AuditKey, AuditKeys, audit_keys, find_key
 from fastapi_alcazaba.core.canonical import MAX_SAFE_INTEGER, canonical_json
-from fastapi_alcazaba.core.integrity import Secrets, secret_list
 from fastapi_alcazaba.core.logs import outputs
 from fastapi_alcazaba.observability.request_id import request_id
 from fastapi_alcazaba.telemetry.metrics import Metrics
 from fastapi_alcazaba.telemetry.tracing import traceparent
+
+if TYPE_CHECKING:
+    from fastapi_alcazaba.response_cache.caches import Cache
 
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -131,7 +135,12 @@ _CREDENTIAL = re.compile(
     re.IGNORECASE,
 )
 # What the signatures cover starts with this, then comes the event's RFC 8785 JSON.
-_CONTEXT = b"fastapi_alcazaba/audit2\0"
+_CONTEXT = b"fastapi_alcazaba/audit3\0"
+#: The action of the checkpoints.
+CHECKPOINT = "audit.checkpoint"
+# Heads of streams kept in the backend for the checkpoints: dropped after this many seconds
+# without a checkpoint of theirs (a process gone).
+_HEADS_TTL = 7 * 24 * 3600
 # Lone surrogates (text decoded with errors="surrogateescape") have no UTF-8.
 _SURROGATES = re.compile(f"[{chr(0xD800)}-{chr(0xDFFF)}]")
 
@@ -269,9 +278,10 @@ class AuditEvent:
     :param stream: the writer's stream: one per process and FastAPIAudit.
     :param sequence: its number in the stream, from 1.
     :param previous: the signature of the stream's previous event (with a `signing_key`).
-    :param signature: with a `signing_key`, HMAC-SHA256 in hex of `fastapi_alcazaba/audit2`, a
-        NUL byte, and the RFC 8785 canonical JSON of `to_dict()` without `signature`: a verifier
-        in any language computes the same.
+    :param signature: with a `signing_key`, `<algorithm>:<kid>:<value>` of
+        `fastapi_alcazaba/audit3`, a NUL byte, and the RFC 8785 canonical JSON of `to_dict()`
+        without `signature`: `hs256` (HMAC-SHA256 in hex) or `ed25519` (in base64url, unpadded);
+        `kid` names the key. A verifier in any language computes the same.
     """
 
     id: str
@@ -304,18 +314,22 @@ class AuditEvent:
         return json.dumps(self.to_dict(), separators=(",", ":"))
 
 
-def _mac(key: bytes, data: Mapping[str, Any]) -> str:
-    return hmac.new(key, _CONTEXT + canonical_json(data), hashlib.sha256).hexdigest()
+def _signed(data: Mapping[str, Any]) -> bytes:
+    """What an event's signature covers: its JSON, without the signature."""
+    return _CONTEXT + canonical_json(data)
 
 
-def _signed_by(key: bytes, data: Mapping[str, Any], signature: bytes) -> bool:
-    """Whether `signature` is `key`'s for `data`. As bytes: compare_digest refuses strings with
-    non-ASCII characters, which a line tampered with may have."""
+def _signed_by(keys: list[AuditKey], data: Mapping[str, Any], signature: str) -> bool:
+    """Whether `signature` is one of `keys`' for `data`."""
+    found = find_key(keys, signature)
+    if found is None:
+        return False
     try:
-        expected = _mac(key, data).encode()
+        payload = _signed(data)
     except (ValueError, TypeError, RecursionError):  # nothing an event of ours holds
         return False
-    return hmac.compare_digest(signature, expected)
+    key, value = found
+    return key.verifies(payload, value)
 
 
 class AuditEntry:
@@ -463,8 +477,18 @@ class FastAPIAudit:
     """An audit trail: `action()` records what endpoints do, `record()` and `log()` the rest.
 
     :param sinks: where the events go; a LoggingAuditSink by default.
-    :param signing_key: signs and chains the events (see `verify_audit_trail`); a secret of at
-        least 32 bytes, or several to rotate it (the first signs). The same in every process.
+    :param signing_key: signs and chains the events (see `verify_audit_trail`): an Ed25519
+        private key (PEM, or cryptography's object; `generate_audit_key_pair()`), whose public key
+        verifies and can't sign; or an HMAC secret of at least 32 bytes. Several rotate them: the
+        first signs, the others are kept for nothing else (verification takes the old keys). The
+        same in every process.
+    :param checkpoint_interval: seconds between two checkpoints (an `audit.checkpoint` event
+        listing the newest event of every process's stream, through the cache's backend), written
+        with the next event after that long. Needs a `signing_key`.
+    :param cache: whose backend shares the heads of the streams for the checkpoints;
+        FastAPICache's by default. Without one (or when it fails), a checkpoint lists its own
+        stream only.
+    :param name: trails of different names keep their checkpoints apart.
     :param redact: words that mark secrets in the keys of `details`, besides `SENSITIVE_WORDS`.
     :param timeout: seconds each sink has to write an event.
     :param metrics: where to count the events (`fastapi_alcazaba.audit`) and those not written
@@ -475,10 +499,13 @@ class FastAPIAudit:
         self,
         sinks: Iterable[AuditSink] | None = None,
         *,
-        signing_key: Secrets | None = None,
+        signing_key: AuditKeys | None = None,
         redact: Collection[str] = (),
         timeout: float = 5.0,
         metrics: Metrics | None = None,
+        checkpoint_interval: float | None = None,
+        cache: "Cache | None" = None,
+        name: str = "default",
     ) -> None:
         self.sinks: list[AuditSink] = [LoggingAuditSink()] if sinks is None else list(sinks)
         if not self.sinks:
@@ -491,7 +518,15 @@ class FastAPIAudit:
         if any(not word.isalnum() for word in extra):
             raise ValueError("the words of redact are letters and digits, such as 'iban'")
         self.timeout = timeout
-        self._keys = secret_list(signing_key) if signing_key is not None else None
+        self._keys = audit_keys(signing_key) if signing_key is not None else None
+        if self._keys is not None and not self._keys[0].can_sign:
+            raise ValueError("the first signing_key signs: a private key or a secret")
+        if checkpoint_interval is not None and (checkpoint_interval <= 0 or self._keys is None):
+            raise ValueError("checkpoint_interval is positive, and needs a signing_key")
+        self.checkpoint_interval = checkpoint_interval
+        self.cache = cache
+        self.name = name
+        self._last_checkpoint = -math.inf  # monotonic time
         self._cleaner = _Cleaner(SENSITIVE_WORDS | extra)
         self._metrics = metrics
         # The stream: a new one in each process, should FastAPIAudit be created before a fork.
@@ -596,7 +631,87 @@ class FastAPIAudit:
         self._writing.add(task)
         task.add_done_callback(self._writing.discard)
         await asyncio.shield(task)
+        if self._checkpoint_due():
+            await self.checkpoint()
         return event
+
+    def _checkpoint_due(self) -> bool:
+        if self.checkpoint_interval is None:
+            return False
+        return _monotonic() - self._last_checkpoint >= self.checkpoint_interval
+
+    async def checkpoint(self) -> AuditEvent:
+        """Write a checkpoint now: an `audit.checkpoint` event listing the newest event (its
+        number and signature) of every stream of this trail, as each process last published it
+        to the backend. A verifier then finds that events up to those were removed. Written by
+        itself every `checkpoint_interval`."""
+        if self._keys is None:
+            raise RuntimeError("checkpoints need a signing_key")
+        self._last_checkpoint = _monotonic()
+        if os.getpid() != self._pid:  # a stream of its own before anything is written
+            self._pid, self._stream = os.getpid(), secrets.token_hex(8)
+            self._sequence, self._previous = 0, None
+        heads = await self._heads()
+        entry = AuditEntry(CHECKPOINT)
+        event = self._event(entry, None, "success", None, None, details={"heads": heads})
+        task = asyncio.ensure_future(self._deliver(event))
+        self._writing.add(task)
+        task.add_done_callback(self._writing.discard)
+        await asyncio.shield(task)
+        return event
+
+    async def _heads(self) -> dict[str, list[Any]]:
+        """Every stream's newest event, `{stream: [sequence, signature]}`: this one's now, the
+        others' as they last published them (under the backend's lock: none is lost)."""
+        own = {self._stream: [self._sequence, self._previous]} if self._sequence else {}
+        cache = self._cache_in_use()
+        if cache is None:
+            return own
+        from fastapi_alcazaba.backends.tiered import shared_backend
+
+        backend = shared_backend(cache.backend)
+        digest = hashlib.sha256(self.name.encode()).hexdigest()[:32]
+        key = cache.state_key("audit", f"heads:{{{digest}}}")
+        token = secrets.token_hex(8)
+        try:
+            locked = await cache.guard.run(
+                "lock", lambda: backend.acquire_lock(f"{key}:lock", token, 5)
+            )
+            try:
+                stored = await cache.guard.run("get", lambda: backend.get(key))
+                try:
+                    shared = json.loads(stored) if stored is not None else {}
+                except ValueError:
+                    shared = {}
+                now = int(datetime.now(UTC).timestamp())
+                shared = {
+                    stream: head
+                    for stream, head in (shared if isinstance(shared, dict) else {}).items()
+                    if isinstance(head, list) and len(head) == 3 and now - head[2] < _HEADS_TTL
+                }
+                if own:
+                    shared[self._stream] = [self._sequence, self._previous, now]
+                value = json.dumps(shared, separators=(",", ":")).encode()
+                await cache.guard.run("set", lambda: backend.set(key, value, _HEADS_TTL))
+            finally:
+                if locked:
+                    await cache.guard.run(
+                        "unlock", lambda: backend.release_lock(f"{key}:lock", token)
+                    )
+        except Exception:  # the backend: this stream's head alone, then
+            logger.warning("Audit checkpoint without the other streams", exc_info=True)
+            return own
+        return {stream: head[:2] for stream, head in sorted(shared.items())}
+
+    def _cache_in_use(self) -> "Cache | None":
+        if self.cache is not None:
+            return self.cache
+        from fastapi_alcazaba.response_cache.caches import FastAPICache
+
+        try:
+            return FastAPICache.instance()
+        except RuntimeError:
+            return None
 
     def _event(
         self,
@@ -605,6 +720,8 @@ class FastAPIAudit:
         outcome: Outcome,
         reason: str | None,
         status: int | None,
+        *,
+        details: Mapping[str, Any] | None = None,
     ) -> AuditEvent:
         method = route = client = None
         if connection is not None:
@@ -633,7 +750,7 @@ class FastAPIAudit:
             method=method,
             route=route,
             client=client,
-            details=self._cleaner.details(entry.details),
+            details=details if details is not None else self._cleaner.details(entry.details),
             stream=self._stream,
             sequence=self._sequence,
             previous=self._previous,  # only set with a signing key
@@ -642,7 +759,7 @@ class FastAPIAudit:
             return event
         data = event.to_dict()
         del data["signature"]
-        event = dataclasses.replace(event, signature=_mac(self._keys[0], data))
+        event = dataclasses.replace(event, signature=self._keys[0].sign(_signed(data)))
         self._previous = event.signature
         return event
 
@@ -678,14 +795,18 @@ class FastAPIAudit:
 
 def verify_audit_trail(
     events: Iterable[AuditEvent | Mapping[str, Any]],
-    signing_key: Secrets,
+    keys: AuditKeys,
 ) -> list[str]:
-    """What's wrong with a trail written with `signing_key` (or one of its keys, when it was
-    rotated): an empty list when nothing is. `events` are AuditEvents or their `to_dict()` (the
-    JSON lines read back), of one stream or several, in any order; the same event given twice
-    counts once. Each stream's chain is checked from its oldest event given, since older ones may
-    have been rotated out of the logs."""
-    keys = secret_list(signing_key)
+    """What's wrong with a trail: an empty list when nothing is. `keys` verify it: the public
+    keys of Ed25519 signing keys, or the HMAC secrets, of every rotation the events span (each
+    signature names its key). `events` are AuditEvents or their `to_dict()` (the JSON lines read
+    back), of one stream or several, in any order; the same event given twice counts once.
+
+    Each stream's chain is checked from its oldest event given, since older ones may have been
+    rotated out of the logs. Each checkpoint's heads must be there: a stream whose newest events
+    were removed ends before the head a later checkpoint saw. Events after the last checkpoint
+    can still be removed unnoticed: `last_checkpoint()` says when that was."""
+    parsed = audit_keys(keys)
     problems: list[str] = []
     streams: dict[str, dict[str, dict[str, Any]]] = {}  # stream -> signature -> event
     for item in events:
@@ -694,16 +815,19 @@ def verify_audit_trail(
         if not isinstance(signature, str):
             problems.append(f"event {data.get('id')!r} isn't signed")
             continue
-        if not any(_signed_by(key, data, signature.encode()) for key in keys):
+        if not _signed_by(parsed, data, signature):
             problems.append(
                 f"event {data.get('id')!r} doesn't match its signature: altered, or not "
-                "written with this key"
+                "written with these keys"
             )
             continue
         data["signature"] = signature
-        streams.setdefault(data["stream"], {})[signature] = data
-    for stream, signed in sorted(streams.items()):
-        chain = sorted(signed.values(), key=lambda data: int(data["sequence"]))
+        streams.setdefault(str(data["stream"]), {})[signature] = data
+    chains = {
+        stream: sorted(signed.values(), key=lambda data: int(data["sequence"]))
+        for stream, signed in sorted(streams.items())
+    }
+    for stream, chain in chains.items():
         for before, after in zip(chain, chain[1:], strict=False):
             first, second = before["sequence"], after["sequence"]
             if second == first:
@@ -712,4 +836,53 @@ def verify_audit_trail(
                 problems.append(f"stream {stream}: events {first + 1} to {second - 1} are missing")
             elif after["previous"] != before["signature"]:
                 problems.append(f"stream {stream}: event {second} doesn't follow event {first}")
+    problems.extend(_against_checkpoints(chains))
     return problems
+
+
+def _against_checkpoints(chains: Mapping[str, list[dict[str, Any]]]) -> list[str]:
+    """What the checkpoints saw and the chains lack."""
+    problems: list[str] = []
+    by_sequence = {
+        stream: {int(data["sequence"]): data["signature"] for data in chain}
+        for stream, chain in chains.items()
+    }
+    for chain in chains.values():
+        for checkpoint in (data for data in chain if data.get("action") == CHECKPOINT):
+            details = checkpoint.get("details")
+            heads = details.get("heads") if isinstance(details, Mapping) else None
+            for stream, head in (heads or {}).items() if isinstance(heads, Mapping) else ():
+                if not (isinstance(head, list) and len(head) == 2):
+                    continue
+                sequence, signature = head
+                seen = by_sequence.get(stream, {})
+                where = f"(checkpoint {checkpoint.get('id')!r})"
+                if not seen:
+                    problems.append(f"stream {stream}: none of its events are here {where}")
+                elif sequence > max(seen):
+                    problems.append(
+                        f"stream {stream}: its events {max(seen) + 1} to {sequence} are missing "
+                        f"at its end {where}"
+                    )
+                elif sequence in seen and seen[sequence] != signature:
+                    problems.append(
+                        f"stream {stream}: event {sequence} isn't the one checkpointed {where}"
+                    )
+    return problems
+
+
+def last_checkpoint(events: Iterable[AuditEvent | Mapping[str, Any]]) -> datetime | None:
+    """When the newest checkpoint among `events` was written: events after it could be removed
+    without `verify_audit_trail` noticing. None without checkpoints."""
+    times = [
+        (item.time if isinstance(item, AuditEvent) else datetime.fromisoformat(str(item["time"])))
+        for item in events
+        if (item.action if isinstance(item, AuditEvent) else item.get("action")) == CHECKPOINT
+    ]
+    return max(times, default=None)
+
+
+def _monotonic() -> float:
+    import time as clock
+
+    return clock.monotonic()

@@ -1,4 +1,5 @@
-"""The `fastapi-alcazaba` command: operations on the app's task queues from a shell.
+"""The `fastapi-alcazaba` command: operations on the app's task queues, and checks of its audit
+trail, from a shell.
 
     fastapi-alcazaba tasks myapp.worker queues
     fastapi-alcazaba tasks myapp.worker:queue dead-letters
@@ -9,6 +10,13 @@ The target is `module:attribute`: a `FastAPITaskQueue`, or a function (sync or a
 what the queue needs (FastAPICache, when the queue uses it: the app's lifespan isn't run) and
 returns it. A bare `module` stands for all the queues in it. The current directory is importable,
 as with uvicorn. Add `--json` for output that scripts read.
+
+    fastapi-alcazaba audit verify events.jsonl --key audit-public.pem
+    fastapi-alcazaba audit keygen audit-private.pem audit-public.pem
+
+`audit verify` reads the events from JSON lines (with a log line's prefix before the JSON, or
+without), checks their signatures, chains and checkpoints, and exits with 1 when something's
+wrong. HMAC secrets come from environment variables (`--hmac-env NAME`), never the command line.
 """
 
 import argparse
@@ -17,9 +25,11 @@ import dataclasses
 import importlib
 import inspect
 import json
+import os
 import sys
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from fastapi_alcazaba.background.tasks import FastAPITaskQueue
@@ -41,6 +51,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if "." not in sys.path and "" not in sys.path:
         sys.path.insert(0, "")  # the app's modules, from the current directory
     try:
+        if arguments.group == "audit":
+            return _audit(arguments)
         return asyncio.run(_tasks(arguments))
     except _UsageError as exc:
         parser.print_usage(sys.stderr)
@@ -73,6 +85,30 @@ def _parser() -> argparse.ArgumentParser:
     status.add_argument("task_id", metavar="TASK_ID")
     cancel = commands.add_parser("cancel", help="make sure a task that hasn't started never runs")
     cancel.add_argument("task_id", metavar="TASK_ID")
+    audit = groups.add_parser("audit", help="the audit trail (FastAPIAudit)")
+    audit_commands = audit.add_subparsers(dest="command", required=True)
+    verify = audit_commands.add_parser("verify", help="check exported events")
+    verify.add_argument(
+        "files", nargs="+", metavar="FILE", help="JSON lines of events; - for stdin"
+    )
+    verify.add_argument(
+        "--key",
+        action="append",
+        default=[],
+        metavar="PEM",
+        help="an Ed25519 public key file (several: every rotation the events span)",
+    )
+    verify.add_argument(
+        "--hmac-env",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="an environment variable holding an HMAC secret",
+    )
+    verify.add_argument("--json", action="store_true", help="print JSON")
+    keygen = audit_commands.add_parser("keygen", help="a new Ed25519 key pair, as PEM files")
+    keygen.add_argument("private", metavar="PRIVATE", help="where the private key goes (0600)")
+    keygen.add_argument("public", metavar="PUBLIC", help="where the public key goes")
     return parser
 
 
@@ -205,6 +241,81 @@ def _json(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     raise TypeError(f"{type(value).__name__} isn't JSON")  # pragma: no cover
+
+
+def _audit(arguments: argparse.Namespace) -> int:
+    from fastapi_alcazaba.audit import generate_audit_key_pair, last_checkpoint, verify_audit_trail
+
+    if arguments.command == "keygen":
+        private, public = Path(arguments.private), Path(arguments.public)
+        if private.exists() or public.exists():
+            raise _UsageError("the key files exist already: not overwritten")
+        private_pem, public_pem = generate_audit_key_pair()
+        descriptor = os.open(private, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w", encoding="ascii") as file:
+            file.write(private_pem)
+        public.write_text(public_pem, encoding="ascii")
+        print(
+            f"private key: {private} (the app's signing_key); public key: {public} (the auditor's)"
+        )
+        return 0
+    keys: list[Any] = []
+    for path in arguments.key:
+        try:
+            keys.append(Path(path).read_bytes())
+        except OSError as exc:
+            raise _UsageError(f"can't read the key {path}: {exc.strerror}") from None
+    for name in arguments.hmac_env:
+        if not (value := os.environ.get(name)):
+            raise _UsageError(f"the environment variable {name} is empty")
+        keys.append(value)
+    if not keys:
+        raise _UsageError("give the keys: --key PEM, or --hmac-env NAME")
+    events = list(_events(arguments.files))
+    try:
+        problems = verify_audit_trail(events, keys)
+    except (ValueError, TypeError) as exc:
+        raise _UsageError(str(exc)) from None
+    checkpoint = last_checkpoint(events)
+    report = {
+        "events": len(events),
+        "streams": len({event.get("stream") for event in events}),
+        "last_checkpoint": checkpoint.isoformat() if checkpoint else None,
+        "problems": problems,
+    }
+    if arguments.json:
+        print(json.dumps(report, indent=2))
+    else:
+        print(f"events: {report['events']} in {report['streams']} streams")
+        print(f"last checkpoint: {report['last_checkpoint'] or 'none'}")
+        print("ok" if not problems else f"{len(problems)} problems:")
+        for problem in problems:
+            print(f"- {problem}")
+    return NOT_DONE if problems else 0
+
+
+def _events(files: Sequence[str]) -> Iterator[dict[str, Any]]:
+    """The events in `files`: JSON objects with a stream, a sequence and an action, one per line,
+    after whatever a log line puts before them; other lines are skipped."""
+    for name in files:
+        try:
+            lines = (
+                sys.stdin.readlines()
+                if name == "-"
+                else Path(name).read_text(encoding="utf-8").splitlines()
+            )
+        except OSError as exc:
+            raise _UsageError(f"can't read {name}: {exc.strerror}") from None
+        for line in lines:
+            start = line.find("{")
+            if start < 0:
+                continue
+            try:
+                found = json.loads(line[start:])
+            except ValueError:
+                continue
+            if isinstance(found, dict) and {"stream", "sequence", "action"} <= found.keys():
+                yield found
 
 
 if __name__ == "__main__":  # pragma: no cover
