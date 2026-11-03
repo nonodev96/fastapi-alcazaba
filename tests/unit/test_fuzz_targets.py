@@ -75,7 +75,12 @@ def test_random_inputs(module: ModuleType, data: bytes) -> None:
         (uploads_fuzzer, b"\x89PNG\r\n\x1a\n" + b"\x00" * 16),
         # A decompression bomb: a megabyte of zeros in a thousand bytes.
         (compression_fuzzer, zlib.compress(b"\0" * 1_000_000)),
-        (webhooks_fuzzer, b"msg_1\n1800000000\nv1," + base64.b64encode(b"x" * 32) + b"\n{}"),
+        # Webhooks: the first byte picks the scheme (github, slack, standard, stripe).
+        (webhooks_fuzzer, b"\x02msg_1\n1800000000\nv1," + base64.b64encode(b"x" * 32) + b"\n{}"),
+        (webhooks_fuzzer, b"\x00d1\nsha256=" + b"0" * 64 + b"\n{}"),
+        (webhooks_fuzzer, b"\x03t=1800000000,v1=" + b"0" * 64 + b"\n{}"),
+        (webhooks_fuzzer, b"\x01" + b"9" * 13 + b"\nv0=" + b"0" * 64 + b"\nbody"),
+        (webhooks_fuzzer, b""),
         (
             audit_fuzzer,
             json.dumps({"password": "a", "nested": [[[[["deep"]]]]], "n": 1e308}).encode(),

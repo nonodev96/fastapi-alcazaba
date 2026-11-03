@@ -106,8 +106,9 @@ COUNTERS: dict[str, tuple[str, str]] = {
     ),
     "webhooks": (
         "{delivery}",
-        "Webhooks received, by outcome: accepted, replayed, rejected (signature or timestamp), "
-        "malformed, too_large, unchecked (backend down, accepted), unavailable (refused)",
+        "Webhooks received, by scheme (standard, github, stripe, slack) and outcome: accepted, "
+        "replayed, rejected (signature or timestamp), malformed, too_large, unchecked (backend "
+        "down, accepted), unavailable (refused)",
     ),
     "api_keys": (
         "{request}",

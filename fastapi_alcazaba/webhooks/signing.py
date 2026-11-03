@@ -1,9 +1,11 @@
-"""Signed webhooks, compatible with Standard Webhooks (https://www.standardwebhooks.com): the
-format of Svix, Supabase, Clerk, Resend, OpenAI and others.
+"""Signed webhooks: receiving those of Standard Webhooks (https://www.standardwebhooks.com, the
+format of Svix, Supabase, Clerk, Resend, OpenAI and others), GitHub, Stripe and Slack, and signing
+those the app sends, the Standard Webhooks way.
 
 Receiving them:
 
     webhooks = FastAPIWebhooks(settings.webhook_secret)  # "whsec_..."
+    github = FastAPIWebhooks(settings.github_secret, scheme="github")
 
     @app.post("/webhooks/payments")
     async def payment_event(message: Annotated[WebhookMessage, Depends(webhooks)]) -> None:
@@ -16,11 +18,12 @@ Sending them:
     body = json.dumps(event).encode()
     await client.post(url, content=body, headers=signer.sign(body))
 
-Each message carries `webhook-id`, `webhook-timestamp` (Unix seconds) and `webhook-signature`:
-`v1,<base64 HMAC-SHA256 of "id.timestamp.body">`, several of them separated by spaces while a
-secret is being rotated. The receiver checks a signature over the raw body, refuses timestamps
-too far from its clock, and remembers every delivery it accepted until its timestamp is too old,
-so that a captured request can't be sent again.
+A Standard Webhooks message carries `webhook-id`, `webhook-timestamp` (Unix seconds) and
+`webhook-signature`: `v1,<base64 HMAC-SHA256 of "id.timestamp.body">` or `v1a,<base64 Ed25519
+signature of it>`, several of them separated by spaces while a secret is being rotated. Whatever
+the scheme, the receiver checks a signature over the raw body, refuses timestamps too far from its
+clock, and remembers every delivery it accepted until its timestamp is too old, so that a captured
+request can't be sent again.
 """
 
 import base64
@@ -35,7 +38,7 @@ from collections.abc import Mapping, Sequence
 from contextlib import aclosing
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import HTTPException
 from pydantic import SecretBytes, SecretStr
@@ -49,55 +52,280 @@ from fastapi_alcazaba.response_cache.caches import Cache, get_cache, metrics_of
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-#: Secrets of Standard Webhooks: `whsec_<base64>` strings (or the base64 alone) or raw bytes,
+#: Secrets: `whsec_<base64>` strings (or the base64 alone) or raw bytes for Standard Webhooks'
+#: HMAC, `whpk_`/`whsk_` for its Ed25519 keys, the strings GitHub, Stripe or Slack give;
 #: also as pydantic's SecretStr or SecretBytes. A list rotates them.
 WebhookSecrets = Secret | Sequence[Secret]
+#: The senders whose webhooks `FastAPIWebhooks` verifies.
+Scheme = Literal["standard", "github", "stripe", "slack"]
 
 PREFIX = "whsec_"
-#: The shortest secret the specification allows (192 bits).
+PUBLIC_PREFIX = "whpk_"
+PRIVATE_PREFIX = "whsk_"
+#: The shortest secret Standard Webhooks allows (192 bits).
 MIN_SECRET_SIZE = 24
+#: The shortest secret of GitHub, Stripe or Slack accepted.
+MIN_PROVIDER_SECRET = 16
 _MAX_ID = 256  # characters of a webhook-id
 _MAX_TIMESTAMP = 12  # digits: Unix seconds until the year 33658
-_MAX_SIGNATURES = 4_096  # characters of the webhook-signature header
+_MAX_SIGNATURES = 4_096  # characters of a signature header
 _INVALID = "Invalid webhook"
 # Clocks of different processes disagree a little: replay marks outlive the window by this much.
 _CLOCK_MARGIN = 60
 
 
-def _secret_bytes(secret: Secret) -> bytes:
+def _b64(value: str) -> bytes:
+    try:
+        return base64.b64decode(value, validate=True)
+    except (binascii.Error, ValueError):
+        raise ValueError(
+            "a webhook secret is 'whsec_' followed by base64 (or raw bytes); "
+            "generate one with WebhookSigner.generate_secret()"
+        ) from None
+
+
+def _ed25519() -> Any:
+    try:
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+    except ImportError as exc:  # pragma: no cover  # the tests have cryptography
+        raise ImportError(
+            'Ed25519 webhook keys need cryptography: pip install "fastapi-alcazaba[crypto]"'
+        ) from exc
+    return ed25519
+
+
+@dataclass(frozen=True, slots=True)
+class _Key:
+    """A Standard Webhooks key: an HMAC secret, or an Ed25519 public or private key."""
+
+    hmac: bytes | None = None
+    public: Any = None
+    private: Any = None
+
+
+def _standard_key(secret: Secret) -> _Key:
     value = reveal(secret)
     if isinstance(value, bytes):
         raw = value
+    elif value.startswith(PUBLIC_PREFIX):
+        key = _b64(value.removeprefix(PUBLIC_PREFIX))
+        if len(key) != 32:
+            raise ValueError("a whpk_ key is the base64 of an Ed25519 public key (32 bytes)")
+        return _Key(public=_ed25519().Ed25519PublicKey.from_public_bytes(key))
+    elif value.startswith(PRIVATE_PREFIX):
+        key = _b64(value.removeprefix(PRIVATE_PREFIX))
+        if len(key) not in (32, 64):
+            raise ValueError("a whsk_ key is the base64 of an Ed25519 seed (32 or 64 bytes)")
+        private = _ed25519().Ed25519PrivateKey.from_private_bytes(key[:32])
+        return _Key(public=private.public_key(), private=private)
     else:
-        try:
-            raw = base64.b64decode(value.removeprefix(PREFIX), validate=True)
-        except (binascii.Error, ValueError):
-            raise ValueError(
-                "a webhook secret is 'whsec_' followed by base64 (or raw bytes); "
-                "generate one with WebhookSigner.generate_secret()"
-            ) from None
+        raw = _b64(value.removeprefix(PREFIX))
     if len(raw) < MIN_SECRET_SIZE:
         raise ValueError(f"webhook secrets must be at least {MIN_SECRET_SIZE} bytes long")
-    return raw
+    return _Key(hmac=raw)
 
 
-def _secret_list(secret: WebhookSecrets) -> list[bytes]:
+def _items(secret: WebhookSecrets) -> list[Secret]:
     if isinstance(secret, str | bytes | SecretStr | SecretBytes):
-        secret = [secret]
+        return [secret]
     if not secret:
         raise ValueError("at least one secret is needed")
-    return [_secret_bytes(item) for item in secret]
+    return list(secret)
+
+
+def _provider_secret(secret: Secret) -> bytes:
+    value = reveal(secret)
+    raw = value if isinstance(value, bytes) else value.encode()
+    if len(raw) < MIN_PROVIDER_SECRET:
+        raise ValueError(f"webhook secrets must be at least {MIN_PROVIDER_SECRET} bytes long")
+    return raw
 
 
 def _valid_id(message_id: str) -> bool:
     return 1 <= len(message_id) <= _MAX_ID and all("!" <= char <= "~" for char in message_id)
 
 
-def _mac(secret: bytes, message_id: str, timestamp: str, body: bytes) -> bytes:
-    mac = hmac.new(secret, f"{message_id}.{timestamp}.".encode(), hashlib.sha256)
-    mac.update(body)
+def _timestamp(sent: str) -> bool:
+    return 1 <= len(sent) <= _MAX_TIMESTAMP and sent.isascii() and sent.isdigit()
+
+
+def _hmac(secret: bytes, *parts: bytes) -> bytes:
+    mac = hmac.new(secret, digestmod=hashlib.sha256)
+    for part in parts:
+        mac.update(part)
     return mac.digest()
 
+
+def _signed(message_id: str, timestamp: str, body: bytes) -> tuple[bytes, bytes]:
+    return f"{message_id}.{timestamp}.".encode(), body
+
+
+def _hex(value: str) -> bytes | None:
+    try:
+        return bytes.fromhex(value) if value.isascii() and len(value) == 64 else None
+    except ValueError:
+        return None
+
+
+class _Malformed(Exception):
+    """The headers are missing or malformed: a 400."""
+
+
+@dataclass(frozen=True, slots=True)
+class _Delivery:
+    #: The id, None when the sender sends none (a digest of what's signed is used).
+    id: str | None
+    #: The timestamp as sent (what's signed), None when the sender signs no time (GitHub).
+    sent: str | None
+    signatures: list[str]
+
+
+class _Scheme:
+    name: str = ""
+    #: The header whose length is bounded: the signatures.
+    signature_header: str = ""
+
+    def __init__(self, secret: WebhookSecrets) -> None:
+        raise NotImplementedError  # pragma: no cover
+
+    def read(self, headers: Mapping[str, str]) -> _Delivery:
+        raise NotImplementedError  # pragma: no cover
+
+    def check(self, delivery: _Delivery, body: bytes) -> bool:
+        raise NotImplementedError  # pragma: no cover
+
+
+class _Standard(_Scheme):
+    name = "standard"
+    signature_header = "webhook-signature"
+
+    def __init__(self, secret: WebhookSecrets) -> None:
+        self.keys = [_standard_key(item) for item in _items(secret)]
+
+    def read(self, headers: Mapping[str, str]) -> _Delivery:
+        message_id = headers.get("webhook-id")
+        sent = headers.get("webhook-timestamp")
+        signatures = headers.get("webhook-signature")
+        if message_id is None or sent is None or signatures is None:
+            raise _Malformed
+        if not (_valid_id(message_id) and _timestamp(sent)):
+            raise _Malformed
+        return _Delivery(message_id, sent, signatures.split(" "))
+
+    def check(self, delivery: _Delivery, body: bytes) -> bool:
+        assert delivery.id is not None and delivery.sent is not None  # noqa: S101  # read() did
+        signed = _signed(delivery.id, delivery.sent, body)
+        expected = [_hmac(key.hmac, *signed) for key in self.keys if key.hmac is not None]
+        public = [key.public for key in self.keys if key.public is not None]
+        for signature in delivery.signatures:
+            version, _, encoded = signature.partition(",")
+            if version not in ("v1", "v1a"):
+                continue  # another scheme, or a stray space
+            try:
+                candidate = base64.b64decode(encoded, validate=True)
+            except (binascii.Error, ValueError):
+                continue
+            if version == "v1" and any(hmac.compare_digest(candidate, mac) for mac in expected):
+                return True
+            if version == "v1a" and any(_ed25519_valid(key, candidate, signed) for key in public):
+                return True
+        return False
+
+
+def _ed25519_valid(key: Any, signature: bytes, signed: tuple[bytes, bytes]) -> bool:
+    from cryptography.exceptions import InvalidSignature
+
+    try:
+        key.verify(signature, b"".join(signed))
+    except InvalidSignature:
+        return False
+    return True
+
+
+class _GitHub(_Scheme):
+    name = "github"
+    signature_header = "x-hub-signature-256"
+
+    def __init__(self, secret: WebhookSecrets) -> None:
+        self.secrets = [_provider_secret(item) for item in _items(secret)]
+
+    def read(self, headers: Mapping[str, str]) -> _Delivery:
+        delivery = headers.get("x-github-delivery")
+        signature = headers.get("x-hub-signature-256")
+        if delivery is None or signature is None or not _valid_id(delivery):
+            raise _Malformed
+        return _Delivery(delivery, None, [signature])
+
+    def check(self, delivery: _Delivery, body: bytes) -> bool:
+        scheme, _, value = delivery.signatures[0].partition("=")
+        candidate = _hex(value) if scheme == "sha256" else None
+        return candidate is not None and any(
+            hmac.compare_digest(candidate, _hmac(secret, body)) for secret in self.secrets
+        )
+
+
+class _Stripe(_Scheme):
+    name = "stripe"
+    signature_header = "stripe-signature"
+
+    def __init__(self, secret: WebhookSecrets) -> None:
+        # Stripe signs with the secret's string itself, "whsec_" included: not its base64.
+        self.secrets = [_provider_secret(item) for item in _items(secret)]
+
+    def read(self, headers: Mapping[str, str]) -> _Delivery:
+        header = headers.get("stripe-signature")
+        if header is None:
+            raise _Malformed
+        sent, signatures = None, []
+        for item in header.split(","):
+            name, _, value = item.strip().partition("=")
+            if name == "t":
+                sent = value
+            elif name == "v1":
+                signatures.append(value)  # v0 and others: test mode or other schemes
+        if sent is None or not _timestamp(sent) or not signatures:
+            raise _Malformed
+        return _Delivery(None, sent, signatures)
+
+    def check(self, delivery: _Delivery, body: bytes) -> bool:
+        assert delivery.sent is not None  # noqa: S101  # read() checked it
+        expected = [_hmac(secret, f"{delivery.sent}.".encode(), body) for secret in self.secrets]
+        return any(
+            candidate is not None and any(hmac.compare_digest(candidate, mac) for mac in expected)
+            for candidate in map(_hex, delivery.signatures)
+        )
+
+
+class _Slack(_Scheme):
+    name = "slack"
+    signature_header = "x-slack-signature"
+
+    def __init__(self, secret: WebhookSecrets) -> None:
+        self.secrets = [_provider_secret(item) for item in _items(secret)]
+
+    def read(self, headers: Mapping[str, str]) -> _Delivery:
+        sent = headers.get("x-slack-request-timestamp")
+        signature = headers.get("x-slack-signature")
+        if sent is None or signature is None or not _timestamp(sent):
+            raise _Malformed
+        return _Delivery(None, sent, [signature])
+
+    def check(self, delivery: _Delivery, body: bytes) -> bool:
+        assert delivery.sent is not None  # noqa: S101  # read() checked it
+        version, _, value = delivery.signatures[0].partition("=")
+        candidate = _hex(value) if version == "v0" else None
+        base = f"v0:{delivery.sent}:".encode()
+        return candidate is not None and any(
+            hmac.compare_digest(candidate, _hmac(secret, base, body)) for secret in self.secrets
+        )
+
+
+_SCHEMES: dict[str, type[_Scheme]] = {
+    "standard": _Standard,
+    "github": _GitHub,
+    "stripe": _Stripe,
+    "slack": _Slack,
+}
 
 # What the counted outcome of a refused delivery is, by status.
 _REFUSALS = {400: "malformed", 401: "rejected", 413: "too_large"}
@@ -107,10 +335,12 @@ _REFUSALS = {400: "malformed", 401: "rejected", 413: "too_large"}
 class WebhookMessage:
     """A webhook whose signature was checked: what `FastAPIWebhooks` gives the endpoint."""
 
-    #: `webhook-id`: the same for every delivery attempt of a message.
+    #: The sender's id of the message (`webhook-id`, GitHub's delivery id), the same for every
+    #: attempt; for Stripe and Slack, which send none, a digest of what was signed (their event
+    #: id is in the body).
     id: str
-    #: `webhook-timestamp`, in UTC: when this attempt was signed.
-    timestamp: datetime
+    #: When this attempt was signed, in UTC; None for GitHub, which signs no time.
+    timestamp: datetime | None
     #: The raw body, exactly as signed.
     body: bytes
 
@@ -128,19 +358,42 @@ class WebhookSigner:
 
     Sign the exact bytes you send: `json=event` would serialize them again, maybe differently.
 
-    :param secret: `whsec_<base64>` (`generate_secret()`), the base64 alone, or raw bytes; at
-        least 24 bytes once decoded. With a list, every message is signed with each of them, so
-        that receivers that have the old secret and those that have the new one both accept it
-        while it's being rotated.
+    :param secret: `whsec_<base64>` (`generate_secret()`), the base64 alone, or raw bytes, at
+        least 24 bytes once decoded, for HMAC signatures (`v1`); or `whsk_<base64>`, an Ed25519
+        private key (`generate_key_pair()`), for `v1a`, which receivers check with the public key
+        alone. With a list, every message is signed with each of them, so that receivers that
+        have the old secret and those that have the new one both accept it while it's rotated.
     """
 
     def __init__(self, secret: WebhookSecrets) -> None:
-        self._secrets = _secret_list(secret)
+        self._keys = [_standard_key(item) for item in _items(secret)]
+        if any(key.hmac is None and key.private is None for key in self._keys):
+            raise ValueError("a whpk_ key only verifies: sign with its whsk_ private key")
 
     @staticmethod
     def generate_secret() -> str:
         """A new random secret (256 bits), as `whsec_<base64>`."""
         return PREFIX + base64.b64encode(secrets.token_bytes(32)).decode()
+
+    @staticmethod
+    def generate_key_pair() -> tuple[str, str]:
+        """A new Ed25519 key pair for `v1a`: (`whsk_...`, the private key the sender keeps;
+        `whpk_...`, the public key receivers verify with)."""
+        from cryptography.hazmat.primitives import serialization
+
+        private = _ed25519().Ed25519PrivateKey.generate()
+        seed = private.private_bytes(
+            serialization.Encoding.Raw,
+            serialization.PrivateFormat.Raw,
+            serialization.NoEncryption(),
+        )
+        public = private.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        )
+        return (
+            PRIVATE_PREFIX + base64.b64encode(seed).decode(),
+            PUBLIC_PREFIX + base64.b64encode(public).decode(),
+        )
 
     def sign(
         self,
@@ -169,14 +422,18 @@ class WebhookSigner:
         if seconds < 0:
             raise ValueError("the timestamp can't be before 1970")
         sent = str(seconds)
-        signatures = " ".join(
-            "v1," + base64.b64encode(_mac(secret, message_id, sent, body)).decode()
-            for secret in self._secrets
-        )
+        signed = _signed(message_id, sent, body)
+        signatures = []
+        for key in self._keys:
+            if key.hmac is not None:
+                signatures.append("v1," + base64.b64encode(_hmac(key.hmac, *signed)).decode())
+            else:
+                signature = key.private.sign(b"".join(signed))
+                signatures.append("v1a," + base64.b64encode(signature).decode())
         return {
             "webhook-id": message_id,
             "webhook-timestamp": sent,
-            "webhook-signature": signatures,
+            "webhook-signature": " ".join(signatures),
         }
 
 
@@ -192,7 +449,8 @@ class FastAPIWebhooks:
     for `message.json()` or `await request.json()`. Validate it there, not with a pydantic body
     parameter: FastAPI reads and validates those before any dependency, without the size limit and
     before the signature is checked. It can't read a body the endpoint takes as a form, which
-    consumes it first: webhooks are JSON.
+    consumes it first (Slack's slash commands come as a form: read `await request.form()` after
+    the dependency, from the body it kept).
 
     Missing or malformed headers get a 400; a wrong signature, a timestamp more than `tolerance`
     seconds away from the server's clock (either way) and a delivery accepted before all get the
@@ -200,14 +458,20 @@ class FastAPIWebhooks:
 
     Replays: each delivery accepted (its id and timestamp, hashed) is counted in the cache's
     backend until its timestamp can't be accepted anymore, so every process refuses it again. A
-    retry of the sender has a new timestamp and signature and goes through: Standard Webhooks
-    keeps the id of a message for all its attempts, and a retry after a failed (5xx) attempt must
-    get through. So make the endpoint idempotent on `message.id` (a unique constraint), as the
-    specification advises, if a message must not be processed twice. Whoever can write to the
-    backend can delete the marks (and allow a replay within `tolerance`): keep it out of reach.
+    retry of the sender has a new timestamp and signature and goes through: senders keep the id
+    of a message for all its attempts, and a retry after a failed (5xx) attempt must get through.
+    So make the endpoint idempotent on `message.id` (a unique constraint), if a message must not
+    be processed twice. GitHub signs no time: its deliveries are refused again only for the same
+    window, and a capture sent later goes through. Whoever can write to the backend can delete the
+    marks (and allow a replay within `tolerance`): keep it out of reach.
 
-    :param secret: `whsec_<base64>`, the base64 alone or raw bytes, at least 24 bytes once
-        decoded. A list rotates them: a signature by any of them is accepted.
+    :param secret: what the sender signs with. Standard Webhooks: `whsec_<base64>`, the base64
+        alone or raw bytes (at least 24 bytes once decoded), or `whpk_<base64>`, the sender's
+        Ed25519 public key (`v1a`). GitHub, Stripe (`whsec_...`, used as it is), Slack: the
+        string they give, at least 16 characters. A list rotates them: any of them verifies.
+    :param scheme: the sender's: "standard" (Standard Webhooks: Svix, Supabase, Clerk, Resend,
+        OpenAI...), "github" (`X-Hub-Signature-256`), "stripe" (`Stripe-Signature`), "slack"
+        (`X-Slack-Signature`).
     :param tolerance: seconds a timestamp may be away from the server's clock, either way.
     :param cache: the Cache whose backend counts the deliveries (it must support counters); the
         app's (`Cache.install`) or FastAPICache's by default.
@@ -222,17 +486,21 @@ class FastAPIWebhooks:
         self,
         secret: WebhookSecrets,
         *,
+        scheme: Scheme = "standard",
         tolerance: int = 300,
         cache: Cache | None = None,
         max_body_size: int = 1_048_576,
         namespace: str = "webhook",
         fail_open: bool = False,
     ) -> None:
+        if scheme not in _SCHEMES:
+            raise ValueError(f"scheme is one of {sorted(_SCHEMES)}, not {scheme!r}")
         if tolerance < 1:
             raise ValueError("tolerance must be at least 1 second")
         if max_body_size < 0:
             raise ValueError("max_body_size can't be negative")
-        self._secrets = _secret_list(secret)
+        self.scheme = scheme
+        self._scheme = _SCHEMES[scheme](secret)
         self.tolerance = tolerance
         self.cache = cache
         self.max_body_size = max_body_size
@@ -251,40 +519,32 @@ class FastAPIWebhooks:
 
     def _count(self, request: Request, outcome: str) -> None:
         metrics = self.cache.metrics if self.cache is not None else metrics_of(request)
-        metrics.count("webhooks", outcome=outcome)
+        metrics.count("webhooks", outcome=outcome, scheme=self.scheme)
 
     def verify(self, headers: Mapping[str, str], body: bytes) -> WebhookMessage:
         """The message, if `headers` carry a valid signature of `body` and a fresh timestamp;
         raises an HTTPException (400 or 401) otherwise. It doesn't check for replays: for tests,
         scripts and queues that deduplicate on their own."""
-        message_id = headers.get("webhook-id")
-        sent = headers.get("webhook-timestamp")
-        signatures = headers.get("webhook-signature")
-        if message_id is None or sent is None or signatures is None:
-            raise HTTPException(400, _INVALID)
-        if not (
-            _valid_id(message_id)
-            and 1 <= len(sent) <= _MAX_TIMESTAMP
-            and sent.isascii()
-            and sent.isdigit()
-        ):
-            raise HTTPException(400, _INVALID)
-        timestamp = int(sent)
-        if abs(time.time() - timestamp) > self.tolerance or len(signatures) > _MAX_SIGNATURES:
+        lowered = {name.lower(): value for name, value in headers.items()}
+        if len(lowered.get(self._scheme.signature_header, "")) > _MAX_SIGNATURES:
             raise HTTPException(401, _INVALID)
-        # The timestamp as sent, not as parsed: it's what was signed.
-        expected = [_mac(secret, message_id, sent, body) for secret in self._secrets]
-        for signature in signatures.split(" "):
-            version, _, encoded = signature.partition(",")
-            if version != "v1":
-                continue  # another scheme (v1a is Ed25519), or a stray space
-            try:
-                candidate = base64.b64decode(encoded, validate=True)
-            except (binascii.Error, ValueError):
-                continue
-            if any(hmac.compare_digest(candidate, mac) for mac in expected):
-                return WebhookMessage(message_id, datetime.fromtimestamp(timestamp, UTC), body)
-        raise HTTPException(401, _INVALID)
+        try:
+            delivery = self._scheme.read(lowered)
+        except _Malformed:
+            raise HTTPException(400, _INVALID) from None
+        timestamp = None
+        if delivery.sent is not None:
+            timestamp = int(delivery.sent)
+            if abs(time.time() - timestamp) > self.tolerance:
+                raise HTTPException(401, _INVALID)
+        if not self._scheme.check(delivery, body):
+            raise HTTPException(401, _INVALID)
+        message_id = delivery.id
+        if message_id is None:  # Stripe, Slack: what was signed names the message
+            digest = hashlib.sha256(f"{delivery.sent}.".encode() + body).hexdigest()
+            message_id = f"sha256:{digest}"
+        when = datetime.fromtimestamp(timestamp, UTC) if timestamp is not None else None
+        return WebhookMessage(message_id, when, body)
 
     async def _read_body(self, request: Request) -> bytes:
         declared = request.headers.get("content-length", "")
@@ -317,8 +577,8 @@ class FastAPIWebhooks:
             raise NotImplementedError(
                 f"{type(backend).__name__} can't keep counters, which FastAPIWebhooks needs"
             )
-        sent = int(message.timestamp.timestamp())
-        digest = hashlib.sha256(json.dumps([message.id, sent]).encode()).hexdigest()
+        sent = int(message.timestamp.timestamp()) if message.timestamp is not None else None
+        digest = hashlib.sha256(json.dumps([self.scheme, message.id, sent]).encode()).hexdigest()
         key = cache.state_key(self.namespace, digest)
         # Accepted until timestamp + tolerance, and it may be up to `tolerance` in the future.
         expire = 2 * self.tolerance + _CLOCK_MARGIN
