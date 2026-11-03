@@ -13,6 +13,7 @@ from fastapi_alcazaba import Cache, FastAPIBreaker, FastAPICache, FastAPISchedul
 from fastapi_alcazaba.auth import RefreshTokens, TokenBlocklist, TokenPair
 from fastapi_alcazaba.auth.strategies.jwt import JWTKey, JWTStrategy
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
+from fastapi_alcazaba.background import FastAPITaskQueue, TaskStatus
 from fastapi_alcazaba.pagination.cursor import CursorPage, PaginationCursor
 from fastapi_alcazaba.pagination.keyset import KeysetPage, PaginationKeyset
 from fastapi_alcazaba.pagination.offset import OffsetPage, PaginationOffset
@@ -108,6 +109,22 @@ async def test_refresh_token_types() -> None:
     assert_type(pair, TokenPair)
     assert_type(await refresh.exchange(pair.refresh_token, client="ios"), TokenPair)
     assert_type(await refresh.revoke(pair.refresh_token), bool)
+
+
+async def _task_queue_types() -> None:  # never run (no Redis), only type-checked
+    queue = FastAPITaskQueue(Cache(InMemoryBackend()))
+
+    @queue.task(timeout=5, retry_on=ConnectionError, give_up_on=(ValueError,))
+    async def job(n: int) -> int:
+        return n
+
+    assert_type(await job(1), int)  # the decorator keeps the function's type
+    assert_type(await queue.enqueue(job, 1, unique_key="k"), str)
+    assert_type(await queue.status("a" * 32), TaskStatus | None)
+    assert_type(await queue.cancel("a" * 32), bool)
+    assert_type(await queue.dead_letter_count(), int)
+    queue.task(timeout="5")  # type: ignore[arg-type]
+    await queue.enqueue(job, 1, unique_key=1)  # type: ignore[arg-type]
 
 
 async def test_jwt_key_types() -> None:

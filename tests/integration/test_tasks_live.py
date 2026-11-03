@@ -119,6 +119,9 @@ class Processes:
             queue = self.queues[0]
             for key in (queue._stream, queue._delayed, queue._dead):
                 await self.raw.delete(key)
+            for prefix in (queue._status, queue._unique, queue._runs):
+                async for key in self.raw.scan_iter(match=f"{prefix}*"):
+                    await self.raw.delete(key)
         for client in self.clients:
             await client.aclose()
 
@@ -267,3 +270,78 @@ async def test_queue_and_consumer_bookkeeping(processes: Processes) -> None:
         consumer = queue._consumer
     names = [entry["name"] for entry in await processes.raw.xinfo_consumers(queue._stream, GROUP)]
     assert consumer.encode() not in names  # it left the group when it stopped
+
+
+async def test_unique_keys_across_processes(processes: Processes) -> None:
+    queues = [processes.queue(), processes.queue()]
+    ran: list[int] = []
+
+    async def job(number: int) -> None:
+        ran.append(number)
+
+    for queue in queues:
+        queue.task("job")(job)
+    ids = await asyncio.gather(
+        *(queues[n % 2].enqueue("job", n, unique_key="invoice-42") for n in range(10))
+    )
+    assert len(set(ids)) == 1
+    assert await queues[0].pending() == 1
+    for queue in queues:
+        await queue.start()
+    await eventually(lambda: settled(*queues))
+    assert len(ran) == 1
+    assert await queues[1].enqueue("job", 99, unique_key="invoice-42") != ids[0]  # free again
+    await eventually(lambda: len(ran) == 2)
+
+
+async def test_status_and_cancel(processes: Processes) -> None:
+    queues = [processes.queue(), processes.queue()]
+    ran: list[str] = []
+
+    async def job(label: str) -> None:
+        ran.append(label)
+
+    for queue in queues:
+        queue.task("job")(job)
+    kept = await queues[0].enqueue("job", "kept", delay=0.2)
+    dropped = await queues[0].enqueue("job", "dropped", delay=0.2, unique_key="k")
+    assert await queues[1].cancel(dropped)
+    found = await queues[1].status(dropped)
+    assert found is not None
+    assert (found.state, found.task) == ("cancelled", "job")
+    for queue in queues:
+        await queue.start()
+    await eventually(lambda: settled(*queues))
+    assert ran == ["kept"]
+
+    async def succeeded() -> bool:
+        found = await queues[1].status(kept)
+        return found is not None and found.state == "succeeded" and found.attempts == 1
+
+    await eventually(succeeded)
+    assert await queues[0].enqueue("job", "again", unique_key="k") != dropped
+
+
+async def test_a_hung_task_times_out(processes: Processes) -> None:
+    queue = processes.queue(concurrency=1)
+    ran: list[str] = []
+
+    @queue.task("hangs", retries=0, timeout=0.2)
+    async def hangs() -> None:
+        await asyncio.Event().wait()
+
+    @queue.task("other")
+    async def other() -> None:
+        ran.append("other")
+
+    async with queue:
+        task_id = await queue.enqueue(hangs)
+        await queue.enqueue(other)
+        await eventually(lambda: ran == ["other"])
+        await eventually(queue.dead_letters)
+    (dead,) = await queue.dead_letters()
+    assert (dead.task_id, dead.error) == (task_id, "TimeoutError")
+    assert await queue.dead_letter_count() == 1
+    found = await queue.status(task_id)
+    assert found is not None
+    assert (found.state, found.reason, found.error) == ("dead", "failed", "TimeoutError")

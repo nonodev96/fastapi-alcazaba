@@ -115,7 +115,7 @@ def fixture_world() -> World:
 def body(task: str, *args: Any, attempt: int = 0, **kwargs: Any) -> dict[str, Any]:
     return {
         "v": 2,
-        "id": "t" * 32,
+        "id": uuid.uuid4().hex,
         "task": task,
         "args": list(args),
         "kwargs": kwargs,

@@ -156,7 +156,8 @@ COUNTERS: dict[str, tuple[str, str]] = {
     "tasks": (
         "{task}",
         "Runs of FastAPITaskQueue tasks, by queue, task and outcome: succeeded, retried, failed "
-        "(to the dead letters), interrupted (stop() ran out of grace: back to the queue); and "
+        "(to the dead letters), interrupted (stop() ran out of grace: back to the queue), "
+        "cancelled (cancel() before it started: dropped); and "
         "tasks refused, by reason: malformed, tampered, too_large, unknown_task, "
         "invalid_arguments, abandoned (task only when it's registered)",
     ),

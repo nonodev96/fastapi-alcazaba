@@ -76,6 +76,9 @@ _PAGE = 100
 _MAX_PAUSE = 30.0
 _STREAM_ID = re.compile(r"[0-9]+-[0-9]+")
 _RUN_ID = re.compile(r"[0-9a-f]{32}")
+_UNIQUE = re.compile(r"(?:[0-9a-f]{32})?")
+#: The states of a task's status record.
+STATES = ("pending", "running", "retrying", "succeeded", "dead", "cancelled")
 
 _REASONS = {
     "malformed": "its payload isn't a task",
@@ -146,9 +149,21 @@ return entries
 """
 )
 
-# KEYS[1]: stream; KEYS[2]: delayed tasks; ARGV[1]: most tasks the queue holds; ARGV[2]: payload;
-# ARGV[3]: when it's due (Unix time), "" for now. 0 when the queue is full.
+# Each task has a status record (a hash), written by the scripts that move the task, so that it
+# never disagrees with the queue: state, task, attempts, error, reason, enqueued, updated, unique.
+
+# KEYS[1]: stream; KEYS[2]: delayed tasks; KEYS[3]: status; KEYS[4]: unique key. ARGV[1]: most
+# tasks the queue holds; ARGV[2]: payload; ARGV[3]: when it's due (Unix time), "" for now; ARGV[4]:
+# task id; ARGV[5]: task; ARGV[6]: now; ARGV[7]: ms until its deadline (the unique key's life);
+# ARGV[8]: the unique key's digest, "" for none; ARGV[9]: ms the status record lasts. The id of
+# the task holding the unique key, 0 when the queue is full, 1 when added.
 ENQUEUE_SCRIPT = """
+if ARGV[8] ~= '' then
+    local holder = redis.call('GET', KEYS[4])
+    if holder then
+        return holder
+    end
+end
 if redis.call('XLEN', KEYS[1]) + redis.call('ZCARD', KEYS[2]) >= tonumber(ARGV[1]) then
     return 0
 end
@@ -157,6 +172,12 @@ if ARGV[3] == '' then
 else
     redis.call('ZADD', KEYS[2], ARGV[3], ARGV[2])
 end
+if ARGV[8] ~= '' then
+    redis.call('SET', KEYS[4], ARGV[4], 'PX', ARGV[7])
+end
+redis.call('HSET', KEYS[3], 'state', 'pending', 'task', ARGV[5], 'attempts', '0', 'error', '',
+           'reason', '', 'enqueued', ARGV[6], 'updated', ARGV[6], 'unique', ARGV[8])
+redis.call('PEXPIRE', KEYS[3], ARGV[9])
 return 1
 """
 
@@ -171,39 +192,67 @@ end
 return #due
 """
 
-# A task finished: off the pending list and out of the stream. KEYS[1]: stream; ARGV[1]: group;
-# ARGV[2]: entry.
+# A task finished (or was dropped, cancelled): off the pending list and out of the stream, its
+# unique key released. KEYS[1]: stream; KEYS[2]: status; KEYS[3]: unique key; ARGV[1]: group;
+# ARGV[2]: entry; ARGV[3]: its new state, "" to leave it; ARGV[4]: task id; ARGV[5]: now;
+# ARGV[6]: ms the status record lasts.
 ACK_SCRIPT = """
 redis.call('XACK', KEYS[1], ARGV[1], ARGV[2])
-return redis.call('XDEL', KEYS[1], ARGV[2])
+local deleted = redis.call('XDEL', KEYS[1], ARGV[2])
+if ARGV[3] ~= '' then
+    redis.call('HSET', KEYS[2], 'state', ARGV[3], 'updated', ARGV[5])
+    redis.call('PEXPIRE', KEYS[2], ARGV[6])
+end
+if redis.call('GET', KEYS[3]) == ARGV[4] then
+    redis.call('DEL', KEYS[3])
+end
+return deleted
 """
 
 # Whether the run KEYS[1] is the entry ARGV[1]'s: the first entry to ask claims it for ARGV[2]
-# ms; the same entry, taken over by another worker, still may; a copy may not.
+# ms; the same entry, taken over by another worker, still may; a copy may not (0). A task
+# cancelled (its status KEYS[2]) isn't run at all (-1). When it runs, its status says so: ARGV[3]:
+# task; ARGV[4]: attempts with this one; ARGV[5]: now; ARGV[6]: ms the status record lasts.
 CLAIM_SCRIPT = """
+if redis.call('HGET', KEYS[2], 'state') == 'cancelled' then
+    return -1
+end
 local holder = redis.call('GET', KEYS[1])
 if holder == false then
     redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
-    return 1
+elseif holder ~= ARGV[1] then
+    return 0
 end
-return holder == ARGV[1] and 1 or 0
+redis.call('HSET', KEYS[2], 'state', 'running', 'task', ARGV[3], 'attempts', ARGV[4],
+           'updated', ARGV[5])
+redis.call('PEXPIRE', KEYS[2], ARGV[6])
+return 1
 """
 
 # A task to run again at ARGV[3] (a retry, or one cut short by a shutdown), unless another
-# worker settled it already. KEYS[1]: stream; KEYS[2]: delayed tasks; ARGV[1]: group; ARGV[2]:
-# entry; ARGV[4]: payload.
+# worker settled it already. KEYS[1]: stream; KEYS[2]: delayed tasks; KEYS[3]: status; KEYS[4]:
+# unique key; ARGV[1]: group; ARGV[2]: entry; ARGV[4]: payload; ARGV[5]: its state (retrying, or
+# pending); ARGV[6]: its error type; ARGV[7]: task id; ARGV[8]: now; ARGV[9]: ms the status record
+# lasts; ARGV[10]: ms until its new deadline, for its unique key.
 RETRY_SCRIPT = """
 if redis.call('XACK', KEYS[1], ARGV[1], ARGV[2]) == 0 then
     return 0
 end
 redis.call('XDEL', KEYS[1], ARGV[2])
 redis.call('ZADD', KEYS[2], ARGV[3], ARGV[4])
+redis.call('HSET', KEYS[3], 'state', ARGV[5], 'error', ARGV[6], 'updated', ARGV[8])
+redis.call('PEXPIRE', KEYS[3], ARGV[9])
+if redis.call('GET', KEYS[4]) == ARGV[7] then
+    redis.call('PEXPIRE', KEYS[4], ARGV[10])
+end
 return 1
 """
 
 # A task to the dead letters (at most about ARGV[3] of them are kept), unless another worker
-# settled it already. KEYS[1]: stream; KEYS[2]: dead letters; ARGV[1]: group; ARGV[2]: entry;
-# ARGV[4..10]: payload, reason, error type, task, task id, attempts, time.
+# settled it already. KEYS[1]: stream; KEYS[2]: dead letters; KEYS[3]: status; KEYS[4]: unique
+# key; ARGV[1]: group; ARGV[2]: entry; ARGV[4..10]: payload, reason, error type, task, task id,
+# attempts, time; ARGV[11]: "1" to write its status (not for a copy of another task's run);
+# ARGV[12]: ms the status record lasts.
 BURY_SCRIPT = """
 if redis.call('XACK', KEYS[1], ARGV[1], ARGV[2]) == 0 then
     return 0
@@ -212,12 +261,21 @@ redis.call('XDEL', KEYS[1], ARGV[2])
 redis.call('XADD', KEYS[2], 'MAXLEN', '~', ARGV[3], '*', 'p', ARGV[4], 'reason', ARGV[5],
            'error', ARGV[6], 'task', ARGV[7], 'task_id', ARGV[8], 'attempts', ARGV[9],
            'at', ARGV[10])
+if ARGV[11] == '1' then
+    redis.call('HSET', KEYS[3], 'state', 'dead', 'reason', ARGV[5], 'error', ARGV[6],
+               'attempts', ARGV[9], 'updated', ARGV[10])
+    redis.call('PEXPIRE', KEYS[3], ARGV[12])
+    if redis.call('GET', KEYS[4]) == ARGV[8] then
+        redis.call('DEL', KEYS[4])
+    end
+end
 return 1
 """
 
 # A dead letter back in the queue, once. KEYS[1]: dead letters; KEYS[2]: stream; KEYS[3]: delayed
-# tasks; ARGV[1]: dead letter; ARGV[2]: most tasks the queue holds; ARGV[3]: new payload. -1 when
-# the queue is full, 0 when the dead letter is gone.
+# tasks; KEYS[4]: status; ARGV[1]: dead letter; ARGV[2]: most tasks the queue holds; ARGV[3]: new
+# payload; ARGV[4]: task; ARGV[5]: now; ARGV[6]: ms the status record lasts. -1 when the queue is
+# full, 0 when the dead letter is gone.
 REQUEUE_SCRIPT = """
 if redis.call('XLEN', KEYS[2]) + redis.call('ZCARD', KEYS[3]) >= tonumber(ARGV[2]) then
     return -1
@@ -226,11 +284,36 @@ if redis.call('XDEL', KEYS[1], ARGV[1]) == 0 then
     return 0
 end
 redis.call('XADD', KEYS[2], '*', 'p', ARGV[3])
+redis.call('HSET', KEYS[4], 'state', 'pending', 'task', ARGV[4], 'attempts', '0', 'error', '',
+           'reason', '', 'updated', ARGV[5])
+redis.call('PEXPIRE', KEYS[4], ARGV[6])
 return 1
 """
 
+# A task that hasn't started won't: its status says cancelled, which the claim checks, and its
+# unique key is released. KEYS[1]: status; KEYS[2]: unique key; ARGV[1]: task id; ARGV[2]: now;
+# ARGV[3]: ms the status record lasts. 0 when it's running, finished or unknown.
+CANCEL_SCRIPT = """
+local state = redis.call('HGET', KEYS[1], 'state')
+if state ~= 'pending' and state ~= 'retrying' then
+    return 0
+end
+redis.call('HSET', KEYS[1], 'state', 'cancelled', 'updated', ARGV[2])
+redis.call('PEXPIRE', KEYS[1], ARGV[3])
+if redis.call('GET', KEYS[2]) == ARGV[1] then
+    redis.call('DEL', KEYS[2])
+end
+return 1
+"""
+
+# KEYS[1]: a status record. Its fields and values, flat.
+STATUS_SCRIPT = "return redis.call('HGETALL', KEYS[1])"
+
 # KEYS[1]: stream; KEYS[2]: delayed tasks.
 PENDING_SCRIPT = "return redis.call('XLEN', KEYS[1]) + redis.call('ZCARD', KEYS[2])"
+
+# KEYS[1]: dead letters.
+DEAD_COUNT_SCRIPT = "return redis.call('XLEN', KEYS[1])"
 
 # A stopping worker leaves the group, unless it still holds tasks (others reclaim them later).
 # KEYS[1]: stream; ARGV[1]: group; ARGV[2]: consumer.
@@ -266,6 +349,27 @@ class DeadLetter:
 
 
 @dataclass(frozen=True)
+class TaskStatus:
+    """Where a task is, from its status record. Its arguments aren't shown."""
+
+    id: str
+    #: The task's name.
+    task: str
+    #: pending (waiting, delayed, requeued), running, retrying (waiting for its next attempt),
+    #: succeeded, dead (in the dead letters, see `reason`) or cancelled.
+    state: str
+    #: Runs started.
+    attempts: int
+    #: The type of the exception its last run raised.
+    error: str | None
+    #: Why it's dead: failed, abandoned, stale, unknown_task or invalid_arguments.
+    reason: str | None
+    #: None for a task enqueued before 0.8.
+    enqueued_at: datetime | None
+    updated_at: datetime | None
+
+
+@dataclass(frozen=True)
 class _Task:
     name: str
     func: Callable[..., Any]
@@ -273,6 +377,17 @@ class _Task:
     retries: int
     backoff: float
     max_backoff: float
+    timeout: float | None = None
+    retry_on: tuple[type[BaseException], ...] | None = None
+    give_up_on: tuple[type[BaseException], ...] = ()
+
+    def retried(self, exc: BaseException, failures: int) -> bool:
+        """Whether a run that raised `exc`, its `failures`-th failure, is tried again."""
+        if isinstance(exc, self.give_up_on):
+            return False
+        if self.retry_on is not None and not isinstance(exc, self.retry_on):
+            return False
+        return failures <= self.retries
 
     def delay(self, failures: int) -> float:
         """Seconds before the retry after the `failures`-th failure: doubling each time up to
@@ -299,6 +414,7 @@ def _is_task(body: Any) -> bool:
         isinstance(body, dict)
         and body.get("v") == _FORMAT
         and isinstance(body.get("id"), str)
+        and _RUN_ID.fullmatch(body["id"]) is not None  # its status record's key
         and isinstance(body.get("task"), str)
         and isinstance(body.get("args"), list)
         and isinstance(body.get("kwargs"), dict)
@@ -308,6 +424,8 @@ def _is_task(body: Any) -> bool:
         and isinstance(body.get("run"), str)
         and _RUN_ID.fullmatch(body["run"]) is not None
         and type(body.get("until")) in (int, float)
+        and isinstance(body.get("unique", ""), str)
+        and _UNIQUE.fullmatch(body.get("unique", "")) is not None
     )
 
 
@@ -336,6 +454,49 @@ def _stream_ids(ids: Iterable[str]) -> list[str]:
         if not _STREAM_ID.fullmatch(dead_id):
             raise ValueError(f"{dead_id!r} isn't the ID of a dead letter")
     return found
+
+
+def _exceptions(value: Any, name: str) -> tuple[type[BaseException], ...]:
+    found = value if isinstance(value, tuple | list) else (value,)
+    if not all(isinstance(cls, type) and issubclass(cls, BaseException) for cls in found):
+        raise TypeError(f"{name} is an exception type, or a tuple of them")
+    return tuple(found)
+
+
+def _time(value: str) -> datetime | None:
+    try:
+        return datetime.fromtimestamp(float(value), UTC)
+    except (ValueError, OverflowError, OSError):
+        return None
+
+
+def _fields(reply: Any) -> dict[str, str]:
+    """A hash's fields and values, given flat."""
+    if not isinstance(reply, list):
+        return {}
+    return {_text(reply[i]): _text(reply[i + 1]) for i in range(0, len(reply) - 1, 2)}
+
+
+def _task_status(task_id: str, fields: dict[str, str]) -> TaskStatus | None:
+    """A status record as the backend has it. Anyone who can write to it can change it, so
+    nothing in it is trusted to be well formed."""
+    if not fields:
+        return None
+    attempts = fields.get("attempts", "")
+    return TaskStatus(
+        id=task_id,
+        task=fields.get("task", ""),
+        state=fields.get("state", ""),
+        attempts=int(attempts) if attempts.isascii() and attempts.isdigit() else 0,
+        error=fields.get("error") or None,
+        reason=fields.get("reason") or None,
+        enqueued_at=_time(fields.get("enqueued", "")),
+        updated_at=_time(fields.get("updated", "")),
+    )
+
+
+def _ms(seconds: float) -> str:
+    return str(max(1, math.ceil(seconds * 1000)))
 
 
 def _dead_letter(entry_id: bytes | str, fields: dict[bytes, bytes]) -> DeadLetter:
@@ -392,6 +553,7 @@ class FastAPITaskQueue:
     :param replay_window: seconds a task may wait in the queue after it's due; later, it's
         refused as stale and goes to the dead letters (`requeue_dead_letters()` sends it again).
         Its run id is kept that long, so that a copy of it is refused.
+    :param status_ttl: seconds the status record of a task (`status()`) is kept after it ends.
     """
 
     def __init__(
@@ -408,6 +570,7 @@ class FastAPITaskQueue:
         max_length: int = 100_000,
         max_dead_letters: int = 10_000,
         replay_window: float = 7 * 24 * 3600,
+        status_ttl: float = 24 * 3600,
     ) -> None:
         if not name:
             raise ValueError("the queue needs a name")
@@ -415,8 +578,10 @@ class FastAPITaskQueue:
             raise ValueError("concurrency must be at least 1")
         if grace < 0:
             raise ValueError("grace can't be negative")
-        if poll_interval <= 0 or visibility_timeout <= 0 or replay_window <= 0:
-            raise ValueError("poll_interval, visibility_timeout and replay_window must be positive")
+        if min(poll_interval, visibility_timeout, replay_window, status_ttl) <= 0:
+            raise ValueError(
+                "poll_interval, visibility_timeout, replay_window and status_ttl must be positive"
+            )
         if min(max_deliveries, max_payload_size, max_length, max_dead_letters) < 1:
             raise ValueError(
                 "max_deliveries, max_payload_size, max_length and max_dead_letters must be at "
@@ -433,11 +598,13 @@ class FastAPITaskQueue:
         self.max_length = max_length
         self.max_dead_letters = max_dead_letters
         self.replay_window = replay_window
+        self.status_ttl = status_ttl
         self._tasks: dict[str, _Task] = {}
         self._names: dict[Callable[..., Any], str] = {}
         self._resolved: Cache | None = None
         self._client: Any = None
         self._stream = self._delayed = self._dead = self._runs = self._seal_key = ""
+        self._status = self._unique = ""
         self._started = False
         self._stopping = False
         self._exiting = False  # the worker's own loop ends: stop() is done waiting for tasks
@@ -457,6 +624,9 @@ class FastAPITaskQueue:
         retries: int = 3,
         backoff: float = 1.0,
         max_backoff: float = 600.0,
+        timeout: float | None = None,
+        retry_on: type[BaseException] | tuple[type[BaseException], ...] | None = None,
+        give_up_on: type[BaseException] | tuple[type[BaseException], ...] = (),
     ) -> Callable[[F], F]:
         """Register the decorated function (async, or sync run in a thread) as a task. What it
         returns is ignored: keep results elsewhere.
@@ -466,11 +636,22 @@ class FastAPITaskQueue:
         :param retries: times a task that raised is tried again: `backoff` seconds after the
             first failure, twice that after the second... up to `max_backoff`, each with jitter.
             Then it goes to the dead letters. 0: at the first failure.
+        :param timeout: seconds a run may take; past them it's cancelled and fails with
+            `TimeoutError` (retried, or to the dead letters), and its worker takes other tasks. A
+            sync task's thread can't be stopped: it runs on, outside the count of `concurrency`.
+        :param retry_on: the exceptions that are retried (all by default); any other sends the
+            task to the dead letters at once.
+        :param give_up_on: exceptions that send the task to the dead letters at once, whatever
+            `retry_on` says (a `ValueError` of bad data won't go away).
         """
         if retries < 0:
             raise ValueError("retries can't be negative")
         if backoff < 0 or max_backoff < 0:
             raise ValueError("backoff and max_backoff can't be negative")
+        if timeout is not None and timeout <= 0:
+            raise ValueError("timeout must be positive, or None for none")
+        retried = None if retry_on is None else _exceptions(retry_on, "retry_on")
+        given_up = _exceptions(give_up_on, "give_up_on")
 
         def register(func: F) -> F:
             task_name = name if name is not None else f"{func.__module__}.{func.__qualname__}"
@@ -478,7 +659,15 @@ class FastAPITaskQueue:
                 raise ValueError(f"there's already a task named {task_name!r}")
             signature = inspect.signature(func)
             self._tasks[task_name] = _Task(
-                task_name, func, signature, retries, backoff, max_backoff
+                task_name,
+                func,
+                signature,
+                retries,
+                backoff,
+                max_backoff,
+                timeout,
+                retried,
+                given_up,
             )
             self._names[func] = task_name
             return func
@@ -491,15 +680,20 @@ class FastAPITaskQueue:
         /,
         *args: Any,
         delay: float | timedelta | None = None,
+        unique_key: str | None = None,
         **kwargs: Any,
     ) -> str:
         """Queue a run of `task` (a registered function, or its name) with these arguments, to
         start in `delay` seconds or as soon as a worker is free; returns the task's ID.
 
+        With a `unique_key`, while a task enqueued with it waits, runs or waits for a retry, this
+        returns that task's ID and adds nothing: a message delivered twice, a request retried,
+        runs once. Once it succeeds, goes to the dead letters or is cancelled, the key is free.
+
         The arguments must fit the function and be JSON-serialisable (checked here, raising
         TypeError); they arrive as JSON gives them back: tuples as lists, dict keys as strings.
-        A task can't take an argument named `delay` by keyword. Raises QueueFull when the queue
-        holds `max_length` tasks, and BackendUnavailable when the backend fails."""
+        A task can't take arguments named `delay` or `unique_key` by keyword. Raises QueueFull
+        when the queue holds `max_length` tasks, and BackendUnavailable when the backend fails."""
         definition = self._lookup(task)
         try:
             definition.signature.bind(*args, **kwargs)
@@ -508,6 +702,8 @@ class FastAPITaskQueue:
         seconds = delay.total_seconds() if isinstance(delay, timedelta) else (delay or 0.0)
         if seconds < 0:
             raise ValueError("delay can't be negative")
+        if unique_key is not None and (not isinstance(unique_key, str) or not unique_key):
+            raise ValueError("unique_key is a non-empty string, or None")
         cache = self._ready()
         task_id = uuid.uuid4().hex
         body = {
@@ -521,18 +717,36 @@ class FastAPITaskQueue:
         }
         if cache.tracer.enabled and (origin := traceparent()):
             body["trace"] = origin
+        unique = ""
+        if unique_key is not None:
+            # A digest: the key may be personal data (an e-mail).
+            unique = body["unique"] = hashlib.sha256(unique_key.encode()).hexdigest()[:32]
         raw = self._dump(body)
         if len(raw) > self.max_payload_size:
             raise ValueError(
                 f"the arguments of {definition.name} take {len(raw)} bytes as JSON, more than "
                 f"max_payload_size ({self.max_payload_size})"
             )
-        due = repr(time.time() + seconds) if seconds > 0 else ""
-        keys = [self._stream, self._delayed]
+        now = time.time()
+        due = repr(now + seconds) if seconds > 0 else ""
+        keys = [self._stream, self._delayed, self._status + task_id, self._unique + unique]
         payload = self._seal(raw)
         added = await self._eval(
-            "task_enqueue", ENQUEUE_SCRIPT, keys, str(self.max_length), payload, due
+            "task_enqueue",
+            ENQUEUE_SCRIPT,
+            keys,
+            str(self.max_length),
+            payload,
+            due,
+            task_id,
+            definition.name,
+            repr(now),
+            _ms(body["until"] - now),
+            unique,
+            _ms(body["until"] - now + self.status_ttl),
         )
+        if isinstance(added, bytes | str):
+            return _text(added)  # the task holding the unique key
         if not added:
             raise QueueFull(f"the task queue {self.name!r} already holds {self.max_length} tasks")
         cache.metrics.count("tasks.enqueued", queue=self.name, task=definition.name)
@@ -607,6 +821,9 @@ class FastAPITaskQueue:
             f"{base}:dead",
             f"{base}:run:",
         )
+        # Followed by a task id, a unique key's digest ("" for none: a key never written, which
+        # the scripts get so that every call names keys of one slot).
+        self._status, self._unique = f"{base}:status:", f"{base}:unique:"
         # What signatures bind tasks to: a task sealed for one queue doesn't open in another.
         self._seal_key = f"{base}:task"
         self._client = backend.client
@@ -867,8 +1084,13 @@ class FastAPITaskQueue:
         if body["until"] < time.time():
             await self._refuse(entry, "stale", entry.payload, body)
             return
-        if not await self._claim(entry, body):
-            await self._refuse(entry, "replayed", entry.payload, body)
+        claimed = await self._claim(entry, body)
+        if claimed < 0:
+            await self._drop(entry, body)
+            return
+        if not claimed:
+            # A copy of another entry's run: the real task's status isn't this one's to change.
+            await self._refuse(entry, "replayed", entry.payload, body, status=False)
             return
         task = self._tasks.get(body["task"])
         if task is None:
@@ -880,12 +1102,46 @@ class FastAPITaskQueue:
         else:
             await self._run(entry, task, body)
 
-    async def _claim(self, entry: _Entry, body: dict[str, Any]) -> bool:
-        """Whether the run of `body` is this entry's: the first entry to carry it claims it until
-        its deadline, and only that entry (taken over by another worker, too) runs it."""
-        ttl = max(1, math.ceil((body["until"] - time.time()) * 1000))
-        key = f"{self._runs}{body['run']}"
-        return bool(await self._eval("task_claim", CLAIM_SCRIPT, [key], entry.id, str(ttl)))
+    async def _claim(self, entry: _Entry, body: dict[str, Any]) -> int:
+        """Whether the run of `body` is this entry's (1): the first entry to carry it claims it
+        until its deadline, and only that entry (taken over by another worker, too) runs it; a
+        copy gets 0, a cancelled task -1."""
+        now = time.time()
+        keys = [f"{self._runs}{body['run']}", self._status + body["id"]]
+        claimed = await self._eval(
+            "task_claim",
+            CLAIM_SCRIPT,
+            keys,
+            entry.id,
+            _ms(body["until"] - now),
+            body["task"],
+            str(body["attempt"] + 1),
+            repr(now),
+            _ms(body["until"] - now + self.status_ttl),
+        )
+        return int(claimed)
+
+    async def _drop(self, entry: _Entry, body: dict[str, Any]) -> None:
+        """A cancelled task: out of the queue, never run."""
+        assert self._resolved is not None  # noqa: S101  # resolved by start()
+        logger.info("Dropped the task %r (%s): it was cancelled", body["task"], body["id"])
+        known = {"task": body["task"]} if body["task"] in self._tasks else {}
+        self._resolved.metrics.count("tasks", queue=self.name, outcome="cancelled", **known)
+        await self._ack(entry, body, "")
+
+    async def _ack(self, entry: _Entry, body: dict[str, Any], state: str) -> None:
+        keys = [self._stream, self._status + body["id"], self._unique + body.get("unique", "")]
+        await self._eval(
+            "task_ack",
+            ACK_SCRIPT,
+            keys,
+            _GROUP,
+            entry.id,
+            state,
+            body["id"],
+            repr(time.time()),
+            _ms(self.status_ttl),
+        )
 
     async def _run(self, entry: _Entry, task: _Task, body: dict[str, Any]) -> None:
         assert self._resolved is not None  # noqa: S101  # resolved by start()
@@ -895,24 +1151,33 @@ class FastAPITaskQueue:
         with tracer.task(
             self.name, task.name, body["id"], body["attempt"], body.get("trace")
         ) as span:
+            deadline = asyncio.timeout(task.timeout)
             try:
-                if _is_async(task.func):
-                    await task.func(*args, **kwargs)
-                else:
-                    await asyncio.to_thread(task.func, *args, **kwargs)
+                async with deadline:
+                    if _is_async(task.func):
+                        await task.func(*args, **kwargs)
+                    else:
+                        await asyncio.to_thread(task.func, *args, **kwargs)
             except asyncio.CancelledError:
                 # stop() ran out of grace: back to the queue now, not after the visibility timeout.
                 self._ran(task, "interrupted", started)
-                await self._retry(entry, self._seal(self._dump({**body, **self._delivery(0)})), 0)
+                await self._retry(entry, {**body, **self._delivery(0)}, 0, "pending", "")
                 raise
             except Exception as exc:
                 record_failure(span, exc)
-                retried = body["attempt"] < task.retries
+                if deadline.expired():
+                    logger.warning(
+                        "Task %r (%s) ran past its timeout (%s s): cancelled",
+                        task.name,
+                        body["id"],
+                        task.timeout,
+                    )
+                retried = task.retried(exc, body["attempt"] + 1)
                 self._ran(task, "retried" if retried else "failed", started)
-                await self._fail(entry, task, body, exc)
+                await self._fail(entry, task, body, exc, retried)
             else:
                 self._ran(task, "succeeded", started)
-                await self._eval("task_ack", ACK_SCRIPT, [self._stream], _GROUP, entry.id)
+                await self._ack(entry, body, "succeeded")
 
     def _ran(self, task: _Task, outcome: str, started: float) -> None:
         assert self._resolved is not None  # noqa: S101  # resolved by start()
@@ -920,16 +1185,24 @@ class FastAPITaskQueue:
         metrics.count("tasks", queue=self.name, task=task.name, outcome=outcome)
         metrics.record("tasks.duration", seconds, queue=self.name, task=task.name, outcome=outcome)
 
-    async def _fail(self, entry: _Entry, task: _Task, body: dict[str, Any], exc: Exception) -> None:
+    async def _fail(
+        self,
+        entry: _Entry,
+        task: _Task,
+        body: dict[str, Any],
+        exc: Exception,
+        retried: bool,
+    ) -> None:
         failures = body["attempt"] + 1
         error = _error_type(exc)
-        if failures > task.retries:
+        if not retried:
             logger.error(
-                "Task %r (%s) failed with %s after %d attempts: sent to the dead letters",
+                "Task %r (%s) failed with %s after %d attempts%s: sent to the dead letters",
                 task.name,
                 body["id"],
                 error,
                 failures,
+                "" if failures > task.retries else ", an error it doesn't retry",
                 exc_info=exc,
             )
             await self._bury(entry, "failed", entry.payload, body, error=error, attempts=failures)
@@ -946,12 +1219,39 @@ class FastAPITaskQueue:
             exc_info=exc,
         )
         retry = {**body, "attempt": failures, **self._delivery(delay)}
-        await self._retry(entry, self._seal(self._dump(retry)), delay)
+        await self._retry(entry, retry, delay, "retrying", error)
 
-    async def _retry(self, entry: _Entry, payload: bytes, delay: float) -> None:
-        keys = [self._stream, self._delayed]
-        due = repr(time.time() + delay)
-        await self._eval("task_retry", RETRY_SCRIPT, keys, _GROUP, entry.id, due, payload)
+    async def _retry(
+        self,
+        entry: _Entry,
+        body: dict[str, Any],
+        delay: float,
+        state: str,
+        error: str,
+    ) -> None:
+        """`body` (with its new run and deadline) back to the queue, due in `delay` seconds."""
+        now = time.time()
+        keys = [
+            self._stream,
+            self._delayed,
+            self._status + body["id"],
+            self._unique + body.get("unique", ""),
+        ]
+        await self._eval(
+            "task_retry",
+            RETRY_SCRIPT,
+            keys,
+            _GROUP,
+            entry.id,
+            repr(now + delay),
+            self._seal(self._dump(body)),
+            state,
+            error,
+            body["id"],
+            repr(now),
+            _ms(body["until"] - now + self.status_ttl),
+            _ms(body["until"] - now),
+        )
 
     async def _refuse(
         self,
@@ -959,6 +1259,8 @@ class FastAPITaskQueue:
         reason: str,
         payload: bytes,
         body: dict[str, Any] | None = None,
+        *,
+        status: bool = True,
     ) -> None:
         # The name is %r: without a key, it's whatever someone wrote to the backend.
         logger.warning(
@@ -972,7 +1274,7 @@ class FastAPITaskQueue:
         known = {"task": body["task"]} if body is not None and body["task"] in self._tasks else {}
         self._resolved.metrics.count("tasks", queue=self.name, outcome=reason, **known)
         attempts = body["attempt"] if body is not None else 0
-        await self._bury(entry, reason, payload, body, attempts=attempts)
+        await self._bury(entry, reason, payload, body, attempts=attempts, status=status)
 
     async def _bury(
         self,
@@ -983,11 +1285,16 @@ class FastAPITaskQueue:
         *,
         error: str = "",
         attempts: int,
+        status: bool = True,
     ) -> None:
+        # A task that couldn't be read has no status record (nor a trusted id).
+        task_id = body["id"] if body is not None else ""
+        unique = body.get("unique", "") if body is not None else ""
+        keys = [self._stream, self._dead, self._status + task_id, self._unique + unique]
         await self._eval(
             "task_bury",
             BURY_SCRIPT,
-            [self._stream, self._dead],
+            keys,
             _GROUP,
             entry.id,
             str(self.max_dead_letters),
@@ -998,6 +1305,8 @@ class FastAPITaskQueue:
             body["id"] if body is not None else "",
             str(attempts),
             repr(time.time()),
+            "1" if status and body is not None else "",
+            _ms(self.status_ttl),
         )
 
     # endregion
@@ -1010,6 +1319,40 @@ class FastAPITaskQueue:
         self._ready()
         keys = [self._stream, self._delayed]
         return int(await self._eval("task_pending", PENDING_SCRIPT, keys))
+
+    async def dead_letter_count(self) -> int:
+        """How many dead letters there are."""
+        self._ready()
+        return int(await self._eval("task_dead_count", DEAD_COUNT_SCRIPT, [self._dead]))
+
+    async def status(self, task_id: str) -> TaskStatus | None:
+        """Where the task `task_id` (as `enqueue` returned it) is; None when it's unknown, or
+        ended more than `status_ttl` ago. Raises ValueError for what isn't a task ID."""
+        return _task_status(task_id, await self._record(task_id))
+
+    async def cancel(self, task_id: str) -> bool:
+        """Make sure the task `task_id` never runs, if it hasn't started (pending, delayed or
+        waiting for a retry); returns whether it was cancelled. A running, finished or unknown
+        task isn't. A worker drops it when it comes up (`pending()` counts it until then), and
+        its `unique_key` is free at once."""
+        record = await self._record(task_id)
+        if not record:
+            return False
+        unique = record.get("unique", "")
+        unique = unique if _UNIQUE.fullmatch(unique) else ""
+        keys = [self._status + task_id, self._unique + unique]
+        cancelled = await self._eval(
+            "task_cancel", CANCEL_SCRIPT, keys, task_id, repr(time.time()), _ms(self.status_ttl)
+        )
+        if cancelled:
+            logger.info("Cancelled the task %s of the queue %r", task_id, self.name)
+        return bool(cancelled)
+
+    async def _record(self, task_id: str) -> dict[str, str]:
+        self._ready()
+        if not isinstance(task_id, str) or not _RUN_ID.fullmatch(task_id):
+            raise ValueError(f"{task_id!r} isn't the ID of a task")
+        return _fields(await self._eval("task_status", STATUS_SCRIPT, [self._status + task_id]))
 
     async def dead_letters(self, count: int = 100) -> list[DeadLetter]:
         """The latest `count` dead letters, newest first."""
@@ -1054,11 +1397,21 @@ class FastAPITaskQueue:
         return int(await self._call("task_discard", "xdel", self._dead, *dead_ids))
 
     async def _requeue(self, dead_id: str, body: dict[str, Any]) -> int:
-        payload = self._seal(self._dump({**body, "attempt": 0, **self._delivery(0)}))
-        keys = [self._dead, self._stream, self._delayed]
+        requeued = {**body, "attempt": 0, **self._delivery(0)}
+        payload = self._seal(self._dump(requeued))
+        keys = [self._dead, self._stream, self._delayed, self._status + body["id"]]
+        now = time.time()
         result = int(
             await self._eval(
-                "task_requeue", REQUEUE_SCRIPT, keys, dead_id, str(self.max_length), payload
+                "task_requeue",
+                REQUEUE_SCRIPT,
+                keys,
+                dead_id,
+                str(self.max_length),
+                payload,
+                body["task"],
+                repr(now),
+                _ms(requeued["until"] - now + self.status_ttl),
             )
         )
         if result < 0:
