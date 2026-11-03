@@ -32,6 +32,10 @@ dependencies = [
     "typing-extensions>=4.10",
 ]
 
+[project.scripts]
+# Operations on the app's task queues from a shell (fastapi_alcazaba/cli.py).
+fastapi-alcazaba = "fastapi_alcazaba.cli:main"
+
 [project.optional-dependencies]
 redis = ["redis>=5.0.8"]
 valkey = ["valkey>=6.0"]
