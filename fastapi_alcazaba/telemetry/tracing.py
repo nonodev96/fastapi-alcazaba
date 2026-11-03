@@ -12,6 +12,10 @@ Spans:
   the task, around each run of a FastAPITaskQueue task [fastapi_alcazaba.queue,
   fastapi_alcazaba.task, fastapi_alcazaba.task_id, fastapi_alcazaba.attempt]; failures are
   recorded on it.
+- "fastapi_alcazaba.outbox <topic>", the root of a trace of its own linked to the span that wrote
+  the message, around each delivery of an OutboxRelay [fastapi_alcazaba.outbox,
+  fastapi_alcazaba.topic, fastapi_alcazaba.message_id, fastapi_alcazaba.attempt]; failures are
+  recorded on it.
 
 Instrumented clients (redis, valkey) nest their own spans inside these. The other tools add events
 and attributes to the current span (the request's, with FastAPI's instrumentation): `add_event`
@@ -116,21 +120,41 @@ class Tracer:
         (None when tracing is off) to record failures."""
         if not self.enabled:
             return nullcontext(None)
-        links = []
-        if origin:
-            carrier = {"traceparent": origin}
-            enqueued = otel_trace.get_current_span(TraceContextTextMapPropagator().extract(carrier))
-            if enqueued.get_span_context().is_valid:
-                links.append(otel_trace.Link(enqueued.get_span_context()))
         return self._tracer.start_as_current_span(
             f"fastapi_alcazaba.task {task}",
             context=otel_context.Context(),
             kind=otel_trace.SpanKind.CONSUMER,
-            links=links,
+            links=_links(origin),
             attributes={
                 "fastapi_alcazaba.queue": queue,
                 "fastapi_alcazaba.task": task,
                 "fastapi_alcazaba.task_id": task_id,
+                "fastapi_alcazaba.attempt": attempt,
+            },
+        )
+
+    def outbox(
+        self,
+        outbox: str,
+        topic: str,
+        message_id: str,
+        attempt: int,
+        origin: str | None,
+    ) -> AbstractContextManager[Any]:
+        """Span of a message's delivery: the root of a trace of its own, linked to the span that
+        wrote it (`origin`, its traceparent). Yields it (None when tracing is off) to record
+        failures."""
+        if not self.enabled:
+            return nullcontext(None)
+        return self._tracer.start_as_current_span(
+            f"fastapi_alcazaba.outbox {topic}",
+            context=otel_context.Context(),
+            kind=otel_trace.SpanKind.CONSUMER,
+            links=_links(origin),
+            attributes={
+                "fastapi_alcazaba.outbox": outbox,
+                "fastapi_alcazaba.topic": topic,
+                "fastapi_alcazaba.message_id": message_id,
                 "fastapi_alcazaba.attempt": attempt,
             },
         )
@@ -143,3 +167,13 @@ class Tracer:
             kind=otel_trace.SpanKind.CLIENT,
             attributes={"fastapi_alcazaba.operation": operation},
         )
+
+
+def _links(origin: str | None) -> list[Any]:
+    """A link to the span of the traceparent `origin`, when it's a valid one."""
+    if not origin:
+        return []
+    carrier = {"traceparent": origin}
+    found = otel_trace.get_current_span(TraceContextTextMapPropagator().extract(carrier))
+    context = found.get_span_context()
+    return [otel_trace.Link(context)] if context.is_valid else []

@@ -152,6 +152,12 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "Uploads checked by FastAPIUploads, by outcome: accepted, too_large, too_many_pixels, "
         "unsupported, unreadable (an image without readable dimensions), empty",
     ),
+    "outbox": (
+        "{message}",
+        "Deliveries of OutboxRelay, by outbox, topic and outcome: delivered, retried (tried again "
+        "later), given_up (kept with its error until requeued or discarded)",
+    ),
+    "outbox.purged": ("{message}", "Messages sent long ago that OutboxRelay deleted, by outbox"),
     "tasks.enqueued": ("{task}", "Tasks enqueued in FastAPITaskQueue, by queue and task"),
     "tasks": (
         "{task}",
