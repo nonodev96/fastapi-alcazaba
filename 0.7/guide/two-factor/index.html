@@ -5008,7 +5008,7 @@ with the <code>crypto</code> extra, which seals the secrets.</p>
 <li><strong>Halfway in:</strong> between the password and the code, keep in the session who's logging in, not
   that they're logged in: the routes for logged-in users don't take them yet.</li>
 <li><strong>When the backend fails,</strong> nothing is accepted: no code is checked for replay, nor guesses
-  counted.</li>
+  counted. It must hold locks, which mark each code used: memcached doesn't, and is refused.</li>
 </ul>
 <h2 id="recovery-codes">Recovery codes<a class="headerlink" href="#recovery-codes" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="n">used</span> <span class="o">=</span> <span class="k">await</span> <span class="n">totp</span><span class="o">.</span><span class="n">use_recovery_code</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">recovery</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
