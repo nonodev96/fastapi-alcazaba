@@ -67,3 +67,61 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 `OAuth2Strategy` doesn't verify the `id_token` it may get: for an OpenID Connect provider, use
 this one.
+
+## Logging out
+
+Ending the app's session doesn't end the provider's: the next login there goes through without a
+password. Two ways to end both, from either side.
+
+```python
+from fastapi_alcazaba.security import UserSessions
+
+user_sessions = UserSessions()  # given to ServerSessionMiddleware(users=user_sessions)
+keycloak = auth.use(
+    OIDCStrategy(
+        ...,
+        post_logout_redirect_uris=["https://app.example.com/logged-out"],
+    )
+)
+
+
+@app.get("/auth/callback")
+async def callback(request: Request, user: Annotated[dict, Depends(auth.authenticate("keycloak"))]):
+    sessions.login(request, user["sub"])
+    request.session["oidc_sid"] = user.get("sid")  # which login: for back-channel logout
+    request.session["id_token"] = request.state.id_token  # for logout_url's hint
+    ...
+
+
+@app.post("/logout")
+async def logout(request: Request) -> RedirectResponse:
+    id_token = request.session.get("id_token")
+    clear_session(request)
+    url = keycloak.logout_url(
+        id_token_hint=id_token, post_logout_redirect_uri="https://app.example.com/logged-out"
+    )
+    return RedirectResponse(url, status_code=303)
+
+
+# The provider tells the app when the user logged out there (or an admin ended the session).
+app.post("/auth/backchannel-logout")(keycloak.backchannel_logout_endpoint(user_sessions))
+```
+
+- **From the app (RP-Initiated Logout):** `logout_url()` is the provider's `end_session_endpoint`
+  (from discovery, or `end_session_url=`) with the app's `client_id`, the login's ID token as
+  `id_token_hint` (the provider ends that session without asking), and a
+  `post_logout_redirect_uri`, which must be one of `post_logout_redirect_uris`, as registered
+  there: never one from the request, which would be an open redirect. `state` comes back with it.
+  The raw ID token is in `request.state.id_token` once the callback is authenticated.
+- **From the provider (Back-Channel Logout):** register the endpoint's URL at the provider. It
+  takes the provider's logout token, verifies it (signed by the provider's keys with one of
+  `algorithms`, its `iss`, its `aud`, issued in the last 5 minutes, a `jti`, the logout event, a
+  `sub` or a `sid`, no `nonce`), takes it once (its `jti`, in the cache's backend), and ends the
+  app's sessions of that login: those whose `oidc_sid` is the token's `sid`, or, with a `sub`
+  only, every session of the user (`user_id=` maps the provider's `sub` to yours). It answers
+  200, or 400 `invalid_request` with the reason in the log, never in the answer.
+- **Without a client secret:** `client_auth="private_key_jwt"` with
+  `client_key=JWTKey(private_key, algorithm="ES256", kid="app-1")` authenticates to the token
+  endpoint with a JWT signed by the app's key (RFC 7523): give the provider the public key (the
+  JWKS of a `JWTStrategy(keys=[...])`, `jwks()`), and no secret is shared.
+- **Not yet:** front-channel logout (an iframe per app), PAR and DPoP.

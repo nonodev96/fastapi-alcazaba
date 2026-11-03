@@ -41,7 +41,10 @@ test: deps
 
 INTEGRATION_ENV = REDIS_URL=redis://127.0.0.1:16379/15 VALKEY_URL=valkey://127.0.0.1:16380/15 \
 	CLUSTER_URL=redis://127.0.0.1:16382 MEMCACHED_URL=127.0.0.1:21211 DYNAMODB_URL=http://127.0.0.1:18000 \
-	OPA_URL=http://127.0.0.1:18181 POSTGRES_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:15432/postgres
+	OPA_URL=http://127.0.0.1:18181 POSTGRES_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:15432/postgres \
+	OIDC_LIVE_ISSUER=http://localhost:18090/realms/alcazaba OIDC_LIVE_CLIENT_ID=alcazaba-example \
+	OIDC_LIVE_CLIENT_SECRET=test-only-client-secret-of-the-ci-realm OIDC_LIVE_USERNAME=ana \
+	OIDC_LIVE_PASSWORD=test-only-password-of-the-ci-realm
 
 # Throwaway servers on high ports (stop them with `make services-down`).
 services-up:
@@ -55,12 +58,16 @@ services-up:
 		run --server --addr 0.0.0.0:8181
 	docker run -d --rm --name fastapi-alcazaba-test-postgres -p 127.0.0.1:15432:5432 \
 		-e POSTGRES_PASSWORD=postgres postgres:17
+	docker run -d --rm --name fastapi-alcazaba-test-keycloak -p 127.0.0.1:18090:8080 \
+		-e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
+		-v "$(CURDIR)/tests/integration/keycloak:/opt/keycloak/data/import:ro" \
+		quay.io/keycloak/keycloak:26.4 start-dev --import-realm
 	sleep 2 && docker exec fastapi-alcazaba-test-cluster valkey-cli -p 16382 cluster addslotsrange 0 16383
 
 services-down:
 	docker stop fastapi-alcazaba-test-redis fastapi-alcazaba-test-valkey fastapi-alcazaba-test-cluster \
 		fastapi-alcazaba-test-memcached fastapi-alcazaba-test-dynamodb fastapi-alcazaba-test-opa \
-		fastapi-alcazaba-test-postgres
+		fastapi-alcazaba-test-postgres fastapi-alcazaba-test-keycloak
 
 test-integration: deps
 	$(INTEGRATION_ENV) $(BIN)/pytest -m integration

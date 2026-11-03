@@ -100,6 +100,9 @@ async def change_password(request: Request, form: NewPassword, user: CurrentUser
   past it ends the oldest.
 - **When the backend fails** to tell whether a session was ended, the session is refused: fail
   closed.
+- **Logins at an OpenID Connect provider:** a session whose data has `oidc_sid` (`sid_key=`), the
+  provider's session id of the login, is ended by `end_sid(sid)`: what the provider's
+  [back-channel logout](authentication/oidc.md#logging-out) calls.
 
 ## CSRF protection
 

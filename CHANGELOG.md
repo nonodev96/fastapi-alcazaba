@@ -72,6 +72,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`urn:fastapi-alcazaba:problem:step-up`); `audit=` records each check (`auth.stepup`).
   `stepup.verified_with()`. The wrappers of `FastAPITOTP` and `FastAPIWebAuthn` take the same
   options.
+- OpenID Connect logout: `OIDCStrategy.logout_url()` (RP-Initiated Logout, with the ID token
+  as a hint and only registered `post_logout_redirect_uris`); `backchannel_logout_endpoint()`
+  verifies the provider's logout tokens, takes each once, and ends the app's sessions of that
+  login (`UserSessions.end_sid`, with the provider's `sid` kept as `oidc_sid`) or of the user;
+  `verify_logout_token()`. `client_auth="private_key_jwt"` with `client_key` (RFC 7523): no
+  client secret. The raw ID token is in `request.state.id_token` at the callback. CI runs the
+  Keycloak live tests, with the realm in `tests/integration/keycloak`.
 - The `fastapi-alcazaba` command: `fastapi-alcazaba tasks <module:queue> queues | pending |
   dead-letters | requeue | discard | status | cancel`, with `--json`.
 - Response cache: a hit gives back the response the endpoint gave. A `Response` it returns
