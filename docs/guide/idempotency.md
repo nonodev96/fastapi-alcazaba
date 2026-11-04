@@ -27,11 +27,13 @@ The client sends a fresh key with each new request, and the same one when it ret
 - **The same key for another request** (method, path, query or body) gets a 422. The body is
   compared byte for byte: a retry sends the same bytes, not the same JSON written another way
   (keys in another order, other spacing).
-- **Per client:** keys are looked up among the requests with the same `Authorization` header
-  (hashed), so one user never gets another's response. With cookie sessions, and with access
-  tokens that get refreshed (a retry sent with a fresh token would run again), pass
-  `identifier=` returning the user's id. Requests without credentials share one space of keys,
-  safe as long as clients make their keys random (UUIDs).
+- **Per client:** keys are looked up among the requests with the same credentials (hashed): the
+  `Authorization` header, or the cookies when there's none (a cookie session), so one user never
+  gets another's response, nor someone without the victim's cookie who learned their key. With
+  access tokens that get refreshed, or cookies that change between a request and its retry
+  (either way the retry would run again), pass `identifier=` returning the user's id. Requests
+  without credentials share one space of keys, safe as long as clients make their keys random
+  (UUIDs).
 - **Replays come before authentication:** the route's dependencies don't run for a retry, so a
   copy of the request (token, key and body, from a log) gets the response again until it
   expires, even once the token is revoked. An async `identifier=` that checks the credentials,

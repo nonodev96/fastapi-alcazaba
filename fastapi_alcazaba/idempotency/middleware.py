@@ -40,10 +40,16 @@ _MAX_KEY_LENGTH = 255
 _NOT_KEPT = frozenset({401, 403, 404, 405, 406, 408, 409, 411, 413, 414, 415, 422, 425, 429, 431})
 
 
-def authorization(connection: HTTPConnection) -> str:
-    """The default identifier: the `Authorization` header (hashed before it's stored), so that
-    one user never gets another's response, whatever key they send."""
-    return connection.headers.get("authorization", "")
+def credentials(connection: HTTPConnection) -> str:
+    """The default identifier: the request's credentials, hashed before they're stored, so that
+    one user never gets another's response, whatever key they send: the `Authorization` header,
+    or the cookies without one (a cookie session; any cookie that changes between a request and
+    its retry makes the retry run again). Nothing for requests that carry neither."""
+    if authorization := connection.headers.get("authorization"):
+        return "authorization:" + authorization
+    if cookie := connection.headers.get("cookie"):
+        return "cookie:" + cookie
+    return ""
 
 
 def require_idempotency_key(request: Request) -> str:
@@ -92,10 +98,11 @@ class IdempotencyMiddleware:
         FastAPICache's by default. Its backend must support locks.
     :param methods: the methods it applies to; PUT and DELETE are idempotent already.
     :param expire: seconds a response is kept for retries.
-    :param identifier: who the client is (`authorization` by default). Return the user's id
-        with cookie sessions, and with tokens that get refreshed: a retry sent with a fresh token
-        would run again. Requests without credentials share one space of keys, unguessable as
-        long as clients make them random (UUIDs).
+    :param identifier: who the client is (`credentials` by default: the `Authorization` header,
+        or the cookies). Return the user's id with tokens that get refreshed, and with cookies
+        that change between requests: a retry sent with others would run again. Requests without
+        credentials share one space of keys, unguessable as long as clients make them random
+        (UUIDs).
     :param max_body_size: larger request bodies get a 413: they're read whole to fingerprint them.
     :param max_response_size: larger responses aren't kept (a retry would run again).
     :param lock_ttl: seconds the lock outlives a process that dies while running the request.
@@ -130,7 +137,7 @@ class IdempotencyMiddleware:
         self.cache = cache
         self.methods = frozenset(method.upper() for method in methods)
         self.expire = expire
-        self.identifier = identifier or authorization
+        self.identifier = identifier or credentials
         self.max_body_size = max_body_size
         self.max_response_size = max_response_size
         self.lock_ttl = lock_ttl

@@ -71,24 +71,35 @@ one given (400).
 ## Checking what was uploaded
 
 Neither the form nor the URL say what the file is. `check_uploaded` reads it back from the
-bucket, runs [`FastAPIUploads`](uploads.md)'s checks on it, its malware scanner too, and deletes it
-when it fails them (`pip install "fastapi-alcazaba[uploads]"`):
+bucket, runs [`FastAPIUploads`](uploads.md)'s checks on it, its malware scanner too, and moves it
+to a key the clients never get a URL for, or deletes it when it fails them
+(`pip install "fastapi-alcazaba[uploads]"`):
 
 ```python
 from fastapi_alcazaba.uploads.direct import check_uploaded
 
 
-@app.post("/scans/{key:path}/done")
-async def scan_done(key: str) -> dict[str, str]:
-    checked = await check_uploaded(uploads, s3, key)  # 413, 415, 422: and deleted
+@app.post("/scans/{scan_id}/done")
+async def scan_done(scan_id: int) -> dict[str, str]:
+    checked = await check_uploaded(  # 413, 415, 422: and deleted
+        uploads, s3, f"incoming/scans/{scan_id}", move_to=f"scans/{scan_id}"
+    )
     await checked.file.close()
     return {"type": checked.content_type}
 ```
 
+- **Why it's moved:** a presigned URL or form works until it expires, as many times as the client
+  likes. Checked where it was uploaded, the object could be replaced by another the next second,
+  of the same size, and the app would serve what it never checked. So `check_uploaded` copies it
+  to `move_to` only if it's still the object it read (`x-amz-copy-source-if-match` with its ETag),
+  and deletes it from where it was. Replaced in between: deleted, and a 409. Give clients URLs
+  under one prefix (`incoming/`) and serve another.
+- **Under the type it is:** the copy's `Content-Type` is the one found in its bytes, not the one
+  the uploader sent: a PNG uploaded as `text/html` is served as `image/png`.
 - At most `max_size` + 1 bytes are read: a larger object is "too large" without reading the rest.
 - Refused (413, 415, 422): deleted from the bucket with a signed DELETE, and the HTTPException
-  goes on. Not scanned (503, the scanner down): kept, to check later. No such object: 404; the
-  service failing: 502.
+  goes on. Not scanned (503, the scanner down): kept where it was, to check later. No such
+  object: 404; the service failing: 502.
 - The returned `CheckedFile` holds the bytes read (in memory up to 1 MiB, then on disk): close it
   when done.
 - Not yet: multipart (resumable) uploads.

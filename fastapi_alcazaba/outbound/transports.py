@@ -153,9 +153,9 @@ class ResilientTransport(httpx.AsyncBaseTransport):
         trial = False
         if breaker is not None:
             if (state := breaker.allow()) is None:
-                _metrics(self._metrics).count(
-                    "outbound.breaker", event="refused", **{"server.address": origin[1]}
-                )
+                # The host goes in the span and the log, not the metric: with the URLs users
+                # give (webhooks), its values would have no end.
+                _metrics(self._metrics).count("outbound.breaker", event="refused")
                 add_event("fastapi_alcazaba.outbound.refused", **{"server.address": origin[1]})
                 raise CircuitOpenError(
                     f"{_name(origin)}: the circuit breaker is open", request=request
@@ -240,9 +240,7 @@ class ResilientTransport(httpx.AsyncBaseTransport):
             logger.warning(
                 "Circuit breaker of %s open: no calls for %s s", _name(origin), self.reset_timeout
             )
-            _metrics(self._metrics).count(
-                "outbound.breaker", event="opened", **{"server.address": origin[1]}
-            )
+            _metrics(self._metrics).count("outbound.breaker", event="opened")
 
 
 # region SSRF guard

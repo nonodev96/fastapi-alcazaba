@@ -5,7 +5,7 @@ import time
 from typing import Annotated, Any
 
 import pytest
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Header, Request
 from fastapi.testclient import TestClient
 
 from fastapi_alcazaba import Cache, FastAPIAuth
@@ -162,6 +162,46 @@ class TestTokens:
         assert refused.json()["acr_values"] is None
         fresh = bearer(tokens, auth_time=int(time.time()))
         assert client.post("/transfers", headers=fresh).status_code == 200
+
+
+class TestWhoseToken:
+    @staticmethod
+    def app(**options: Any) -> tuple[TestClient, JWTStrategy]:
+        """The user from a session (a header here), the step-up from a token: two credentials."""
+        app = FastAPI()
+        FastAPIProblemDetails().install(app)
+        tokens = JWTStrategy(JWT_SECRET)
+        claims = FastAPIAuth(tokens).authenticate("jwt")
+
+        def session_user(x_user: Annotated[str | None, Header()] = None) -> str | None:
+            return x_user
+
+        @app.delete("/account")
+        async def delete(
+            user: Annotated[
+                str, Depends(stepup.require_recent(session_user, claims=claims, **options))
+            ],
+        ) -> dict[str, str]:
+            return {"deleted": user}
+
+        return TestClient(app), tokens
+
+    def test_a_fresh_token_of_someone_else_steps_nobody_up(self) -> None:
+        """A stolen session, and the attacker's own fresh token: refused."""
+        client, tokens = self.app(methods={"hwk"})
+        mine = tokens.issue("mallory", auth_time=int(time.time()), amr=["hwk"])
+        headers = {"X-User": "victim", "Authorization": f"Bearer {mine}"}
+        assert client.delete("/account", headers=headers).status_code == 401
+        headers["X-User"] = "mallory"
+        assert client.delete("/account", headers=headers).json() == {"deleted": "mallory"}
+
+    def test_another_claim_for_the_user(self) -> None:
+        client, tokens = self.app(subject=lambda claims: claims.get("preferred_username"))
+        token = tokens.issue("1234", auth_time=int(time.time()), preferred_username="ana")
+        headers = {"X-User": "ana", "Authorization": f"Bearer {token}"}
+        assert client.delete("/account", headers=headers).json() == {"deleted": "ana"}
+        headers["X-User"] = "1234"
+        assert client.delete("/account", headers=headers).status_code == 401
 
 
 class TestAudit:

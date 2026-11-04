@@ -172,7 +172,9 @@ app.add_middleware(SecurityHeadersMiddleware)  # last: the outermost
 
 - **Security headers:** the OWASP REST ones: `X-Content-Type-Options: nosniff`,
   `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy:
-  same-origin`. Headers the app sets itself are never overwritten; `headers=` adds others or
+  same-origin`; and a `Permissions-Policy` that turns off the camera, the microphone,
+  geolocation, payments, USB, screen capture and the motion sensors, which no API response (nor
+  the Swagger UI) needs. Headers the app sets itself are never overwritten; `headers=` adds others or
   changes the defaults (None removes one). Add it last, the outermost, so that the answers of
   the middlewares inside it (`BodySizeLimitMiddleware`'s 400 and 413) get them too. Starlette's
   500 for an unhandled exception never does: `ServerErrorMiddleware` wraps every middleware you

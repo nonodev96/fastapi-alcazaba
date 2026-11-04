@@ -14,8 +14,9 @@ Signature Version 4, which the browser uses directly. Needs nothing more.
     url = s3.download_url(f"invoices/{invoice.id}.pdf", filename="invoice.pdf", expires=60)
 
 The bucket stays private: each URL is for one object, one method, and a few minutes. Check what
-was uploaded before using it (`check_uploaded`, which reads it back and deletes it when it fails
-`FastAPIUploads`'s checks): the form and the URL bound its size, not what it is.
+was uploaded before using it (`check_uploaded`, which reads it back, and moves it where clients
+can't write or deletes it when it fails `FastAPIUploads`'s checks): the form and the URL bound its
+size, not what it is, and work as many times as the client likes until they expire.
 """
 
 import base64
@@ -188,6 +189,31 @@ class S3Presigner:
             headers["content-type"] = content_type
         url = self._presign("PUT", key, expires, {}, now, headers)
         return PresignedUpload(url, headers)
+
+    def copy_url(
+        self,
+        source: str,
+        key: str,
+        *,
+        if_match: str,
+        content_type: str,
+        expires: int = 60,
+        now: datetime | None = None,
+    ) -> PresignedUpload:
+        """A PUT that copies the object `source` of this bucket to `key`, for the app
+        (`check_uploaded`), never a client: only while `source` is still the object whose ETag is
+        `if_match` (a 412 otherwise), and with `content_type` as its type, whatever the uploader
+        said. The app sends `headers` as they are."""
+        _check_key(source)
+        if not if_match or any(ord(char) < 32 for char in if_match):
+            raise ValueError("if_match is the ETag of the object read")
+        headers = {
+            "x-amz-copy-source": f"/{self.bucket}/{_encode(source, safe='-_.~/')}",
+            "x-amz-copy-source-if-match": if_match,
+            "x-amz-metadata-directive": "REPLACE",
+            "content-type": content_type,
+        }
+        return PresignedUpload(self._presign("PUT", key, expires, {}, now, headers), headers)
 
     def delete_url(self, key: str, *, expires: int = 60, now: datetime | None = None) -> str:
         """A URL that DELETEs the object `key`, for the app (`check_uploaded`), never a client."""

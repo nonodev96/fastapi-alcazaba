@@ -71,6 +71,7 @@ def require_recent(
     methods: Collection[str] | None = None,
     claims: Callable[..., Any] | None = None,
     acr_values: Collection[str] | None = None,
+    subject: Callable[[dict[str, Any]], Any] | None = None,
     audit: "FastAPIAudit | None" = None,
 ) -> Callable[..., Any]:
     """A dependency that lets through the users who authenticated in the last `max_age` seconds,
@@ -80,8 +81,9 @@ def require_recent(
       `methods` ("passkey", "totp"...). Otherwise a 403 problem (`PROBLEM_TYPE`, "Second factor
       required") with `max_age` and `methods`, for the front end to ask for one and `mark` it.
     - **Tokens:** when `claims` (a dependency) gives the request's token claims (a dict), they
-      decide instead: `auth_time` within `max_age`, an `amr` among `methods` (RFC 8176's names:
-      "hwk", "otp", "mfa"...), an `acr` among `acr_values`. Otherwise a 401 with
+      decide instead: the token must be the user's (its `sub` is `user_id`'s), with `auth_time`
+      within `max_age`, an `amr` among `methods` (RFC 8176's names: "hwk", "otp", "mfa"...), an
+      `acr` among `acr_values`. Otherwise a 401 with
       `WWW-Authenticate: Bearer error="insufficient_user_authentication"` and the `max_age` and
       `acr_values` to ask the provider for (RFC 9470), as a problem too.
     - **Audited:** with `audit`, each check is an `auth.stepup` event with the method and the
@@ -90,6 +92,9 @@ def require_recent(
     :param user_id: a dependency that returns the request's user ID, or None.
     :param claims: a dependency that returns the token's claims when the request came with one
         (`auth.authenticate("jwt", optional=True)`), None for a session.
+    :param subject: the user ID a token's claims belong to, compared with `user_id`'s; the `sub`
+        claim by default. A token of someone else (a fresh one of the attacker's own, sent with a
+        stolen session) never steps anybody up.
     """
     if max_age < 1:
         raise ValueError("max_age is 1 second or more")
@@ -97,6 +102,7 @@ def require_recent(
     acr = frozenset(acr_values) if acr_values is not None else None
     if (wanted is not None and not wanted) or (acr is not None and not acr):
         raise ValueError("methods and acr_values list at least one, or are None")
+    owner = subject if subject is not None else _sub
 
     async def no_claims() -> None:
         return None
@@ -110,6 +116,8 @@ def require_recent(
             raise HTTPException(HTTP_401_UNAUTHORIZED, "Not authenticated")
         if isinstance(token, dict):
             method, age, reason = _token_check(token, max_age, wanted, acr)
+            if str(owner(token)) != str(current):
+                reason = "other_subject"
         else:
             method, age, reason = _session_check(request, current, max_age, wanted)
         if audit is not None:
@@ -153,6 +161,10 @@ def _session_check(
     if methods is not None and method not in methods:
         return method, age, "wrong_method"
     return method, age, None
+
+
+def _sub(claims: dict[str, Any]) -> Any:
+    return claims.get("sub")
 
 
 def _token_check(

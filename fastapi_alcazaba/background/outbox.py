@@ -410,13 +410,23 @@ class OutboxRelay:
                 except Exception as exc:  # the message is tried again: the relay goes on
                     record_failure(span, exc)
                     attempts = message.attempts + 1
-                    error = f"{type(exc).__name__}: {exc}"
+                    # The type only in the table, as the task queue does: an error's message may
+                    # hold personal data, or a URL with a token. The log has the whole error.
+                    error = type(exc).__name__
                     if attempts >= self.max_attempts:
-                        logger.error("Gave up on outbox message %s (%s)", message.id, message.topic)
+                        logger.error(
+                            "Gave up on outbox message %s (%s): %s",
+                            message.id,
+                            message.topic,
+                            error,
+                            exc_info=exc,
+                        )
                         await self.outbox.give_up(message.id, attempts, error)
                         metrics.count("outbox", outcome="given_up", **counted)
                     else:
-                        logger.warning("Outbox message %s not delivered: %s", message.id, error)
+                        logger.warning(
+                            "Outbox message %s not delivered: %s", message.id, error, exc_info=exc
+                        )
                         delay = min(self.max_delay, 2 ** (attempts - 1))
                         await self.outbox.retry(message.id, attempts, time.time() + delay, error)
                         metrics.count("outbox", outcome="retried", **counted)

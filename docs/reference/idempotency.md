@@ -9,4 +9,4 @@ In the guide: [Idempotency keys](../guide/idempotency.md). In an app: [the examp
 
 ::: fastapi_alcazaba.idempotency.require_idempotency_key
 
-::: fastapi_alcazaba.idempotency.authorization
+::: fastapi_alcazaba.idempotency.credentials

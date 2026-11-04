@@ -8,6 +8,7 @@ from fastapi_alcazaba.core.errors import (
     CircuitOpen,
     UnsignedEntriesWarning,
     UnstableCacheKeyWarning,
+    ValueTooLarge,
 )
 from fastapi_alcazaba.core.integrity import Secret, Secrets, Signer
 from fastapi_alcazaba.core.resilience import BackendGuard, CircuitBreaker
@@ -24,4 +25,5 @@ __all__ = [
     "Signer",
     "UnsignedEntriesWarning",
     "UnstableCacheKeyWarning",
+    "ValueTooLarge",
 ]

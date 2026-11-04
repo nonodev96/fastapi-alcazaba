@@ -99,7 +99,7 @@ COUNTERS: dict[str, tuple[str, str]] = {
     ),
     "outbound.breaker": (
         "{event}",
-        "Circuit breakers of outbound origins, by event (opened, refused) and server.address",
+        "Circuit breakers of outbound origins, by event (opened, refused)",
     ),
     "outbound.ssrf.blocked": (
         "{request}",

@@ -2,6 +2,7 @@
 PUTs bounded by size and checksum, and files uploaded straight to the bucket read back."""
 
 import asyncio
+import hashlib
 import io
 import logging
 import struct
@@ -277,6 +278,25 @@ class TestPresignedPuts:
         with pytest.raises(ValueError, match=message):
             presigner().upload_url("a", **options)
 
+    def test_copy_url(self) -> None:
+        copy = presigner().copy_url(
+            "incoming/a b", "checked/1", if_match='"abc"', content_type="image/png"
+        )
+        assert copy.url.startswith("https://s3.example.com/uploads/checked/1?")
+        assert copy.headers == {
+            "x-amz-copy-source": "/uploads/incoming/a%20b",
+            "x-amz-copy-source-if-match": '"abc"',
+            "x-amz-metadata-directive": "REPLACE",
+            "content-type": "image/png",
+        }
+        signed = parse_qs(urlsplit(copy.url).query)["X-Amz-SignedHeaders"]
+        assert signed == [
+            "content-type;host;x-amz-copy-source;x-amz-copy-source-if-match;"
+            "x-amz-metadata-directive"
+        ]
+        with pytest.raises(ValueError, match="ETag"):
+            presigner().copy_url("a", "b", if_match="", content_type="text/plain")
+
     def test_delete_url(self) -> None:
         url = presigner().delete_url("scans/1")
         assert url.startswith("https://s3.example.com/uploads/scans/1?")
@@ -284,24 +304,44 @@ class TestPresignedPuts:
 
 
 class Bucket:
-    """Stands in for the bucket: GETs and DELETEs of its objects."""
+    """Stands in for the bucket: GETs (with an ETag), conditional copies and DELETEs."""
 
     def __init__(self, objects: dict[str, bytes]) -> None:
         self.objects = objects
+        self.types: dict[str, str] = {}
         self.deleted: list[str] = []
         self.status = 200
         self.delete_status = 204
+        self.copy_answer: httpx.Response | None = None
+        self.after_read: bytes | None = None  # what the client uploads once it was read
+
+    @staticmethod
+    def etag(data: bytes) -> str:
+        return f'"{hashlib.md5(data).hexdigest()}"'  # noqa: S324  # S3's ETag of a simple upload
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         key = request.url.path.removeprefix("/uploads/")
         if request.method == "DELETE":
             self.deleted.append(key)
+            self.objects.pop(key, None)
             return httpx.Response(self.delete_status)
+        if request.method == "PUT":
+            if self.copy_answer is not None:
+                return self.copy_answer
+            source = request.headers["x-amz-copy-source"].removeprefix("/uploads/")
+            if self.etag(self.objects[source]) != request.headers["x-amz-copy-source-if-match"]:
+                return httpx.Response(412)
+            self.objects[key] = self.objects[source]
+            self.types[key] = request.headers["content-type"]
+            return httpx.Response(200, content=b"<CopyObjectResult/>")
         if self.status != 200:
             return httpx.Response(self.status)
         if key not in self.objects:
             return httpx.Response(404)
-        return httpx.Response(200, content=self.objects[key])
+        data = self.objects[key]
+        if self.after_read is not None:
+            self.objects[key] = self.after_read
+        return httpx.Response(200, content=data, headers={"etag": self.etag(data)})
 
 
 def client_of(bucket: Bucket) -> httpx.AsyncClient:
@@ -309,10 +349,12 @@ def client_of(bucket: Bucket) -> httpx.AsyncClient:
 
 
 class TestCheckUploaded:
-    async def test_a_good_one_stays(self) -> None:
+    async def test_a_good_one_is_moved(self) -> None:
         bucket = Bucket({"scans/1": TEXT})
         uploads = FastAPIUploads("text/plain", scanner=FakeScanner())
-        checked = await check_uploaded(uploads, presigner(), "scans/1", client=client_of(bucket))
+        checked = await check_uploaded(
+            uploads, presigner(), "scans/1", move_to="checked/1", client=client_of(bucket)
+        )
         assert (checked.content_type, checked.size, checked.filename) == (
             "text/plain",
             len(TEXT),
@@ -320,7 +362,50 @@ class TestCheckUploaded:
         )
         assert await checked.file.read() == TEXT
         await checked.file.close()  # the caller's
-        assert bucket.deleted == []
+        assert bucket.objects == {"checked/1": TEXT}
+        assert bucket.types == {"checked/1": "text/plain"}  # the type found, not the uploader's
+
+    async def test_replaced_after_it_was_read(self) -> None:
+        """A presigned URL works until it expires: an object replaced once checked is never
+        moved."""
+        bucket = Bucket({"scans/1": TEXT})
+        bucket.after_read = EICAR
+        with pytest.raises(HTTPException) as refused:
+            await check_uploaded(
+                FastAPIUploads("text/plain"),
+                presigner(),
+                "scans/1",
+                move_to="checked/1",
+                client=client_of(bucket),
+            )
+        assert refused.value.status_code == 409
+        assert bucket.objects == {}
+
+    @pytest.mark.parametrize(
+        "answer",
+        [
+            httpx.Response(200, content=b"<Error><Code>InternalError</Code></Error>"),
+            httpx.Response(500),
+        ],
+    )
+    async def test_a_copy_that_fails(self, answer: httpx.Response) -> None:
+        bucket = Bucket({"scans/1": TEXT})
+        bucket.copy_answer = answer
+        with pytest.raises(HTTPException, match="storage didn't answer"):
+            await check_uploaded(
+                FastAPIUploads("text/plain"),
+                presigner(),
+                "scans/1",
+                move_to="checked/1",
+                client=client_of(bucket),
+            )
+        assert bucket.objects == {"scans/1": TEXT}  # kept, to check again
+
+    async def test_moved_elsewhere(self) -> None:
+        with pytest.raises(ValueError, match="another key"):
+            await check_uploaded(
+                FastAPIUploads("text/plain"), presigner(), "scans/1", move_to="scans/1"
+            )
 
     @pytest.mark.parametrize(
         ("data", "status"),
@@ -331,7 +416,12 @@ class TestCheckUploaded:
         uploads = FastAPIUploads("text/plain", scanner=FakeScanner(), max_size=200)
         with pytest.raises(HTTPException) as refused:
             await check_uploaded(
-                uploads, presigner(), "scans/1", client=client_of(bucket), filename="x.txt"
+                uploads,
+                presigner(),
+                "scans/1",
+                move_to="checked/1",
+                client=client_of(bucket),
+                filename="x.txt",
             )
         assert refused.value.status_code == status
         assert bucket.deleted == ["scans/1"]
@@ -340,24 +430,32 @@ class TestCheckUploaded:
         bucket = Bucket({"scans/1": TEXT})
         uploads = FastAPIUploads("text/plain", scanner=FakeScanner("down"))
         with pytest.raises(HTTPException, match="unavailable"):
-            await check_uploaded(uploads, presigner(), "scans/1", client=client_of(bucket))
+            await check_uploaded(
+                uploads, presigner(), "scans/1", move_to="checked/1", client=client_of(bucket)
+            )
         assert bucket.deleted == []
 
     async def test_missing_and_failing_storage(self) -> None:
         uploads = FastAPIUploads("text/plain")
         bucket = Bucket({})
         with pytest.raises(HTTPException, match="No such upload"):
-            await check_uploaded(uploads, presigner(), "scans/2", client=client_of(bucket))
+            await check_uploaded(
+                uploads, presigner(), "scans/2", move_to="checked/2", client=client_of(bucket)
+            )
         bucket.status = 500
         with pytest.raises(HTTPException, match="storage didn't answer"):
-            await check_uploaded(uploads, presigner(), "scans/2", client=client_of(bucket))
+            await check_uploaded(
+                uploads, presigner(), "scans/2", move_to="checked/2", client=client_of(bucket)
+            )
 
         def broken(request: httpx.Request) -> httpx.Response:
             raise httpx.ConnectError("refused", request=request)
 
         refused = httpx.AsyncClient(transport=httpx.MockTransport(broken))
         with pytest.raises(HTTPException, match="storage didn't answer"):
-            await check_uploaded(uploads, presigner(), "scans/2", client=refused)
+            await check_uploaded(
+                uploads, presigner(), "scans/2", move_to="checked/2", client=refused
+            )
 
     async def test_a_delete_that_fails_is_logged(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.INFO)
@@ -365,7 +463,11 @@ class TestCheckUploaded:
         bucket.delete_status = 403
         with pytest.raises(HTTPException):
             await check_uploaded(
-                FastAPIUploads("text/plain"), presigner(), "scans/1", client=client_of(bucket)
+                FastAPIUploads("text/plain"),
+                presigner(),
+                "scans/1",
+                move_to="checked/1",
+                client=client_of(bucket),
             )
         assert "Couldn't delete the refused upload 'scans/1'" in caplog.text
 
@@ -380,7 +482,9 @@ class TestCheckUploaded:
             return client
 
         monkeypatch.setattr("fastapi_alcazaba.uploads.direct.httpx.AsyncClient", make)
-        checked = await check_uploaded(FastAPIUploads("text/plain"), presigner(), "scans/1")
+        checked = await check_uploaded(
+            FastAPIUploads("text/plain"), presigner(), "scans/1", move_to="checked/1"
+        )
         await checked.file.close()
         assert made[0].is_closed
 

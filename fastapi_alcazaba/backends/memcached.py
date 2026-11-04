@@ -65,14 +65,20 @@ class MemcachedBackend(Backend):
     Locks are taken with `add`, and released or extended with `gets` + `cas`, so only their holder
     can. memcached keeps time in whole seconds: a lock lasts up to two seconds more than asked,
     never less.
+
+    :param max_value_size: the largest value stored, stamp included: memcached's item size (1 MiB
+        unless the server runs with `-I`) less room for the key and memcached's own header.
     """
 
     supports_locks = True
     supports_tags = True
     supports_counters = True
 
-    def __init__(self, mcache: Client) -> None:
+    def __init__(self, mcache: Client, *, max_value_size: int = 1024 * 1024 - 512) -> None:
+        if max_value_size < 1:
+            raise ValueError("max_value_size must be at least 1 byte")
         self.mcache = mcache
+        self.max_value_size = max_value_size
 
     async def get_with_ttl(self, key: str) -> tuple[int, bytes | None]:
         if is_state_key(key):
@@ -110,6 +116,7 @@ class MemcachedBackend(Backend):
             names = [namespace_generation(namespace) for namespace in namespaces(key)]
             expires_at = int(time.time()) + expire if expire else 0
             value = encode_stamp(Stamp(expires_at, await self._generations(names)), value)
+        self.check_size(key, value)
         await self.mcache.set(memcached_key(key), value, exptime=_exptime(expire))
 
     async def _get_many(self, keys: Sequence[str]) -> dict[str, bytes | None]:

@@ -112,10 +112,27 @@ class TestRetries:
 
         client = app.client()
         assert client.post("/sessions", headers=KEY).headers["set-cookie"].startswith("session=")
+        client.cookies.clear()  # the retry of a client that didn't get the answer
         retry = client.post("/sessions", headers=KEY)
         assert retry.json() == {"logged_in": True}
         assert "set-cookie" not in retry.headers
         assert app.runs == 1
+
+    def test_cookie_sessions_are_clients_of_their_own(self) -> None:
+        """Without an Authorization header, the cookies tell the clients apart: someone who
+        learned a user's key, without their cookie, doesn't get their response."""
+        app = App()
+        client = app.client()
+        mine = {**KEY, "Cookie": "session=ana"}
+        client.post("/orders", json={"item": "a"}, headers=mine)
+        assert (
+            client.post("/orders", json={"item": "a"}, headers=mine).headers["idempotent-replayed"]
+            == "true"
+        )
+        for other in ({**KEY, "Cookie": "session=mallory"}, KEY):
+            response = client.post("/orders", json={"item": "a"}, headers=other)
+            assert "idempotent-replayed" not in response.headers
+        assert app.runs == 3
 
     def test_quoted_and_bare_keys_are_the_same_key(self) -> None:
         app = App()

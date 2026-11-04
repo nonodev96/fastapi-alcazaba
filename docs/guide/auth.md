@@ -33,9 +33,12 @@ async def orders(key: Annotated[ApiKeyRow, Depends(keys.require("orders:read"))]
     return await db.orders(owner=key.owner)
 ```
 
-- **Key format:** `ak_<id>_<secret>` (`prefix` changes `ak`; `sk_live` works too): an 80-bit id
-  that finds the record and a 256-bit secret, in lowercase base32. A distinctive prefix lets
-  secret scanners (GitHub's, GitLab's) spot leaked keys.
+- **Key format:** `ak_<id>_<secret>_<checksum>` (`prefix` changes `ak`; `sk_live` works too): an
+  80-bit id that finds the record, a 256-bit secret, and the CRC-32 of the rest, in lowercase
+  base32. A distinctive prefix lets secret scanners (GitHub's, GitLab's) spot leaked keys, and
+  the checksum lets them tell a key from a string that looks like one without asking anybody
+  (as GitHub's own tokens do). It isn't a secret: a key with the wrong one is refused as
+  malformed, without a lookup.
 - **Stored as a digest:** the record holds a SHA-256 digest of the secret, bound to the key's id.
   Random 256-bit secrets don't need a slow password hash. With a `pepper` (a server secret of at
   least 32 bytes, kept out of the database) the digest is an HMAC, so a copy of the database
@@ -122,8 +125,11 @@ async def login(email: str, code: str) -> Token:
   [refresh tokens](authentication/jwt.md#refresh-tokens)).
 - **Guesses and single use:** every guess counts, malformed ones included, and a code is lost
   after `max_attempts` (5). Of several requests with the right code at the same time, only one
-  succeeds. Issuing a code replaces the previous one and gives the attempts again: rate-limit the
-  route that issues them.
+  succeeds. The guesses are counted for the subject and purpose, not for each code: issuing a new
+  one replaces the previous one but doesn't give them back, so asking for code after code never
+  adds up to more than `max_attempts` guesses each `ttl`. Once they're used, new codes fail too
+  until the window ends (up to `ttl`, 5 minutes); the right code starts the count again.
+  Rate-limit the route that issues them anyway: each code is an e-mail or an SMS.
 - **Every process sees them at once:** they're read from the shared backend, never from
   `TieredBackend`'s copies in each process. On DynamoDB, whose reads are eventually consistent, a
   revocation or a new code can take about a second to reach every process.

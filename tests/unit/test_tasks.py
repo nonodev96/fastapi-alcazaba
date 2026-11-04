@@ -619,6 +619,30 @@ class TestRefusedTasks:
         await self.run(queue)
         assert ran == [42]
         assert [dead.reason for dead in await queue.dead_letters()] == ["replayed"] * 3
+        # Requeueing them after an incident doesn't run the refund three more times.
+        assert await queue.requeue_dead_letters() == 0
+        assert await queue.requeue_dead_letters(stale=True) == 0
+        await self.run(queue)
+        assert ran == [42]
+        assert len(await queue.dead_letters()) == 3
+
+    async def test_copies_buried_for_another_reason_stay(self, world: World) -> None:
+        """A captured payload written straight to the dead letters, as failed: its task's status
+        says it ran, so it stays."""
+        queue = world.queue()
+        ran = []
+
+        @queue.task("refund")
+        async def refund(order_id: int) -> None:
+            ran.append(order_id)
+
+        captured = sealed(queue, body("refund", 42))
+        await world.plant(queue, {"p": captured})
+        await self.run(queue)
+        await world.raw.xadd(queue._dead, {"p": captured, "reason": "failed"})
+        assert await queue.requeue_dead_letters() == 0
+        await self.run(queue)
+        assert ran == [42]
 
     async def test_stale_tasks_are_refused(self, world: World) -> None:
         queue = world.queue()
@@ -633,7 +657,8 @@ class TestRefusedTasks:
         assert not ran
         (dead,) = await queue.dead_letters()
         assert dead.reason == "stale"
-        assert await queue.requeue_dead_letters() == 1  # with a new deadline
+        assert await queue.requeue_dead_letters() == 0  # not without saying so
+        assert await queue.requeue_dead_letters(stale=True) == 1  # with a new deadline
         await self.run(queue)
         assert ran == [1]
 

@@ -24,7 +24,8 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from fastapi_alcazaba import FastAPIAuth, FastAPICache
-from fastapi_alcazaba.auth import SessionStrategy
+from fastapi_alcazaba.auth import AuthenticationFailed, SessionStrategy
+from fastapi_alcazaba.auth.strategies.jwt import JWTStrategy
 from fastapi_alcazaba.auth.strategies.oidc import OIDCStrategy
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.security import ServerSessionMiddleware
@@ -44,11 +45,19 @@ def fixture_provider() -> dict[str, str]:
     return {name.lower(): value for name, value in found.items() if value is not None}
 
 
+class KeepsTheAccessToken(OIDCStrategy):
+    """Puts the access token next to the ID token, for the test to use it at an API."""
+
+    async def _finish(self, tokens: dict[str, Any], kept: list[str], connection: Any) -> Any:
+        connection.state.access_token = tokens["access_token"]
+        return await super()._finish(tokens, kept, connection)
+
+
 @pytest.fixture(name="app")
 def fixture_app(provider: dict[str, str]) -> Iterator[TestClient]:
     auth = FastAPIAuth()
     oidc = auth.use(
-        OIDCStrategy(
+        KeepsTheAccessToken(
             name="oidc",
             issuer=provider["issuer"],
             client_id=provider["client_id"],
@@ -77,6 +86,7 @@ def fixture_app(provider: dict[str, str]) -> Iterator[TestClient]:
             "iss": user["iss"],
             "sid": user.get("sid"),
             "id_token": request.state.id_token,
+            "access_token": request.state.access_token,
         }
 
     @app.post("/logout")
@@ -134,6 +144,28 @@ def test_a_login(app: TestClient, provider: dict[str, str]) -> None:
     assert user["iss"] == provider["issuer"]
     assert user["sub"]
     assert user["email"]
+
+
+async def test_the_access_token_opens_an_api_and_the_id_token_doesnt(
+    app: TestClient,
+    provider: dict[str, str],
+) -> None:
+    """JWTStrategy with Keycloak's JWKS: its access tokens pass, its ID tokens (same keys, same
+    issuer) don't."""
+    path = urlsplit(through_keycloak(app, provider))._replace(scheme="", netloc="").geturl()
+    login = app.get(path).json()
+    api = JWTStrategy(
+        jwks_url=f"{provider['issuer']}/protocol/openid-connect/certs",
+        issuer=provider["issuer"],
+        audience=provider["client_id"],
+    )
+    try:
+        claims = await api.decode(login["access_token"])
+        assert claims["sub"] == login["sub"]
+        with pytest.raises(AuthenticationFailed, match="not an access token"):
+            await api.decode(login["id_token"])
+    finally:
+        await api.aclose()
 
 
 def test_a_code_used_twice(app: TestClient, provider: dict[str, str]) -> None:

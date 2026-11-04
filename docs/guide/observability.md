@@ -330,7 +330,7 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.problems` | `fastapi_alcazaba.status`, `fastapi_alcazaba.kind` (http_exception, problem, validation, unhandled) |
 | `fastapi_alcazaba.request_timeouts` | `fastapi_alcazaba.outcome` (504, cut: already streaming), `fastapi_alcazaba.route` |
 | `fastapi_alcazaba.request_ids` | `fastapi_alcazaba.source` (incoming, generated, rejected): many rejected may be a misconfigured proxy, or someone forging log lines |
-| `fastapi_alcazaba.outbound.breaker` | `fastapi_alcazaba.event` (opened, refused), `server.address` |
+| `fastapi_alcazaba.outbound.breaker` | `fastapi_alcazaba.event` (opened, refused); the host is in the log and the span event, not here: with URLs users give, its values would have no end |
 | `fastapi_alcazaba.outbound.ssrf.blocked` | `fastapi_alcazaba.reason` (scheme, host, port, address) |
 | `fastapi_alcazaba.webhooks.deliveries` | `fastapi_alcazaba.outcome` (delivered, retrying, failed, disabled, skipped): attempts of `WebhookSender` |
 | `fastapi_alcazaba.webhooks` | `fastapi_alcazaba.scheme` (standard, github, stripe, slack), `fastapi_alcazaba.outcome` (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable) |

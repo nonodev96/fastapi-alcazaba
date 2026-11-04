@@ -119,6 +119,46 @@ class TestRotation:
             with pytest.raises(ValueError, match="Ed25519"):
                 audit_keys(pem)
 
+    async def test_every_form_of_a_public_key_is_one(self) -> None:
+        """A public key in DER, OpenSSH, raw PEM with text before it: read as the key it is,
+        never as an HMAC secret, which anybody holding it could sign with."""
+        private = ed25519.Ed25519PrivateKey.generate()
+        public = private.public_key()
+        events = await write(FastAPIAudit([MemoryAuditSink()], signing_key=private), 2)
+        forms = [
+            public.public_bytes(
+                serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+            ),
+            public.public_bytes(serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH),
+            b"the auditor's key:\n"
+            + public.public_bytes(
+                serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+            ),
+        ]
+        for form in forms:
+            (key,) = audit_keys(form)
+            assert (key.algorithm, key.can_sign) == ("ed25519", False)
+            assert verify_audit_trail(events, form) == []
+            with pytest.raises(ValueError, match="signs: a private key or a secret"):
+                FastAPIAudit(signing_key=form)
+        der_private = private.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        assert audit_keys(der_private)[0].can_sign
+        rsa_der = (
+            rsa.generate_private_key(public_exponent=65537, key_size=2048)
+            .public_key()
+            .public_bytes(
+                serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+        )
+        with pytest.raises(ValueError, match="Ed25519"):
+            audit_keys(rsa_der)
+        with pytest.raises(ValueError, match="OpenSSH"):
+            audit_keys(b"ssh-ed25519 not-base64")
+
     async def test_a_signature_naming_no_key(self) -> None:
         events = await write(FastAPIAudit([MemoryAuditSink()], signing_key=SECRET), 1)
         unknown = {**events[0].to_dict(), "signature": "rsa:abc:00"}
@@ -332,6 +372,7 @@ class TestCommandLine:
             ),
             (["audit", "verify", "x.log", "--key", "missing.pem"], "can't read the key"),
             (["audit", "verify", "x.log", "--hmac-env", "SHORT_KEY"], "at least 32 bytes"),
+            (["audit", "verify", "x.log", "--key", "secret.txt"], "isn't an Ed25519 key"),
         ],
     )
     def test_usage(
@@ -344,6 +385,7 @@ class TestCommandLine:
     ) -> None:
         monkeypatch.chdir(tmp_path)
         (tmp_path / "x.log").write_text("")
+        (tmp_path / "secret.txt").write_text(SECRET)  # an HMAC secret where a public key goes
         monkeypatch.setenv("AUDIT_KEY", SECRET)
         monkeypatch.setenv("SHORT_KEY", "short")
         assert main(argv) == USAGE

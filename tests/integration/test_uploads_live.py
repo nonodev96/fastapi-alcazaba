@@ -80,22 +80,34 @@ async def test_read_back_checked_and_deleted(s3: S3Presigner) -> None:
     if address := os.environ.get("CLAMAV_URL"):
         scanner = ClamAVScanner(address)
     uploads = FastAPIUploads("text/plain", scanner=scanner)
-    await put(s3, "good.txt", TEXT)
-    checked = await check_uploaded(uploads, s3, "good.txt")
+    # Uploaded as HTML: moved as what it is, text, so it never runs as a page.
+    await put(s3, "incoming/good.txt", TEXT, content_type="text/html")
+    checked = await check_uploaded(uploads, s3, "incoming/good.txt", move_to="files/good.txt")
     assert checked.size == len(TEXT)
     await checked.file.close()
-    await put(s3, "bad.pdf", b"%PDF-1.7\n")
+    await put(s3, "incoming/bad.pdf", b"%PDF-1.7\n")
     with pytest.raises(Exception, match="Unsupported file type"):
-        await check_uploaded(uploads, s3, "bad.pdf")
+        await check_uploaded(uploads, s3, "incoming/bad.pdf", move_to="files/bad.pdf")
     async with httpx.AsyncClient() as client:
-        assert (await client.get(s3.download_url("good.txt"))).status_code == 200
-        assert (await client.get(s3.download_url("bad.pdf"))).status_code == 404
+        moved = await client.get(s3.download_url("files/good.txt"))
+        assert (moved.content, moved.headers["content-type"]) == (TEXT, "text/plain")
+        for gone in ("incoming/good.txt", "incoming/bad.pdf", "files/bad.pdf"):
+            assert (await client.get(s3.download_url(gone))).status_code == 404
     if scanner is not None:
-        await put(s3, "eicar.txt", EICAR)
+        await put(s3, "incoming/eicar.txt", EICAR)
         with pytest.raises(Exception, match="File rejected"):
-            await check_uploaded(uploads, s3, "eicar.txt")
+            await check_uploaded(uploads, s3, "incoming/eicar.txt", move_to="files/eicar.txt")
         async with httpx.AsyncClient() as client:
-            assert (await client.get(s3.download_url("eicar.txt"))).status_code == 404
+            assert (await client.get(s3.download_url("incoming/eicar.txt"))).status_code == 404
+
+
+async def test_replaced_after_it_was_read(s3: S3Presigner) -> None:
+    """The copy is conditional on the ETag read: MinIO refuses it once the object changed."""
+    await put(s3, "incoming/a.txt", TEXT)
+    copy = s3.copy_url("incoming/a.txt", "files/a.txt", if_match='"0"', content_type="text/plain")
+    async with httpx.AsyncClient() as client:
+        assert (await client.put(copy.url, headers=copy.headers)).status_code == 412
+        assert (await client.get(s3.download_url("files/a.txt"))).status_code == 404
 
 
 async def test_clamd_answers(s3: S3Presigner) -> None:

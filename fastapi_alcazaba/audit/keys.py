@@ -18,8 +18,8 @@ from pydantic import SecretBytes, SecretStr
 from fastapi_alcazaba.core.integrity import reveal, secret_list
 
 #: What a key can be: an HMAC secret (32 bytes or more), an Ed25519 private key (it signs, and
-#: verifies), an Ed25519 public key (it verifies), as cryptography's objects or PEM; a list
-#: rotates them.
+#: verifies), an Ed25519 public key (it verifies), as cryptography's objects, PEM, DER or an
+#: OpenSSH public key line; a list rotates them.
 AuditKeys = Any
 
 _KID_LABEL = b"fastapi-alcazaba audit kid"
@@ -92,6 +92,8 @@ def audit_keys(keys: AuditKeys) -> list[AuditKey]:
 
 
 def _parse(key: Any) -> AuditKey:
+    if isinstance(key, AuditKey):
+        return key
     ed25519 = _maybe_ed25519()
     if ed25519 is not None and isinstance(key, ed25519.Ed25519PrivateKey):
         return _private(key)
@@ -99,10 +101,16 @@ def _parse(key: Any) -> AuditKey:
         return _public(key)
     value = reveal(key) if isinstance(key, str | bytes | SecretStr | SecretBytes) else key
     raw = value.encode() if isinstance(value, str) else value
-    if isinstance(raw, bytes) and raw.lstrip().startswith(b"-----BEGIN"):
-        return _pem(raw)
     if not isinstance(raw, bytes):
         raise TypeError(f"not an audit key: {type(key).__name__}")
+    # A public key must never be taken for an HMAC secret: whoever has it (anybody: it's public)
+    # could then sign. Every form of one is read as a key, whatever comes before it.
+    if (start := raw.find(b"-----BEGIN")) != -1:
+        return _pem(raw[start:])
+    if raw.lstrip().startswith((b"ssh-", b"ecdsa-")):
+        return _openssh(raw.strip())
+    if (der := _der(raw)) is not None:
+        return der
     secret = secret_list(raw)[0]
     kid = _b64(hmac.new(secret, _KID_LABEL, hashlib.sha256).digest())[:11]
     return AuditKey("hs256", kid, _secret=secret)
@@ -131,6 +139,40 @@ def _pem(raw: bytes) -> AuditKey:
     except ValueError as exc:
         raise ValueError(f"not a PEM key: {exc}") from None
     raise ValueError("an asymmetric audit key is an Ed25519 key")
+
+
+def _openssh(raw: bytes) -> AuditKey:
+    from cryptography.hazmat.primitives import serialization
+
+    try:
+        public = serialization.load_ssh_public_key(raw)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"not an OpenSSH public key: {exc}") from None
+    if not isinstance(public, _ed25519().Ed25519PublicKey):
+        raise ValueError("an asymmetric audit key is an Ed25519 key")
+    return _public(public)
+
+
+def _der(raw: bytes) -> AuditKey | None:
+    """The key in `raw` when it's one in DER (a SEQUENCE), None when it isn't one."""
+    if not raw.startswith(b"\x30"):
+        return None
+    try:
+        from cryptography.hazmat.primitives import serialization
+    except ImportError:  # pragma: no cover  # the tests have cryptography
+        return None
+    for load in (serialization.load_der_public_key, serialization.load_der_private_key):
+        try:
+            loaded = load(raw) if load is serialization.load_der_public_key else load(raw, None)
+        except (ValueError, TypeError):
+            continue
+        ed25519 = _ed25519()
+        if isinstance(loaded, ed25519.Ed25519PrivateKey):
+            return _private(loaded)
+        if isinstance(loaded, ed25519.Ed25519PublicKey):
+            return _public(loaded)
+        raise ValueError("an asymmetric audit key is an Ed25519 key")
+    return None
 
 
 def _kid(public: Any) -> str:

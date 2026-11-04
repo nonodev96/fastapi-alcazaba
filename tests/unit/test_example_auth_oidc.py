@@ -59,6 +59,7 @@ async def fixture_client(
     # Each test's provider has keys of its own, with the same kid: none kept from the last one.
     monkeypatch.setattr(oidc_login.provider, "_keys", {})
     monkeypatch.setattr(oidc_login.provider, "_keys_fetched", -float("inf"))
+    monkeypatch.setattr(oidc_login.provider, "_keys_attempted", -float("inf"))
     app = oidc_login.app
     with TestClient(app, base_url="https://testserver", follow_redirects=False) as client:
         yield client

@@ -5,7 +5,13 @@ import pytest
 
 from fastapi_alcazaba import FastAPICache
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
-from fastapi_alcazaba.core import BackendGuard, BackendUnavailable, CircuitBreaker, CircuitOpen
+from fastapi_alcazaba.core import (
+    BackendGuard,
+    BackendUnavailable,
+    CircuitBreaker,
+    CircuitOpen,
+    ValueTooLarge,
+)
 from fastapi_alcazaba.response_cache import cache
 from fastapi_alcazaba.telemetry import Metrics
 
@@ -98,6 +104,50 @@ class TestBackendGuard:
         with pytest.raises(CircuitOpen):
             await guard.run("get", failing)
         assert len(calls) == 2
+
+    async def test_values_too_large_dont_open_the_breaker(self) -> None:
+        """Five large responses no longer stop the cache, the limits and idempotency for 30 s:
+        the backend is fine, the value isn't."""
+        breaker = CircuitBreaker(2, 30)
+        guard = BackendGuard(None, breaker, Metrics(enabled=False))
+
+        async def too_large() -> None:
+            raise ValueTooLarge("1 MB")
+
+        for _ in range(5):
+            with pytest.raises(BackendUnavailable, match="refused"):
+                await guard.run("set", too_large)
+        assert breaker.state == "closed"
+
+    async def test_a_value_too_large_abandons_the_trial(self) -> None:
+        breaker = CircuitBreaker(1, 0.01)
+        guard = BackendGuard(None, breaker, Metrics(enabled=False))
+
+        async def broken() -> None:
+            raise ConnectionError("down")
+
+        async def too_large() -> None:
+            raise ValueTooLarge("1 MB")
+
+        with pytest.raises(BackendUnavailable):
+            await guard.run("get", broken)
+        await asyncio.sleep(0.02)
+        with pytest.raises(BackendUnavailable):
+            await guard.run("set", too_large)
+        assert breaker.allow() == "half-open"  # another call may try
+
+    def test_backends_refuse_values_too_large(self) -> None:
+        from fastapi_alcazaba.backends.dynamodb import DynamoBackend
+        from fastapi_alcazaba.backends.memcached import MemcachedBackend
+
+        dynamo = DynamoBackend("cache", "eu-west-1")
+        with pytest.raises(ValueTooLarge, match="DynamoBackend"):
+            asyncio.run(dynamo.set("key", b"x" * 400 * 1024))
+        memcached = MemcachedBackend(None, max_value_size=10)  # type: ignore[arg-type]
+        with pytest.raises(ValueTooLarge, match="more than MemcachedBackend takes"):
+            asyncio.run(memcached.set("app!state:x", b"x" * 11))
+        with pytest.raises(ValueError, match="max_value_size"):
+            MemcachedBackend(None, max_value_size=0)  # type: ignore[arg-type]
 
     async def test_a_successful_trial_closes_the_breaker(self) -> None:
         breaker = CircuitBreaker(1, 0.01)

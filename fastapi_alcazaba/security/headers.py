@@ -1,4 +1,5 @@
-"""The security headers of every response: those of the OWASP REST Security Cheat Sheet.
+"""The security headers of every response: those of the OWASP REST Security Cheat Sheet, and a
+`Permissions-Policy` that turns off the browser's powerful features.
 
 A plain ASGI middleware, not `BaseHTTPMiddleware` (which buffers responses and breaks streaming),
 that only touches HTTP requests: WebSockets and lifespan events go through as they are.
@@ -13,12 +14,17 @@ from fastapi_alcazaba.core.asgi import TOKEN
 
 _FORBIDDEN_IN_VALUES = re.compile(r"[\r\n\0]")
 
-#: The OWASP REST Security Cheat Sheet's headers for API responses.
+#: The OWASP REST Security Cheat Sheet's headers for API responses, and a Permissions-Policy
+#: that turns off the features no API response (nor the Swagger UI) needs.
 DEFAULT_SECURITY_HEADERS: Mapping[str, str] = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "no-referrer",
     "Cross-Origin-Opener-Policy": "same-origin",
+    "Permissions-Policy": (
+        "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), "
+        "magnetometer=(), microphone=(), payment=(), usb=()"
+    ),
 }
 _HSTS = b"strict-transport-security"
 _CSP = b"content-security-policy"
@@ -39,14 +45,16 @@ class SecurityHeadersMiddleware:
 
         app.add_middleware(SecurityHeadersMiddleware)
 
-    - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`
-      and `Cross-Origin-Opener-Policy: same-origin` on every response.
+    - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`,
+      `Cross-Origin-Opener-Policy: same-origin` and a `Permissions-Policy` that turns off the
+      camera, the microphone, geolocation, payments and the other powerful features on every
+      response.
     - `Strict-Transport-Security` only on HTTPS requests: on plain HTTP browsers ignore it, and on
       a development `localhost` it would stick. Behind a proxy that terminates TLS, tell the server
       to trust it (`uvicorn --proxy-headers --forwarded-allow-ips=<proxy address>`) so that the
       request's scheme is https.
     - `Content-Security-Policy`: `csp` for responses that aren't HTML (nothing in a JSON response
-      should load anything), `html_csp` for HTML ones. None by default, so that FastAPI's Swagger
+      should load anything), `html_csp` for HTML ones, None by default, so that FastAPI's Swagger
       UI and ReDoc, which load scripts from a CDN, keep working.
 
     :param headers: more headers, or other values for the defaults; None removes a default.

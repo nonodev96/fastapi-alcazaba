@@ -1,5 +1,7 @@
 """API keys: generated once, stored as digests, checked in constant time, scopes and expiry."""
 
+import base64
+import binascii
 import logging
 import re
 from dataclasses import dataclass, replace
@@ -15,7 +17,19 @@ from fastapi_alcazaba.auth.apikeys import NewAPIKey
 
 PEPPER = "p" * 32
 OLD_PEPPER = "o" * 32
-KEY_PATTERN = re.compile(r"ak_[a-z2-7]{16}_[a-z2-7]{52}")
+KEY_PATTERN = re.compile(r"ak_[a-z2-7]{16}_[a-z2-7]{52}_[a-z2-7]{7}")
+
+
+def with_checksum(body: str) -> str:
+    """`body` (`<prefix>_<id>_<secret>`) with its checksum: a key a scanner would take."""
+    crc = binascii.crc32(body.encode()).to_bytes(4, "big")
+    return f"{body}_{base64.b32encode(crc).decode().rstrip('=').lower()}"
+
+
+def wrong_secret(key: str) -> str:
+    """`key` with another secret, and the checksum that goes with it."""
+    body = key.rsplit("_", 1)[0]
+    return with_checksum(body[:-1] + ("a" if body[-1] != "a" else "b"))
 
 
 class Store:
@@ -69,6 +83,7 @@ class TestGenerate:
         expiry = datetime(2030, 1, 1, tzinfo=UTC)
         key, record = keys.generate(scopes=["orders:read", "orders:read"], expires_at=expiry)
         assert KEY_PATTERN.fullmatch(key)
+        assert with_checksum(key.rsplit("_", 1)[0]) == key
         assert key.split("_")[1] == record.id
         assert re.fullmatch(r"[0-9a-f]{64}", record.digest)
         assert key.split("_")[2] not in repr(record)
@@ -102,7 +117,7 @@ class TestGenerate:
         keys = FastAPIAPIKeys(store.lookup, prefix="sk_live")
         new = keys.generate()
         assert new.key.startswith("sk_live_")
-        assert len(new.key.split("_")) == 4
+        assert len(new.key.split("_")) == 5
 
     @pytest.mark.parametrize("prefix", ["", "1ak", "ak_", "a-k", "a" * 33, "ak!"])
     def test_invalid_prefixes(self, store: Store, prefix: str) -> None:
@@ -177,8 +192,10 @@ class TestAuthenticate:
             lambda key: key + "a",
             lambda key: key.upper(),
             lambda key: key.replace("ak_", "xk_"),
-            lambda key: key[:-1] + ("a" if key[-1] != "a" else "b"),  # the wrong secret
-            lambda key: "ak_" + "a" * 16 + key[19:],  # an unknown id
+            wrong_secret,
+            lambda key: with_checksum("ak_" + "a" * 16 + key[19:-8]),  # an unknown id
+            lambda key: key[:-1] + ("a" if key[-1] != "a" else "b"),  # the wrong checksum
+            lambda key: key.rsplit("_", 1)[0],  # no checksum
             lambda key: key + " " * 300,
             lambda key: key.replace("_", "-"),
         ],
@@ -251,9 +268,9 @@ class TestAuthenticate:
         expired = keys.generate()
         store.add(good)
         store.add(expired._replace(record=replace(expired.record, expires_at=datetime.now(UTC))))
-        wrong = good.key[:-1] + ("a" if good.key[-1] != "a" else "b")
+        wrong = wrong_secret(good.key)
         with caplog.at_level(logging.DEBUG, "fastapi_alcazaba.auth.apikeys"):
-            for key in (wrong, expired.key, "ak_" + "a" * 16 + "_" + "b" * 52):
+            for key in (wrong, expired.key, with_checksum("ak_" + "a" * 16 + "_" + "b" * 52)):
                 await refused(keys, key)
         assert caplog.records
         for secret in (good.key.split("_")[2], wrong.split("_")[2], expired.key.split("_")[2]):

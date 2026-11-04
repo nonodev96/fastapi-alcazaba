@@ -178,6 +178,21 @@ class TestJWTKey:
             ([SECRET], {"algorithm": "HS256"}, TypeError, "one key per JWTKey"),
             ("short", {"algorithm": "HS256"}, ValueError, "at least 32 bytes"),
             (pem(RSA.public_key()), {"algorithm": "HS256"}, ValueError, "isn't an HMAC secret"),
+            # Keycloak's realm shows its public key so: base64 DER, without the PEM lines.
+            (
+                b"".join(pem(RSA.public_key()).splitlines()[1:-1]),
+                {"algorithm": "HS256"},
+                ValueError,
+                "isn't an HMAC secret",
+            ),
+            (
+                RSA.public_key().public_bytes(
+                    serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH
+                ),
+                {"algorithm": "HS256"},
+                ValueError,
+                "isn't an HMAC secret",
+            ),
             ("not a key", {"algorithm": "RS256"}, ValueError, "not a key for RS256"),
             (P256, {"algorithm": "RS256"}, ValueError, "not a key for RS256"),
             (SECRET, {"algorithm": "HS256", "kid": ""}, ValueError, "non-empty"),
@@ -211,6 +226,54 @@ class TestJWTKey:
         assert "d" not in public  # never the private part
         with pytest.raises(ValueError, match="no public key"):
             JWTKey(SECRET, algorithm="HS256").public_jwk()
+
+
+class TestOnlyAccessTokens:
+    """The provider signs ID and logout tokens with the same keys, often for the same aud: they
+    must not open the API."""
+
+    @pytest.mark.parametrize(
+        ("headers", "extra", "message"),
+        [
+            ({"typ": "logout+jwt"}, {}, r"its typ is 'logout\+jwt'"),
+            ({"typ": "secevent+jwt"}, {}, "its typ"),
+            ({"typ": 7}, {}, "isn't a string"),
+            ({}, {"nonce": "n-0S6_WzA2Mj"}, "an ID or logout token"),
+            ({}, {"events": {"http://schemas.openid.net/event/backchannel-logout": {}}}, "logout"),
+            ({}, {"typ": "ID"}, "a ID token"),
+            ({}, {"typ": "Refresh"}, "a Refresh token"),
+        ],
+    )
+    async def test_refused(
+        self,
+        headers: dict[str, Any],
+        extra: dict[str, Any],
+        message: str,
+    ) -> None:
+        strategy = JWTStrategy(keys=[JWTKey(RSA, algorithm="RS256")], audience="my-client")
+        token = jwt.encode(
+            {**claims(**extra), "aud": "my-client"},
+            pem(RSA),
+            algorithm="RS256",
+            headers={"kid": strategy.keys[0].kid, **headers},
+        )
+        with pytest.raises(AuthenticationFailed, match=message):
+            await strategy.decode(token)
+
+    @pytest.mark.parametrize("typ", [None, "JWT", "at+jwt", "application/at+jwt"])
+    async def test_access_tokens(self, typ: str | None) -> None:
+        strategy = JWTStrategy(SECRET)
+        token = jwt.encode(claims(typ="Bearer"), SECRET, headers={"typ": typ} if typ else None)
+        assert (await strategy.decode(token))["sub"] == "ana"
+
+    async def test_a_required_type(self) -> None:
+        strategy = JWTStrategy(SECRET, token_type="at+jwt")  # noqa: S106  # a type, not a secret
+        for typ in ("at+jwt", "application/at+jwt", "AT+JWT"):
+            token = jwt.encode(claims(), SECRET, headers={"typ": typ})
+            assert (await strategy.decode(token))["sub"] == "ana"
+        for headers in ({"typ": "JWT"}, None):
+            with pytest.raises(AuthenticationFailed, match="not an access token"):
+                await strategy.decode(jwt.encode(claims(), SECRET, headers=headers))
 
 
 class TestRotation:

@@ -181,6 +181,50 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Outbox: the relay purges the messages sent more than 7 days ago by default
   (`retention=None` keeps them).
 
+### Security
+
+- Step-up with tokens (`require_recent(claims=...)`) checks that the token is the user's: its
+  `sub` (or `subject=`) must be what `user_id` returns. Before, a stolen session and a fresh
+  token of the attacker's own account passed it.
+- `JWTStrategy` takes access tokens only: a token with a header `typ` other than `JWT` or
+  `at+jwt`, a `nonce` (an ID token), `events` (a logout token) or Keycloak's `typ` claim `ID`,
+  `Logout` or `Refresh` is refused. Before, an ID token of the same provider and audience opened
+  the API. `token_type="at+jwt"` requires RFC 9068's.
+- An HMAC secret for `JWTStrategy` that's a public key in base64 (as Keycloak shows its realm's)
+  or OpenSSH is refused, as PEM and JWKs were: anybody could have signed HS256 tokens with it.
+- The audit trail reads a public key in DER, OpenSSH or PEM with text before it as the key it
+  is: before, it was taken for an HMAC secret, so whoever had the public key could rewrite the
+  trail and pass verification. `fastapi-alcazaba audit verify --key` takes Ed25519 keys only.
+- Task queue: `requeue_dead_letters` leaves the copies of a task (refused as replayed, or whose
+  task is pending, running or done) in the dead letters; requeueing them ran the task once more
+  for each copy written to the backend. Stale ones need `stale=True` (`--stale`).
+- `check_uploaded(..., move_to=...)` moves what it checked to a key the clients never get a URL
+  for, copied only while it's the object read (its ETag) and under the type found in its bytes.
+  Before, a presigned URL could replace the object once checked, and it kept the uploader's
+  `Content-Type` (`text/html` for an image).
+- `OIDCStrategy` fetches the provider's keys one at a time and at most every 30 s, failed
+  fetches too, and keeps using them `jwks_stale` seconds while they can't be fetched: logout
+  tokens with made-up `kid`s, which anyone can send, made a fetch each.
+- `OneTimeCodes`: issuing a new code no longer gives the guesses back: `max_attempts` for each
+  subject and purpose every `ttl`.
+- Idempotency keys are looked up among the requests with the same `Authorization` header or,
+  without one, the same cookies (`credentials`, which replaces `authorization`). Before, every
+  cookie-session user shared one space of keys: whoever learned a user's key got their response.
+- API keys end in a CRC-32 checksum (`ak_<id>_<secret>_<checksum>`), which secret scanners can
+  check; a mistyped key is refused without a lookup.
+- The outbox keeps only the type of a delivery's error in its table, as the task queue does (the
+  log has the whole error): an error's message may hold personal data or a URL with a token.
+- `PaginationOffset(max_offset=10_000)` and `PaginationPageNumber(max_page=1_000)`: a deeper page
+  gets a 422 instead of a query that reads and drops millions of rows.
+- `SecurityHeadersMiddleware` sends a `Permissions-Policy` that turns off the camera, the
+  microphone, geolocation, payments, USB, screen capture and the motion sensors.
+- A value larger than the backend takes (`Backend.max_value_size`: DynamoDB's 400 KB, memcached's
+  1 MiB, `MemcachedBackend(max_value_size=...)` for servers with `-I`) is refused before it's
+  sent (`ValueTooLarge`), without counting against the circuit breaker: five large responses
+  opened it for 30 s, for the cache, the limits and idempotency.
+- The `fastapi_alcazaba.outbound.breaker` metric no longer has `server.address`: with the URLs
+  users give (webhooks), its values had no end. The host stays in the log and the span event.
+
 ## [0.7.1] - 2026-11-02
 
 ### Security

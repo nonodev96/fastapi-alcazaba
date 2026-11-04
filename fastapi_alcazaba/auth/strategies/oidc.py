@@ -26,6 +26,7 @@ Logging out: `logout_url()` sends the browser to the provider's `end_session_end
 private key (`client_auth="private_key_jwt"`) instead of a client secret.
 """
 
+import asyncio
 import base64
 import hashlib
 import hmac
@@ -139,6 +140,10 @@ class OIDCStrategy(AuthorizationCodeFlow):
     :param userinfo_url: the userinfo endpoint, instead of discovery's.
     :param jwks_url: the provider's keys, instead of discovery's.
     :param jwks_lifespan: seconds the keys are kept before they're fetched again.
+    :param jwks_stale: seconds more they're used while the provider's keys can't be fetched.
+        Fetches are one at a time, and at most every 30 seconds, failed ones too: tokens with
+        made-up `kid`s (at the back-channel logout endpoint, which anyone can call) don't make
+        the app call the provider for each.
     :param client_auth: how the app authenticates to the token endpoint: `basic` or `post` (with
         the client secret), or `private_key_jwt` (a JWT signed with `client_key`, RFC 7523: no
         shared secret; the provider has the public key, e.g. from the app's `jwks()`).
@@ -171,6 +176,7 @@ class OIDCStrategy(AuthorizationCodeFlow):
         userinfo_url: str | None = None,
         jwks_url: str | None = None,
         jwks_lifespan: float = 3600,
+        jwks_stale: float = 3600,
         client_auth: Literal["basic", "post", "private_key_jwt"] = "basic",
         client_key: "JWTKey | None" = None,
         post_logout_redirect_uris: Sequence[str] = (),
@@ -194,6 +200,8 @@ class OIDCStrategy(AuthorizationCodeFlow):
             raise ValueError("the algorithms are asymmetric ones: RS256, ES256, PS256, EdDSA...")
         if max_age is not None and max_age < 0:
             raise ValueError("max_age can't be negative")
+        if jwks_lifespan <= 0 or jwks_stale < 0:
+            raise ValueError("jwks_lifespan is positive and jwks_stale not negative")
         if "nonce" in (params or {}):
             raise ValueError("the nonce is the strategy's: each login gets a new one")
         super().__init__(
@@ -225,8 +233,12 @@ class OIDCStrategy(AuthorizationCodeFlow):
         self.userinfo_url = userinfo_url
         self.jwks_url = jwks_url
         self.jwks_lifespan = jwks_lifespan
+        self.jwks_stale = jwks_stale
         self._keys: dict[str | None, jwt.PyJWK] = {}
         self._keys_fetched = -float("inf")
+        self._keys_attempted = -float("inf")
+        self._keys_error: Exception | None = None
+        self._keys_lock = asyncio.Lock()
 
     async def discover(self) -> None:
         """Read the provider's discovery document: its endpoints and where its keys are, for
@@ -512,15 +524,31 @@ class OIDCStrategy(AuthorizationCodeFlow):
     async def _signing_key(self, kid: str | None) -> jwt.PyJWK:
         """The provider's key `kid`: from the JWKS kept, fetched again when it's old, or when
         the key isn't there (a rotation), at most every JWKS_REFETCH seconds."""
-        age = time.monotonic() - self._keys_fetched
-        if age > self.jwks_lifespan or (kid not in self._keys and age > JWKS_REFETCH):
-            await self._fetch_keys()
+        if time.monotonic() - self._keys_fetched > self.jwks_lifespan or kid not in self._keys:
+            await self._refresh_keys()
+        if time.monotonic() - self._keys_fetched > self.jwks_lifespan + self.jwks_stale:
+            if isinstance(self._keys_error, HTTPException):
+                raise self._keys_error
+            raise AuthenticationFailed(str(self._keys_error or "the provider's keys weren't read"))
         if kid is None and len(self._keys) == 1:
             return next(iter(self._keys.values()))  # a provider with one key may not name it
         key = self._keys.get(kid)
         if key is None:
             raise AuthenticationFailed(f"the ID token's key isn't the provider's: {kid!r}")
         return key
+
+    async def _refresh_keys(self) -> None:
+        # One fetch at a time, and one every JWKS_REFETCH seconds, failed ones too: those that
+        # waited use what it got, or the keys kept.
+        async with self._keys_lock:
+            if time.monotonic() - self._keys_attempted < JWKS_REFETCH:
+                return
+            self._keys_attempted = time.monotonic()
+            try:
+                await self._fetch_keys()
+            except (AuthenticationFailed, HTTPException) as exc:
+                logger.warning("The provider's keys weren't fetched: %s", exc)
+                self._keys_error = exc
 
     async def _fetch_keys(self) -> None:
         url = self._endpoint(self.jwks_url, "JWKS")

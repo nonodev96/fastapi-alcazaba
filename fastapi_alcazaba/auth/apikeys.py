@@ -12,14 +12,20 @@
     @app.get("/orders")
     async def orders(key: Annotated[StoredKey, Depends(keys.require("orders:read"))]) -> ...
 
-A key looks like `ak_<id>_<secret>`: the id finds its record, and the record holds a digest of the
-secret, not the secret, so a leak of the database doesn't leak working keys. The secret has 256
-random bits: a plain SHA-256 digest can't be brute-forced (passwords need a slow hash; random keys
-don't), and the check costs microseconds. With a `pepper`, a server secret kept out of the
-database, the digest is an HMAC, so the database alone isn't even enough to test a guess.
+A key looks like `ak_<id>_<secret>_<checksum>`: the id finds its record, and the record holds a
+digest of the secret, not the secret, so a leak of the database doesn't leak working keys. The
+secret has 256 random bits: a plain SHA-256 digest can't be brute-forced (passwords need a slow
+hash; random keys don't), and the check costs microseconds. With a `pepper`, a server secret
+kept out of the database, the digest is an HMAC, so the database alone isn't even enough to test
+a guess.
+
+The checksum (CRC-32 of the rest, as GitHub's tokens have) isn't a secret: it lets a secret
+scanner tell a key from a random string that looks like one without asking anybody, and the app
+refuse a mistyped key without looking it up.
 """
 
 import base64
+import binascii
 import hashlib
 import hmac
 import inspect
@@ -47,6 +53,7 @@ _ID_BYTES = 10  # 80 bits: unique, not secret
 _SECRET_BYTES = 32  # 256 bits
 _ID_LENGTH = 16  # base32 characters of 10 bytes
 _SECRET_LENGTH = 52  # base32 characters of 32 bytes, without padding
+_CHECKSUM_LENGTH = 7  # base32 characters of a CRC-32, without padding
 _MAX_KEY = 256  # characters read from a request
 _PREFIX = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,31}")
 _SCOPE = re.compile(r"[!#-\[\]-~]+")  # RFC 6749 scope-token: printable ASCII but space, " and \
@@ -97,8 +104,17 @@ class NewAPIKey(NamedTuple):
     record: APIKeyRecord
 
 
+def _base32(data: bytes) -> str:
+    return base64.b32encode(data).decode().rstrip("=").lower()
+
+
 def _token(size: int) -> str:
-    return base64.b32encode(secrets.token_bytes(size)).decode().rstrip("=").lower()
+    return _base32(secrets.token_bytes(size))
+
+
+def _checksum(body: str) -> str:
+    """The CRC-32 of `body` (`<prefix>_<id>_<secret>`), in base32."""
+    return _base32(binascii.crc32(body.encode()).to_bytes(4, "big"))
 
 
 def _scope_set(scopes: Collection[str]) -> frozenset[str]:
@@ -136,7 +152,8 @@ class FastAPIAPIKeys(Generic[R]):
         function, which runs in a thread like FastAPI's sync dependencies.
     :param header: the request header holding the key.
     :param prefix: the start of every key (`ak_...`): letters, digits and underscores, starting
-        with a letter. Secret scanners (GitHub's, GitLab's) can be taught to spot it.
+        with a letter. Secret scanners (GitHub's, GitLab's) can be taught to spot it, and to
+        check its checksum.
     :param bearer: also accept the key as `Authorization: Bearer <key>`.
     :param pepper: a server secret (at least 32 bytes) mixed into every digest, kept out of the
         database (an environment variable, a secret manager). A list rotates it: the first one
@@ -184,7 +201,8 @@ class FastAPIAPIKeys(Generic[R]):
             else None
         )
         self._pattern = re.compile(
-            rf"{re.escape(prefix)}_([a-z2-7]{{{_ID_LENGTH}}})_([a-z2-7]{{{_SECRET_LENGTH}}})"
+            rf"({re.escape(prefix)}_([a-z2-7]{{{_ID_LENGTH}}})_([a-z2-7]{{{_SECRET_LENGTH}}}))"
+            rf"_([a-z2-7]{{{_CHECKSUM_LENGTH}}})"
         )
         self._is_async = _is_async(lookup)
         self._challenge = "Bearer" if bearer else "APIKey"
@@ -263,15 +281,17 @@ class FastAPIAPIKeys(Generic[R]):
             scopes=granted,
             expires_at=expires_at,
         )
-        return NewAPIKey(f"{self.prefix}_{key_id}_{secret}", record)
+        body = f"{self.prefix}_{key_id}_{secret}"
+        return NewAPIKey(f"{body}_{_checksum(body)}", record)
 
     async def authenticate(self, key: str | None) -> R:
         """The record of `key`, if it's valid; raises an HTTPException (401) otherwise. For keys
         that come some other way (a WebSocket message, a test)."""
         parsed = self._pattern.fullmatch(key) if key and len(key) <= _MAX_KEY else None
-        if parsed is None:
+        # The checksum isn't a secret: a plain comparison.
+        if parsed is None or _checksum(parsed[1]) != parsed[4]:
             raise self._unauthorized("malformed")
-        key_id, secret = parsed.groups()
+        key_id, secret = parsed[2], parsed[3]
         # Only digests from here on: the secret isn't around while `lookup` runs (and raises).
         candidates = self._digests(key_id, secret)
         del key, parsed, secret

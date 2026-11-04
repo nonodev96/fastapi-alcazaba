@@ -5,6 +5,8 @@ import asyncio
 import logging
 from collections.abc import Sequence
 
+from fastapi_alcazaba.core.errors import ValueTooLarge
+
 logger: logging.Logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -29,6 +31,17 @@ class Backend(abc.ABC):
     supports_tags: bool = False
     #: Can keep counters (see `incr` and `incr_window`), which the rate limiter needs.
     supports_counters: bool = False
+    #: The largest value `set` takes, in bytes; None when the backend has no limit of its own.
+    #: Larger ones raise ValueTooLarge before anything is sent.
+    max_value_size: int | None = None
+
+    def check_size(self, key: str, value: bytes) -> None:
+        """Raise ValueTooLarge when `value` is over `max_value_size`."""
+        if self.max_value_size is not None and len(value) > self.max_value_size:
+            raise ValueTooLarge(
+                f"{key!r}: {len(value)} bytes, more than {type(self).__name__} takes "
+                f"({self.max_value_size})"
+            )
 
     @abc.abstractmethod
     async def get_with_ttl(self, key: str) -> tuple[int, bytes | None]:

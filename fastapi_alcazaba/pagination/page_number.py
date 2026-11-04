@@ -81,6 +81,9 @@ class PaginationPageNumber:
     :param default_page_size: items per page when the request doesn't say.
     :param max_page_size: the most a request may ask for (a 422 beyond), so that nobody asks for
         a million rows at once.
+    :param max_page: the last page a request may ask for (a 422 beyond): the database reads and
+        drops every row before it, so `?page=` with a huge number is an expensive query anyone
+        can send. Deeper lists are for `PaginationCursor`.
     """
 
     def __init__(
@@ -88,15 +91,19 @@ class PaginationPageNumber:
         *,
         default_page_size: int = 50,
         max_page_size: int = 100,
+        max_page: int = 1_000,
     ) -> None:
         check_limits(default_page_size, max_page_size, "page_size")
+        if max_page < 1:
+            raise ValueError("max_page must be at least 1")
         self.default_page_size = default_page_size
         self.max_page_size = max_page_size
+        self.max_page = max_page
         # What FastAPI reads to know the query parameters: with this instance's limits.
         self.__signature__ = inspect.Signature(
             [
                 *REQUEST,
-                query("page", int, 1, ge=1, description="Page number, from 1"),
+                query("page", int, 1, ge=1, le=max_page, description="Page number, from 1"),
                 query(
                     "page_size",
                     int,
@@ -130,6 +137,8 @@ class PaginationPageNumber:
         page_size = self.default_page_size if page_size is None else page_size
         if page_size > self.max_page_size:
             raise ValueError(f"page_size can't be over {self.max_page_size}")
+        if page > self.max_page:
+            raise ValueError(f"page can't be over {self.max_page}")
         return PageNumberParams(page=page, page_size=page_size)
 
     def paginate(

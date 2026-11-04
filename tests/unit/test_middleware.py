@@ -18,6 +18,10 @@ DEFAULTS = {
     "x-frame-options": "DENY",
     "referrer-policy": "no-referrer",
     "cross-origin-opener-policy": "same-origin",
+    "permissions-policy": (
+        "accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), "
+        "magnetometer=(), microphone=(), payment=(), usb=()"
+    ),
 }
 API_CSP = "default-src 'none'; frame-ancestors 'none'"
 

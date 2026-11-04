@@ -120,6 +120,8 @@ class JWTKey:
             secret = secret_list(key)[0]
             try:
                 handler.prepare_key(secret)
+                if _encoded_public_key(secret):
+                    raise jwt.InvalidKeyError("a public key in base64")
             except jwt.InvalidKeyError:
                 raise ValueError(
                     f"a public key isn't an HMAC secret: it can't be {algorithm}'s"
@@ -304,12 +306,44 @@ class _RemoteKeys:
             await self.client.aclose()
 
 
+#: Header `typ`s an access token may have, in lowercase: the generic one, or RFC 9068's.
+_ACCESS_TYPES = frozenset({"jwt", "at+jwt", "application/at+jwt"})
+#: The `typ` claim of Keycloak's ID, logout and refresh tokens, in lowercase.
+_OTHER_KINDS = frozenset({"id", "logout", "refresh", "offline"})
+
+
+def _encoded_public_key(secret: bytes) -> bool:
+    """Whether `secret` is a public key in base64 (DER, as Keycloak's realm shows it), or an
+    OpenSSH one: PyJWT refuses PEM and JWKs as HMAC secrets, not these. Taken for a secret,
+    whoever has the public key (anybody) could sign tokens."""
+    if secret.lstrip().startswith((b"ssh-", b"ecdsa-")):
+        return True
+    try:
+        from cryptography.hazmat.primitives.serialization import load_der_public_key
+    except ImportError:  # pragma: no cover  # PyJWT's crypto extra has it
+        return False
+    compact = b"".join(secret.split())
+    for decode in (base64.b64decode, base64.urlsafe_b64decode):
+        try:
+            load_der_public_key(decode(compact + b"=" * (-len(compact) % 4)))
+        except (ValueError, TypeError):
+            continue
+        return True
+    return False
+
+
 class JWTStrategy(Strategy):
     """Authenticates by a JWT in `Authorization: Bearer <token>` (or a cookie), verified with
     the app's keys or the provider's JWKS. The signature, `exp`, `nbf` and the claims of
     `required` are always checked, `aud` and `iss` when given; a token with an `aud` is refused
     when no `audience` is, as it's meant for some other service. `alg: none` is never accepted,
     and each key verifies with its own algorithm only.
+
+    Only access tokens: the provider signs its ID tokens and logout tokens with the same keys,
+    often for the same `aud`, and those travel through less guarded places (a logout URL, the
+    browser). A token with a header `typ` other than `JWT` or `at+jwt` (`logout+jwt`...), with a
+    `nonce` (an ID token) or `events` (a logout token, a security event), or whose `typ` claim is
+    Keycloak's `ID`, `Logout` or `Refresh`, is refused.
 
     Give one of `keys`, `key` and `jwks_url`.
 
@@ -343,6 +377,8 @@ class JWTStrategy(Strategy):
     :param jwks_timeout: seconds for the whole fetch of the JWKS.
     :param jwks_client: the httpx2 client to fetch the JWKS with; one of its own by default, with
         a deadline and a circuit breaker (`ResilientTransport`), closed by `aclose()`.
+    :param token_type: the header `typ` every token must have (`"at+jwt"`, RFC 9068's), for a
+        provider that sets it; any of `JWT`, `at+jwt` or none by default.
     :param scope_claims: the claims whose scopes the token grants, for the routes that need some
         (`Security(..., scopes=[...])`): RFC 9068's `scope`, a string of them separated by
         spaces, and `scp`, a list (Entra ID, Okta); `permissions` for Auth0's.
@@ -369,6 +405,7 @@ class JWTStrategy(Strategy):
         jwks_stale: float = 3600,
         jwks_timeout: float = 3.0,
         jwks_client: Any = None,
+        token_type: str | None = None,
         scope_claims: Sequence[str] = ("scope", "scp"),
         name: str = "jwt",
     ) -> None:
@@ -417,6 +454,7 @@ class JWTStrategy(Strategy):
         self.verify = verify
         self.blocklist = blocklist
         self.cookie = cookie
+        self.token_type = token_type
         self.scope_claims = list(scope_claims)
 
     @property
@@ -477,21 +515,44 @@ class JWTStrategy(Strategy):
         if not isinstance(algorithm, str) or not (kid is None or isinstance(kid, str)):
             raise AuthenticationFailed("invalid token (its alg or kid isn't a string)")
         try:
-            if self._remote is not None:
-                found = await self._remote.key(kid, algorithm)
-                claims: dict[str, Any] = jwt.decode(
-                    token, found, algorithms=[algorithm], **self._options()
-                )
-                return claims
-            candidates = self._candidates(kid, algorithm)
-            for key in candidates[:-1]:
-                try:
-                    return key.decode(token, algorithm, **self._options())
-                except jwt.InvalidSignatureError:
-                    continue  # signed with another of the keys, maybe
-            return candidates[-1].decode(token, algorithm, **self._options())
+            claims = await self._verified(token, kid, algorithm)
         except jwt.PyJWTError as exc:
             raise AuthenticationFailed(f"invalid token ({type(exc).__name__})") from None
+        # The header is signed too: read once the signature is checked.
+        self._check_kind(header.get("typ"), claims)
+        return claims
+
+    async def _verified(self, token: str, kid: str | None, algorithm: str) -> dict[str, Any]:
+        if self._remote is not None:
+            found = await self._remote.key(kid, algorithm)
+            claims: dict[str, Any] = jwt.decode(
+                token, found, algorithms=[algorithm], **self._options()
+            )
+            return claims
+        candidates = self._candidates(kid, algorithm)
+        for key in candidates[:-1]:
+            try:
+                return key.decode(token, algorithm, **self._options())
+            except jwt.InvalidSignatureError:
+                continue  # signed with another of the keys, maybe
+        return candidates[-1].decode(token, algorithm, **self._options())
+
+    def _check_kind(self, typ: Any, claims: dict[str, Any]) -> None:
+        """Refuse what isn't an access token: an ID token, a logout token, a refresh token."""
+        if typ is not None and not isinstance(typ, str):
+            raise AuthenticationFailed("invalid token (its typ isn't a string)")
+        if self.token_type is not None:
+            if typ is None or typ.lower().removeprefix("application/") != (
+                self.token_type.lower().removeprefix("application/")
+            ):
+                raise AuthenticationFailed(f"not an access token: its typ is {typ!r}")
+        elif typ is not None and typ.lower() not in _ACCESS_TYPES:
+            raise AuthenticationFailed(f"not an access token: its typ is {typ!r}")
+        if "nonce" in claims or "events" in claims:
+            raise AuthenticationFailed("not an access token: an ID or logout token")
+        kind = claims.get("typ")
+        if isinstance(kind, str) and kind.lower() in _OTHER_KINDS:
+            raise AuthenticationFailed(f"not an access token: a {kind} token")
 
     def issue(
         self,

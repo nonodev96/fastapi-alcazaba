@@ -233,7 +233,25 @@ class TestOneTimeCodes:
         for _ in range(3):
             assert not await codes.verify("alice", other_code(code))
         assert not await codes.verify("alice", code)
-        code = await codes.issue("alice")  # a new code, new attempts
+        code = await codes.issue("alice")  # a new code, but not new guesses
+        assert not await codes.verify("alice", code)
+
+    async def test_new_codes_dont_give_more_guesses(self, backend: Backend, clock: Clock) -> None:
+        """Asking for code after code doesn't add up to more than max_attempts guesses each ttl,
+        until the window ends or the right code is given."""
+        codes = OneTimeCodes(SECRET, Cache(backend), max_attempts=3, ttl=60)
+        for _ in range(3):
+            code = await codes.issue("alice")
+            assert not await codes.verify("alice", other_code(code))
+        code = await codes.issue("alice")
+        assert not await codes.verify("alice", code)
+        clock.now += 61
+        code = await codes.issue("alice")
+        assert not await codes.verify("alice", other_code(code))
+        assert await codes.verify("alice", code)  # the right one starts the count again
+        code = await codes.issue("alice")
+        for _ in range(2):
+            assert not await codes.verify("alice", other_code(code))
         assert await codes.verify("alice", code)
 
     @pytest.mark.parametrize("malformed", ["12345", "1234567", "12345a", "١٢٣٤٥٦", ""])

@@ -79,6 +79,11 @@ def _parser() -> argparse.ArgumentParser:
     requeue = commands.add_parser("requeue", help="dead letters back to the queue")
     requeue.add_argument("ids", nargs="*", metavar="ID", help="their IDs")
     requeue.add_argument("--all", action="store_true", help="every dead letter")
+    requeue.add_argument(
+        "--stale",
+        action="store_true",
+        help="also those that waited longer than replay_window (look at them first)",
+    )
     discard = commands.add_parser("discard", help="delete dead letters")
     discard.add_argument("ids", nargs="+", metavar="ID", help="their IDs")
     status = commands.add_parser("status", help="where a task is")
@@ -151,7 +156,9 @@ async def _run(arguments: argparse.Namespace, queue: FastAPITaskQueue) -> int:
     elif command == "requeue":
         if arguments.all == bool(arguments.ids):
             raise _UsageError("requeue takes the IDs of dead letters, or --all")
-        requeued = await queue.requeue_dead_letters(None if arguments.all else arguments.ids)
+        requeued = await queue.requeue_dead_letters(
+            None if arguments.all else arguments.ids, stale=arguments.stale
+        )
         _print(arguments, {"requeued": requeued})
     elif command == "discard":
         _print(arguments, {"discarded": await queue.discard_dead_letters(arguments.ids)})
@@ -262,7 +269,7 @@ def _audit(arguments: argparse.Namespace) -> int:
     keys: list[Any] = []
     for path in arguments.key:
         try:
-            keys.append(Path(path).read_bytes())
+            keys.append(_public_key(Path(path).read_bytes(), path))
         except OSError as exc:
             raise _UsageError(f"can't read the key {path}: {exc.strerror}") from None
     for name in arguments.hmac_env:
@@ -292,6 +299,22 @@ def _audit(arguments: argparse.Namespace) -> int:
         for problem in problems:
             print(f"- {problem}")
     return NOT_DONE if problems else 0
+
+
+def _public_key(raw: bytes, path: str) -> Any:
+    """The Ed25519 key in the file `path`. Never an HMAC secret: a public key taken for one would
+    let whoever has it (anybody) sign the events checked with it."""
+    from fastapi_alcazaba.audit.keys import audit_keys
+
+    try:
+        (key,) = audit_keys(raw)
+    except (ValueError, TypeError) as exc:
+        raise _UsageError(f"{path}: {exc}") from None
+    if key.algorithm != "ed25519":
+        raise _UsageError(
+            f"{path} isn't an Ed25519 key (PEM, DER or OpenSSH): HMAC secrets go in --hmac-env"
+        )
+    return key
 
 
 def _events(files: Sequence[str]) -> Iterator[dict[str, Any]]:

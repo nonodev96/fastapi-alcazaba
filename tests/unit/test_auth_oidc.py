@@ -17,7 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from fastapi_alcazaba.auth import FastAPIAuth
+from fastapi_alcazaba.auth import AuthenticationFailed, FastAPIAuth
 from fastapi_alcazaba.auth.strategies import OIDCStrategy
 from fastapi_alcazaba.auth.strategies import oidc as oidc_module
 
@@ -370,6 +370,34 @@ class TestKeys:
         with caplog.at_level(logging.INFO, logger="fastapi_alcazaba.auth.strategies.base"):
             refused(provider, client)
         assert reason in caplog.text
+
+    async def test_made_up_kids_dont_make_a_fetch_each(self) -> None:
+        """Anyone can call the back-channel logout endpoint: tokens with made-up kids, while the
+        provider is down, make one fetch every 30 seconds, not one each, and the keys kept are
+        used meanwhile."""
+        provider = Provider()
+        provider.nonce = "the-login-nonce"
+        oidc = strategy(provider)
+        await oidc.discover()
+        assert (await oidc.verify_id_token(provider.sign(), nonce=provider.nonce))[
+            "sub"
+        ] == "user-1"
+        assert provider.fetched("/jwks") == 1
+        provider.keys = []  # down: an empty JWKS
+        oidc._keys_fetched -= 3600 + 1  # the keys are older than jwks_lifespan
+        oidc._keys_attempted -= 3600 + 1
+        for number in range(20):
+            forged = jwt.encode({"sub": "x"}, provider.rsa, "RS256", headers={"kid": f"k{number}"})
+            with pytest.raises(AuthenticationFailed, match="isn't the provider's"):
+                await oidc.verify_logout_token(forged)
+        assert provider.fetched("/jwks") == 2
+        # The kept key still verifies, as a stale one.
+        assert (await oidc.verify_id_token(provider.sign(), nonce=provider.nonce))[
+            "sub"
+        ] == "user-1"
+        oidc._keys_fetched -= 3600  # and past jwks_stale too: refused
+        with pytest.raises(AuthenticationFailed, match="aren't a JWKS"):
+            await oidc.verify_id_token(provider.sign(), nonce=provider.nonce)
 
     async def test_a_kid_that_isnt_a_string(self) -> None:
         provider = Provider()

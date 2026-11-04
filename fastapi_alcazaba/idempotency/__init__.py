@@ -2,12 +2,12 @@
 
 from fastapi_alcazaba.idempotency.middleware import (
     IdempotencyMiddleware,
-    authorization,
+    credentials,
     require_idempotency_key,
 )
 
 __all__ = [
-    "authorization",
+    "credentials",
     "IdempotencyMiddleware",
     "require_idempotency_key",
 ]

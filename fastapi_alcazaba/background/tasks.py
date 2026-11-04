@@ -276,8 +276,13 @@ return 1
 # A dead letter back in the queue, once. KEYS[1]: dead letters; KEYS[2]: stream; KEYS[3]: delayed
 # tasks; KEYS[4]: status; ARGV[1]: dead letter; ARGV[2]: most tasks the queue holds; ARGV[3]: new
 # payload; ARGV[4]: task; ARGV[5]: now; ARGV[6]: ms the status record lasts. -1 when the queue is
-# full, 0 when the dead letter is gone.
+# full, 0 when the dead letter is gone, -2 when its task's status isn't dead: pending, running or
+# done, so the dead letter is a copy of it, and running it would run the task twice.
 REQUEUE_SCRIPT = """
+local state = redis.call('HGET', KEYS[4], 'state')
+if state and state ~= 'dead' then
+    return -2
+end
 if redis.call('XLEN', KEYS[2]) + redis.call('ZCARD', KEYS[3]) >= tonumber(ARGV[2]) then
     return -1
 end
@@ -1409,29 +1414,44 @@ class FastAPITaskQueue:
         entries = await self._call("task_dead_letters", "xrevrange", self._dead, "+", "-", count)
         return [_dead_letter(entry_id, fields) for entry_id, fields in entries]
 
-    async def requeue_dead_letters(self, ids: Iterable[str] | None = None) -> int:
+    async def requeue_dead_letters(
+        self,
+        ids: Iterable[str] | None = None,
+        *,
+        stale: bool = False,
+    ) -> int:
         """Put dead letters back in the queue (all of them by default) with their attempts
         reset, and return how many. Those whose task can't run here stay: tampered, malformed or
-        too large, or named after no task of this process. Raises QueueFull when the queue fills
-        up (those requeued until then stay requeued)."""
+        too large, or named after no task of this process. So do the copies of a task (refused
+        as replayed, or whose task is pending, running or done): requeueing them would run it
+        once more for each copy someone wrote to the backend. Raises QueueFull when the queue
+        fills up (those requeued until then stay requeued).
+
+        :param stale: requeue those that waited longer than `replay_window` too: after a long
+            outage, say. A stale one may also be an old task written back to the queue: look at
+            them first (`dead_letters()`)."""
         self._ready()
         dead_ids = None if ids is None else _stream_ids(ids)
         requeued = 0
         async with contextlib.aclosing(self._dead_entries(dead_ids)) as entries:
             async for dead_id, fields in entries:
                 body = self._open(fields.get(b"p", b""))
+                buried_for = _text(fields.get(b"reason", b""))
                 if isinstance(body, str):
-                    reason = body
+                    why = _REASONS[body]
                 elif body["task"] not in self._tasks:
-                    reason = "unknown_task"
-                else:
-                    requeued += await self._requeue(dead_id, body)
+                    why = _REASONS["unknown_task"]
+                elif buried_for == "replayed" or (buried_for == "stale" and not stale):
+                    why = (
+                        f"{_REASONS[buried_for]} (requeue_dead_letters(stale=True) for stale ones)"
+                    )
+                elif (done := await self._requeue(dead_id, body)) >= 0:
+                    requeued += done
                     continue
+                else:
+                    why = "its task is pending, running or done: this is a copy of it"
                 logger.warning(
-                    "The dead letter %s of the queue %r stays: %s",
-                    dead_id,
-                    self.name,
-                    _REASONS[reason],
+                    "The dead letter %s of the queue %r stays: %s", dead_id, self.name, why
                 )
         if requeued:
             self._wakeup.set()
@@ -1463,7 +1483,7 @@ class FastAPITaskQueue:
                 _ms(requeued["until"] - now + self.status_ttl),
             )
         )
-        if result < 0:
+        if result == -1:
             raise QueueFull(f"the task queue {self.name!r} already holds {self.max_length} tasks")
         return result
 

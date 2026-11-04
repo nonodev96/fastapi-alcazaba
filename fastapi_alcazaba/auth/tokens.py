@@ -191,7 +191,8 @@ class TokenBlocklist:
 
 class OneTimeCodes:
     """Codes of `digits` digits, sent by e-mail or SMS, that prove who someone is: each lasts
-    `ttl` seconds, works once and is lost after `max_attempts` wrong guesses.
+    `ttl` seconds, works once, and `subject` has `max_attempts` guesses for each `ttl` seconds,
+    whatever the number of codes issued.
 
         codes = OneTimeCodes(secret=settings.otp_secret)
 
@@ -202,8 +203,11 @@ class OneTimeCodes:
 
     The backend holds an HMAC of each code with `secret`, never the code: a plain digest of a
     6-digit code is brute-forced in milliseconds by whoever reads the backend. Issuing a code
-    replaces the previous one and gives `max_attempts` again, so put a FastAPIRateLimiter on the
-    route that issues them.
+    replaces the previous one, but doesn't give the guesses back: asking for code after code
+    doesn't add up to more than `max_attempts` guesses each `ttl` seconds. Once they're used, the
+    subject waits for the window to end (up to `ttl` seconds), new codes included; the right code
+    starts the count again. Still put a FastAPIRateLimiter on the route that issues them: each
+    code sent costs an e-mail or an SMS.
 
     :param secret: at least 32 bytes (`secrets.token_urlsafe(32)`), from the environment or a
         secret manager. A list rotates them: the first one is used, all of them are accepted.
@@ -211,7 +215,8 @@ class OneTimeCodes:
         each call.
     :param digits: length of the codes, 4 to 10.
     :param ttl: seconds each code lasts.
-    :param max_attempts: guesses allowed for each code, right or wrong.
+    :param max_attempts: guesses allowed for each subject and purpose in `ttl` seconds, right or
+        wrong, across the codes issued.
     :param namespace: part of the keys, after the cache's prefix (see `Cache.state_key`).
     """
 
@@ -250,14 +255,13 @@ class OneTimeCodes:
 
     async def issue(self, subject: str, purpose: str = "") -> str:
         """A new code for `subject` (an e-mail address, a user id...) and `purpose` ("login",
-        "reset-password"...), replacing the previous one. Raises BackendUnavailable when the
-        backend fails."""
+        "reset-password"...), replacing the previous one; the guesses already made still count.
+        Raises BackendUnavailable when the backend fails."""
         cache = resolve_cache(self.cache)
-        code_key, attempts_key = self._keys(cache, subject, purpose)
+        code_key, _ = self._keys(cache, subject, purpose)
         code = f"{secrets.randbelow(10**self.digits):0{self.digits}d}"
         mac = self._mac(self._secrets[0], subject, purpose, code)
         backend = shared_backend(cache.backend)
-        await cache.guard.run("delete", lambda: backend.clear(key=attempts_key))
         await cache.guard.run("set", lambda: backend.set(code_key, mac, self.ttl))
         return code
 

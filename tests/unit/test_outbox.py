@@ -122,7 +122,7 @@ async def test_given_up_on(shop: Shop, clock: Clock) -> None:
         clock.now += 10
     row = shop.rows()[0]
     assert (row["attempts"], row["failed"] is not None) == (3, True)
-    assert "the queue is down" in row["error"]
+    assert row["error"] == "ConnectionError"  # the type: its message may hold personal data
     clock.now += 10_000
     assert await relay.relay_once() == 0
 

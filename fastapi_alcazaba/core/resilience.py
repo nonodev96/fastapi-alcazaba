@@ -6,7 +6,7 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
-from fastapi_alcazaba.core.errors import BackendUnavailable, CircuitOpen
+from fastapi_alcazaba.core.errors import BackendUnavailable, CircuitOpen, ValueTooLarge
 from fastapi_alcazaba.telemetry.metrics import Metrics
 from fastapi_alcazaba.telemetry.tracing import Tracer
 
@@ -111,6 +111,12 @@ class BackendGuard:
             with self.tracer.backend(operation):
                 async with asyncio.timeout(self.timeout):
                     result = await call()
+        except ValueTooLarge as exc:
+            # The value, not the backend: the breaker neither opens nor closes for it.
+            if trial and breaker is not None:
+                breaker.abandon_trial()
+            self.metrics.backend_error(operation, "ValueTooLarge")
+            raise BackendUnavailable(f"{operation} refused: {exc}") from exc
         except Exception as exc:
             if breaker is not None:
                 breaker.record_failure()

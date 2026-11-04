@@ -58,6 +58,8 @@ class DynamoBackend(Backend):
     supports_locks = True
     supports_tags = True
     supports_counters = True
+    # An item is 400 KB at most, its key (up to 2 KB), TTL and generations included.
+    max_value_size = 400 * 1024 - 4 * 1024
 
     def __init__(
         self,
@@ -110,6 +112,7 @@ class DynamoBackend(Backend):
         return (await self.get_with_ttl(key))[1]
 
     async def set(self, key: str, value: bytes, expire: int | None = None) -> None:
+        self.check_size(key, value)
         item: Item = {"key": {"S": key}, "value": {"B": value}}
         if expire:
             item["ttl"] = {"N": str(int(time.time()) + expire)}

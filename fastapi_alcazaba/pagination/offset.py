@@ -84,6 +84,9 @@ class PaginationOffset:
 
     :param default_limit: items per page when the request doesn't say.
     :param max_limit: the most a request may ask for (a 422 beyond).
+    :param max_offset: the deepest offset a request may ask for (a 422 beyond): the database reads
+        and drops every row before it, so `?offset=` with a huge number is an expensive query
+        anyone can send. Deeper lists are for `PaginationCursor`.
     """
 
     def __init__(
@@ -91,14 +94,18 @@ class PaginationOffset:
         *,
         default_limit: int = 50,
         max_limit: int = 100,
+        max_offset: int = 10_000,
     ) -> None:
         check_limits(default_limit, max_limit, "limit")
+        if max_offset < 0:
+            raise ValueError("max_offset can't be negative")
         self.default_limit = default_limit
         self.max_limit = max_limit
+        self.max_offset = max_offset
         self.__signature__ = inspect.Signature(
             [
                 *REQUEST,
-                query("offset", int, 0, ge=0, description="Items before the page"),
+                query("offset", int, 0, ge=0, le=max_offset, description="Items before the page"),
                 query(
                     "limit",
                     int,
@@ -132,6 +139,8 @@ class PaginationOffset:
         limit = self.default_limit if limit is None else limit
         if limit > self.max_limit:
             raise ValueError(f"limit can't be over {self.max_limit}")
+        if offset > self.max_offset:
+            raise ValueError(f"offset can't be over {self.max_offset}")
         return OffsetParams(offset=offset, limit=limit)
 
     def paginate(

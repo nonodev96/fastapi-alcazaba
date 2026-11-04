@@ -17,3 +17,8 @@ class BackendUnavailable(Exception):
 
 class CircuitOpen(BackendUnavailable):
     """The circuit breaker is open: the backend isn't called for a while."""
+
+
+class ValueTooLarge(ValueError):
+    """A value larger than the backend takes (`Backend.max_value_size`): refused before it's
+    sent. The backend is fine, so it doesn't count against its circuit breaker."""

@@ -136,13 +136,15 @@ recent_mfa = require_recent(
   [`FastAPIProblemDetails`](observability.md#problem-details) to get it as
   `application/problem+json`).
 - **Tokens:** with `claims=` (a dependency that returns the token's claims when there's one), the
-  token's `auth_time` must be within `max_age`, an `amr` among `methods`, and its `acr` among
+  token must be the user's: its `sub` is what `current_user_id` returns (`subject=` reads another
+  claim), so a fresh token of an attacker's own, sent with a stolen session, steps nobody up. Its
+  `auth_time` must be within `max_age`, an `amr` among `methods`, and its `acr` among
   `acr_values`. Otherwise a 401 with RFC 9470's challenge:
   `WWW-Authenticate: Bearer error="insufficient_user_authentication", ..., max_age="600",
   acr_values="urn:mfa"`, for the client to send the user back to the provider with those.
 - **Audited:** with `audit=`, each check is an `auth.stepup` event: the user, the method, how old,
   and the reason when it's refused (`none`, `too_old`, `wrong_method`, `no_auth_time`,
-  `wrong_acr`).
+  `wrong_acr`, `other_subject`).
 
 ## In the audit trail
 

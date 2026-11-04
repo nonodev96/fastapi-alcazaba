@@ -69,6 +69,7 @@ from fastapi_alcazaba.telemetry import Metrics
 from fastapi_alcazaba.telemetry.tracing import add_event, set_attributes
 from fastapi_alcazaba.uploads import IMAGES, FastAPIUploads
 from fastapi_alcazaba.webhooks import FastAPIWebhooks, WebhookSigner
+from tests.unit.test_apikeys import wrong_secret
 from tests.unit.test_metrics import points
 from tests.unit.test_uploads import png, upload
 
@@ -410,14 +411,14 @@ class TestTokenMetrics:
         meters: MeterProvider,
         reader: InMemoryMetricReader,
     ) -> None:
-        codes = OneTimeCodes("s" * 32, cache, max_attempts=3)
+        codes = OneTimeCodes("s" * 32, cache, max_attempts=4)
         assert not await codes.verify("alice", "123456")  # missing
         code = await codes.issue("alice")
         assert not await codes.verify("alice", "12")  # malformed
         assert not await codes.verify("alice", other(code))  # wrong
         assert await codes.verify("alice", code)  # success
         code = await codes.issue("bob")
-        for _ in range(3):
+        for _ in range(4):
             await codes.verify("bob", other(code))
         assert not await codes.verify("bob", code)  # exhausted
         down = OneTimeCodes("s" * 32, Cache(Down(), meter_provider=meters))
@@ -425,7 +426,7 @@ class TestTokenMetrics:
         assert counts(reader, "otp.verifications", "outcome") == {
             ("missing",): 1,
             ("malformed",): 1,
-            ("wrong",): 4,
+            ("wrong",): 5,
             ("success",): 1,
             ("exhausted",): 1,
             ("unchecked",): 1,
@@ -726,7 +727,7 @@ class TestIntegrationMetrics:
         for new in (good, old):
             records[new.record.id] = new.record
         assert await keys.authenticate(good.key)
-        for key in ("nonsense", keys.generate().key, good.key[:-1] + "x", old.key):
+        for key in ("nonsense", keys.generate().key, wrong_secret(good.key), old.key):
             with pytest.raises(HTTPException):
                 await keys.authenticate(key)
         app = FastAPI()
@@ -767,7 +768,8 @@ class TestIntegrationMetrics:
                 with pytest.raises(CircuitOpenError):
                     await client.get("https://api.example.com/")
         assert counts(reader, "outbound.breaker", "event") == {("opened",): 1, ("refused",): 1}
-        assert {a["server.address"] for a, _ in points(reader, OUTBOUND)} == {"api.example.com"}
+        breaker = points(reader, "fastapi_alcazaba.outbound.breaker")
+        assert all("server.address" not in attributes for attributes, _ in breaker)
 
     async def test_ssrf_blocks(self, meters: MeterProvider, reader: InMemoryMetricReader) -> None:
         async def never(request: httpx.Request) -> httpx.Response:
@@ -785,9 +787,6 @@ class TestIntegrationMetrics:
             ("address",): 1,
             ("port",): 1,
         }
-
-
-OUTBOUND = "fastapi_alcazaba.outbound.breaker"
 
 
 class TestBrowserMetrics:
