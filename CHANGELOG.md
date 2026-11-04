@@ -7,6 +7,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `FastAPIProviderBudget`: what each user, and the whole app, may cost at a provider the app pays
+  for (an LLM, SMS, OCR). Each call reserves its units from the user's quota and from the app's
+  in atomic operations, and gives back what it didn't use when it ends, so calls made at the
+  same time never go past either; `at_least` takes what's left. `BudgetLimits` per user and for
+  the whole app: a quota per hour, day or month, a rate, calls at the same time, a cap per call,
+  and `enabled`. They're read from your database (a function of the user's ID), kept
+  `settings_ttl` seconds per process, `invalidate()`d by the admin panel, and the last ones
+  kept while the database is down. `reserve()` as a dependency, `call()` outside requests,
+  `usage()`, `reset()`, `BudgetRefused` with its reason, usage records and metrics
+  (`fastapi_alcazaba.budget`, `fastapi_alcazaba.budget.usage`). Closed when the backend fails.
+- `SQLBudgetLimits` and `provider_budgets_table`: those limits in a table, by user, plan,
+  default and total, with `save()` and `delete()` for the admin panel.
+
 ## [0.8.0] - 2026-11-04
 
 ### Added

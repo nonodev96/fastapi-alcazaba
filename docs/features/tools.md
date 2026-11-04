@@ -94,6 +94,13 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
     What each user, API key or tenant uses per period, held to its plan's quotas, with a usage
     record per charge for billing.
 
+-   :material-cash-lock:{ .lg .middle } __[Provider budgets](../guide/provider-budget.md)__
+
+    ---
+
+    What each user may cost the app at an LLM, SMS or OCR provider: reserved before each call,
+    with limits an admin panel changes in the database.
+
 -   :material-clipboard-text-clock:{ .lg .middle } __[Audit trail](../guide/audit.md)__
 
     ---

@@ -187,6 +187,13 @@ COUNTERS: dict[str, tuple[str, str]] = {
         "its quota), unchecked (the backend failed), refunded (a server error: not served)",
     ),
     "accounting.usage": ("{unit}", "Units charged by FastAPIAccounting, by meter"),
+    "budget": (
+        "{call}",
+        "Calls to a provider held by FastAPIProviderBudget, by provider and outcome: reserved, "
+        "exceeded (the user's quota), total_exceeded (the app's), rate_limited, concurrency, "
+        "disabled, unauthenticated, unchecked (the backend failed), unused (nothing used)",
+    ),
+    "budget.usage": ("{unit}", "Units used at a provider, by provider"),
     "accounting.undelivered": (
         "{record}",
         "Usage records a sink didn't write, by sink and reason: error, timeout",

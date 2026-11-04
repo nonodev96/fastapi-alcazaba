@@ -357,6 +357,8 @@ Then Alcazaba adds to them:
 | `fastapi_alcazaba.mail` | `fastapi_alcazaba.outcome` (sent, failed) |
 | `fastapi_alcazaba.accounting` | `fastapi_alcazaba.meter`, `fastapi_alcazaba.outcome` (allowed, exceeded, unauthenticated, unchecked, refunded) |
 | `fastapi_alcazaba.accounting.usage` | `fastapi_alcazaba.meter`: the units charged |
+| `fastapi_alcazaba.budget` | `fastapi_alcazaba.provider`, `fastapi_alcazaba.outcome` (reserved, exceeded, total_exceeded, rate_limited, concurrency, disabled, unauthenticated, unchecked, unused) |
+| `fastapi_alcazaba.budget.usage` | `fastapi_alcazaba.provider`: the units used |
 | `fastapi_alcazaba.accounting.undelivered` | `fastapi_alcazaba.sink`, `fastapi_alcazaba.reason` (error, timeout): usage records a sink didn't write |
 | `fastapi_alcazaba.audit` | `fastapi_alcazaba.action`, `fastapi_alcazaba.outcome` (success, failure, denied): a burst of denied is someone probing |
 | `fastapi_alcazaba.audit.undelivered` | `fastapi_alcazaba.sink`, `fastapi_alcazaba.reason` (error, timeout): events a sink didn't write |

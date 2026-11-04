@@ -93,6 +93,7 @@ nav:
               - UnkeyStrategy: guide/authentication/unkey.md
               - Your own strategy: guide/authentication/your-own.md
           - Accounting: guide/accounting.md
+          - Provider budgets: guide/provider-budget.md
           - API keys, tokens and codes: guide/auth.md
           - Audit trail: guide/audit.md
           - Authorization:

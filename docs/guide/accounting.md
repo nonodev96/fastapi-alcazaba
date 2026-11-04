@@ -109,6 +109,9 @@ with a 503 (a WebSocket, 1013) instead, for quotas that cost money to go past. `
   exceeded, unauthenticated, unchecked, refunded), the units in
   `fastapi_alcazaba.accounting.usage` by meter, and the records not written in
   `fastapi_alcazaba.accounting.undelivered`.
+- **And what users cost you elsewhere:** what your app spends at a provider for each user (an
+  LLM's tokens, SMS messages) is a [provider budget](provider-budget.md): reserved before each
+  call, with limits read from your database.
 - **And the rate limits:** a quota bounds what a subject uses in a calendar period, to bill or
   to share a resource; a [rate limit](limits.md) bounds how fast, in a sliding window, to protect
   the service. An API usually has both: `Depends(FastAPIRateLimiter(10, seconds=1))` before
