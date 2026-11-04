@@ -7,6 +7,10 @@ Run it with -I in an environment where the package is installed, not from the so
 import argparse
 import asyncio
 from importlib import metadata, resources
+from pathlib import PurePath
+
+#: The commands the distribution installs (console scripts), next to the interpreter.
+COMMANDS = {"fastapi-alcazaba"}
 
 
 def check(condition: bool, message: str) -> None:
@@ -26,12 +30,21 @@ def check_distribution(expected_version: str | None) -> None:
     if expected_version is not None:
         check(installed == expected_version, f"installed {installed}, expected {expected_version}")
     files = [str(path) for path in metadata.files("fastapi-alcazaba") or []]
-    stray = [f for f in files if not f.startswith("fastapi_alcazaba")]
+    entry_points = metadata.distribution("fastapi-alcazaba").entry_points
+    commands = {point.name for point in entry_points if point.group == "console_scripts"}
+    check(commands == COMMANDS, f"commands {sorted(commands)}, expected {sorted(COMMANDS)}")
+    stray = [f for f in files if not f.startswith("fastapi_alcazaba") and not _command(f)]
     check(not stray, f"files outside the package: {stray}")
     check(any(f.endswith("licenses/LICENSE") for f in files), "LICENSE missing")
     check(any(f.endswith("licenses/NOTICE") for f in files), "NOTICE missing")
     check(resources.files("fastapi_alcazaba").joinpath("py.typed").is_file(), "py.typed missing")
     print(f"fastapi-alcazaba {installed}: {len(files)} files")
+
+
+def _command(file: str) -> bool:
+    """Whether `file` is one of COMMANDS, in the environment's bin/ (Scripts\\ on Windows)."""
+    path = PurePath(file)
+    return path.parent.name in ("bin", "Scripts") and path.stem in COMMANDS
 
 
 async def check_cache() -> None:

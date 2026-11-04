@@ -107,12 +107,13 @@ jobs:
           docker run -d --name opa -p 8181:8181 openpolicyagent/opa:1.21.4@sha256:12420358d3f22a0cd2424ddc44a16e292ecb42825d3dfbca779986006822a3f6 \
             run --server --addr 0.0.0.0:8181
           for _ in $(seq 30); do curl -sf http://localhost:8181/health && break; sleep 1; done
-      # MinIO (S3) for the direct uploads: a service can't take its `server` command.
+      # MinIO (S3) for the direct uploads: a service can't take its `server` command. MinIO no
+      # longer publishes its images: Chainguard's, built from its source, pinned by digest.
       - name: Start MinIO
         run: |
           docker run -d --name minio -p 19000:9000 \
             -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+            cgr.dev/chainguard/minio:latest@sha256:3c60a2a8c4d33409a9bc7a623a7fcbfb4605adc3d89422d2f53b3f673a6e5597 server /data
           for _ in $(seq 30); do curl -sf http://localhost:19000/minio/health/live && break; sleep 1; done
       # Keycloak with the test realm, for the OpenID Connect live tests (a service can't mount it).
       - name: Start Keycloak

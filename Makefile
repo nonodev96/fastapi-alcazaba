@@ -65,7 +65,7 @@ services-up:
 		quay.io/keycloak/keycloak:26.4 start-dev --import-realm
 	docker run -d --rm --name fastapi-alcazaba-test-minio -p 127.0.0.1:19000:9000 \
 		-e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin \
-		minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+		cgr.dev/chainguard/minio:latest@sha256:3c60a2a8c4d33409a9bc7a623a7fcbfb4605adc3d89422d2f53b3f673a6e5597 server /data
 	docker run -d --rm --name fastapi-alcazaba-test-mailpit -p 127.0.0.1:11025:1025 \
 		-p 127.0.0.1:18025:8025 axllent/mailpit:v1.32.0
 	# clamd loads its signatures for a minute or two before it answers (not in CI: too heavy).
