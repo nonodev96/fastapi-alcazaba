@@ -4277,6 +4277,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.security.UserSessions.end_sid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;end_sid
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5103,6 +5114,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.security.UserSessions.end_sid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;end_sid
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5640,7 +5662,7 @@ tells it on every <code>request.session</code>; older ones don't, so its reads t
 
 
 <a href="#fastapi_alcazaba.security.UserSessions" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">UserSessions</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">user_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'user_id'</span><span class="p">,</span> <span class="n">max_sessions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">record_client</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">UserSessions</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">user_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'user_id'</span><span class="p">,</span> <span class="n">sid_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'oidc_sid'</span><span class="p">,</span> <span class="n">max_sessions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">record_client</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5662,8 +5684,15 @@ they start, rotate and end.</p>
   before: those the index didn't hold too (two logins at once on a backend without locks,
   an index the backend lost). It costs one more read for each request with a user.</li>
 <li><strong>At most <code>max_sessions</code></strong> per user: a login past it ends the oldest session.</li>
-<li><strong>The index</strong> holds each session's backend key (a digest: not a cookie), and its
-  <code>User-Agent</code> and address when it started (<code>record_client=False</code> for neither).</li>
+<li>
+<p><strong>The index</strong> holds each session's backend key (a digest: not a cookie), and its
+  <code>User-Agent</code> and address when it started (<code>record_client=False</code> for neither).</p>
+</li>
+<li>
+<p><strong>Logins at an OpenID Connect provider:</strong> a session whose data has <code>sid_key</code> (the
+  provider's <code>sid</code> of the login) can be ended by it, <code>end_sid</code>, which the provider's
+  back-channel logout calls (<code>OIDCStrategy.backchannel_logout_endpoint</code>).</p>
+</li>
 </ul>
 
 
@@ -5692,6 +5721,22 @@ they start, rotate and end.</p>
             </td>
             <td>
                   <code>&#39;user_id&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>sid_key</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the key of the session's data that holds the provider's session id.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;oidc_sid&#39;</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -5905,6 +5950,31 @@ Ending the request's own session logs it out once the response is sent.</p>
 
         <p>End every session of the user (with <code>keep_current</code>, but the request's, which gets a
 new id); how many the index held. Sessions it didn't hold are refused too.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="fastapi_alcazaba.security.UserSessions.end_sid" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">end_sid</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#fastapi_alcazaba.security.UserSessions.end_sid" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">end_sid</span><span class="p">(</span><span class="n">sid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">HTTPConnection</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>End the sessions of the provider's login <code>sid</code> (whose data had it as <code>sid_key</code>); how
+many. 0 when no session has it (or the backend lost what said whose it is).</p>
 
 
     </div>
@@ -6308,14 +6378,16 @@ without overwriting the ones the app sets itself.</p>
 <div class="language-text highlight"><pre><span></span><code>app.add_middleware(SecurityHeadersMiddleware)
 </code></pre></div>
 <ul>
-<li><code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code>
-  and <code>Cross-Origin-Opener-Policy: same-origin</code> on every response.</li>
+<li><code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code>,
+  <code>Cross-Origin-Opener-Policy: same-origin</code> and a <code>Permissions-Policy</code> that turns off the
+  camera, the microphone, geolocation, payments and the other powerful features on every
+  response.</li>
 <li><code>Strict-Transport-Security</code> only on HTTPS requests: on plain HTTP browsers ignore it, and on
   a development <code>localhost</code> it would stick. Behind a proxy that terminates TLS, tell the server
   to trust it (<code>uvicorn --proxy-headers --forwarded-allow-ips=&lt;proxy address&gt;</code>) so that the
   request's scheme is https.</li>
 <li><code>Content-Security-Policy</code>: <code>csp</code> for responses that aren't HTML (nothing in a JSON response
-  should load anything), <code>html_csp</code> for HTML ones. None by default, so that FastAPI's Swagger
+  should load anything), <code>html_csp</code> for HTML ones, None by default, so that FastAPI's Swagger
   UI and ReDoc, which load scripts from a CDN, keep working.</li>
 </ul>
 
@@ -6561,7 +6633,7 @@ prefix wins; None for no limit). They're matched like the app's routes: without 
   </span>
 
 <a href="#fastapi_alcazaba.security.DEFAULT_SECURITY_HEADERS" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">DEFAULT_SECURITY_HEADERS</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'X-Content-Type-Options'</span><span class="p">:</span> <span class="s1">'nosniff'</span><span class="p">,</span> <span class="s1">'X-Frame-Options'</span><span class="p">:</span> <span class="s1">'DENY'</span><span class="p">,</span> <span class="s1">'Referrer-Policy'</span><span class="p">:</span> <span class="s1">'no-referrer'</span><span class="p">,</span> <span class="s1">'Cross-Origin-Opener-Policy'</span><span class="p">:</span> <span class="s1">'same-origin'</span><span class="p">}</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="n">DEFAULT_SECURITY_HEADERS</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'X-Content-Type-Options'</span><span class="p">:</span> <span class="s1">'nosniff'</span><span class="p">,</span> <span class="s1">'X-Frame-Options'</span><span class="p">:</span> <span class="s1">'DENY'</span><span class="p">,</span> <span class="s1">'Referrer-Policy'</span><span class="p">:</span> <span class="s1">'no-referrer'</span><span class="p">,</span> <span class="s1">'Cross-Origin-Opener-Policy'</span><span class="p">:</span> <span class="s1">'same-origin'</span><span class="p">,</span> <span class="s1">'Permissions-Policy'</span><span class="p">:</span> <span class="s1">'accelerometer=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()'</span><span class="p">}</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">

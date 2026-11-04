@@ -4049,10 +4049,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fastapi_alcazaba.idempotency.authorization" class="md-nav__link">
+  <a href="#fastapi_alcazaba.idempotency.credentials" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;authorization
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;credentials
       
     </span>
   </a>
@@ -4804,10 +4804,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#fastapi_alcazaba.idempotency.authorization" class="md-nav__link">
+  <a href="#fastapi_alcazaba.idempotency.credentials" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;authorization
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;credentials
       
     </span>
   </a>
@@ -4983,10 +4983,11 @@ FastAPICache's by default. Its backend must support locks.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>who the client is (<code>authorization</code> by default). Return the user's id
-with cookie sessions, and with tokens that get refreshed: a retry sent with a fresh token
-would run again. Requests without credentials share one space of keys, unguessable as
-long as clients make them random (UUIDs).</p>
+                <p>who the client is (<code>credentials</code> by default: the <code>Authorization</code> header,
+or the cookies). Return the user's id with tokens that get refreshed, and with cookies
+that change between requests: a retry sent with others would run again. Requests without
+credentials share one space of keys, unguessable as long as clients make them random
+(UUIDs).</p>
               </div>
             </td>
             <td>
@@ -5116,18 +5117,20 @@ answering 503. Off by default: running a payment twice is worse than refusing it
 <div class="doc doc-object doc-function">
 
 
-<h2 id="fastapi_alcazaba.idempotency.authorization" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">fastapi_alcazaba.idempotency.authorization</span>
+<h2 id="fastapi_alcazaba.idempotency.credentials" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">fastapi_alcazaba.idempotency.credentials</span>
 
 
-<a href="#fastapi_alcazaba.idempotency.authorization" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">authorization</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+<a href="#fastapi_alcazaba.idempotency.credentials" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">credentials</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">HTTPConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>The default identifier: the <code>Authorization</code> header (hashed before it's stored), so that
-one user never gets another's response, whatever key they send.</p>
+        <p>The default identifier: the request's credentials, hashed before they're stored, so that
+one user never gets another's response, whatever key they send: the <code>Authorization</code> header,
+or the cookies without one (a cookie session; any cookie that changes between a request and
+its retry makes the retry run again). Nothing for requests that carry neither.</p>
 
 
     </div>

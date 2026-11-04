@@ -4979,8 +4979,8 @@ vulnerabilities as described in
 <tbody>
 <tr>
 <td>Response cache</td>
-<td>One user's response served to another: requests are told apart by the endpoint's arguments and the <code>vary_headers</code> (<code>Authorization</code>, <code>Cookie</code>), and per-user entries are sent <code>private</code>. Only 200s without <code>no-store</code> are kept, and none that sets a cookie; with a response model, only what it has.</td>
-<td>A response that depends on anything else (<code>request.state</code>, another header, the client IP) needs it in <code>vary_headers</code> or the key builder; with authentication by another header, a shared entry otherwise.</td>
+<td>One user's response served to another: requests are told apart by the endpoint's arguments and the <code>vary_headers</code> (<code>Authorization</code>, <code>Cookie</code>, <code>X-API-Key</code>), and per-user entries are sent <code>private</code>. Only 200s without <code>no-store</code> are kept, and none that sets a cookie; with a response model, only what it has.</td>
+<td>A response that depends on anything else (<code>request.state</code>, a header the app reads credentials from by itself, the client IP) needs it in <code>vary_headers</code> or the key builder; a shared entry otherwise. The headers Alcazaba's API key strategies read count already.</td>
 </tr>
 <tr>
 <td>Rate and concurrency limits</td>
@@ -4989,12 +4989,12 @@ vulnerabilities as described in
 </tr>
 <tr>
 <td>Idempotency keys</td>
-<td>A retried POST running twice; another client getting a response by guessing a key (keys are per <code>Authorization</code>). Replays never carry <code>Set-Cookie</code>.</td>
+<td>A retried POST running twice; another client getting a response by guessing a key (keys are per <code>Authorization</code>, or per cookies without one). Replays never carry <code>Set-Cookie</code>.</td>
 <td>A replay is answered before the route's dependencies: a copy of the request gets the response until it expires, even with a revoked token. An async <code>identifier</code> that checks the credentials closes that.</td>
 </tr>
 <tr>
 <td>JWTs</td>
-<td><code>alg: none</code>, a public key used as an HMAC secret, short HMAC secrets, tokens meant for other services (an <code>aud</code> without <code>audience</code> is refused; a JWKS needs <code>audience</code> and <code>issuer</code>), revoked tokens within the leeway.</td>
+<td><code>alg: none</code>, a public key used as an HMAC secret or a token verified with another algorithm than its key's (each key is pinned to one), HMAC keys in a JWKS, a JWKS over plain HTTP, short HMAC secrets, tokens meant for other services (an <code>aud</code> without <code>audience</code> is refused; a JWKS needs <code>audience</code> and <code>issuer</code>), tokens of a retired key, revoked tokens within the leeway; a provider that's slow or down (a deadline, a circuit breaker, at most one fetch every 30 s).</td>
 <td>Tokens read from a cookie need <code>CSRFMiddleware</code>.</td>
 </tr>
 <tr>
@@ -5070,7 +5070,7 @@ vulnerabilities as described in
 <tr>
 <td>Task queue</td>
 <td>Tasks planted or altered in the backend (sealed, bound to the queue), copies of a sealed task written back (each run is claimed once, until <code>replay_window</code>), pickle (arguments travel as JSON).</td>
-<td>Delivery is at least once: tasks must be idempotent. Without a key, whoever writes to the backend runs your tasks.</td>
+<td>Delivery is at least once: tasks must be idempotent. Without a key, whoever writes to the backend runs your tasks. With one, the run claims and status records that refuse copies are state in the backend: whoever can also delete keys there can run a copy again until its sealed deadline (<code>replay_window</code>); restrict the app's backend user (Redis ACLs) to the commands it needs, and keep <code>replay_window</code> as short as your outages allow.</td>
 </tr>
 <tr>
 <td>Broadcast</td>

@@ -4531,10 +4531,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fastapi_alcazaba.core.errors.UnsignedEntriesWarning" class="md-nav__link">
+  <a href="#fastapi_alcazaba.core.errors.UnsignedEntriesError" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;UnsignedEntriesWarning
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;UnsignedEntriesError
       
     </span>
   </a>
@@ -4568,6 +4568,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;CircuitOpen
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.core.errors.ValueTooLarge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ValueTooLarge
       
     </span>
   </a>
@@ -5078,10 +5089,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fastapi_alcazaba.core.errors.UnsignedEntriesWarning" class="md-nav__link">
+  <a href="#fastapi_alcazaba.core.errors.UnsignedEntriesError" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;UnsignedEntriesWarning
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;UnsignedEntriesError
       
     </span>
   </a>
@@ -5115,6 +5126,17 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;CircuitOpen
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.core.errors.ValueTooLarge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ValueTooLarge
       
     </span>
   </a>
@@ -5542,20 +5564,21 @@ call <code>allow()</code> let through "half-open": another one would let a secon
 
 
 
-<h3 id="fastapi_alcazaba.core.errors.UnsignedEntriesWarning" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">UnsignedEntriesWarning</span>
+<h3 id="fastapi_alcazaba.core.errors.UnsignedEntriesError" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">UnsignedEntriesError</span>
 
 
-<a href="#fastapi_alcazaba.core.errors.UnsignedEntriesWarning" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#fastapi_alcazaba.core.errors.UnsignedEntriesError" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="UserWarning">UserWarning</span></code></p>
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
 
 
 
-        <p>A coder whose decoding can run code (PickleCoder) is used without a signing key.</p>
+        <p>A coder whose decoding can run code (PickleCoder) without a signing or encryption key:
+whoever can write to the backend could run code in the app.</p>
 
 
 
@@ -5651,6 +5674,38 @@ address), so the entry is never found again: leave it out with <code>exclude_par
 
 
         <p>The circuit breaker is open: the backend isn't called for a while.</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="fastapi_alcazaba.core.errors.ValueTooLarge" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">ValueTooLarge</span>
+
+
+<a href="#fastapi_alcazaba.core.errors.ValueTooLarge" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="ValueError">ValueError</span></code></p>
+
+
+
+        <p>A value larger than the backend takes (<code>Backend.max_value_size</code>): refused before it's
+sent. The backend is fine, so it doesn't count against its circuit breaker.</p>
 
 
 

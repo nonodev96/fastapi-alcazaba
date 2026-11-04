@@ -1779,6 +1779,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#checking-what-was-uploaded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking what was uploaded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#downloads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4795,6 +4806,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#checking-what-was-uploaded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking what was uploaded
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#downloads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4941,18 +4963,59 @@ URLs need on this bucket.</p>
 <ul>
 <li><strong>Bounded by the service:</strong> a file smaller than <code>min_size</code> (1 byte) or larger than <code>max_size</code>
   is refused by S3, as is one that declares another type than <code>content_type</code>, or one not
-  starting with <code>content_type_prefix</code>. <code>upload_url</code> signs a PUT instead, of any size: prefer the
-  form.</li>
+  starting with <code>content_type_prefix</code>.</li>
 <li><strong>A key of its own for each upload:</strong> a form overwrites what's under its key.</li>
-<li><strong>Checked before use:</strong> the form bounds the size and the declared type, not what the file is.
-  Read it back from the bucket and <a href="../uploads/">check it</a> before using it, or serving it.</li>
+</ul>
+<p>For a client that PUTs (an app, a script), <code>upload_url</code> signs a PUT of exactly the size the
+client declared, and of its SHA-256 when it gives one:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/scans"</span><span class="p">)</span>
+</span><span id="__span-3-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">new_scan</span><span class="p">(</span><span class="n">body</span><span class="p">:</span> <span class="n">NewScan</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">CurrentUser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PresignedUpload</span><span class="p">:</span>
+</span><span id="__span-3-3">    <span class="k">if</span> <span class="n">body</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">50_000_000</span><span class="p">:</span>
+</span><span id="__span-3-4">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">413</span><span class="p">,</span> <span class="s2">"File too large"</span><span class="p">)</span>
+</span><span id="__span-3-5">    <span class="k">return</span> <span class="n">s3</span><span class="o">.</span><span class="n">upload_url</span><span class="p">(</span><span class="sa">f</span><span class="s2">"scans/</span><span class="si">{</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">body</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">sha256</span><span class="o">=</span><span class="n">body</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The client sends the returned <code>headers</code> as they are: <code>Content-Length</code> and <code>x-amz-checksum-sha256</code>
+are signed, so S3 (MinIO, R2) refuses any other length (403), and bytes whose checksum isn't the
+one given (400).</p>
+<h2 id="checking-what-was-uploaded">Checking what was uploaded<a class="headerlink" href="#checking-what-was-uploaded" title="Permanent link">&para;</a></h2>
+<p>Neither the form nor the URL say what the file is. <code>check_uploaded</code> reads it back from the
+bucket, runs <a href="../uploads/"><code>FastAPIUploads</code></a>'s checks on it, its malware scanner too, and moves it
+to a key the clients never get a URL for, or deletes it when it fails them
+(<code>pip install "fastapi-alcazaba[uploads]"</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.uploads.direct</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_uploaded</span>
+</span><span id="__span-4-2">
+</span><span id="__span-4-3">
+</span><span id="__span-4-4"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/scans/</span><span class="si">{scan_id}</span><span class="s2">/done"</span><span class="p">)</span>
+</span><span id="__span-4-5"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">scan_done</span><span class="p">(</span><span class="n">scan_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-4-6">    <span class="n">checked</span> <span class="o">=</span> <span class="k">await</span> <span class="n">check_uploaded</span><span class="p">(</span>  <span class="c1"># 413, 415, 422: and deleted</span>
+</span><span id="__span-4-7">        <span class="n">uploads</span><span class="p">,</span> <span class="n">s3</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"incoming/scans/</span><span class="si">{</span><span class="n">scan_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">move_to</span><span class="o">=</span><span class="sa">f</span><span class="s2">"scans/</span><span class="si">{</span><span class="n">scan_id</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="__span-4-8">    <span class="p">)</span>
+</span><span id="__span-4-9">    <span class="k">await</span> <span class="n">checked</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="__span-4-10">    <span class="k">return</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="n">checked</span><span class="o">.</span><span class="n">content_type</span><span class="p">}</span>
+</span></code></pre></div>
+<ul>
+<li><strong>Why it's moved:</strong> a presigned URL or form works until it expires, as many times as the client
+  likes. Checked where it was uploaded, the object could be replaced by another the next second,
+  of the same size, and the app would serve what it never checked. So <code>check_uploaded</code> copies it
+  to <code>move_to</code> only if it's still the object it read (<code>x-amz-copy-source-if-match</code> with its ETag),
+  and deletes it from where it was. Replaced in between: deleted, and a 409. Give clients URLs
+  under one prefix (<code>incoming/</code>) and serve another.</li>
+<li><strong>Under the type it is:</strong> the copy's <code>Content-Type</code> is the one found in its bytes, not the one
+  the uploader sent: a PNG uploaded as <code>text/html</code> is served as <code>image/png</code>.</li>
+<li>At most <code>max_size</code> + 1 bytes are read: a larger object is "too large" without reading the rest.</li>
+<li>Refused (413, 415, 422): deleted from the bucket with a signed DELETE, and the HTTPException
+  goes on. Not scanned (503, the scanner down): kept where it was, to check later. No such
+  object: 404; the service failing: 502.</li>
+<li>The returned <code>CheckedFile</code> holds the bytes read (in memory up to 1 MiB, then on disk): close it
+  when done.</li>
+<li>Not yet: multipart (resumable) uploads.</li>
 </ul>
 <h2 id="downloads">Downloads<a class="headerlink" href="#downloads" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/invoices/</span><span class="si">{invoice_id}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-3-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">invoice</span><span class="p">(</span><span class="n">invoice_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">CurrentUser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
-</span><span id="__span-3-3">    <span class="n">invoice</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">invoices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">invoice_id</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># yours to authorize</span>
-</span><span id="__span-3-4">    <span class="n">url</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">download_url</span><span class="p">(</span><span class="sa">f</span><span class="s2">"invoices/</span><span class="si">{</span><span class="n">invoice</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">.pdf"</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"invoice.pdf"</span><span class="p">,</span> <span class="n">expires</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
-</span><span id="__span-3-5">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/invoices/</span><span class="si">{invoice_id}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-5-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">invoice</span><span class="p">(</span><span class="n">invoice_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">CurrentUser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
+</span><span id="__span-5-3">    <span class="n">invoice</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">invoices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">invoice_id</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># yours to authorize</span>
+</span><span id="__span-5-4">    <span class="n">url</span> <span class="o">=</span> <span class="n">s3</span><span class="o">.</span><span class="n">download_url</span><span class="p">(</span><span class="sa">f</span><span class="s2">"invoices/</span><span class="si">{</span><span class="n">invoice</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">.pdf"</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">"invoice.pdf"</span><span class="p">,</span> <span class="n">expires</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+</span><span id="__span-5-5">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
 </span></code></pre></div>
 <p>With <code>filename</code>, browsers download the object as that file (<code>Content-Disposition: attachment</code>)
 rather than show it, so an uploaded HTML or SVG never runs on the bucket's origin.

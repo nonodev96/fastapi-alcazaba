@@ -4239,6 +4239,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.audit.FastAPIAudit.checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4349,6 +4360,28 @@
     <span class="md-ellipsis">
       
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;verify_audit_trail
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.audit.last_checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;last_checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.audit.generate_audit_key_pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;generate_audit_key_pair
       
     </span>
   </a>
@@ -4965,6 +4998,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.audit.FastAPIAudit.checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5082,6 +5126,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.audit.last_checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;last_checkpoint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.audit.generate_audit_key_pair" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;generate_audit_key_pair
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#fastapi_alcazaba.audit.SENSITIVE_WORDS" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5172,7 +5238,7 @@ In <code>fastapi_alcazaba.audit</code>.</p>
 
 
 <a href="#fastapi_alcazaba.audit.FastAPIAudit" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIAudit</span><span class="p">(</span><span class="n">sinks</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AuditSink</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">signing_key</span><span class="p">:</span> <span class="n">Secrets</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">redact</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">FastAPIAudit</span><span class="p">(</span><span class="n">sinks</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AuditSink</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">signing_key</span><span class="p">:</span> <span class="n">AuditKeys</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">redact</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">Metrics</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">checkpoint_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'default'</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -5214,16 +5280,71 @@ In <code>fastapi_alcazaba.audit</code>.</p>
                 <code>signing_key</code>
             </td>
             <td>
-                  <code><span title="fastapi_alcazaba.core.integrity.Secrets">Secrets</span> | None</code>
+                  <code><span title="fastapi_alcazaba.audit.keys.AuditKeys">AuditKeys</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>signs and chains the events (see <code>verify_audit_trail</code>); a secret of at
-least 32 bytes, or several to rotate it (the first signs). The same in every process.</p>
+                <p>signs and chains the events (see <code>verify_audit_trail</code>): an Ed25519
+private key (PEM, or cryptography's object; <code>generate_audit_key_pair()</code>), whose public key
+verifies and can't sign; or an HMAC secret of at least 32 bytes. Several rotate them: the
+first signs, the others are kept for nothing else (verification takes the old keys). The
+same in every process.</p>
               </div>
             </td>
             <td>
                   <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>checkpoint_interval</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>seconds between two checkpoints (an <code>audit.checkpoint</code> event
+listing the newest event of every process's stream, through the cache's backend), written
+with the next event after that long. Needs a <code>signing_key</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cache</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            fastapi_alcazaba.response_cache.Cache (fastapi_alcazaba.response_cache.caches.Cache)" href="../cache/#fastapi_alcazaba.response_cache.Cache">Cache</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>whose backend shares the heads of the streams for the checkpoints;
+FastAPICache's by default. Without one (or when it fails), a checkpoint lists its own
+stream only.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>trails of different names keep their checkpoints apart.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -5367,6 +5488,33 @@ and client.</p>
 
         <p>Writes one event and returns it, e.g. for a failed login. <code>request</code> adds the
 request's method, route and client.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="fastapi_alcazaba.audit.FastAPIAudit.checkpoint" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">checkpoint</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#fastapi_alcazaba.audit.FastAPIAudit.checkpoint" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">checkpoint</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">AuditEvent</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Write a checkpoint now: an <code>audit.checkpoint</code> event listing the newest event (its
+number and signature) of every stream of this trail, as each process last published it
+to the backend. A verifier then finds that events up to those were removed. Written by
+itself every <code>checkpoint_interval</code>.</p>
 
 
     </div>
@@ -5796,9 +5944,10 @@ the exception's type by default.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>with a <code>signing_key</code>, HMAC-SHA256 in hex of <code>fastapi_alcazaba/audit2</code>, a
-NUL byte, and the RFC 8785 canonical JSON of <code>to_dict()</code> without <code>signature</code>: a verifier
-in any language computes the same.</p>
+                <p>with a <code>signing_key</code>, <code>&lt;algorithm&gt;:&lt;kid&gt;:&lt;value&gt;</code> of
+<code>fastapi_alcazaba/audit3</code>, a NUL byte, and the RFC 8785 canonical JSON of <code>to_dict()</code>
+without <code>signature</code>: <code>hs256</code> (HMAC-SHA256 in hex) or <code>ed25519</code> (in base64url, unpadded);
+<code>kid</code> names the key. A verifier in any language computes the same.</p>
               </div>
             </td>
             <td>
@@ -6012,16 +6161,61 @@ developing.</p>
 
 
 <a href="#fastapi_alcazaba.audit.verify_audit_trail" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">verify_audit_trail</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AuditEvent</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">signing_key</span><span class="p">:</span> <span class="n">Secrets</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">verify_audit_trail</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AuditEvent</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">keys</span><span class="p">:</span> <span class="n">AuditKeys</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>What's wrong with a trail written with <code>signing_key</code> (or one of its keys, when it was
-rotated): an empty list when nothing is. <code>events</code> are AuditEvents or their <code>to_dict()</code> (the
-JSON lines read back), of one stream or several, in any order; the same event given twice
-counts once. Each stream's chain is checked from its oldest event given, since older ones may
-have been rotated out of the logs.</p>
+        <p>What's wrong with a trail: an empty list when nothing is. <code>keys</code> verify it: the public
+keys of Ed25519 signing keys, or the HMAC secrets, of every rotation the events span (each
+signature names its key). <code>events</code> are AuditEvents or their <code>to_dict()</code> (the JSON lines read
+back), of one stream or several, in any order; the same event given twice counts once.</p>
+<p>Each stream's chain is checked from its oldest event given, since older ones may have been
+rotated out of the logs. Each checkpoint's heads must be there: a stream whose newest events
+were removed ends before the head a later checkpoint saw. Events after the last checkpoint
+can still be removed unnoticed: <code>last_checkpoint()</code> says when that was.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="fastapi_alcazaba.audit.last_checkpoint" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">fastapi_alcazaba.audit.last_checkpoint</span>
+
+
+<a href="#fastapi_alcazaba.audit.last_checkpoint" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">last_checkpoint</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AuditEvent</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>When the newest checkpoint among <code>events</code> was written: events after it could be removed
+without <code>verify_audit_trail</code> noticing. None without checkpoints.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="fastapi_alcazaba.audit.generate_audit_key_pair" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">fastapi_alcazaba.audit.generate_audit_key_pair</span>
+
+
+<a href="#fastapi_alcazaba.audit.generate_audit_key_pair" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">generate_audit_key_pair</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>A new Ed25519 key pair, as PEM: (the private key, for the app's <code>signing_key</code>; the public
+key, for the auditor's <code>verify_audit_trail</code> and <code>fastapi-alcazaba audit verify</code>).</p>
 
 
     </div>

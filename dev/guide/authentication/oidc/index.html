@@ -1002,6 +1002,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDCStrategy
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1018,6 +1036,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#logging-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging out
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -4709,6 +4757,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#logging-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging out
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4873,6 +4940,61 @@ endpoints and keys from its issuer, and the ID token verified as OpenID Connect 
 </ul>
 <p><code>OAuth2Strategy</code> doesn't verify the <code>id_token</code> it may get: for an OpenID Connect provider, use
 this one.</p>
+<h2 id="logging-out">Logging out<a class="headerlink" href="#logging-out" title="Permanent link">&para;</a></h2>
+<p>Ending the app's session doesn't end the provider's: the next login there goes through without a
+password. Two ways to end both, from either side.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">UserSessions</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3"><span class="n">user_sessions</span> <span class="o">=</span> <span class="n">UserSessions</span><span class="p">()</span>  <span class="c1"># given to ServerSessionMiddleware(users=user_sessions)</span>
+</span><span id="__span-1-4"><span class="n">keycloak</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">use</span><span class="p">(</span>
+</span><span id="__span-1-5">    <span class="n">OIDCStrategy</span><span class="p">(</span>
+</span><span id="__span-1-6">        <span class="o">...</span><span class="p">,</span>
+</span><span id="__span-1-7">        <span class="n">post_logout_redirect_uris</span><span class="o">=</span><span class="p">[</span><span class="s2">"https://app.example.com/logged-out"</span><span class="p">],</span>
+</span><span id="__span-1-8">    <span class="p">)</span>
+</span><span id="__span-1-9"><span class="p">)</span>
+</span><span id="__span-1-10">
+</span><span id="__span-1-11">
+</span><span id="__span-1-12"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/auth/callback"</span><span class="p">)</span>
+</span><span id="__span-1-13"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">callback</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span><span class="s2">"keycloak"</span><span class="p">))]):</span>
+</span><span id="__span-1-14">    <span class="n">sessions</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">user</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">])</span>
+</span><span id="__span-1-15">    <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s2">"oidc_sid"</span><span class="p">]</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sid"</span><span class="p">)</span>  <span class="c1"># which login: for back-channel logout</span>
+</span><span id="__span-1-16">    <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="p">[</span><span class="s2">"id_token"</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">id_token</span>  <span class="c1"># for logout_url's hint</span>
+</span><span id="__span-1-17">    <span class="o">...</span>
+</span><span id="__span-1-18">
+</span><span id="__span-1-19">
+</span><span id="__span-1-20"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/logout"</span><span class="p">)</span>
+</span><span id="__span-1-21"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logout</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RedirectResponse</span><span class="p">:</span>
+</span><span id="__span-1-22">    <span class="n">id_token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id_token"</span><span class="p">)</span>
+</span><span id="__span-1-23">    <span class="n">clear_session</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</span><span id="__span-1-24">    <span class="n">url</span> <span class="o">=</span> <span class="n">keycloak</span><span class="o">.</span><span class="n">logout_url</span><span class="p">(</span>
+</span><span id="__span-1-25">        <span class="n">id_token_hint</span><span class="o">=</span><span class="n">id_token</span><span class="p">,</span> <span class="n">post_logout_redirect_uri</span><span class="o">=</span><span class="s2">"https://app.example.com/logged-out"</span>
+</span><span id="__span-1-26">    <span class="p">)</span>
+</span><span id="__span-1-27">    <span class="k">return</span> <span class="n">RedirectResponse</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">303</span><span class="p">)</span>
+</span><span id="__span-1-28">
+</span><span id="__span-1-29">
+</span><span id="__span-1-30"><span class="c1"># The provider tells the app when the user logged out there (or an admin ended the session).</span>
+</span><span id="__span-1-31"><span class="n">app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/auth/backchannel-logout"</span><span class="p">)(</span><span class="n">keycloak</span><span class="o">.</span><span class="n">backchannel_logout_endpoint</span><span class="p">(</span><span class="n">user_sessions</span><span class="p">))</span>
+</span></code></pre></div>
+<ul>
+<li><strong>From the app (RP-Initiated Logout):</strong> <code>logout_url()</code> is the provider's <code>end_session_endpoint</code>
+  (from discovery, or <code>end_session_url=</code>) with the app's <code>client_id</code>, the login's ID token as
+  <code>id_token_hint</code> (the provider ends that session without asking), and a
+  <code>post_logout_redirect_uri</code>, which must be one of <code>post_logout_redirect_uris</code>, as registered
+  there: never one from the request, which would be an open redirect. <code>state</code> comes back with it.
+  The raw ID token is in <code>request.state.id_token</code> once the callback is authenticated.</li>
+<li><strong>From the provider (Back-Channel Logout):</strong> register the endpoint's URL at the provider. It
+  takes the provider's logout token, verifies it (signed by the provider's keys with one of
+  <code>algorithms</code>, its <code>iss</code>, its <code>aud</code>, issued in the last 5 minutes, a <code>jti</code>, the logout event, a
+  <code>sub</code> or a <code>sid</code>, no <code>nonce</code>), takes it once (its <code>jti</code>, in the cache's backend), and ends the
+  app's sessions of that login: those whose <code>oidc_sid</code> is the token's <code>sid</code>, or, with a <code>sub</code>
+  only, every session of the user (<code>user_id=</code> maps the provider's <code>sub</code> to yours). It answers
+  200, or 400 <code>invalid_request</code> with the reason in the log, never in the answer.</li>
+<li><strong>Without a client secret:</strong> <code>client_auth="private_key_jwt"</code> with
+  <code>client_key=JWTKey(private_key, algorithm="ES256", kid="app-1")</code> authenticates to the token
+  endpoint with a JWT signed by the app's key (RFC 7523): give the provider the public key (the
+  JWKS of a <code>JWTStrategy(keys=[...])</code>, <code>jwks()</code>), and no secret is shared.</li>
+<li><strong>Not yet:</strong> front-channel logout (an iframe per app), PAR and DPoP.</li>
+</ul>
 
 
 

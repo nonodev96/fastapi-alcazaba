@@ -2318,6 +2318,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step-up">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#by-factor-and-for-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        By factor, and for tokens
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4847,6 +4864,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step-up">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#by-factor-and-for-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        By factor, and for tokens
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5045,6 +5079,37 @@ with the <code>crypto</code> extra, which seals the secrets.</p>
 <li><strong>Shared with passkeys:</strong> a login with a verified <a href="../passkeys/">passkey</a> marks the session the
   same way (<code>webauthn.mark</code>), and either <code>require_recent</code> takes a code or a passkey; both are
   <code>fastapi_alcazaba.auth.stepup</code>'s.</li>
+</ul>
+<h3 id="by-factor-and-for-tokens">By factor, and for tokens<a class="headerlink" href="#by-factor-and-for-tokens" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth.stepup</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_recent</span>
+</span><span id="__span-5-2">
+</span><span id="__span-5-3"><span class="n">passkey_only</span> <span class="o">=</span> <span class="n">require_recent</span><span class="p">(</span><span class="n">current_user_id</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">{</span><span class="s2">"passkey"</span><span class="p">},</span> <span class="n">audit</span><span class="o">=</span><span class="n">audit</span><span class="p">)</span>
+</span><span id="__span-5-4">
+</span><span id="__span-5-5"><span class="c1"># API clients with the provider's tokens: its auth_time, amr and acr decide.</span>
+</span><span id="__span-5-6"><span class="n">claims</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span><span class="s2">"oidc_tokens"</span><span class="p">)</span>  <span class="c1"># returns the token's claims</span>
+</span><span id="__span-5-7"><span class="n">recent_mfa</span> <span class="o">=</span> <span class="n">require_recent</span><span class="p">(</span>
+</span><span id="__span-5-8">    <span class="n">current_user_id</span><span class="p">,</span> <span class="n">max_age</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">claims</span><span class="o">=</span><span class="n">claims</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">{</span><span class="s2">"hwk"</span><span class="p">,</span> <span class="s2">"otp"</span><span class="p">},</span> <span class="n">acr_values</span><span class="o">=</span><span class="p">{</span><span class="s2">"urn:mfa"</span><span class="p">}</span>
+</span><span id="__span-5-9"><span class="p">)</span>
+</span></code></pre></div>
+<ul>
+<li><strong>Which factor:</strong> <code>methods</code> lists those that count: the method the session was marked with
+  (<code>"passkey"</code>, <code>"totp"</code>, or yours: <code>stepup.mark(request, user_id, "password")</code>), or for tokens
+  their <code>amr</code> values (RFC 8176: <code>"hwk"</code> a hardware key, <code>"otp"</code>, <code>"mfa"</code>…).
+  <code>stepup.verified_with(request, user_id)</code> says which one the session holds.</li>
+<li><strong>The front end knows what to do:</strong> a session that falls short gets a 403 problem
+  (<code>type: "urn:fastapi-alcazaba:problem:step-up"</code>, with <code>max_age</code> and <code>methods</code>; install
+  <a href="../observability/#problem-details"><code>FastAPIProblemDetails</code></a> to get it as
+  <code>application/problem+json</code>).</li>
+<li><strong>Tokens:</strong> with <code>claims=</code> (a dependency that returns the token's claims when there's one), the
+  token must be the user's: its <code>sub</code> is what <code>current_user_id</code> returns (<code>subject=</code> reads another
+  claim), so a fresh token of an attacker's own, sent with a stolen session, steps nobody up. Its
+  <code>auth_time</code> must be within <code>max_age</code>, an <code>amr</code> among <code>methods</code>, and its <code>acr</code> among
+  <code>acr_values</code>. Otherwise a 401 with RFC 9470's challenge:
+  <code>WWW-Authenticate: Bearer error="insufficient_user_authentication", ..., max_age="600",
+  acr_values="urn:mfa"</code>, for the client to send the user back to the provider with those.</li>
+<li><strong>Audited:</strong> with <code>audit=</code>, each check is an <code>auth.stepup</code> event: the user, the method, how old,
+  and the reason when it's refused (<code>none</code>, <code>too_old</code>, <code>wrong_method</code>, <code>no_auth_time</code>,
+  <code>wrong_acr</code>, <code>other_subject</code>).</li>
 </ul>
 <h2 id="in-the-audit-trail">In the audit trail<a class="headerlink" href="#in-the-audit-trail" title="Permanent link">&para;</a></h2>
 <p>With <code>audit=</code>, each code checked is an <code>auth.mfa</code> event and each recovery code tried an

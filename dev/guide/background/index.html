@@ -1647,6 +1647,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Task queue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keeping-it-healthy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping it healthy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from-a-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From a shell
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4836,6 +4864,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Task queue">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keeping-it-healthy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keeping it healthy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from-a-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From a shell
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5076,27 +5132,92 @@ in any other that shares the cache's Redis or Valkey:</p>
 <li><strong>Small on purpose:</strong> no results, priorities or workflows. Each run is the root of a trace of its
   own, linked to the span of the request that enqueued it.</li>
 </ul>
+<h3 id="keeping-it-healthy">Keeping it healthy<a class="headerlink" href="#keeping-it-healthy" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="nd">@queue</span><span class="o">.</span><span class="n">task</span><span class="p">(</span>
+</span><span id="__span-2-2">    <span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+</span><span id="__span-2-3">    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># seconds a run may take</span>
+</span><span id="__span-2-4">    <span class="n">retry_on</span><span class="o">=</span><span class="p">(</span><span class="n">httpx</span><span class="o">.</span><span class="n">TransportError</span><span class="p">,),</span>  <span class="c1"># only these are retried</span>
+</span><span id="__span-2-5">    <span class="n">give_up_on</span><span class="o">=</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,),</span>  <span class="c1"># these go to the dead letters at once</span>
+</span><span id="__span-2-6"><span class="p">)</span>
+</span><span id="__span-2-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_invoice</span><span class="p">(</span><span class="n">invoice_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-2-8">
+</span><span id="__span-2-9">
+</span><span id="__span-2-10"><span class="n">task_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">send_invoice</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="n">unique_key</span><span class="o">=</span><span class="s2">"invoice-42"</span><span class="p">)</span>
+</span><span id="__span-2-11"><span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>  <span class="c1"># TaskStatus(state="pending", attempts=0, ...)</span>
+</span><span id="__span-2-12"><span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">cancel</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>  <span class="c1"># True: it hadn't started</span>
+</span></code></pre></div>
+<ul>
+<li><strong>Timeouts:</strong> a run that takes longer than <code>timeout</code> is cancelled and fails with <code>TimeoutError</code>:
+  retried, or to the dead letters, and its worker takes other tasks. Without one, a task that hangs
+  holds one of the <code>concurrency</code> slots for good: heartbeats keep it from being taken over. A sync
+  task's thread can't be stopped: it's left to finish, outside the count.</li>
+<li><strong>Which errors retry:</strong> <code>retry_on</code> lists those that are (all by default), <code>give_up_on</code> those that
+  never are; either way the task goes to the dead letters at once, reason <code>failed</code>.</li>
+<li><strong>Unique tasks:</strong> with <code>unique_key</code>, while a task enqueued with it waits, runs or waits for a
+  retry, <code>enqueue</code> returns its ID and adds nothing: a message the outbox delivers twice, a request
+  the client retries, run once. Once it succeeds, goes to the dead letters or is cancelled, the key
+  is free (a requeued dead letter doesn't take it again). Many processes enqueuing with one key at
+  once add one task. The backend keeps a digest of the key, not the key.</li>
+<li><strong>Status:</strong> <code>status(task_id)</code> says where a task is: <code>pending</code> (waiting, delayed, requeued),
+  <code>running</code>, <code>retrying</code> (waiting for its next attempt), <code>succeeded</code>, <code>dead</code> (with its <code>reason</code>)
+  or <code>cancelled</code>, with its attempts, the type of its last error and when it was enqueued and last
+  changed; never its arguments. Each task's record is written by the scripts that move the task,
+  and kept <code>status_ttl</code> (a day) after it ends; then <code>status()</code> gives None.</li>
+<li><strong>Cancelling:</strong> <code>cancel(task_id)</code> makes sure a task that hasn't started (pending, delayed or
+  waiting for a retry) never runs, and frees its <code>unique_key</code>; a running or finished one isn't
+  cancelled (False). A worker about to start it and <code>cancel</code> have one winner. The task counts in
+  <code>pending()</code> until a worker drops it.</li>
+<li><strong>Inside a task:</strong> <code>current_task()</code> gives its id, name, this run's attempt (1, 2…) and how
+  many it may have, e.g. to record "the last attempt failed" without counting on your own.</li>
+<li><strong>Dead letters:</strong> <code>dead_letter_count()</code> besides <code>dead_letters()</code>, <code>requeue_dead_letters()</code> and
+  <code>discard_dead_letters()</code>.</li>
+</ul>
+<h3 id="from-a-shell">From a shell<a class="headerlink" href="#from-a-shell" title="Permanent link">&para;</a></h3>
+<p><code>fastapi-alcazaba tasks</code> does the same from a shell, where the app's settings are. Point it at
+the queue (<code>module:attribute</code>), or at a function that sets up what it needs and returns it: a queue
+on FastAPICache has no backend until the app's lifespan runs, which the command doesn't (it would
+start workers).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="c1"># myapp/worker.py</span>
+</span><span id="__span-3-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">queue_for_cli</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">FastAPITaskQueue</span><span class="p">:</span>
+</span><span id="__span-3-3">    <span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+</span><span id="__span-3-4">        <span class="n">RedisBackend</span><span class="p">(</span><span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">redis_url</span><span class="p">)),</span>
+</span><span id="__span-3-5">        <span class="n">prefix</span><span class="o">=</span><span class="s2">"myapp"</span><span class="p">,</span>
+</span><span id="__span-3-6">        <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">cache_signing_key</span><span class="p">,</span>
+</span><span id="__span-3-7">    <span class="p">)</span>
+</span><span id="__span-3-8">    <span class="k">return</span> <span class="n">queue</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1">fastapi-alcazaba<span class="w"> </span>tasks<span class="w"> </span>myapp.worker<span class="w"> </span>queues<span class="w">                     </span><span class="c1"># every queue of the module</span>
+</span><span id="__span-4-2">fastapi-alcazaba<span class="w"> </span>tasks<span class="w"> </span>myapp.worker:queue_for_cli<span class="w"> </span>pending
+</span><span id="__span-4-3">fastapi-alcazaba<span class="w"> </span>tasks<span class="w"> </span>myapp.worker:queue_for_cli<span class="w"> </span>dead-letters<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span>
+</span><span id="__span-4-4">fastapi-alcazaba<span class="w"> </span>tasks<span class="w"> </span>myapp.worker:queue_for_cli<span class="w"> </span>requeue<span class="w"> </span>--all<span class="w">  </span><span class="c1"># or their IDs</span>
+</span><span id="__span-4-5">fastapi-alcazaba<span class="w"> </span>tasks<span class="w"> </span>myapp.worker:queue_for_cli<span class="w"> </span>discard<span class="w"> </span><span class="m">1730000000000</span>-0
+</span><span id="__span-4-6">fastapi-alcazaba<span class="w"> </span>tasks<span class="w"> </span>myapp.worker:queue_for_cli<span class="w"> </span>status<span class="w"> </span>3f2a…
+</span><span id="__span-4-7">fastapi-alcazaba<span class="w"> </span>tasks<span class="w"> </span>myapp.worker:queue_for_cli<span class="w"> </span>cancel<span class="w"> </span>3f2a…
+</span></code></pre></div>
+<p><code>--json</code> (before the command) prints JSON. It exits with 1 when a task isn't found or wasn't
+cancelled, and 2 for a wrong target or arguments. The current directory is importable, as with
+uvicorn; <code>queues</code> needs the module's queues to have their cache (<code>FastAPITaskQueue(cache)</code>).</p>
 <h2 id="leader-election">Leader election<a class="headerlink" href="#leader-election" title="Permanent link">&para;</a></h2>
 <p><code>FastAPILeader</code> elects one process among all those sharing the backend, for work that must run in
 exactly one of them all the time (a queue consumer, an outbox relay, a watcher) rather than at
 given times (that's the scheduler):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPILeader</span>
-</span><span id="__span-2-2">
-</span><span id="__span-2-3"><span class="n">leader</span> <span class="o">=</span> <span class="n">FastAPILeader</span><span class="p">(</span><span class="s2">"outbox"</span><span class="p">)</span>  <span class="c1"># FastAPICache's backend; or FastAPILeader("outbox", cache=cache)</span>
-</span><span id="__span-2-4">
-</span><span id="__span-2-5">
-</span><span id="__span-2-6"><span class="nd">@leader</span><span class="o">.</span><span class="n">run</span>
-</span><span id="__span-2-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">relay_outbox</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-2-8">    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="__span-2-9">        <span class="k">await</span> <span class="n">relay_pending</span><span class="p">()</span>
-</span><span id="__span-2-10">        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-2-11">
-</span><span id="__span-2-12">
-</span><span id="__span-2-13"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">leader</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># or `async with leader:` in your lifespan</span>
-</span><span id="__span-2-14">
-</span><span id="__span-2-15"><span class="o">...</span>
-</span><span id="__span-2-16"><span class="k">if</span> <span class="n">leader</span><span class="o">.</span><span class="n">is_leader</span><span class="p">:</span>  <span class="c1"># anywhere, sync code included</span>
-</span><span id="__span-2-17">    <span class="o">...</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPILeader</span>
+</span><span id="__span-5-2">
+</span><span id="__span-5-3"><span class="n">leader</span> <span class="o">=</span> <span class="n">FastAPILeader</span><span class="p">(</span><span class="s2">"outbox"</span><span class="p">)</span>  <span class="c1"># FastAPICache's backend; or FastAPILeader("outbox", cache=cache)</span>
+</span><span id="__span-5-4">
+</span><span id="__span-5-5">
+</span><span id="__span-5-6"><span class="nd">@leader</span><span class="o">.</span><span class="n">run</span>
+</span><span id="__span-5-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">relay_outbox</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-5-8">    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="__span-5-9">        <span class="k">await</span> <span class="n">relay_pending</span><span class="p">()</span>
+</span><span id="__span-5-10">        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-5-11">
+</span><span id="__span-5-12">
+</span><span id="__span-5-13"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">leader</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># or `async with leader:` in your lifespan</span>
+</span><span id="__span-5-14">
+</span><span id="__span-5-15"><span class="o">...</span>
+</span><span id="__span-5-16"><span class="k">if</span> <span class="n">leader</span><span class="o">.</span><span class="n">is_leader</span><span class="p">:</span>  <span class="c1"># anywhere, sync code included</span>
+</span><span id="__span-5-17">    <span class="o">...</span>
 </span></code></pre></div>
 <ul>
 <li><strong>Election:</strong> every process campaigns for a lock named after the leader, renewed every
@@ -5117,15 +5238,15 @@ given times (that's the scheduler):</p>
 </ul>
 <h2 id="locks">Locks<a class="headerlink" href="#locks" title="Permanent link">&para;</a></h2>
 <p>A lock shared by every process and container, for work that only one of them must do at a time:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">LockNotAcquired</span>
-</span><span id="__span-3-2">
-</span><span id="__span-3-3">
-</span><span id="__span-3-4"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">nightly_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># every instance runs it; one builds the report</span>
-</span><span id="__span-3-5">    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-3-6">        <span class="k">async</span> <span class="k">with</span> <span class="n">FastAPICache</span><span class="o">.</span><span class="n">lock</span><span class="p">(</span><span class="s2">"nightly-report"</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>  <span class="c1"># or cache.lock(...)</span>
-</span><span id="__span-3-7">            <span class="k">await</span> <span class="n">build_report</span><span class="p">()</span>
-</span><span id="__span-3-8">    <span class="k">except</span> <span class="n">LockNotAcquired</span><span class="p">:</span>
-</span><span id="__span-3-9">        <span class="k">pass</span>  <span class="c1"># another instance is on it</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">LockNotAcquired</span>
+</span><span id="__span-6-2">
+</span><span id="__span-6-3">
+</span><span id="__span-6-4"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">nightly_report</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># every instance runs it; one builds the report</span>
+</span><span id="__span-6-5">    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-6-6">        <span class="k">async</span> <span class="k">with</span> <span class="n">FastAPICache</span><span class="o">.</span><span class="n">lock</span><span class="p">(</span><span class="s2">"nightly-report"</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>  <span class="c1"># or cache.lock(...)</span>
+</span><span id="__span-6-7">            <span class="k">await</span> <span class="n">build_report</span><span class="p">()</span>
+</span><span id="__span-6-8">    <span class="k">except</span> <span class="n">LockNotAcquired</span><span class="p">:</span>
+</span><span id="__span-6-9">        <span class="k">pass</span>  <span class="c1"># another instance is on it</span>
 </span></code></pre></div>
 <ul>
 <li><strong>Expiry and renewal:</strong> a lock expires after <code>ttl</code> seconds, so a holder that dies doesn't keep it
@@ -5152,25 +5273,25 @@ given times (that's the scheduler):</p>
 <p>What one process must tell the WebSockets of the others (a chat, a live board, notifications), or
 the other processes themselves (a setting changed): <code>FastAPIBroadcast</code>, over Redis or Valkey's
 pub/sub.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIBroadcast</span>
-</span><span id="__span-4-2">
-</span><span id="__span-4-3"><span class="n">broadcast</span> <span class="o">=</span> <span class="n">FastAPIBroadcast</span><span class="p">(</span><span class="n">redis_client</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">broadcast_key</span><span class="p">)</span>
-</span><span id="__span-4-4">
-</span><span id="__span-4-5">
-</span><span id="__span-4-6"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/rooms/</span><span class="si">{room}</span><span class="s2">/messages"</span><span class="p">)</span>
-</span><span id="__span-4-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">say</span><span class="p">(</span><span class="n">room</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Say</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">CurrentUser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-4-8">    <span class="k">await</span> <span class="n">broadcast</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="sa">f</span><span class="s2">"room:</span><span class="si">{</span><span class="n">room</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"from"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">form</span><span class="o">.</span><span class="n">text</span><span class="p">})</span>
-</span><span id="__span-4-9">
-</span><span id="__span-4-10">
-</span><span id="__span-4-11"><span class="nd">@app</span><span class="o">.</span><span class="n">websocket</span><span class="p">(</span><span class="s2">"/rooms/</span><span class="si">{room}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-4-12"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span><span class="n">websocket</span><span class="p">:</span> <span class="n">WebSocket</span><span class="p">,</span> <span class="n">room</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-4-13">    <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
-</span><span id="__span-4-14">    <span class="k">async</span> <span class="k">with</span> <span class="n">broadcast</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="sa">f</span><span class="s2">"room:</span><span class="si">{</span><span class="n">room</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">messages</span><span class="p">:</span>
-</span><span id="__span-4-15">        <span class="k">async</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
-</span><span id="__span-4-16">            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">gap</span><span class="p">:</span>
-</span><span id="__span-4-17">                <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="k">await</span> <span class="n">room_state</span><span class="p">(</span><span class="n">room</span><span class="p">))</span>  <span class="c1"># some may have been missed</span>
-</span><span id="__span-4-18">            <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-4-19">                <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIBroadcast</span>
+</span><span id="__span-7-2">
+</span><span id="__span-7-3"><span class="n">broadcast</span> <span class="o">=</span> <span class="n">FastAPIBroadcast</span><span class="p">(</span><span class="n">redis_client</span><span class="p">,</span> <span class="n">signing_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">broadcast_key</span><span class="p">)</span>
+</span><span id="__span-7-4">
+</span><span id="__span-7-5">
+</span><span id="__span-7-6"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/rooms/</span><span class="si">{room}</span><span class="s2">/messages"</span><span class="p">)</span>
+</span><span id="__span-7-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">say</span><span class="p">(</span><span class="n">room</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Say</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">CurrentUser</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-8">    <span class="k">await</span> <span class="n">broadcast</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="sa">f</span><span class="s2">"room:</span><span class="si">{</span><span class="n">room</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"from"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">form</span><span class="o">.</span><span class="n">text</span><span class="p">})</span>
+</span><span id="__span-7-9">
+</span><span id="__span-7-10">
+</span><span id="__span-7-11"><span class="nd">@app</span><span class="o">.</span><span class="n">websocket</span><span class="p">(</span><span class="s2">"/rooms/</span><span class="si">{room}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-7-12"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span><span class="n">websocket</span><span class="p">:</span> <span class="n">WebSocket</span><span class="p">,</span> <span class="n">room</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-13">    <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">accept</span><span class="p">()</span>
+</span><span id="__span-7-14">    <span class="k">async</span> <span class="k">with</span> <span class="n">broadcast</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="sa">f</span><span class="s2">"room:</span><span class="si">{</span><span class="n">room</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">as</span> <span class="n">messages</span><span class="p">:</span>
+</span><span id="__span-7-15">        <span class="k">async</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+</span><span id="__span-7-16">            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">gap</span><span class="p">:</span>
+</span><span id="__span-7-17">                <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="k">await</span> <span class="n">room_state</span><span class="p">(</span><span class="n">room</span><span class="p">))</span>  <span class="c1"># some may have been missed</span>
+</span><span id="__span-7-18">            <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-7-19">                <span class="k">await</span> <span class="n">websocket</span><span class="o">.</span><span class="n">send_json</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li><strong>At most once:</strong> a message reaches those subscribed when it's published. One that a
@@ -5187,45 +5308,42 @@ pub/sub.</p>
 <li><strong>At shutdown,</strong> <code>await broadcast.close()</code> in the lifespan.</li>
 </ul>
 <h2 id="outbox">Outbox<a class="headerlink" href="#outbox" title="Permanent link">&para;</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Experimental</p>
-<p>New in 0.7: its API may still change in any release.</p>
-</div>
 <p>A change saved and the message that announces it (to the task queue, a webhook, another service)
 go together or not at all: the message is written in the same database transaction as the change,
 and a relay delivers it afterwards, at least once. With the <code>sqlalchemy</code> extra.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPILeader</span>
-</span><span id="__span-5-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background.outbox</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-5-3">    <span class="n">OutboxMessage</span><span class="p">,</span>
-</span><span id="__span-5-4">    <span class="n">OutboxRelay</span><span class="p">,</span>
-</span><span id="__span-5-5">    <span class="n">SQLAlchemyOutbox</span><span class="p">,</span>
-</span><span id="__span-5-6">    <span class="n">outbox_table</span><span class="p">,</span>
-</span><span id="__span-5-7"><span class="p">)</span>
-</span><span id="__span-5-8">
-</span><span id="__span-5-9"><span class="n">outbox</span> <span class="o">=</span> <span class="n">SQLAlchemyOutbox</span><span class="p">(</span><span class="n">outbox_table</span><span class="p">(</span><span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span> <span class="n">sessions</span><span class="o">=</span><span class="n">async_session</span><span class="p">)</span>
-</span><span id="__span-5-10">
-</span><span id="__span-5-11">
-</span><span id="__span-5-12"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/orders"</span><span class="p">)</span>
-</span><span id="__span-5-13"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">place</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">Order</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-</span><span id="__span-5-14">    <span class="k">async</span> <span class="k">with</span> <span class="n">async_session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">begin</span><span class="p">():</span>
-</span><span id="__span-5-15">        <span class="n">order</span> <span class="o">=</span> <span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">form</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
-</span><span id="__span-5-16">        <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
-</span><span id="__span-5-17">        <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-</span><span id="__span-5-18">        <span class="k">await</span> <span class="n">outbox</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">"order.placed"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>  <span class="c1"># same transaction</span>
-</span><span id="__span-5-19">    <span class="k">return</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
-</span><span id="__span-5-20">
-</span><span id="__span-5-21">
-</span><span id="__span-5-22"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deliver</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">OutboxMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-5-23">    <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">order_placed</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>  <span class="c1"># skips ids it has seen</span>
-</span><span id="__span-5-24">
-</span><span id="__span-5-25">
-</span><span id="__span-5-26"><span class="n">relay</span> <span class="o">=</span> <span class="n">OutboxRelay</span><span class="p">(</span><span class="n">outbox</span><span class="p">,</span> <span class="n">deliver</span><span class="p">)</span>
-</span><span id="__span-5-27"><span class="n">leader</span> <span class="o">=</span> <span class="n">FastAPILeader</span><span class="p">(</span><span class="s2">"outbox"</span><span class="p">)</span>  <span class="c1"># one process relays</span>
-</span><span id="__span-5-28">
-</span><span id="__span-5-29">
-</span><span id="__span-5-30"><span class="nd">@leader</span><span class="o">.</span><span class="n">run</span>
-</span><span id="__span-5-31"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">relay_outbox</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-5-32">    <span class="k">await</span> <span class="n">relay</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPILeader</span>
+</span><span id="__span-8-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background.outbox</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-8-3">    <span class="n">OutboxMessage</span><span class="p">,</span>
+</span><span id="__span-8-4">    <span class="n">OutboxRelay</span><span class="p">,</span>
+</span><span id="__span-8-5">    <span class="n">SQLAlchemyOutbox</span><span class="p">,</span>
+</span><span id="__span-8-6">    <span class="n">outbox_table</span><span class="p">,</span>
+</span><span id="__span-8-7"><span class="p">)</span>
+</span><span id="__span-8-8">
+</span><span id="__span-8-9"><span class="n">outbox</span> <span class="o">=</span> <span class="n">SQLAlchemyOutbox</span><span class="p">(</span><span class="n">outbox_table</span><span class="p">(</span><span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="p">),</span> <span class="n">sessions</span><span class="o">=</span><span class="n">async_session</span><span class="p">)</span>
+</span><span id="__span-8-10">
+</span><span id="__span-8-11">
+</span><span id="__span-8-12"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/orders"</span><span class="p">)</span>
+</span><span id="__span-8-13"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">place</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">Order</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+</span><span id="__span-8-14">    <span class="k">async</span> <span class="k">with</span> <span class="n">async_session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">begin</span><span class="p">():</span>
+</span><span id="__span-8-15">        <span class="n">order</span> <span class="o">=</span> <span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">form</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+</span><span id="__span-8-16">        <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+</span><span id="__span-8-17">        <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+</span><span id="__span-8-18">        <span class="k">await</span> <span class="n">outbox</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">"order.placed"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>  <span class="c1"># same transaction</span>
+</span><span id="__span-8-19">    <span class="k">return</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
+</span><span id="__span-8-20">
+</span><span id="__span-8-21">
+</span><span id="__span-8-22"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deliver</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">OutboxMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-8-23">    <span class="c1"># Delivered twice (the relay stopped before marking it sent): enqueued once.</span>
+</span><span id="__span-8-24">    <span class="k">await</span> <span class="n">queue</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">order_placed</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span> <span class="n">unique_key</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-8-25">
+</span><span id="__span-8-26">
+</span><span id="__span-8-27"><span class="n">relay</span> <span class="o">=</span> <span class="n">OutboxRelay</span><span class="p">(</span><span class="n">outbox</span><span class="p">,</span> <span class="n">deliver</span><span class="p">)</span>
+</span><span id="__span-8-28"><span class="n">leader</span> <span class="o">=</span> <span class="n">FastAPILeader</span><span class="p">(</span><span class="s2">"outbox"</span><span class="p">)</span>  <span class="c1"># one process relays</span>
+</span><span id="__span-8-29">
+</span><span id="__span-8-30">
+</span><span id="__span-8-31"><span class="nd">@leader</span><span class="o">.</span><span class="n">run</span>
+</span><span id="__span-8-32"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">relay_outbox</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-8-33">    <span class="k">await</span> <span class="n">relay</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </span></code></pre></div>
 <ul>
 <li><strong>The table</strong> is yours, in your migrations: <code>outbox_table(metadata)</code> defines it (<code>outbox</code> by
@@ -5239,6 +5357,24 @@ and a relay delivers it afterwards, at least once. With the <code>sqlalchemy</co
 <li><strong>In order, by one relay:</strong> the oldest due messages first, <code>batch</code> at a time. Run the relay
   in one process (<a href="#leader-election">leader election</a>).</li>
 <li><strong>Payloads</strong> are JSON, 256 KiB at most: ids and what changed, not files.</li>
+<li><strong>The table doesn't grow without bound:</strong> <code>run()</code> deletes the messages sent more than <code>retention</code>
+  seconds ago (7 days), every <code>purge_interval</code> (an hour), <code>purge_batch</code> (1000) at a time, each
+  batch in a short transaction of its own. Those given up on stay. <code>retention=None</code> keeps
+  everything; <code>outbox.purge(older_than)</code> purges on demand.</li>
+<li><strong>Messages given up on</strong> are listed by <code>outbox.given_up()</code> (id, topic, attempts, when written and
+  given up, last error; not the payload), and <code>outbox.requeue(ids)</code> (all of them without ids) sends
+  them again with their attempts reset, or <code>outbox.discard(ids)</code> deletes them.</li>
+<li><strong>Traced end to end:</strong> a message keeps the trace context of where it was written (its
+  <code>traceparent</code> column), and each delivery is a span of its own (<code>fastapi_alcazaba.outbox
+  &lt;topic&gt;</code>) linked to it: from the request to the delivery, and on to the task the delivery
+  enqueues, which links to the delivery. Failures are recorded on the span.</li>
+<li><strong>Counted:</strong> <code>fastapi_alcazaba.outbox</code> (delivered, retried, given_up; by outbox and topic) and
+  <code>fastapi_alcazaba.outbox.purged</code>; a <a href="../observability/#backlog-gauges"><code>BacklogMonitor</code></a>
+  measures how many wait and since when. Metrics and traces go to FastAPICache's providers when
+  it's set up, to the global ones otherwise.</li>
+<li><strong>Indexes:</strong> <code>ix_&lt;table&gt;_due</code> on (<code>sent</code>, <code>next_try</code>), which serves the relay, the backlog and the
+  purge, and <code>ix_&lt;table&gt;_failed</code>. Async sessions (<code>async_sessionmaker</code>, asyncpg) and plain ones
+  (in a thread) work alike; the tests run on SQLite and PostgreSQL.</li>
 </ul>
 
 

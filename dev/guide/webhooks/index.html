@@ -2369,6 +2369,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Signed webhooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ed25519-signatures-v1a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ed25519 signatures (v1a)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-stripe-and-slack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub, Stripe and Slack
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sending-webhooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sending webhooks
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4798,6 +4837,45 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Signed webhooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ed25519-signatures-v1a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ed25519 signatures (v1a)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-stripe-and-slack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub, Stripe and Slack
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sending-webhooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sending webhooks
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4912,8 +4990,8 @@
 
 
 <h1 id="webhooks-and-outbound-calls">Webhooks and outbound calls<a class="headerlink" href="#webhooks-and-outbound-calls" title="Permanent link">&para;</a></h1>
-<p>Webhooks signed and verified the Standard Webhooks way, and calls to other services with a deadline,
-a circuit breaker and SSRF protection.</p>
+<p>Webhooks verified (Standard Webhooks, GitHub, Stripe, Slack), signed and sent the Standard Webhooks
+way, and calls to other services with a deadline, a circuit breaker and SSRF protection.</p>
 <p>In an app: <a href="../../examples/webhooks/">the example</a>. Every class and function: <a href="../../reference/webhooks/">the API reference</a>.</p>
 <h2 id="signed-webhooks">Signed webhooks<a class="headerlink" href="#signed-webhooks" title="Permanent link">&para;</a></h2>
 <p><code>FastAPIWebhooks</code> accepts only webhooks signed with your secret, and each delivery once.
@@ -4967,29 +5045,144 @@ Resend, OpenAI and others: <code>webhook-id</code>, <code>webhook-timestamp</cod
 <li><strong>Without a dependency:</strong> <code>webhooks.verify(headers, body)</code> checks the signature and the
   timestamp (not replays), for queues and scripts.</li>
 </ul>
+<h3 id="ed25519-signatures-v1a">Ed25519 signatures (v1a)<a class="headerlink" href="#ed25519-signatures-v1a" title="Permanent link">&para;</a></h3>
+<p>Standard Webhooks also signs with Ed25519 (<code>webhook-signature: v1a,&lt;base64&gt;</code>): receivers verify
+with the sender's public key alone, so no shared secret leaks from a receiver. With the <code>crypto</code>
+extra:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="n">private</span><span class="p">,</span> <span class="n">public</span> <span class="o">=</span> <span class="n">WebhookSigner</span><span class="o">.</span><span class="n">generate_key_pair</span><span class="p">()</span>  <span class="c1"># "whsk_...", "whpk_..."</span>
+</span><span id="__span-1-2"><span class="n">signer</span> <span class="o">=</span> <span class="n">WebhookSigner</span><span class="p">(</span><span class="n">private</span><span class="p">)</span>  <span class="c1"># or [hmac_secret, private]: v1 and v1a in one header</span>
+</span><span id="__span-1-3"><span class="n">webhooks</span> <span class="o">=</span> <span class="n">FastAPIWebhooks</span><span class="p">(</span><span class="n">public</span><span class="p">)</span>  <span class="c1"># the receiver's: verifies, can't sign</span>
+</span></code></pre></div>
+<p>A <code>whsk_</code> key is the base64 of the 32-byte seed (or libsodium's 64 bytes, seed and public key).</p>
+<h3 id="github-stripe-and-slack">GitHub, Stripe and Slack<a class="headerlink" href="#github-stripe-and-slack" title="Permanent link">&para;</a></h3>
+<p><code>scheme=</code> verifies the webhooks of these senders with the same checks: the raw body and its size
+limit, constant time, the tolerance on timestamps, replay marks, rotation with a list of secrets,
+and one 401 for every failure.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="n">github</span> <span class="o">=</span> <span class="n">FastAPIWebhooks</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">github_webhook_secret</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">"github"</span><span class="p">)</span>
+</span><span id="__span-2-2"><span class="n">stripe</span> <span class="o">=</span> <span class="n">FastAPIWebhooks</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">stripe_webhook_secret</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">"stripe"</span><span class="p">)</span>  <span class="c1"># "whsec_..." as given</span>
+</span><span id="__span-2-3"><span class="n">slack</span> <span class="o">=</span> <span class="n">FastAPIWebhooks</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">slack_signing_secret</span><span class="p">,</span> <span class="n">scheme</span><span class="o">=</span><span class="s2">"slack"</span><span class="p">)</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Scheme</th>
+<th>What's checked</th>
+<th><code>message.id</code></th>
+<th><code>message.timestamp</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>github</code></td>
+<td><code>X-Hub-Signature-256: sha256=&lt;HMAC of the body&gt;</code></td>
+<td><code>X-GitHub-Delivery</code></td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>stripe</code></td>
+<td><code>Stripe-Signature: t=&lt;time&gt;,v1=&lt;HMAC of "time.body"&gt;</code> (any of its <code>v1</code>)</td>
+<td>a digest of what's signed</td>
+<td><code>t</code></td>
+</tr>
+<tr>
+<td><code>slack</code></td>
+<td><code>X-Slack-Signature: v0=&lt;HMAC of "v0:time:body"&gt;</code>, <code>X-Slack-Request-Timestamp</code></td>
+<td>a digest of what's signed</td>
+<td>the header</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>GitHub signs no time:</strong> a delivery is refused again only within the replay window (twice
+  <code>tolerance</code>, plus a minute); a capture sent later goes through. Keep the endpoint idempotent on
+  <code>message.id</code>, the delivery id, which redeliveries keep.</li>
+<li><strong>Stripe's secret</strong> is used as the string it gives you, <code>whsec_</code> included (not decoded as
+  Standard Webhooks' are); its event id is in the body (<code>message.json()["id"]</code>).</li>
+<li><strong>Slack</strong> sends slash commands and interactions as forms: take the body with
+  <code>await request.form()</code> after the dependency (it keeps the body), not as form parameters.</li>
+<li>Their secrets are at least 16 characters.</li>
+</ul>
+<h2 id="sending-webhooks">Sending webhooks<a class="headerlink" href="#sending-webhooks" title="Permanent link">&para;</a></h2>
+<p><code>WebhookSender</code> delivers webhooks to the URLs your users register, through the
+<a href="../background/#task-queue">task queue</a>: signed the Standard Webhooks way, through the SSRF guard,
+retried with backoff until the receiver takes them, at least once. With the <code>webhooks</code> extra.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.background.outbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">OutboxMessage</span><span class="p">,</span> <span class="n">OutboxRelay</span>
+</span><span id="__span-3-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.webhooks</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebhookEndpoint</span><span class="p">,</span> <span class="n">WebhookSender</span>
+</span><span id="__span-3-3">
+</span><span id="__span-3-4">
+</span><span id="__span-3-5"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">endpoint</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WebhookEndpoint</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-6">    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">endpoints_table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint_id</span><span class="p">)</span>  <span class="c1"># yours: the URL and the secret the user got</span>
+</span><span id="__span-3-7">    <span class="k">return</span> <span class="n">WebhookEndpoint</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">secret</span><span class="p">)</span> <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+</span><span id="__span-3-8">
+</span><span id="__span-3-9">
+</span><span id="__span-3-10"><span class="n">sender</span> <span class="o">=</span> <span class="n">WebhookSender</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">)</span>  <span class="c1"># before the queue starts: it registers its task</span>
+</span><span id="__span-3-11">
+</span><span id="__span-3-12">
+</span><span id="__span-3-13"><span class="c1"># The webhook is written with the change, in its transaction, and sent once it's committed.</span>
+</span><span id="__span-3-14"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/orders/</span><span class="si">{order_id}</span><span class="s2">/pay"</span><span class="p">)</span>
+</span><span id="__span-3-15"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">pay</span><span class="p">(</span><span class="n">order_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-16">    <span class="k">async</span> <span class="k">with</span> <span class="n">async_session</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">begin</span><span class="p">():</span>
+</span><span id="__span-3-17">        <span class="o">...</span>  <span class="c1"># the change</span>
+</span><span id="__span-3-18">        <span class="k">for</span> <span class="n">endpoint_id</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">subscribed</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">"order.paid"</span><span class="p">):</span>
+</span><span id="__span-3-19">            <span class="n">event</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"order.paid"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="n">order_id</span><span class="p">}}</span>
+</span><span id="__span-3-20">            <span class="k">await</span> <span class="n">outbox</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="s2">"webhook"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"endpoint"</span><span class="p">:</span> <span class="n">endpoint_id</span><span class="p">,</span> <span class="s2">"event"</span><span class="p">:</span> <span class="n">event</span><span class="p">})</span>
+</span><span id="__span-3-21">
+</span><span id="__span-3-22">
+</span><span id="__span-3-23"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">deliver</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">OutboxMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-24">    <span class="n">payload</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">payload</span>
+</span><span id="__span-3-25">    <span class="k">await</span> <span class="n">sender</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">"endpoint"</span><span class="p">],</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"event"</span><span class="p">],</span> <span class="n">message_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-3-26">
+</span><span id="__span-3-27">
+</span><span id="__span-3-28"><span class="n">relay</span> <span class="o">=</span> <span class="n">OutboxRelay</span><span class="p">(</span><span class="n">outbox</span><span class="p">,</span> <span class="n">deliver</span><span class="p">)</span>
+</span></code></pre></div>
+<ul>
+<li><strong>At least once, one id:</strong> each (endpoint, message) is one task of the queue, enqueued once
+  while it's pending (<code>unique_key</code>): a message the outbox relays twice is delivered once, and every
+  attempt carries the same <code>webhook-id</code>, for the receiver to deduplicate on. The body is
+  serialised once, at <code>send()</code>; each attempt is signed afresh.</li>
+<li><strong>Retries:</strong> a 2xx is delivered; any other status or a transport error is tried again, <code>retries</code>
+  times (8) with exponential backoff and jitter from <code>backoff</code> (5 s) up to <code>max_backoff</code> (6 h).
+  Then the task goes to the queue's dead letters, where <code>requeue_dead_letters()</code> or
+  <code>fastapi-alcazaba tasks ... requeue</code> sends it again.</li>
+<li><strong>Safe destinations:</strong> its own client refuses URLs that resolve to private, loopback or
+  metadata addresses (<code>SSRFGuardTransport</code>; <code>allow=</code> for an internal receiver), doesn't follow
+  redirects, gives each attempt <code>timeout</code> seconds (10) and reads at most 64 KiB of the answer,
+  only for its status. <code>client=</code> gives yours instead, and the guard is then yours to add.</li>
+<li><strong>Endpoints that keep failing:</strong> after <code>disable_after</code> (20) failed attempts in a row, or at
+  once when the receiver answers 410 Gone, the endpoint is disabled: its deliveries are skipped,
+  not retried. <code>health(endpoint_id)</code> says how many failures in a row and whether it's disabled;
+  <code>enable()</code> turns it back on (send the skipped messages again), <code>disable()</code> turns it off.</li>
+<li><strong>Records:</strong> <code>delivery(endpoint_id, message_id)</code> gives its state as of its last attempt
+  (retrying, succeeded, failed, skipped), the attempts, the last status code and error type, and
+  when; never the body nor the secret. Kept <code>record_ttl</code> (7 days).</li>
+<li><strong>Secrets stay with you:</strong> the queue carries the endpoint's id, the message's id and the body;
+  <code>endpoints()</code> is asked for the URL and the secret at each attempt, so a rotated secret or a
+  changed URL is used at once, and an endpoint deleted skips its deliveries.</li>
+<li>One sender per queue; <code>await sender.aclose()</code> at shutdown closes its client.</li>
+</ul>
 <h2 id="outbound-calls">Outbound calls<a class="headerlink" href="#outbound-calls" title="Permanent link">&para;</a></h2>
 <p><code>ResilientTransport</code> is an httpx transport for the calls your app makes to other services: a
 deadline for each call and a circuit breaker for each origin. It needs httpx2 (or httpx):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">import</span><span class="w"> </span><span class="nn">httpx2</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">httpx</span>
-</span><span id="__span-1-2">
-</span><span id="__span-1-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.outbound</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitOpenError</span><span class="p">,</span> <span class="n">ResilientTransport</span>
-</span><span id="__span-1-4">
-</span><span id="__span-1-5">
-</span><span id="__span-1-6"><span class="nd">@asynccontextmanager</span>
-</span><span id="__span-1-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
-</span><span id="__span-1-8">    <span class="n">transport</span> <span class="o">=</span> <span class="n">ResilientTransport</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
-</span><span id="__span-1-9">    <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">,</span> <span class="n">base_url</span><span class="o">=</span><span class="s2">"https://api.example.com"</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
-</span><span id="__span-1-10">        <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">partner_api</span> <span class="o">=</span> <span class="n">client</span>
-</span><span id="__span-1-11">        <span class="k">yield</span>
-</span><span id="__span-1-12">
-</span><span id="__span-1-13">
-</span><span id="__span-1-14"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/quote"</span><span class="p">)</span>
-</span><span id="__span-1-15"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">quote</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quote</span><span class="p">:</span>
-</span><span id="__span-1-16">    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-1-17">        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">partner_api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/quote"</span><span class="p">)</span>
-</span><span id="__span-1-18">    <span class="k">except</span> <span class="n">CircuitOpenError</span><span class="p">:</span>  <span class="c1"># the service keeps failing: don't wait for it</span>
-</span><span id="__span-1-19">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">503</span><span class="p">,</span> <span class="s2">"Quotes are unavailable, try again later"</span><span class="p">)</span>
-</span><span id="__span-1-20">    <span class="k">return</span> <span class="n">Quote</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><span class="kn">import</span><span class="w"> </span><span class="nn">httpx2</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">httpx</span>
+</span><span id="__span-4-2">
+</span><span id="__span-4-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.outbound</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitOpenError</span><span class="p">,</span> <span class="n">ResilientTransport</span>
+</span><span id="__span-4-4">
+</span><span id="__span-4-5">
+</span><span id="__span-4-6"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-4-7"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-4-8">    <span class="n">transport</span> <span class="o">=</span> <span class="n">ResilientTransport</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">reset_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</span><span id="__span-4-9">    <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">,</span> <span class="n">base_url</span><span class="o">=</span><span class="s2">"https://api.example.com"</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+</span><span id="__span-4-10">        <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">partner_api</span> <span class="o">=</span> <span class="n">client</span>
+</span><span id="__span-4-11">        <span class="k">yield</span>
+</span><span id="__span-4-12">
+</span><span id="__span-4-13">
+</span><span id="__span-4-14"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/quote"</span><span class="p">)</span>
+</span><span id="__span-4-15"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">quote</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Quote</span><span class="p">:</span>
+</span><span id="__span-4-16">    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-4-17">        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">partner_api</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/quote"</span><span class="p">)</span>
+</span><span id="__span-4-18">    <span class="k">except</span> <span class="n">CircuitOpenError</span><span class="p">:</span>  <span class="c1"># the service keeps failing: don't wait for it</span>
+</span><span id="__span-4-19">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">503</span><span class="p">,</span> <span class="s2">"Quotes are unavailable, try again later"</span><span class="p">)</span>
+</span><span id="__span-4-20">    <span class="k">return</span> <span class="n">Quote</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
 </span></code></pre></div>
 <ul>
 <li><strong>Deadline:</strong> <code>timeout</code> bounds the whole call, from sending the request to the last byte of the
@@ -5021,21 +5214,21 @@ deadline for each call and a circuit breaker for each origin. It needs httpx2 (o
 make your server call its own network: <code>http://169.254.169.254/</code> (the cloud's metadata service
 and its credentials), <code>http://localhost:6379/</code>, an admin panel on <code>10.0.0.0/8</code>.
 <code>SSRFGuardTransport</code> only calls the public internet:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.outbound</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-2-2">    <span class="n">BlockedDestinationError</span><span class="p">,</span>
-</span><span id="__span-2-3">    <span class="n">ResilientTransport</span><span class="p">,</span>
-</span><span id="__span-2-4">    <span class="n">SSRFGuardTransport</span><span class="p">,</span>
-</span><span id="__span-2-5"><span class="p">)</span>
-</span><span id="__span-2-6">
-</span><span id="__span-2-7"><span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span>
-</span><span id="__span-2-8">    <span class="n">transport</span><span class="o">=</span><span class="n">ResilientTransport</span><span class="p">(</span><span class="n">SSRFGuardTransport</span><span class="p">(</span><span class="n">ports</span><span class="o">=</span><span class="p">(</span><span class="mi">443</span><span class="p">,)),</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
-</span><span id="__span-2-9">    <span class="n">follow_redirects</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-2-10"><span class="p">)</span>
-</span><span id="__span-2-11">
-</span><span id="__span-2-12"><span class="k">try</span><span class="p">:</span>
-</span><span id="__span-2-13">    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">subscription</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">signer</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">body</span><span class="p">))</span>
-</span><span id="__span-2-14"><span class="k">except</span> <span class="n">BlockedDestinationError</span><span class="p">:</span>
-</span><span id="__span-2-15">    <span class="o">...</span>  <span class="c1"># tell the user the URL isn't allowed</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.outbound</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-5-2">    <span class="n">BlockedDestinationError</span><span class="p">,</span>
+</span><span id="__span-5-3">    <span class="n">ResilientTransport</span><span class="p">,</span>
+</span><span id="__span-5-4">    <span class="n">SSRFGuardTransport</span><span class="p">,</span>
+</span><span id="__span-5-5"><span class="p">)</span>
+</span><span id="__span-5-6">
+</span><span id="__span-5-7"><span class="n">client</span> <span class="o">=</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span>
+</span><span id="__span-5-8">    <span class="n">transport</span><span class="o">=</span><span class="n">ResilientTransport</span><span class="p">(</span><span class="n">SSRFGuardTransport</span><span class="p">(</span><span class="n">ports</span><span class="o">=</span><span class="p">(</span><span class="mi">443</span><span class="p">,)),</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span>
+</span><span id="__span-5-9">    <span class="n">follow_redirects</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-5-10"><span class="p">)</span>
+</span><span id="__span-5-11">
+</span><span id="__span-5-12"><span class="k">try</span><span class="p">:</span>
+</span><span id="__span-5-13">    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">subscription</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">signer</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">body</span><span class="p">))</span>
+</span><span id="__span-5-14"><span class="k">except</span> <span class="n">BlockedDestinationError</span><span class="p">:</span>
+</span><span id="__span-5-15">    <span class="o">...</span>  <span class="c1"># tell the user the URL isn't allowed</span>
 </span></code></pre></div>
 <ul>
 <li><strong>What's refused:</strong> a host with any address that isn't public: private, loopback, link-local

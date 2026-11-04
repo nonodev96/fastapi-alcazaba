@@ -2229,6 +2229,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Rate limiting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adjusting-limits-at-run-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adjusting limits at run time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4781,6 +4798,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Rate limiting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adjusting-limits-at-run-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adjusting limits at run time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4968,32 +5002,71 @@ the login attempts to an account:</p>
 </span><span id="__span-1-14">    <span class="n">account</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">"NFKC"</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">username</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span>
 </span><span id="__span-1-15">    <span class="k">if</span> <span class="p">(</span><span class="n">wait</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">login_attempts</span><span class="o">.</span><span class="n">hit</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">account</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-1-16">        <span class="n">too_many_requests</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">wait</span><span class="p">)</span>
-</span><span id="__span-1-17">    <span class="o">...</span>
+</span><span id="__span-1-17">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">check_password</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+</span><span id="__span-1-18">    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-1-19">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Wrong username or password"</span><span class="p">)</span>
+</span><span id="__span-1-20">    <span class="c1"># The right password: the failed attempts before it don't count against the next login.</span>
+</span><span id="__span-1-21">    <span class="k">await</span> <span class="n">login_attempts</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">account</span><span class="p">)</span>
+</span><span id="__span-1-22">    <span class="o">...</span>
 </span></code></pre></div>
 <p>Normalise the key exactly as the login looks the account up. A limit per account also lets
 anyone lock that account out for the window with five wrong passwords: pair it with the limit
 per IP, and keep the window short.</p>
+<h3 id="adjusting-limits-at-run-time">Adjusting limits at run time<a class="headerlink" href="#adjusting-limits-at-run-time" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="n">PLANS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"free"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"pro"</span><span class="p">:</span> <span class="mi">5_000</span><span class="p">}</span>
+</span><span id="__span-2-2">
+</span><span id="__span-2-3">
+</span><span id="__span-2-4"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">requests_per_hour</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-2-5">    <span class="k">return</span> <span class="n">PLANS</span><span class="p">[(</span><span class="k">await</span> <span class="n">current_account</span><span class="p">(</span><span class="n">request</span><span class="p">))</span><span class="o">.</span><span class="n">plan</span><span class="p">]</span>
+</span><span id="__span-2-6">
+</span><span id="__span-2-7">
+</span><span id="__span-2-8"><span class="n">api</span> <span class="o">=</span> <span class="n">FastAPIRateLimiter</span><span class="p">(</span>
+</span><span id="__span-2-9">    <span class="n">times</span><span class="o">=</span><span class="n">requests_per_hour</span><span class="p">,</span>  <span class="c1"># each request's client gets its plan's limit</span>
+</span><span id="__span-2-10">    <span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-2-11">    <span class="n">identifier</span><span class="o">=</span><span class="n">api_key_id</span><span class="p">,</span>
+</span><span id="__span-2-12">    <span class="n">exempt</span><span class="o">=</span><span class="p">{</span><span class="s2">"monitoring"</span><span class="p">},</span>  <span class="c1"># or a predicate of the request</span>
+</span><span id="__span-2-13">    <span class="n">name</span><span class="o">=</span><span class="s2">"api"</span><span class="p">,</span>
+</span><span id="__span-2-14"><span class="p">)</span>
+</span><span id="__span-2-15">
+</span><span id="__span-2-16"><span class="n">status</span> <span class="o">=</span> <span class="k">await</span> <span class="n">api</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>  <span class="c1"># RateLimitStatus(limit=5000, remaining=4210, reset=1800)</span>
+</span><span id="__span-2-17"><span class="k">await</span> <span class="n">api</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">identity</span><span class="o">=</span><span class="s2">"key_123"</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">app_cache</span><span class="p">)</span>  <span class="c1"># from an admin page, without its request</span>
+</span></code></pre></div>
+<ul>
+<li><strong>Limits per request:</strong> <code>times</code> may be a function of the request (sync or async), e.g. by plan
+  or API key tier. The <code>RateLimit</code> headers carry each request's limit (<code>q=</code>); a client whose plan
+  changes keeps what it spent in the window. Without a <code>name</code>, the policy is <code>per-&lt;window&gt;</code>.</li>
+<li><strong>Exemptions:</strong> <code>exempt</code> takes identities (what <code>identifier</code> returns) or a predicate. Their
+  requests aren't counted and get no headers; each is counted as <code>exempt</code> in
+  <code>fastapi_alcazaba.rate_limit</code>, and logged (INFO) the first time a process sees the identity.</li>
+<li><strong>Reading a budget:</strong> <code>status(request)</code> gives the limit, what fits now and for how long no more
+  is sure to, without spending any (an account page, a <code>GET /quota</code>).</li>
+<li><strong>Resetting:</strong> <code>reset(request, key=...)</code> forgets what a client spent, in the backend, for every
+  process. Other processes that refuse it without asking the backend (it had nothing left) do so
+  until its budget would have refilled.</li>
+<li><strong>Without the request:</strong> <code>status</code> and <code>reset</code> take <code>identity=</code> (and <code>cache=</code>) when the limiter
+  has a <code>name</code>; without one, its budget is the route's, which only a request names.</li>
+</ul>
 <h2 id="concurrency-limits">Concurrency limits<a class="headerlink" href="#concurrency-limits" title="Permanent link">&para;</a></h2>
 <p><code>FastAPIConcurrencyLimiter</code> limits how many requests run <em>at the same time</em>, across every process
 and container, for endpoints whose cost is how long they run (AI, OCR, PDF rendering). The rate
 limiter counts requests per window; this counts the ones in flight:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.rate_limit</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIConcurrencyLimiter</span>
-</span><span id="__span-2-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.rate_limit</span><span class="w"> </span><span class="kn">import</span> <span class="n">client_ip</span>
-</span><span id="__span-2-3">
-</span><span id="__span-2-4"><span class="n">ocr</span> <span class="o">=</span> <span class="n">FastAPIConcurrencyLimiter</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"ocr"</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># FastAPICache's backend, or cache=...</span>
-</span><span id="__span-2-5">
-</span><span id="__span-2-6">
-</span><span id="__span-2-7"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/invoices/scan"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">ocr</span><span class="p">)])</span>
-</span><span id="__span-2-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">scan</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">UploadFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Invoice</span><span class="p">:</span> <span class="o">...</span>
-</span><span id="__span-2-9">
-</span><span id="__span-2-10">
-</span><span id="__span-2-11"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/summaries"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIConcurrencyLimiter</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">client_ip</span><span class="p">))])</span>
-</span><span id="__span-2-12"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">summarise</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Summary</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># one at a time per client</span>
-</span><span id="__span-2-13">
-</span><span id="__span-2-14">
-</span><span id="__span-2-15"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">scan_pending</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># outside requests: a job, a queue consumer</span>
-</span><span id="__span-2-16">    <span class="k">async</span> <span class="k">with</span> <span class="n">ocr</span><span class="o">.</span><span class="n">slot</span><span class="p">():</span>
-</span><span id="__span-2-17">        <span class="o">...</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.rate_limit</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIConcurrencyLimiter</span>
+</span><span id="__span-3-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.rate_limit</span><span class="w"> </span><span class="kn">import</span> <span class="n">client_ip</span>
+</span><span id="__span-3-3">
+</span><span id="__span-3-4"><span class="n">ocr</span> <span class="o">=</span> <span class="n">FastAPIConcurrencyLimiter</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"ocr"</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># FastAPICache's backend, or cache=...</span>
+</span><span id="__span-3-5">
+</span><span id="__span-3-6">
+</span><span id="__span-3-7"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/invoices/scan"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">ocr</span><span class="p">)])</span>
+</span><span id="__span-3-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">scan</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">UploadFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Invoice</span><span class="p">:</span> <span class="o">...</span>
+</span><span id="__span-3-9">
+</span><span id="__span-3-10">
+</span><span id="__span-3-11"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/summaries"</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="n">Depends</span><span class="p">(</span><span class="n">FastAPIConcurrencyLimiter</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">client_ip</span><span class="p">))])</span>
+</span><span id="__span-3-12"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">summarise</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Summary</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># one at a time per client</span>
+</span><span id="__span-3-13">
+</span><span id="__span-3-14">
+</span><span id="__span-3-15"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">scan_pending</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># outside requests: a job, a queue consumer</span>
+</span><span id="__span-3-16">    <span class="k">async</span> <span class="k">with</span> <span class="n">ocr</span><span class="o">.</span><span class="n">slot</span><span class="p">():</span>
+</span><span id="__span-3-17">        <span class="o">...</span>
 </span></code></pre></div>
 <ul>
 <li><strong>Slots in the backend:</strong> <code>limit</code> locks (up to 100), tried in random order so that the

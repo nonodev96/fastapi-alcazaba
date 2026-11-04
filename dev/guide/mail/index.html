@@ -1695,10 +1695,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#attachments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attachments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sending" class="md-nav__link">
     <span class="md-ellipsis">
       
         Sending
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#through-a-providers-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Through a provider's API
       
     </span>
   </a>
@@ -4795,10 +4817,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#attachments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attachments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sending" class="md-nav__link">
     <span class="md-ellipsis">
       
         Sending
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#through-a-providers-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Through a provider's API
       
     </span>
   </a>
@@ -4905,10 +4949,11 @@
 <p>New in 0.7: its API may still change in any release, as its use shows what's missing.
 <a href="../../features/scope/">Scope and stability</a> lists the tools that are settled.</p>
 </div>
-<p>The messages an app sends by itself: a password reset, a sign-in code, a receipt. <code>FastAPIMail</code>
-builds them so that nothing in them can add a header or a recipient, and <code>SMTPSender</code> sends them
-over SMTP, which every provider speaks (Amazon SES, SendGrid, Postmark, Mailgun, your own
-server), always encrypted. Nothing to install.</p>
+<p>The messages an app sends by itself: a password reset, a sign-in code, a receipt with its invoice.
+<code>FastAPIMail</code> builds them so that nothing in them can add a header or a recipient, attachments
+included, and <code>SMTPSender</code> sends them over SMTP, which every provider speaks (Amazon SES,
+SendGrid, Postmark, Mailgun, your own server), always encrypted. Nothing to install. <code>SESSender</code>
+sends them through Amazon SES's API instead.</p>
 <p>Every class and function: <a href="../../reference/mail/">the API reference</a>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIMail</span>
 </span><span id="__span-0-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.mail</span><span class="w"> </span><span class="kn">import</span> <span class="n">SMTPSender</span>
@@ -4942,32 +4987,95 @@ server), always encrypted. Nothing to install.</p>
 <li><strong>Text, and HTML as its alternative:</strong> mail clients show the one they can. Escape what goes
   into the HTML as you would in a page.</li>
 </ul>
+<h2 id="attachments">Attachments<a class="headerlink" href="#attachments" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.mail</span><span class="w"> </span><span class="kn">import</span> <span class="n">Attachment</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3"><span class="k">await</span> <span class="n">mail</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+</span><span id="__span-1-4">    <span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+</span><span id="__span-1-5">    <span class="s2">"Your invoice"</span><span class="p">,</span>
+</span><span id="__span-1-6">    <span class="s2">"Your invoice for October is attached."</span><span class="p">,</span>
+</span><span id="__span-1-7">    <span class="n">attachments</span><span class="o">=</span><span class="p">[</span><span class="n">Attachment</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Invoice </span><span class="si">{</span><span class="n">invoice</span><span class="o">.</span><span class="n">number</span><span class="si">}</span><span class="s2">.pdf"</span><span class="p">)],</span>
+</span><span id="__span-1-8"><span class="p">)</span>
+</span></code></pre></div>
+<ul>
+<li><strong>The name the recipient sees</strong> goes through <a href="../uploads/"><code>safe_filename</code></a>: without a path,
+  line breaks nor control characters (no header can come in through it), nor the right-to-left
+  override that disguises an <code>.exe</code>; "attachment" when nothing is left. Names with accents or in
+  other alphabets are encoded as RFC 2231 says.</li>
+<li><strong>The content type</strong> is <code>type/subtype</code> without parameters (<code>application/pdf</code>, <code>text/csv</code>);
+  guessed from the name when not given, <code>application/octet-stream</code> when the name doesn't tell.
+  <code>multipart/*</code> and <code>message/*</code> are refused: they'd change the message's structure.</li>
+<li><strong>Limits:</strong> 10 attachments a message (<code>MAX_ATTACHMENTS</code>), and 10 MiB of them together
+  (<code>FastAPIMail(max_attachments_size=...)</code>), counted before base64, which adds a third: the
+  providers count after it (SES up to 40 MB, most others 10 to 25 MB). Over the limits, or with
+  a content that isn't <code>bytes</code>, <code>message</code> and <code>send</code> raise before anything is sent.</li>
+<li><strong>After the text and the HTML,</strong> in a <code>multipart/mixed</code>. Images inside the HTML (<code>cid:</code>) are
+  out of scope: link them.</li>
+</ul>
 <h2 id="sending">Sending<a class="headerlink" href="#sending" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Encrypted:</strong> STARTTLS on port 587 by default, or <code>tls="implicit"</code> on port 465, with the
   server's certificate checked against the system's authorities (<code>ssl_context</code> for one of your
   own). Plain SMTP, <code>tls="none"</code>, is only for <code>localhost</code>: a development server such as Mailpit.</li>
-<li><strong>A connection per message,</strong> in a thread, with <code>timeout</code> seconds for each step.</li>
+<li><strong>A connection per message,</strong> with <code>timeout</code> seconds for each step, in threads of the sender's
+  own: <code>smtplib</code> blocks, and Starlette's threadpool (40 threads) is the one the app's sync
+  endpoints and dependencies share, so a slow server would hold them. <code>connections</code> messages go
+  at once (4 by default); the others wait for a thread. <code>await sender.aclose()</code> at shutdown lets
+  them go.</li>
 <li><strong>When it isn't sent</strong> (the server refuses every recipient, doesn't answer, the TLS or the
   login fails), <code>send</code> raises <code>MailNotSent</code> and logs who it was for, never the body: it holds the
   links and codes that open doors. When the server takes some recipients and refuses others, the
   message is sent: the refused ones are logged, and nothing is raised, so a retry doesn't send it
   to the others twice. Send from a <a href="../background/#task-queue">task</a>, which tries again:</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="nd">@queue</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-</span><span id="__span-1-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_reset</span><span class="p">(</span><span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-1-3">    <span class="k">await</span> <span class="n">mail</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="s2">"Reset your password"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Open </span><span class="si">{</span><span class="n">link</span><span class="si">}</span><span class="s2"> within an hour."</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="nd">@queue</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-2-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send_reset</span><span class="p">(</span><span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-2-3">    <span class="k">await</span> <span class="n">mail</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="s2">"Reset your password"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Open </span><span class="si">{</span><span class="n">link</span><span class="si">}</span><span class="s2"> within an hour."</span><span class="p">)</span>
 </span></code></pre></div>
 <ul>
 <li><strong>The metric</strong> <code>fastapi_alcazaba.mail</code> counts the messages by outcome: sent or failed.</li>
 </ul>
+<h2 id="through-a-providers-api">Through a provider's API<a class="headerlink" href="#through-a-providers-api" title="Permanent link">&para;</a></h2>
+<p><code>SESSender</code> sends through Amazon SES's API (SESv2 <code>SendEmail</code>) instead of SMTP, with aiobotocore
+(<code>pip install "fastapi-alcazaba[ses]"</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.mail</span><span class="w"> </span><span class="kn">import</span> <span class="n">SESSender</span>
+</span><span id="__span-3-2">
+</span><span id="__span-3-3"><span class="n">sender</span> <span class="o">=</span> <span class="n">SESSender</span><span class="p">(</span><span class="s2">"eu-west-1"</span><span class="p">,</span> <span class="n">configuration_set</span><span class="o">=</span><span class="s2">"transactional"</span><span class="p">)</span>
+</span><span id="__span-3-4"><span class="n">mail</span> <span class="o">=</span> <span class="n">FastAPIMail</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">from_address</span><span class="o">=</span><span class="s2">"Example &lt;no-reply@example.com&gt;"</span><span class="p">)</span>
+</span><span id="__span-3-5">
+</span><span id="__span-3-6">
+</span><span id="__span-3-7"><span class="nd">@asynccontextmanager</span>
+</span><span id="__span-3-8"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="kc">None</span><span class="p">]:</span>
+</span><span id="__span-3-9">    <span class="k">await</span> <span class="n">sender</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+</span><span id="__span-3-10">    <span class="k">yield</span>
+</span><span id="__span-3-11">    <span class="k">await</span> <span class="n">sender</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
+</span></code></pre></div>
+<ul>
+<li><strong>The message goes whole,</strong> as FastAPIMail built it (<code>Content.Raw</code>): its headers, its
+  alternatives and its attachments, the same as over SMTP.</li>
+<li><strong>The credentials come from AWS's chain:</strong> the task's role on ECS or Lambda, the instance's, the
+  environment, a profile. No SMTP user to create and rotate, nor a port 587 to open from the
+  app's network. Give the role <code>ses:SendEmail</code> and <code>ses:SendRawEmail</code> on the <code>From</code>'s identity:
+  AWS's guide doesn't say which of them a raw message checks.</li>
+<li><strong>When SES refuses it</strong> (an identity not verified, the account paused, too many messages) or
+  can't be reached, <code>send</code> raises <code>MailNotSent</code> with SES's error code and message. SES sends to
+  all the recipients or none.</li>
+<li><strong>One client,</strong> opened on the first message or by <code>connect()</code> and closed by <code>aclose()</code>;
+  <code>endpoint_url=</code> and the rest of <code>create_client</code>'s options go through (a VPC endpoint, an
+  emulator).</li>
+<li><strong>Another provider:</strong> a sender is any class with <code>async def send(self, message: EmailMessage)</code>
+  that raises <code>MailNotSent</code> when the message isn't sent (<code>MailSender</code>). <code>message.as_bytes()</code> is
+  the raw message, for APIs that take it (Mailgun's <code>messages.mime</code>); for those that take fields,
+  <code>message.get_body(("plain",))</code>, <code>get_body(("html",))</code> and <code>iter_attachments()</code> give them.</li>
+</ul>
 <h2 id="in-tests">In tests<a class="headerlink" href="#in-tests" title="Permanent link">&para;</a></h2>
-<p><code>MemoryMailSender</code> sends nothing, and keeps the messages:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="n">sender</span> <span class="o">=</span> <span class="n">MemoryMailSender</span><span class="p">()</span>
-</span><span id="__span-2-2"><span class="n">mail</span> <span class="o">=</span> <span class="n">FastAPIMail</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">from_address</span><span class="o">=</span><span class="s2">"no-reply@example.com"</span><span class="p">)</span>
-</span><span id="__span-2-3"><span class="o">...</span>
-</span><span id="__span-2-4"><span class="p">(</span><span class="n">message</span><span class="p">,)</span> <span class="o">=</span> <span class="n">sender</span><span class="o">.</span><span class="n">messages</span>
-</span><span id="__span-2-5"><span class="k">assert</span> <span class="s2">"reset?token="</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get_body</span><span class="p">((</span><span class="s2">"plain"</span><span class="p">,))</span><span class="o">.</span><span class="n">get_content</span><span class="p">()</span>
+<p><code>MemoryMailSender</code> sends nothing, and keeps the messages, attachments included
+(<code>message.iter_attachments()</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><span class="n">sender</span> <span class="o">=</span> <span class="n">MemoryMailSender</span><span class="p">()</span>
+</span><span id="__span-4-2"><span class="n">mail</span> <span class="o">=</span> <span class="n">FastAPIMail</span><span class="p">(</span><span class="n">sender</span><span class="p">,</span> <span class="n">from_address</span><span class="o">=</span><span class="s2">"no-reply@example.com"</span><span class="p">)</span>
+</span><span id="__span-4-3"><span class="o">...</span>
+</span><span id="__span-4-4"><span class="p">(</span><span class="n">message</span><span class="p">,)</span> <span class="o">=</span> <span class="n">sender</span><span class="o">.</span><span class="n">messages</span>
+</span><span id="__span-4-5"><span class="k">assert</span> <span class="s2">"reset?token="</span> <span class="ow">in</span> <span class="n">message</span><span class="o">.</span><span class="n">get_body</span><span class="p">((</span><span class="s2">"plain"</span><span class="p">,))</span><span class="o">.</span><span class="n">get_content</span><span class="p">()</span>
 </span></code></pre></div>
 
 

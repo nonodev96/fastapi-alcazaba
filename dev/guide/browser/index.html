@@ -5028,6 +5028,9 @@ same:</p>
   past it ends the oldest.</li>
 <li><strong>When the backend fails</strong> to tell whether a session was ended, the session is refused: fail
   closed.</li>
+<li><strong>Logins at an OpenID Connect provider:</strong> a session whose data has <code>oidc_sid</code> (<code>sid_key=</code>), the
+  provider's session id of the login, is ended by <code>end_sid(sid)</code>: what the provider's
+  <a href="../authentication/oidc/#logging-out">back-channel logout</a> calls.</li>
 </ul>
 <h2 id="csrf-protection">CSRF protection<a class="headerlink" href="#csrf-protection" title="Permanent link">&para;</a></h2>
 <p>A page on another site can make the user's browser send a form, or a <code>fetch</code>, to your app, and
@@ -5091,7 +5094,9 @@ from the headers browsers send to say where a request comes from:</p>
 <ul>
 <li><strong>Security headers:</strong> the OWASP REST ones: <code>X-Content-Type-Options: nosniff</code>,
   <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code> and <code>Cross-Origin-Opener-Policy:
-  same-origin</code>. Headers the app sets itself are never overwritten; <code>headers=</code> adds others or
+  same-origin</code>; and a <code>Permissions-Policy</code> that turns off the camera, the microphone,
+  geolocation, payments, USB, screen capture and the motion sensors, which no API response (nor
+  the Swagger UI) needs. Headers the app sets itself are never overwritten; <code>headers=</code> adds others or
   changes the defaults (None removes one). Add it last, the outermost, so that the answers of
   the middlewares inside it (<code>BodySizeLimitMiddleware</code>'s 400 and 413) get them too. Starlette's
   500 for an unhandled exception never does: <code>ServerErrorMiddleware</code> wraps every middleware you

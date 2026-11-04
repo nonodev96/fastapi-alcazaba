@@ -3955,6 +3955,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.backends.Backend.check_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fastapi_alcazaba.backends.Backend.get_with_ttl" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5099,6 +5110,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.backends.Backend.check_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;check_size
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fastapi_alcazaba.backends.Backend.get_with_ttl" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5532,6 +5554,26 @@ In <code>fastapi_alcazaba.backends</code>.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="fastapi_alcazaba.backends.Backend.check_size" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">check_size</span>
+
+
+<a href="#fastapi_alcazaba.backends.Backend.check_size" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">check_size</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Raise ValueTooLarge when <code>value</code> is over <code>max_value_size</code>.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -6065,7 +6107,7 @@ counters.</p>
 
 
 <a href="#fastapi_alcazaba.backends.memcached.MemcachedBackend" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">MemcachedBackend</span><span class="p">(</span><span class="n">mcache</span><span class="p">:</span> <span class="n">Client</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">MemcachedBackend</span><span class="p">(</span><span class="n">mcache</span><span class="p">:</span> <span class="n">Client</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_value_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">-</span> <span class="mi">512</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6083,6 +6125,38 @@ is.</p>
 <p>Locks are taken with <code>add</code>, and released or extended with <code>gets</code> + <code>cas</code>, so only their holder
 can. memcached keeps time in whole seconds: a lock lasts up to two seconds more than asked,
 never less.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>max_value_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the largest value stored, stamp included: memcached's item size (1 MiB
+unless the server runs with <code>-I</code>) less room for the key and memcached's own header.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1024 * 1024 - 512</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
 

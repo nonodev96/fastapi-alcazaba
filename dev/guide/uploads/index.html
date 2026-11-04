@@ -1605,6 +1605,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1621,6 +1639,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scanning-for-malware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scanning for malware
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -4707,6 +4755,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scanning-for-malware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scanning for malware
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4831,10 +4898,46 @@ the <code>content_type</code> found in its bytes, its <code>size</code>, its <co
   <code>txt.exe</code>), <code>&lt;&gt;:"|?*</code> replaced, without leading dots or dashes, <code>_</code> in front of the names Windows
   reserves (<code>CON</code>, <code>NUL</code>, <code>COM1</code>...), and at most 255 bytes, keeping the extension. For display and
   <code>Content-Disposition</code>; store files under names of your own (<code>CheckedFile.extension</code>).</li>
-<li><strong>What it doesn't do:</strong> look inside the files. A PDF can carry scripts, Office documents
-  macros, archives may expand to far more than their size, and the frames of a GIF aren't counted.
-  Allow HTML, SVG or XML only to serve them as attachments from another domain.</li>
+<li><strong>What it doesn't do by itself:</strong> look inside the files. A PDF can carry scripts, Office
+  documents macros, archives may expand to far more than their size, and the frames of a GIF
+  aren't counted. Allow HTML, SVG or XML only to serve them as attachments from another domain.
+  A malware scanner looks inside them: see below.</li>
 </ul>
+<h2 id="scanning-for-malware">Scanning for malware<a class="headerlink" href="#scanning-for-malware" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.uploads</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClamAVScanner</span><span class="p">,</span> <span class="n">FastAPIUploads</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3"><span class="n">scanner</span> <span class="o">=</span> <span class="n">ClamAVScanner</span><span class="p">(</span><span class="s2">"tcp://clamav:3310"</span><span class="p">)</span>  <span class="c1"># or "unix:///run/clamav/clamd.ctl"</span>
+</span><span id="__span-1-4"><span class="n">uploads</span> <span class="o">=</span> <span class="n">FastAPIUploads</span><span class="p">(</span>
+</span><span id="__span-1-5">    <span class="n">types</span><span class="o">=</span><span class="n">OFFICE_DOCUMENTS</span><span class="p">,</span>
+</span><span id="__span-1-6">    <span class="n">scanner</span><span class="o">=</span><span class="n">scanner</span><span class="p">,</span>
+</span><span id="__span-1-7">    <span class="n">on_infected</span><span class="o">=</span><span class="n">quarantine</span><span class="p">,</span>  <span class="c1"># optional: (file, result) -&gt; None, before the 422</span>
+</span><span id="__span-1-8"><span class="p">)</span>
+</span><span id="__span-1-9"><span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span><span class="n">health_router</span><span class="p">({</span><span class="s2">"clamav"</span><span class="p">:</span> <span class="n">HealthCheck</span><span class="p">(</span><span class="n">scanner</span><span class="o">.</span><span class="n">ping</span><span class="p">,</span> <span class="n">critical</span><span class="o">=</span><span class="kc">False</span><span class="p">)}))</span>
+</span></code></pre></div>
+<p><code>pip install "fastapi-alcazaba[clamav]"</code>: nothing more is installed, <code>ClamAVScanner</code> speaks
+clamd's protocol itself.</p>
+<ul>
+<li><strong>After the other checks:</strong> only a file of an accepted type, size and pixels is scanned: the
+  scanner never gets a 2 GB upload or an unknown type.</li>
+<li><strong>ClamAV:</strong> the file goes to clamd (ClamAV's daemon) with its <code>INSTREAM</code> command, in chunks
+  over TCP or a Unix socket, never through a shared disk; <code>ping()</code> is a health check. Run clamd
+  next to the app (the <code>clamav/clamav</code> image), with <code>freshclam</code> keeping its signatures up to
+  date; give it about 1 GB of memory, and raise its <code>StreamMaxLength</code> (25 MB by default) above
+  <code>max_size</code>, or larger files can't be scanned.</li>
+<li><strong>Infected:</strong> a 422 <code>File rejected</code>, which doesn't say what was found; the threat's name is
+  logged, and counted (<code>fastapi_alcazaba.uploads</code>, outcome <code>infected</code>). <code>on_infected(file,
+  result)</code>, sync or async, runs before: to keep the file in quarantine, or alert someone.</li>
+<li><strong>Fails closed:</strong> when the scanner doesn't answer within <code>scan_timeout</code> (30 s) or can't scan
+  the file, the upload gets a 503 (<code>scan_failed</code>). <code>scan_fail_open=True</code> accepts it unscanned
+  instead (<code>unscanned</code>, logged).</li>
+<li><strong>Your own scanner:</strong> anything with <code>async scan(file) -&gt; ScanResult</code> (a commercial engine, a
+  sandbox service); the file comes at its start.</li>
+<li><strong>What it can't do:</strong> a scanner knows the malware it has signatures for. A script in a PDF or
+  a macro written for you goes through: keep the other precautions (attachments, another
+  domain).</li>
+</ul>
+<p>Files uploaded straight to S3 get the same checks with
+<a href="../storage/#checking-what-was-uploaded"><code>check_uploaded</code></a>.</p>
 
 
 

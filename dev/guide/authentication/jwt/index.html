@@ -946,6 +946,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JWTStrategy
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -962,6 +980,58 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rotating-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rotating keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#an-identity-providers-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An identity provider's keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refresh-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refresh tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -4709,6 +4779,47 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rotating-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rotating keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#an-identity-providers-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An identity provider's keys
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refresh-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refresh tokens
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4814,8 +4925,8 @@
 <p><code>JWTStrategy</code> reads the token of <code>Authorization: Bearer</code> (or of the cookie named by <code>cookie=</code>)
 and verifies it with PyJWT: the signature, <code>exp</code>, <code>nbf</code> and the <code>required</code> claims (<code>exp</code>, <code>sub</code>),
 and <code>aud</code> and <code>iss</code> when given; a token with an <code>aud</code> is refused when no <code>audience</code> is set, as
-it's meant for another service. <code>alg: none</code> never, nor HMAC and asymmetric algorithms together: a
-public key taken for an HMAC secret would let anyone sign.</p>
+it's meant for another service. <code>alg: none</code> never, and each key verifies with its own algorithm
+only: a public key taken for an HMAC secret would let anyone sign.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">TokenBlocklist</span>
 </span><span id="__span-0-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth.strategies.jwt</span><span class="w"> </span><span class="kn">import</span> <span class="n">JWTStrategy</span>
 </span><span id="__span-0-3">
@@ -4841,17 +4952,145 @@ public key taken for an HMAC secret would let anyone sign.</p>
 </span><span id="__span-0-23"><span class="p">)</span>
 </span></code></pre></div>
 <ul>
-<li><strong>Keys:</strong> HMAC secrets have at least 32 bytes and rotate with a list; public keys need
-  <code>algorithms=["RS256"]</code> (or ES256, EdDSA…), and an identity provider's keys come from its JWKS
-  (<code>jwks_url=</code>, by each token's <code>kid</code>), with the <code>audience</code> and <code>issuer</code> it requires: a provider
+<li><strong>Keys:</strong> HMAC secrets have at least 32 bytes and rotate with a list; keys of any type rotate
+  with <code>keys=</code> (see "Rotating keys"); an identity provider's keys come from its JWKS (<code>jwks_url=</code>,
+  see "An identity provider's keys"), with the <code>audience</code> and <code>issuer</code> it requires: a provider
   signs the tokens of every app it serves with the same keys.</li>
 <li><strong>Revoked tokens:</strong> <code>blocklist=</code> refuses the tokens revoked in a <code>TokenBlocklist</code> (see "Revoked
   tokens and one-time codes").</li>
-<li><strong>Issuing:</strong> <code>issue(subject, expires_in=900)</code> signs one, with <code>iat</code>, <code>exp</code> and a random <code>jti</code>.</li>
+<li><strong>Issuing:</strong> <code>issue(subject, expires_in=900)</code> signs one, with <code>iat</code>, <code>exp</code>, a random <code>jti</code>, and
+  its key's <code>kid</code> in the header.</li>
 <li><strong>Scopes:</strong> the token grants those of its <code>scope</code> (a string separated by spaces) and <code>scp</code> (a
   list) claims, for the routes that need some (<a href="../#scopes">Scopes</a>); <code>scope_claims=</code>
   names others. A claim that isn't scopes refuses the token.</li>
 <li><strong>OpenAPI:</strong> it shows in the schema, for the docs' Authorize button.</li>
+</ul>
+<h2 id="rotating-keys">Rotating keys<a class="headerlink" href="#rotating-keys" title="Permanent link">&para;</a></h2>
+<p>Asymmetric keys (RS256, PS256, ES256, EdDSA) let other services verify the app's tokens with the
+public key alone. <code>keys=</code> takes <code>JWTKey</code>s, each pinned to one algorithm: the first one signs, all
+of them verify.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">datetime</span>
+</span><span id="__span-1-2">
+</span><span id="__span-1-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth.strategies.jwt</span><span class="w"> </span><span class="kn">import</span> <span class="n">JWTKey</span><span class="p">,</span> <span class="n">JWTStrategy</span>
+</span><span id="__span-1-4">
+</span><span id="__span-1-5"><span class="n">tokens</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">use</span><span class="p">(</span>
+</span><span id="__span-1-6">    <span class="n">JWTStrategy</span><span class="p">(</span>
+</span><span id="__span-1-7">        <span class="n">keys</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-1-8">            <span class="n">JWTKey</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">jwt_private_key</span><span class="p">,</span> <span class="n">algorithm</span><span class="o">=</span><span class="s2">"ES256"</span><span class="p">),</span>  <span class="c1"># the new one: it signs</span>
+</span><span id="__span-1-9">            <span class="n">JWTKey</span><span class="p">(</span>
+</span><span id="__span-1-10">                <span class="n">settings</span><span class="o">.</span><span class="n">previous_jwt_private_key</span><span class="p">,</span>
+</span><span id="__span-1-11">                <span class="n">algorithm</span><span class="o">=</span><span class="s2">"RS256"</span><span class="p">,</span>
+</span><span id="__span-1-12">                <span class="n">until</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">UTC</span><span class="p">),</span>  <span class="c1"># the rotation + the tokens' lifetime</span>
+</span><span id="__span-1-13">            <span class="p">),</span>
+</span><span id="__span-1-14">        <span class="p">],</span>
+</span><span id="__span-1-15">        <span class="n">blocklist</span><span class="o">=</span><span class="n">TokenBlocklist</span><span class="p">(),</span>
+</span><span id="__span-1-16">    <span class="p">)</span>
+</span><span id="__span-1-17"><span class="p">)</span>
+</span></code></pre></div>
+<ul>
+<li><strong>One deploy rotates:</strong> put the new key first and give the old one an <code>until</code>. Tokens it signed
+  keep working until then, and are refused after; remove it from the list whenever you like.</li>
+<li><strong>Key ids:</strong> each token names its key in its header (<code>kid</code>), and is verified with that key
+  only. A <code>kid</code> is the RFC 7638 thumbprint of a public key by default, or an HMAC of a constant
+  for a secret, which reveals nothing of it; <code>JWTKey(..., kid="2026-11")</code> gives one. Tokens
+  without a <code>kid</code>, or with one no key has (another issuer's own ids), are tried with the keys
+  whose <code>kid</code> wasn't given.</li>
+<li><strong>Private or public:</strong> a private key signs, and its public part verifies; a public key only
+  verifies (<code>can_issue</code> is then False): a service that checks another's tokens.</li>
+<li><strong>From HS256 to RS256:</strong> HMAC and asymmetric keys can be in one list, since each verifies with
+  its own algorithm: <code>[JWTKey(private_key, algorithm="RS256"), JWTKey(secret, algorithm="HS256",
+  until=...)]</code>.</li>
+<li><strong>Publishing the public keys:</strong> <code>jwks()</code> gives them as a JWKS, with their <code>kid</code>s, the retiring
+  ones included and the HMAC secrets never:</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/.well-known/jwks.json"</span><span class="p">,</span> <span class="n">include_in_schema</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-2-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">jwks</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+</span><span id="__span-2-3">    <span class="k">return</span> <span class="n">tokens</span><span class="o">.</span><span class="n">jwks</span><span class="p">()</span>
+</span></code></pre></div>
+<p><code>key=</code> and <code>algorithms=</code> are the short form for one key (or a list of HMAC secrets).</p>
+<h2 id="an-identity-providers-keys">An identity provider's keys<a class="headerlink" href="#an-identity-providers-keys" title="Permanent link">&para;</a></h2>
+<p>With <code>jwks_url=</code>, the provider's public keys are fetched from its JWKS (HTTPS, or http://localhost
+in development) and each token is verified with the one its <code>kid</code> names:</p>
+<ul>
+<li><strong>Kept:</strong> for <code>jwks_lifespan</code> seconds (300); then fetched again.</li>
+<li><strong>A <code>kid</code> it doesn't have</strong> (the provider rotated its keys) makes it fetched again, at most every
+  30 seconds: made-up <code>kid</code>s don't make the app call the provider on every request. A token with a
+  <code>kid</code> the provider doesn't have is a 401.</li>
+<li><strong>Never in the way:</strong> fetched asynchronously, within <code>jwks_timeout</code> (3 s) for the whole fetch,
+  with a circuit breaker for the provider (<code>ResilientTransport</code>); requests that need the keys while
+  they're fetched wait for that one fetch.</li>
+<li><strong>The provider down:</strong> the keys fetched before are still used for <code>jwks_stale</code> seconds (an hour)
+  past their lifespan, retried every 30 seconds. Then the requests get a 503 (<code>Retry-After: 30</code>;
+  WebSockets close with 1013): never let through, nor told to log in again. Each fetch is counted
+  in <code>fastapi_alcazaba.auth.jwks</code>, by outcome (fetched, failed).</li>
+<li><strong>Which keys:</strong> signing keys only (no <code>use: enc</code>), never HMAC ones (<code>oct</code>), with their <code>alg</code>
+  when they say one; <code>algorithms</code> are the provider's (RS256, ES256, PS256 and EdDSA by default).</li>
+<li><strong>Shutting down:</strong> <code>await strategy.aclose()</code> in the lifespan closes the client it made;
+  <code>jwks_client=</code> gives one of your own (a proxy, your TLS settings).</li>
+</ul>
+<h2 id="refresh-tokens">Refresh tokens<a class="headerlink" href="#refresh-tokens" title="Permanent link">&para;</a></h2>
+<p>Access tokens should be short (15 minutes), but users shouldn't log in every 15 minutes.
+<code>RefreshTokens</code> gives each login a refresh token as well, which gets a new pair when the access
+token expires:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTTPException</span>
+</span><span id="__span-3-2">
+</span><span id="__span-3-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">RefreshRefused</span><span class="p">,</span> <span class="n">RefreshTokens</span><span class="p">,</span> <span class="n">TokenBlocklist</span><span class="p">,</span> <span class="n">TokenPair</span>
+</span><span id="__span-3-4"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth.strategies.jwt</span><span class="w"> </span><span class="kn">import</span> <span class="n">JWTStrategy</span>
+</span><span id="__span-3-5">
+</span><span id="__span-3-6"><span class="n">tokens</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="n">JWTStrategy</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">jwt_secret</span><span class="p">,</span> <span class="n">blocklist</span><span class="o">=</span><span class="n">TokenBlocklist</span><span class="p">()))</span>
+</span><span id="__span-3-7"><span class="n">refresh_tokens</span> <span class="o">=</span> <span class="n">RefreshTokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">secret</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">refresh_secret</span><span class="p">)</span>
+</span><span id="__span-3-8">
+</span><span id="__span-3-9">
+</span><span id="__span-3-10"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/token"</span><span class="p">)</span>
+</span><span id="__span-3-11"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">log_in</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">Login</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenPair</span><span class="p">:</span>
+</span><span id="__span-3-12">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">check_password</span><span class="p">(</span><span class="n">form</span><span class="p">)</span>
+</span><span id="__span-3-13">    <span class="k">return</span> <span class="k">await</span> <span class="n">refresh_tokens</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">"read write"</span><span class="p">)</span>
+</span><span id="__span-3-14">
+</span><span id="__span-3-15">
+</span><span id="__span-3-16"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/token/refresh"</span><span class="p">)</span>
+</span><span id="__span-3-17"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh</span><span class="p">(</span><span class="n">body</span><span class="p">:</span> <span class="n">Refresh</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenPair</span><span class="p">:</span>
+</span><span id="__span-3-18">    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-3-19">        <span class="k">return</span> <span class="k">await</span> <span class="n">refresh_tokens</span><span class="o">.</span><span class="n">exchange</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">refresh_token</span><span class="p">)</span>
+</span><span id="__span-3-20">    <span class="k">except</span> <span class="n">RefreshRefused</span><span class="p">:</span>
+</span><span id="__span-3-21">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Log in again"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>  <span class="c1"># never say why</span>
+</span><span id="__span-3-22">
+</span><span id="__span-3-23">
+</span><span id="__span-3-24"><span class="nd">@app</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">"/token"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
+</span><span id="__span-3-25"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">log_out</span><span class="p">(</span><span class="n">claims</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span><span class="s2">"jwt"</span><span class="p">))])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-26">    <span class="k">await</span> <span class="n">refresh_tokens</span><span class="o">.</span><span class="n">revoke_session</span><span class="p">(</span><span class="n">claims</span><span class="p">[</span><span class="s2">"sid"</span><span class="p">])</span>
+</span></code></pre></div>
+<ul>
+<li><strong>Rotation:</strong> each exchange gives a new pair and uses the refresh token up. A login (a
+  <em>family</em>) has an id, the access tokens' <code>sid</code> claim; its claims (<code>scope</code> above) go into every
+  access token it gets.</li>
+<li><strong>A copied token ends the login:</strong> a refresh token already exchanged that comes back was copied,
+  by a thief or from the user. Whoever comes second, the login ends: its refresh token and its
+  access tokens are refused, and it's logged, counted (<code>fastapi_alcazaba.refresh</code>, outcome
+  <code>reused</code>) and audited. The user logs in again; the thief is out.</li>
+<li><strong>Grace:</strong> within <code>grace</code> seconds (10) of an exchange, the token just exchanged gets the newest
+  refresh token again, with a new access token: tabs or requests that refresh at once all end up
+  with one token. After that, it's a copy.</li>
+<li><strong>Lifetimes:</strong> a login lasts <code>lifetime</code> (30 days) from the password, and <code>idle</code> (7 days)
+  without a refresh; <code>access_ttl</code> (900 s) is the access tokens'.</li>
+<li><strong>Clients:</strong> <code>issue(..., client="ios")</code> binds the login to a client; an exchange must give the
+  same <code>client=</code>, and a token presented by another one ends the login.</li>
+<li><strong>Logging out:</strong> <code>revoke(refresh_token)</code> with the refresh token, <code>revoke_session(sid)</code> with an
+  access token's <code>sid</code> (a list of the user's devices, an operator), <code>revoke_subject(user_id)</code>
+  everywhere (after a password change; the login started during that second stays, for the
+  session that changed it). The strategy's <code>TokenBlocklist</code> refuses the access tokens until they
+  expire, so it must have one.</li>
+<li><strong>Nothing stored makes a token:</strong> a refresh token is <code>r1.&lt;family&gt;.&lt;generation&gt;.&lt;MAC&gt;</code>, the MAC
+  made with <code>secret</code>. The backend keeps one record per login, with a random salt, never a token:
+  whoever reads it can't make one. Every generation can be checked, so a forged token naming a
+  real family (its id is in every access token) is refused without ending anything. <code>secret</code> is a
+  list to rotate it, as the strategy's key.</li>
+<li><strong>One exchange at a time:</strong> each login's exchanges hold its lock, so the backend must hold locks
+  (every shipped backend does). If the backend fails, nothing is issued: <code>BackendUnavailable</code>.</li>
+<li><strong>Where clients keep it:</strong> a refresh token is a password for 30 days. Browsers: an <code>HttpOnly</code>,
+  <code>Secure</code>, <code>SameSite=Strict</code> cookie scoped to the refresh route, not JavaScript's storage; apps:
+  the keychain. That's up to the app; nothing here enforces it.</li>
+<li><strong><code>RefreshRefused</code></strong> has a <code>reason</code> (<code>malformed</code>, <code>unknown</code>, <code>forged</code>, <code>expired</code>, <code>revoked</code>,
+  <code>reused</code>, <code>wrong_client</code>) for your logs, never for the client.</li>
 </ul>
 
 

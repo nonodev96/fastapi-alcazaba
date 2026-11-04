@@ -5076,7 +5076,7 @@ only needs FastAPI; the <code>casbin</code> extra is for the third step.</p>
 </span><span id="__span-5-4"><span class="go">etag: W/"d5c916899a1291fccfef605e3d4ede40"</span>
 </span><span id="__span-5-5"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
 </span><span id="__span-5-6"><span class="go">cache-control: max-age=60</span>
-</span><span id="__span-5-7"><span class="go">vary: Authorization, Cookie</span>
+</span><span id="__span-5-7"><span class="go">vary: Authorization, Cookie, X-Api-Key</span>
 </span><span id="__span-5-8">
 </span><span id="__span-5-9"><span class="go">{"name":"Olive oil","price":9.5}</span>
 </span><span id="__span-5-10">
@@ -5086,7 +5086,7 @@ only needs FastAPI; the <code>casbin</code> extra is for the third step.</p>
 </span><span id="__span-5-14"><span class="go">etag: W/"d5c916899a1291fccfef605e3d4ede40"</span>
 </span><span id="__span-5-15"><span class="go">cache-status: Alcazaba; hit; ttl=60</span>
 </span><span id="__span-5-16"><span class="go">cache-control: max-age=60</span>
-</span><span id="__span-5-17"><span class="go">vary: Authorization, Cookie</span>
+</span><span id="__span-5-17"><span class="go">vary: Authorization, Cookie, X-Api-Key</span>
 </span><span id="__span-5-18">
 </span><span id="__span-5-19"><span class="go">{"name":"Olive oil","price":9.5}</span>
 </span></code></pre></div>
@@ -5131,9 +5131,10 @@ function.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Technical details</p>
-<p>Each user gets entries of their own: requests with an <code>Authorization</code> or <code>Cookie</code> header
-have their own keys, and their responses are sent as <code>Cache-Control: private</code>. That's what
-<code>vary: Authorization, Cookie</code> tells browsers and proxies. <code>Cache-Status</code> is the header of
+<p>Each user gets entries of their own: requests with an <code>Authorization</code>, <code>Cookie</code> or
+<code>X-API-Key</code> header have their own keys, and their responses are sent as
+<code>Cache-Control: private</code>. That's what <code>vary: Authorization, Cookie, X-Api-Key</code> tells
+browsers and proxies. <code>Cache-Status</code> is the header of
 <a href="https://www.rfc-editor.org/rfc/rfc9211">RFC 9211</a>, and the <code>ETag</code> lets clients revalidate
 with <code>If-None-Match</code> and get a <code>304 Not Modified</code>. The <a href="cache/">response cache</a> page
 has the rest: shared entries, keys, signed entries.</p>
@@ -5345,7 +5346,7 @@ says that the staff may <code>PUT</code> any product, and that Ana is staff.</p>
 </span><span id="__span-16-6"><span class="go">etag: W/"615d43a0044f76d19c5f354c5be3a495"</span>
 </span><span id="__span-16-7"><span class="go">cache-status: Alcazaba; fwd=miss; stored</span>
 </span><span id="__span-16-8"><span class="go">cache-control: max-age=60</span>
-</span><span id="__span-16-9"><span class="go">vary: Authorization, Cookie</span>
+</span><span id="__span-16-9"><span class="go">vary: Authorization, Cookie, X-Api-Key</span>
 </span><span id="__span-16-10">
 </span><span id="__span-16-11"><span class="go">{"name":"Olive oil","price":8.0}</span>
 </span></code></pre></div>

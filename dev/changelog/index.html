@@ -4716,7 +4716,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.8.0] - 2026-11-04
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.8.0] - 2026-11-04">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -4741,6 +4752,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4759,7 +4781,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
+  <a href="#security_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -5104,7 +5126,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security_1" class="md-nav__link">
+  <a href="#security_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -5195,7 +5217,18 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[Unreleased]">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#080-2026-11-04" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.8.0] - 2026-11-04
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.8.0] - 2026-11-04">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -5220,6 +5253,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5238,7 +5282,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
+  <a href="#security_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -5583,7 +5627,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security_1" class="md-nav__link">
+  <a href="#security_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -5661,8 +5705,115 @@
 <p>The format is based on <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>, and this project
 adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="080-2026-11-04">[0.8.0] - 2026-11-04<a class="headerlink" href="#080-2026-11-04" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
+<li><code>RefreshTokens</code>: refresh tokens for <code>JWTStrategy</code>'s access tokens. Each exchange gives a new
+  pair and uses the refresh token up; one exchanged that comes back (after a grace period of 10
+  seconds) was copied, and ends the whole login, access tokens included, logged, counted and
+  audited. Logins last 30 days, 7 without a refresh; they can be bound to a client and revoked by
+  refresh token, by session (<code>sid</code>) or by user. The backend never holds a refresh token nor
+  anything that makes one. See "Refresh tokens" in the JWT guide; the JWT example uses them.</li>
+<li><code>TokenBlocklist.revoke_session(sid, ttl=...)</code> and <code>is_revoked(..., session=...)</code>: every token of
+  one login. <code>JWTStrategy</code> with a blocklist refuses tokens whose <code>sid</code> was revoked.</li>
+<li><code>JWTStrategy.can_issue</code>: whether <code>issue</code> can sign.</li>
+<li><code>JWTKey</code> and <code>JWTStrategy(keys=[...])</code>: signing keys of any type (HMAC, RSA, RSA-PSS, EC,
+  EdDSA) rotate. Each key is pinned to one algorithm; the first signs and its <code>kid</code> goes in the
+  tokens' header; a token is verified with the key its <code>kid</code> names; an old key verifies until its
+  <code>until</code>. HMAC and asymmetric keys may be mixed, to move from HS256 to RS256 without logging
+  anyone out. <code>jwks()</code> gives the public keys as a JWKS, for other services; <code>keys</code> lists them.</li>
+<li><code>JWTStrategy</code> with <code>jwks_url</code>: <code>jwks_timeout</code> (3 s for the whole fetch), <code>jwks_stale</code> (keys kept
+  an hour past their lifespan while the provider can't be reached), <code>jwks_client</code> and <code>aclose()</code>.
+  Fetches are counted in <code>fastapi_alcazaba.auth.jwks</code>.</li>
+<li>Task queue: <code>@queue.task(timeout=...)</code> cancels a run that takes longer, as a failure with
+  <code>TimeoutError</code> (retried or to the dead letters), so a hung task no longer holds a worker's slot
+  for good.</li>
+<li>Task queue: <code>retry_on</code> and <code>give_up_on</code> choose the exceptions that are retried; the others send
+  the task to the dead letters at once.</li>
+<li>Task queue: <code>enqueue(..., unique_key=...)</code> adds at most one task per key while one waits, runs or
+  waits for a retry, and returns its ID otherwise: a message the outbox delivers twice runs once.</li>
+<li>Task queue: <code>status(task_id)</code> (<code>TaskStatus</code>: pending, running, retrying, succeeded, dead,
+  cancelled, with attempts, last error and times, never the arguments), <code>cancel(task_id)</code> for a
+  task that hasn't started, <code>dead_letter_count()</code>, and <code>status_ttl</code> (a day).</li>
+<li>Gauges: <code>fastapi_alcazaba.tasks.backlog</code> and <code>.tasks.dead_letters</code>, <code>.outbox.backlog</code> and
+  <code>.outbox.oldest_age</code>, measured by a <code>BacklogMonitor(queue, outbox, interval=30)</code> the app starts
+  (nothing costs a backend call without one); <code>.breaker.open</code> and <code>.leader.is_leader</code>, set by the
+  breakers and leaders as they change. A histogram of scheduled job durations,
+  <code>fastapi_alcazaba.scheduler.duration</code>.</li>
+<li>Health checks of Alcazaba's components for <code>health_router</code>: <code>task_queue_check</code> (with
+  <code>max_backlog</code> and <code>max_dead_letters</code>), <code>broadcast_check</code>, <code>leader_check</code>, <code>smtp_check</code> and
+  <code>object_storage_check</code>, not critical by default. With them: <code>FastAPITaskQueue.counts()</code> and
+  <code>measure()</code>, <code>SQLAlchemyOutbox.backlog()</code> and <code>measure()</code>, <code>FastAPIBroadcast.connected</code> and
+  <code>ping()</code>, <code>FastAPILeader.campaigning</code>, <code>SMTPSender.check()</code>.</li>
+<li>Outbox: <code>OutboxRelay(retention=7 days)</code> deletes the messages sent long ago, in batches of
+  <code>purge_batch</code>, every <code>purge_interval</code>; <code>SQLAlchemyOutbox.purge()</code> on demand. Messages given up on
+  are listed by <code>given_up()</code> (without their payload), sent again by <code>requeue()</code> or deleted by
+  <code>discard()</code>.</li>
+<li>Outbox: each message keeps the trace context of where it was written, and each delivery is a
+  span (<code>fastapi_alcazaba.outbox &lt;topic&gt;</code>) linked to it; counters <code>fastapi_alcazaba.outbox</code>
+  (delivered, retried, given_up) and <code>fastapi_alcazaba.outbox.purged</code>.</li>
+<li>Webhooks: <code>FastAPIWebhooks(secret, scheme=...)</code> verifies GitHub's (<code>X-Hub-Signature-256</code>),
+  Stripe's (<code>Stripe-Signature</code>) and Slack's (<code>X-Slack-Signature</code>) webhooks with the same checks
+  as Standard Webhooks': raw body and size limit, constant time, timestamp tolerance, replay
+  marks, rotation, one 401. Standard Webhooks' Ed25519 signatures (<code>v1a</code>): <code>whpk_</code> public keys
+  verify, <code>whsk_</code> private keys sign, <code>WebhookSigner.generate_key_pair()</code>. The <code>webhooks</code> counter
+  has the scheme. <code>WebhookMessage.timestamp</code> is None for GitHub, which signs no time.</li>
+<li><code>WebhookSender</code>: webhooks to the URLs users register, through the task queue: signed the
+  Standard Webhooks way, through the SSRF guard, retried with backoff, at least once with one
+  <code>webhook-id</code>, enqueued once per endpoint and message (from the outbox: never for a rolled-back
+  change). Endpoints that keep failing (or answer 410) are disabled; <code>health()</code>, <code>enable()</code>,
+  <code>disable()</code>; <code>delivery()</code> records without bodies or secrets. The <code>webhooks</code> extra; the counter
+  <code>fastapi_alcazaba.webhooks.deliveries</code>.</li>
+<li>Task queue: <code>current_task()</code> (<code>RunningTask</code>: id, name, attempt, attempts) inside a task.</li>
+<li>Step-up by factor: <code>require_recent(..., methods={"passkey"})</code> wants a given method;
+  <code>claims=</code> checks tokens' <code>auth_time</code>, <code>amr</code> and <code>acr</code> (<code>acr_values</code>) and answers RFC 9470's
+  <code>insufficient_user_authentication</code> challenge; refusals are problems the front end can read
+  (<code>urn:fastapi-alcazaba:problem:step-up</code>); <code>audit=</code> records each check (<code>auth.stepup</code>).
+  <code>stepup.verified_with()</code>. The wrappers of <code>FastAPITOTP</code> and <code>FastAPIWebAuthn</code> take the same
+  options.</li>
+<li>OpenID Connect logout: <code>OIDCStrategy.logout_url()</code> (RP-Initiated Logout, with the ID token
+  as a hint and only registered <code>post_logout_redirect_uris</code>); <code>backchannel_logout_endpoint()</code>
+  verifies the provider's logout tokens, takes each once, and ends the app's sessions of that
+  login (<code>UserSessions.end_sid</code>, with the provider's <code>sid</code> kept as <code>oidc_sid</code>) or of the user;
+  <code>verify_logout_token()</code>. <code>client_auth="private_key_jwt"</code> with <code>client_key</code> (RFC 7523): no
+  client secret. The raw ID token is in <code>request.state.id_token</code> at the callback. CI runs the
+  Keycloak live tests, with the realm in <code>tests/integration/keycloak</code>.</li>
+<li>Response cache: <code>@cache(stale_while_revalidate=...)</code> serves an expired entry at once and
+  refreshes it after the response (a background task of the response in endpoints, while their
+  dependencies are open; one process, once); <code>stale_if_error=...</code> serves it when computing
+  fails or takes longer than <code>refresh_timeout</code>. <code>Cache-Status</code> says <code>detail=stale-while-revalidate</code>
+  or <code>stale-if-error</code>; lookups are counted as <code>stale</code> and <code>stale_if_error</code>. Before,
+  <code>stale_while_revalidate</code> only added the Cache-Control directive.</li>
+<li>Rate limiter: <code>times</code> may be a function of the request (limits by plan or API key tier, in
+  the <code>RateLimit</code> headers too); <code>exempt=</code> identities or a predicate (counted as <code>exempt</code>, logged
+  once per identity); <code>reset()</code> forgets what a client spent (after a successful login);
+  <code>status()</code> reads a budget without spending any (<code>RateLimitStatus</code>); both by request, or by
+  <code>identity</code> for named limiters.</li>
+<li>Audit trail: Ed25519 signing keys (<code>generate_audit_key_pair()</code>), whose public key verifies and
+  can't sign; signatures name their algorithm and key (<code>ed25519:&lt;kid&gt;:…</code>, <code>hs256:&lt;kid&gt;:…</code>, over
+  <code>fastapi_alcazaba/audit3</code>), so a trail over several rotations verifies with all their keys.
+  <code>checkpoint_interval</code>: signed <code>audit.checkpoint</code> events listing every process's newest event
+  (shared through the cache's backend), which reveal the newest events removed;
+  <code>FastAPIAudit.checkpoint()</code>, <code>last_checkpoint()</code>. <code>fastapi-alcazaba audit verify</code> and
+  <code>audit keygen</code>.</li>
+<li>Uploads: <code>FastAPIUploads(scanner=...)</code> scans each file that passed the other checks;
+  <code>ClamAVScanner</code> speaks clamd's protocol (<code>INSTREAM</code>, <code>ping()</code>) with nothing more installed
+  (the <code>clamav</code> extra); infected files get a 422 and <code>on_infected</code>; a scanner down or slow, a
+  503 unless <code>scan_fail_open</code>. Counted as <code>infected</code>, <code>scan_failed</code>, <code>unscanned</code>.</li>
+<li>Uploads: <code>S3Presigner.upload_url(key, size=..., sha256=...)</code> signs the length and the checksum
+  (<code>PresignedUpload</code>, with the headers to send); before, it signed a PUT of any size.
+  <code>delete_url()</code>. <code>check_uploaded()</code> (the <code>uploads</code> extra) reads an object back, checks it like
+  <code>FastAPIUploads</code> and deletes it when it fails.</li>
+<li>E-mail: attachments (<code>Attachment(content, filename, content_type)</code>, <code>attachments=</code> in
+  <code>FastAPIMail.message</code> and <code>send</code>). The name goes through <code>safe_filename</code>, so it can't add a
+  header; the content type is checked (<code>type/subtype</code>, never <code>multipart/*</code> nor <code>message/*</code>) or
+  guessed from the name; 10 attachments a message (<code>MAX_ATTACHMENTS</code>) and
+  <code>max_attachments_size</code> bytes together (10 MiB).</li>
+<li>E-mail: <code>SESSender</code> sends through Amazon SES's API (SESv2 <code>SendEmail</code>, the raw message), with
+  the credentials of AWS's chain (the <code>ses</code> extra, aiobotocore). <code>connect()</code>, <code>aclose()</code>.</li>
+<li>E-mail: <code>SMTPSender(connections=...)</code> and <code>aclose()</code>.</li>
+<li>The <code>fastapi-alcazaba</code> command: <code>fastapi-alcazaba tasks &lt;module:queue&gt; queues | pending |
+  dead-letters | requeue | discard | status | cancel</code>, with <code>--json</code>.</li>
 <li>Response cache: a hit gives back the response the endpoint gave. A <code>Response</code> it returns
   (HTML, CSV, an image, a <code>JSONResponse</code> with its headers) is stored whole, status, headers and
   body, with any coder; before, with <code>JsonCoder</code>, a <code>JSONResponse</code> came back as its body alone and
@@ -5689,6 +5840,9 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
 </ul>
 <h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
 <ul>
+<li><code>SMTPSender</code> sends in threads of its own (<code>connections</code>, 4 by default), not in Starlette's
+  threadpool, which the app's sync endpoints and dependencies share. <code>SMTPSender.check()</code> is a
+  coroutine.</li>
 <li>The endpoint's own <code>Cache-Control</code> is kept on misses and hits; before, the cache replaced it
   with <code>max-age</code>. An entry of one user is still <code>private</code>. To get the old header, don't set one on
   the response, or give <code>cache_control</code>.</li>
@@ -5706,9 +5860,84 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
   entry that this version cleared, until the deploy ends.</li>
 <li>The tools that refuse a backend without locks say that every backend shipped with
   fastapi-alcazaba can hold them.</li>
+<li><code>JWTStrategy</code> puts a <code>kid</code> in the header of the tokens it issues. Tokens without one, or with
+  one no key has, are tried with the keys whose <code>kid</code> wasn't given.</li>
+<li><code>JWTStrategy(signing_key=...)</code> is gone: <code>keys=[JWTKey(private_key, algorithm=...)]</code>.</li>
+<li><code>JWTStrategy</code> fetches a provider's JWKS with httpx2 (now in the <code>auth-strategy-jwt</code> extra), not
+  with PyJWT's blocking client: asynchronously, with a deadline of 3 s and a circuit breaker, at
+  most every 30 s for a <code>kid</code> it doesn't have, one fetch at a time. When the keys can't be had, the
+  request gets a 503 (WebSocket 1013) instead of a 401; an unknown <code>kid</code> is still a 401.</li>
+<li><code>jwks_url</code> must be HTTPS (or http://localhost), as for <code>OIDCStrategy</code>, and its <code>algorithms</code> are
+  asymmetric: RS256, ES256, PS256 and EdDSA by default (before, HS256 had to be replaced).</li>
+<li>Keys given to <code>JWTStrategy</code> are parsed when it's set up: a key that isn't one for its algorithm
+  is refused then, not on the first token.</li>
+<li>Task queue: each task has a status record in the backend (a small hash, kept a day after it
+  ends). Tasks need an ID of 32 hex digits, as <code>enqueue</code> gives them: a task planted with another
+  is refused as malformed. A task can't take keyword arguments named <code>unique_key</code>.</li>
+<li>The outbox is no longer experimental. Its table has a column <code>traceparent</code>, and indexes
+  <code>ix_&lt;table&gt;_due</code> (<code>sent</code>, <code>next_try</code>) and <code>ix_&lt;table&gt;_failed</code> instead of those on <code>next_try</code>
+  and <code>sent</code>.</li>
+<li>Outbox: the relay purges the messages sent more than 7 days ago by default
+  (<code>retention=None</code> keeps them).</li>
+</ul>
+<h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Step-up with tokens (<code>require_recent(claims=...)</code>) checks that the token is the user's: its
+  <code>sub</code> (or <code>subject=</code>) must be what <code>user_id</code> returns. Before, a stolen session and a fresh
+  token of the attacker's own account passed it.</li>
+<li><code>JWTStrategy</code> takes access tokens only: a token with a header <code>typ</code> other than <code>JWT</code> or
+  <code>at+jwt</code>, a <code>nonce</code> (an ID token), <code>events</code> (a logout token) or Keycloak's <code>typ</code> claim <code>ID</code>,
+  <code>Logout</code> or <code>Refresh</code> is refused. Before, an ID token of the same provider and audience opened
+  the API. <code>token_type="at+jwt"</code> requires RFC 9068's.</li>
+<li>An HMAC secret for <code>JWTStrategy</code> that's a public key in base64 (as Keycloak shows its realm's)
+  or OpenSSH is refused, as PEM and JWKs were: anybody could have signed HS256 tokens with it.</li>
+<li>The audit trail reads a public key in DER, OpenSSH or PEM with text before it as the key it
+  is: before, it was taken for an HMAC secret, so whoever had the public key could rewrite the
+  trail and pass verification. <code>fastapi-alcazaba audit verify --key</code> takes Ed25519 keys only.</li>
+<li>Task queue: <code>requeue_dead_letters</code> leaves the copies of a task (refused as replayed, or whose
+  task is pending, running or done) in the dead letters; requeueing them ran the task once more
+  for each copy written to the backend. Stale ones need <code>stale=True</code> (<code>--stale</code>).</li>
+<li><code>check_uploaded(..., move_to=...)</code> moves what it checked to a key the clients never get a URL
+  for, copied only while it's the object read (its ETag) and under the type found in its bytes.
+  Before, a presigned URL could replace the object once checked, and it kept the uploader's
+  <code>Content-Type</code> (<code>text/html</code> for an image).</li>
+<li><code>OIDCStrategy</code> fetches the provider's keys one at a time and at most every 30 s, failed
+  fetches too, and keeps using them <code>jwks_stale</code> seconds while they can't be fetched: logout
+  tokens with made-up <code>kid</code>s, which anyone can send, made a fetch each.</li>
+<li><code>OneTimeCodes</code>: issuing a new code no longer gives the guesses back: <code>max_attempts</code> for each
+  subject and purpose every <code>ttl</code>.</li>
+<li>Idempotency keys are looked up among the requests with the same <code>Authorization</code> header or,
+  without one, the same cookies (<code>credentials</code>, which replaces <code>authorization</code>). Before, every
+  cookie-session user shared one space of keys: whoever learned a user's key got their response.</li>
+<li>API keys end in a CRC-32 checksum (<code>ak_&lt;id&gt;_&lt;secret&gt;_&lt;checksum&gt;</code>), which secret scanners can
+  check; a mistyped key is refused without a lookup.</li>
+<li>The outbox keeps only the type of a delivery's error in its table, as the task queue does (the
+  log has the whole error): an error's message may hold personal data or a URL with a token.</li>
+<li><code>PaginationOffset(max_offset=10_000)</code> and <code>PaginationPageNumber(max_page=1_000)</code>: a deeper page
+  gets a 422 instead of a query that reads and drops millions of rows.</li>
+<li><code>SecurityHeadersMiddleware</code> sends a <code>Permissions-Policy</code> that turns off the camera, the
+  microphone, geolocation, payments, USB, screen capture and the motion sensors.</li>
+<li>A value larger than the backend takes (<code>Backend.max_value_size</code>: DynamoDB's 400 KB, memcached's
+  1 MiB, <code>MemcachedBackend(max_value_size=...)</code> for servers with <code>-I</code>) is refused before it's
+  sent (<code>ValueTooLarge</code>), without counting against the circuit breaker: five large responses
+  opened it for 30 s, for the cache, the limits and idempotency.</li>
+<li>Task queue: a finished task's status record lasts as long as its payload is valid
+  (<code>replay_window</code>), not only <code>status_ttl</code>, and <code>requeue_dead_letters</code> reads staleness from the
+  sealed payload, not from the reason written next to it: a copy written straight to the dead
+  letters days after its task ran, or one marked as failed when it's stale, stays there.</li>
+<li>The response cache varies on <code>X-API-Key</code> too (FastAPIAPIKeys' header) by default: two API
+  clients no longer share an entry of an endpoint that doesn't take the key as an argument.</li>
+<li><code>PickleCoder</code> without a <code>signing_key</code> or <code>encryption_key</code> raises <code>UnsignedEntriesError</code>
+  (which replaces <code>UnsignedEntriesWarning</code>; <code>refuse_unsigned</code> replaces <code>warn_unsigned</code>): unsigned
+  pickle runs whatever someone wrote to the backend.</li>
+<li>The response cache also varies on the header <code>FastAPIAPIKeys</code> or <code>UnkeyStrategy</code> read a key
+  from, whatever its name (<code>header="X-Tenant-Key"</code>): the strategies name it in the request's
+  state (<code>mark_credential_header</code>), unless the endpoint says <code>vary_headers=()</code>.</li>
+<li>The <code>fastapi_alcazaba.outbound.breaker</code> metric no longer has <code>server.address</code>: with the URLs
+  users give (webhooks), its values had no end. The host stays in the log and the span event.</li>
 </ul>
 <h2 id="071-2026-11-02">[0.7.1] - 2026-11-02<a class="headerlink" href="#071-2026-11-02" title="Permanent link">&para;</a></h2>
-<h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<h3 id="security_1">Security<a class="headerlink" href="#security_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Response cache: a response that sets a cookie is no longer stored. A <code>Response</code> returned with
   <code>Set-Cookie</code> and cached (<code>PickleCoder</code>) gave that cookie, the session of whoever filled the
@@ -6394,7 +6623,7 @@ metrics, spans and the <code>fastapi_alcazaba.audit.events</code> logger keep th
 </ul>
 <h2 id="010-2026-10-24">[0.1.0] - 2026-10-24<a class="headerlink" href="#010-2026-10-24" title="Permanent link">&para;</a></h2>
 <p>First release of Alcazaba.</p>
-<h3 id="security_1">Security<a class="headerlink" href="#security_1" title="Permanent link">&para;</a></h3>
+<h3 id="security_2">Security<a class="headerlink" href="#security_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Per-user cache entries for requests with <code>Authorization</code> or <code>Cookie</code> (<code>vary_headers</code>), sent as
   <code>Cache-Control: private</code> with <code>Vary</code>: one user's response is never served to another.</li>

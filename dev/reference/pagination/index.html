@@ -6184,7 +6184,7 @@ Each strategy in its module of <code>fastapi_alcazaba.pagination</code>, with it
 
 
 <a href="#fastapi_alcazaba.pagination.page_number.PaginationPageNumber" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">PaginationPageNumber</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">PaginationPageNumber</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">max_page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6245,6 +6245,24 @@ a million rows at once.</p>
             </td>
             <td>
                   <code>100</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>max_page</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the last page a request may ask for (a 422 beyond): the database reads and
+drops every row before it, so <code>?page=</code> with a huge number is an expensive query anyone
+can send. Deeper lists are for <code>PaginationCursor</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1000</code>
             </td>
           </tr>
       </tbody>
@@ -6331,7 +6349,7 @@ next and last pages.</p>
 
 
 <a href="#fastapi_alcazaba.pagination.offset.PaginationOffset" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">PaginationOffset</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">PaginationOffset</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">default_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">max_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">max_offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
@@ -6394,6 +6412,24 @@ rows are written.</p>
             </td>
             <td>
                   <code>100</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>max_offset</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the deepest offset a request may ask for (a 422 beyond): the database reads
+and drops every row before it, so <code>?offset=</code> with a huge number is an expensive query
+anyone can send. Deeper lists are for <code>PaginationCursor</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>10000</code>
             </td>
           </tr>
       </tbody>

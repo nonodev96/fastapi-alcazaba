@@ -2215,6 +2215,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alerts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4806,6 +4817,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alerts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4987,6 +5009,33 @@ sync or async (sync ones run in the thread pool, like FastAPI does).</p>
 pydantic-settings</code>). Every parameter that takes a key or a secret also takes pydantic's
 <code>SecretStr</code> (or <code>SecretBytes</code>) as it is, so the value stays out of the settings' repr and of
 tracebacks until Alcazaba uses it. The other snippets read theirs from the same <code>settings</code>.</p>
+<h2 id="alerts">Alerts<a class="headerlink" href="#alerts" title="Permanent link">&para;</a></h2>
+<p>With the metrics exported (see <a href="../observability/#metrics-and-traces">Metrics and traces</a>) and a
+<a href="../observability/#backlog-gauges"><code>BacklogMonitor</code></a> running, these catch what piles up silently.
+In Prometheus' terms, as the OpenTelemetry Collector's Prometheus exporter names them by default
+(dots become underscores; seconds get <code>_seconds</code>, and the 0-or-1 gauges, of unit <code>1</code>, <code>_ratio</code>);
+the thresholds are a start:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><span class="nt">groups</span><span class="p">:</span>
+</span><span id="__span-2-2"><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fastapi-alcazaba</span>
+</span><span id="__span-2-3"><span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-2-4"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TasksDeadLettered</span><span class="w">  </span><span class="c1"># a task gave up: look at it, requeue or discard it</span>
+</span><span id="__span-2-5"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max by (fastapi_alcazaba_queue) (fastapi_alcazaba_tasks_dead_letters) &gt; 0</span>
+</span><span id="__span-2-6"><span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
+</span><span id="__span-2-7"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TasksPilingUp</span><span class="w">  </span><span class="c1"># the workers aren't keeping up</span>
+</span><span id="__span-2-8"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max by (fastapi_alcazaba_queue) (fastapi_alcazaba_tasks_backlog{fastapi_alcazaba_state="queued"}) &gt; 1000</span>
+</span><span id="__span-2-9"><span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15m</span>
+</span><span id="__span-2-10"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OutboxStuck</span><span class="w">  </span><span class="c1"># messages that should have gone out minutes ago</span>
+</span><span id="__span-2-11"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max by (fastapi_alcazaba_outbox) (fastapi_alcazaba_outbox_oldest_age_seconds) &gt; 300</span>
+</span><span id="__span-2-12"><span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+</span><span id="__span-2-13"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NobodyLeads</span><span class="w">  </span><span class="c1"># the outbox relay (or what the leader runs) isn't running anywhere</span>
+</span><span id="__span-2-14"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sum by (fastapi_alcazaba_leader) (fastapi_alcazaba_leader_is_leader_ratio) == 0</span>
+</span><span id="__span-2-15"><span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
+</span><span id="__span-2-16"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BreakerOpen</span><span class="w">  </span><span class="c1"># a dependency is failing</span>
+</span><span id="__span-2-17"><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">max by (fastapi_alcazaba_breaker) (fastapi_alcazaba_breaker_open_ratio) == 1</span>
+</span><span id="__span-2-18"><span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+</span></code></pre></div>
+<p>Add the <a href="../observability/#checks-of-alcazabas-components">checks of Alcazaba's components</a> to
+<code>/health/ready</code> too: they show in each probe what's degraded.</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../backends/">Backends</a>: Redis, Valkey, GLIDE, memcached, DynamoDB, and a copy in each process

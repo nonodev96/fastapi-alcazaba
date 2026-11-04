@@ -1753,6 +1753,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Health checks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checks-of-alcazabas-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks of Alcazaba's components
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backlog-gauges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backlog gauges
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4858,6 +4886,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Health checks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#checks-of-alcazabas-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checks of Alcazaba's components
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backlog-gauges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backlog gauges
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5135,6 +5191,65 @@ health check, e.g. the target group of an ECS service) at <code>/health/ready</c
 <li>The endpoints are left out of the OpenAPI schema unless <code>include_in_schema=True</code>; responses
   carry <code>Cache-Control: no-store</code>.</li>
 </ul>
+<h3 id="checks-of-alcazabas-components">Checks of Alcazaba's components<a class="headerlink" href="#checks-of-alcazabas-components" title="Permanent link">&para;</a></h3>
+<p>Ready-made checks for what Alcazaba runs, to add to the router. Each is a <code>HealthCheck</code> that isn't
+critical by default (a backlog or a mail server that's down make the app <code>degraded</code>, not unready);
+<code>critical=True</code> and <code>timeout=</code> change that.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-5-2">    <span class="n">broadcast_check</span><span class="p">,</span>
+</span><span id="__span-5-3">    <span class="n">health_router</span><span class="p">,</span>
+</span><span id="__span-5-4">    <span class="n">leader_check</span><span class="p">,</span>
+</span><span id="__span-5-5">    <span class="n">object_storage_check</span><span class="p">,</span>
+</span><span id="__span-5-6">    <span class="n">smtp_check</span><span class="p">,</span>
+</span><span id="__span-5-7">    <span class="n">task_queue_check</span><span class="p">,</span>
+</span><span id="__span-5-8"><span class="p">)</span>
+</span><span id="__span-5-9">
+</span><span id="__span-5-10"><span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span>
+</span><span id="__span-5-11">    <span class="n">health_router</span><span class="p">(</span>
+</span><span id="__span-5-12">        <span class="p">{</span>
+</span><span id="__span-5-13">            <span class="s2">"database"</span><span class="p">:</span> <span class="n">database</span><span class="p">,</span>
+</span><span id="__span-5-14">            <span class="s2">"tasks"</span><span class="p">:</span> <span class="n">task_queue_check</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">max_backlog</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span> <span class="n">max_dead_letters</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+</span><span id="__span-5-15">            <span class="s2">"broadcast"</span><span class="p">:</span> <span class="n">broadcast_check</span><span class="p">(</span><span class="n">broadcast</span><span class="p">),</span>
+</span><span id="__span-5-16">            <span class="s2">"outbox_leader"</span><span class="p">:</span> <span class="n">leader_check</span><span class="p">(</span><span class="n">leader</span><span class="p">),</span>
+</span><span id="__span-5-17">            <span class="s2">"smtp"</span><span class="p">:</span> <span class="n">smtp_check</span><span class="p">(</span><span class="n">smtp_sender</span><span class="p">),</span>
+</span><span id="__span-5-18">            <span class="s2">"storage"</span><span class="p">:</span> <span class="n">object_storage_check</span><span class="p">(</span><span class="n">presigner</span><span class="p">,</span> <span class="s2">"health/probe"</span><span class="p">),</span>
+</span><span id="__span-5-19">        <span class="p">},</span>
+</span><span id="__span-5-20">        <span class="n">reuse_for</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># the SMTP and storage checks open a connection each time</span>
+</span><span id="__span-5-21">    <span class="p">)</span>
+</span><span id="__span-5-22"><span class="p">)</span>
+</span></code></pre></div>
+<ul>
+<li><strong><code>task_queue_check</code>:</strong> the queue's backend answers, the tasks that haven't finished are at most
+  <code>max_backlog</code>, and the dead letters at most <code>max_dead_letters</code> (0: any fails).</li>
+<li><strong><code>broadcast_check</code>:</strong> Redis answers a PING, and the subscription isn't reconnecting
+  (<code>FastAPIBroadcast.connected</code>).</li>
+<li><strong><code>leader_check</code>:</strong> this process takes part in the election (<code>FastAPILeader.campaigning</code>).
+  Whether anyone leads can't be seen from one process: alert on the sum of
+  <code>fastapi_alcazaba.leader.is_leader</code> across them.</li>
+<li><strong><code>smtp_check</code>:</strong> connects, starts TLS, logs in and says NOOP (<code>SMTPSender.check()</code>), sending
+  nothing.</li>
+<li><strong><code>object_storage_check</code>:</strong> reads the first byte of <code>key</code> with a URL the <code>S3Presigner</code> signs: the
+  service, the credentials and the bucket at once. Upload a small object for it; the presigner's
+  user only needs to read it.</li>
+<li>Their errors are logged, never returned, as for every check.</li>
+</ul>
+<h2 id="backlog-gauges">Backlog gauges<a class="headerlink" href="#backlog-gauges" title="Permanent link">&para;</a></h2>
+<p>The work piling up is measured by a <code>BacklogMonitor</code>, every <code>interval</code> seconds, and by nothing
+without one: each measure costs a call to the backend or the database.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">BacklogMonitor</span>
+</span><span id="__span-6-2">
+</span><span id="__span-6-3"><span class="n">monitor</span> <span class="o">=</span> <span class="n">BacklogMonitor</span><span class="p">(</span><span class="n">queue</span><span class="p">,</span> <span class="n">outbox</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</span><span id="__span-6-4"><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">lifespan</span><span class="o">=</span><span class="n">monitor</span><span class="o">.</span><span class="n">lifespan</span><span class="p">)</span>  <span class="c1"># or start() and stop() in your lifespan</span>
+</span></code></pre></div>
+<p>It sets <code>fastapi_alcazaba.tasks.backlog</code> (by queue and state: queued, delayed),
+<code>fastapi_alcazaba.tasks.dead_letters</code>, <code>fastapi_alcazaba.outbox.backlog</code> and
+<code>fastapi_alcazaba.outbox.oldest_age</code> (seconds since the oldest message not sent was written). A
+source that fails or takes longer than <code>timeout</code> is logged, and the others are measured all the
+same. Every process may run one: the values are the same, alert on their maximum. Without metrics
+(no OpenTelemetry SDK) there's no reason to start one. <code>queue.counts()</code> and <code>outbox.backlog()</code> give
+the same numbers to your own code.</p>
+<p>Two gauges need no monitor, as the process knows them: <code>fastapi_alcazaba.breaker.open</code> (1 while a
+<code>FastAPIBreaker</code> is open) and <code>fastapi_alcazaba.leader.is_leader</code> (1 in the process that leads).</p>
 <h2 id="metrics-and-traces">Metrics and traces<a class="headerlink" href="#metrics-and-traces" title="Permanent link">&para;</a></h2>
 <p>Alcazaba logs under <code>fastapi_alcazaba.*</code> with a <code>NullHandler</code>, as libraries do: its warnings (a
 breaker that opens, maintenance turned on, a backend that fails) show once the app configures
@@ -5143,15 +5258,15 @@ loggers.</p>
 <p>Alcazaba only uses the OpenTelemetry API (the <code>otel</code> extra): it records nothing until the app
 configures an SDK, and never configures one itself. The simplest way is OpenTelemetry's own
 zero-code instrumentation, with the standard variables:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1">pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-distro<span class="w"> </span>opentelemetry-exporter-otlp
-</span><span id="__span-5-2">opentelemetry-bootstrap<span class="w"> </span>-a<span class="w"> </span>install<span class="w">  </span><span class="c1"># instrumentations for FastAPI, httpx2, redis, SQLAlchemy…</span>
-</span><span id="__span-5-3">
-</span><span id="__span-5-4"><span class="nv">OTEL_SERVICE_NAME</span><span class="o">=</span>shop-api<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-5"><span class="nv">OTEL_RESOURCE_ATTRIBUTES</span><span class="o">=</span>deployment.environment.name<span class="o">=</span>production<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-6"><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>https://collector.internal:4317<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-7"><span class="nv">OTEL_PYTHON_LOG_CORRELATION</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-8"><span class="nv">OTEL_PYTHON_FASTAPI_EXCLUDED_URLS</span><span class="o">=</span><span class="s2">"health/live,health/ready"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-9">opentelemetry-instrument<span class="w"> </span>uvicorn<span class="w"> </span>app:app
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1">pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-distro<span class="w"> </span>opentelemetry-exporter-otlp
+</span><span id="__span-7-2">opentelemetry-bootstrap<span class="w"> </span>-a<span class="w"> </span>install<span class="w">  </span><span class="c1"># instrumentations for FastAPI, httpx2, redis, SQLAlchemy…</span>
+</span><span id="__span-7-3">
+</span><span id="__span-7-4"><span class="nv">OTEL_SERVICE_NAME</span><span class="o">=</span>shop-api<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-5"><span class="nv">OTEL_RESOURCE_ATTRIBUTES</span><span class="o">=</span>deployment.environment.name<span class="o">=</span>production<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-6"><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>https://collector.internal:4317<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-7"><span class="nv">OTEL_PYTHON_LOG_CORRELATION</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-8"><span class="nv">OTEL_PYTHON_FASTAPI_EXCLUDED_URLS</span><span class="o">=</span><span class="s2">"health/live,health/ready"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-9">opentelemetry-instrument<span class="w"> </span>uvicorn<span class="w"> </span>app:app
 </span></code></pre></div>
 <p>Give the collector's endpoint explicitly, over TLS: traces and logs carry what your app does.
 Then Alcazaba adds to them:</p>
@@ -5162,7 +5277,9 @@ Then Alcazaba adds to them:</p>
   inside. Each run of a scheduled job is the root of a trace of its own
   (<code>fastapi_alcazaba.scheduler &lt;job&gt;</code>, failures recorded), so what the job does (queries, calls)
   is grouped under it instead of scattered. So is each run of a task (<code>fastapi_alcazaba.task
-  &lt;task&gt;</code>, with its queue, ID and attempt), linked to the span that enqueued it.</li>
+  &lt;task&gt;</code>, with its queue, ID and attempt), linked to the span that enqueued it, and each delivery
+  of the outbox (<code>fastapi_alcazaba.outbox &lt;topic&gt;</code>, with its outbox, message ID and attempt),
+  linked to the span that wrote the message.</li>
 <li><strong>On the request's span:</strong> the events <code>fastapi_alcazaba.rate_limit</code> (a request limited or
   unchecked), <code>fastapi_alcazaba.breaker.refused</code>, <code>.opened</code> and <code>.closed</code>,
   <code>fastapi_alcazaba.outbound.refused</code> (an outbound call to an origin whose breaker is open) and
@@ -5181,7 +5298,7 @@ Then Alcazaba adds to them:</p>
 <tbody>
 <tr>
 <td><code>fastapi_alcazaba.lookups</code></td>
-<td><code>fastapi_alcazaba.result</code> (hit, miss, refresh, bypass), <code>fastapi_alcazaba.namespace</code></td>
+<td><code>fastapi_alcazaba.result</code> (hit, miss, refresh, bypass, stale (served while it's refreshed), stale_if_error (served because computing failed)), <code>fastapi_alcazaba.namespace</code></td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.stores</code></td>
@@ -5201,7 +5318,7 @@ Then Alcazaba adds to them:</p>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.rate_limit</code></td>
-<td><code>fastapi_alcazaba.outcome</code> (allowed, limited, unchecked), <code>fastapi_alcazaba.limiter</code> (its name, or the route)</td>
+<td><code>fastapi_alcazaba.outcome</code> (allowed, limited, unchecked, exempt), <code>fastapi_alcazaba.limiter</code> (its name, or the route)</td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.breaker.calls</code></td>
@@ -5212,8 +5329,16 @@ Then Alcazaba adds to them:</p>
 <td><code>fastapi_alcazaba.state</code> (open, closed), <code>fastapi_alcazaba.breaker</code></td>
 </tr>
 <tr>
+<td><code>fastapi_alcazaba.breaker.open</code> (gauge)</td>
+<td><code>fastapi_alcazaba.breaker</code>: 1 while it's open</td>
+</tr>
+<tr>
 <td><code>fastapi_alcazaba.scheduler.runs</code></td>
 <td><code>fastapi_alcazaba.outcome</code> (ran, failed, skipped, overlapping, unchecked), <code>fastapi_alcazaba.job</code></td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.scheduler.duration</code></td>
+<td><code>fastapi_alcazaba.job</code>, <code>fastapi_alcazaba.outcome</code> (ran, failed)</td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.idempotency</code></td>
@@ -5222,6 +5347,10 @@ Then Alcazaba adds to them:</p>
 <tr>
 <td><code>fastapi_alcazaba.tokens.checks</code></td>
 <td><code>fastapi_alcazaba.outcome</code> (valid, revoked, unchecked)</td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.refresh</code></td>
+<td><code>fastapi_alcazaba.outcome</code> (issued, rotated, grace, malformed, unknown, forged, expired, revoked, reused, wrong_client, unchecked): any reused or wrong_client is a stolen token</td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.webauthn</code></td>
@@ -5264,6 +5393,10 @@ Then Alcazaba adds to them:</p>
 <td><code>fastapi_alcazaba.leader</code>, <code>fastapi_alcazaba.event</code> (elected, lost, resigned)</td>
 </tr>
 <tr>
+<td><code>fastapi_alcazaba.leader.is_leader</code> (gauge)</td>
+<td><code>fastapi_alcazaba.leader</code>: 1 in the process that leads, 0 in the others</td>
+</tr>
+<tr>
 <td><code>fastapi_alcazaba.maintenance.refused</code></td>
 <td>requests refused during maintenance</td>
 </tr>
@@ -5285,15 +5418,19 @@ Then Alcazaba adds to them:</p>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.outbound.breaker</code></td>
-<td><code>fastapi_alcazaba.event</code> (opened, refused), <code>server.address</code></td>
+<td><code>fastapi_alcazaba.event</code> (opened, refused); the host is in the log and the span event, not here: with URLs users give, its values would have no end</td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.outbound.ssrf.blocked</code></td>
 <td><code>fastapi_alcazaba.reason</code> (scheme, host, port, address)</td>
 </tr>
 <tr>
+<td><code>fastapi_alcazaba.webhooks.deliveries</code></td>
+<td><code>fastapi_alcazaba.outcome</code> (delivered, retrying, failed, disabled, skipped): attempts of <code>WebhookSender</code></td>
+</tr>
+<tr>
 <td><code>fastapi_alcazaba.webhooks</code></td>
-<td><code>fastapi_alcazaba.outcome</code> (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable)</td>
+<td><code>fastapi_alcazaba.scheme</code> (standard, github, stripe, slack), <code>fastapi_alcazaba.outcome</code> (accepted, replayed, rejected, malformed, too_large, unchecked, unavailable)</td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.api_keys</code></td>
@@ -5302,6 +5439,10 @@ Then Alcazaba adds to them:</p>
 <tr>
 <td><code>fastapi_alcazaba.auth</code></td>
 <td><code>fastapi_alcazaba.strategy</code>, <code>fastapi_alcazaba.outcome</code> (success, failure: credentials there but refused, unauthenticated: no strategy found a user)</td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.auth.jwks</code></td>
+<td><code>fastapi_alcazaba.strategy</code>, <code>fastapi_alcazaba.outcome</code> (fetched, failed): failures mean the provider's keys are getting old; past <code>jwks_stale</code> its tokens get a 503</td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.auth.unkey</code></td>
@@ -5333,11 +5474,35 @@ Then Alcazaba adds to them:</p>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.tasks</code></td>
-<td><code>fastapi_alcazaba.queue</code>, <code>fastapi_alcazaba.task</code>, <code>fastapi_alcazaba.outcome</code> (succeeded, retried, failed, interrupted; for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered)</td>
+<td><code>fastapi_alcazaba.queue</code>, <code>fastapi_alcazaba.task</code>, <code>fastapi_alcazaba.outcome</code> (succeeded, retried, failed, interrupted, cancelled (dropped without running); for refused tasks malformed, tampered, too_large, unknown_task, invalid_arguments, abandoned, with the task only when it's registered)</td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.tasks.duration</code></td>
 <td><code>fastapi_alcazaba.queue</code>, <code>fastapi_alcazaba.task</code>, <code>fastapi_alcazaba.outcome</code></td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.tasks.backlog</code> (gauge)</td>
+<td><code>fastapi_alcazaba.queue</code>, <code>fastapi_alcazaba.state</code> (queued, delayed): set by a <code>BacklogMonitor</code></td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.tasks.dead_letters</code> (gauge)</td>
+<td><code>fastapi_alcazaba.queue</code>: set by a <code>BacklogMonitor</code></td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.outbox</code></td>
+<td><code>fastapi_alcazaba.outbox</code> (its table), <code>fastapi_alcazaba.topic</code>, <code>fastapi_alcazaba.outcome</code> (delivered, retried, given_up)</td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.outbox.purged</code></td>
+<td><code>fastapi_alcazaba.outbox</code>: messages sent long ago that the relay deleted</td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.outbox.backlog</code> (gauge)</td>
+<td><code>fastapi_alcazaba.outbox</code> (its table): set by a <code>BacklogMonitor</code></td>
+</tr>
+<tr>
+<td><code>fastapi_alcazaba.outbox.oldest_age</code> (gauge)</td>
+<td><code>fastapi_alcazaba.outbox</code>: seconds, set by a <code>BacklogMonitor</code></td>
 </tr>
 <tr>
 <td><code>fastapi_alcazaba.tasks.reclaimed</code></td>
@@ -5381,16 +5546,16 @@ Then Alcazaba adds to them:</p>
 <p>One line of JSON per record, for the log pipeline to search (CloudWatch, Loki, Elasticsearch, a
 SIEM): <code>logging_config</code> sends every record, Uvicorn's included, to standard output through
 <code>JSONFormatter</code>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-</span><span id="__span-6-2">
-</span><span id="__span-6-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging_config</span>
-</span><span id="__span-6-4">
-</span><span id="__span-6-5"><span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"app:app"</span><span class="p">,</span> <span class="n">log_config</span><span class="o">=</span><span class="n">logging_config</span><span class="p">(</span><span class="n">static</span><span class="o">=</span><span class="p">{</span><span class="s2">"service"</span><span class="p">:</span> <span class="s2">"shop"</span><span class="p">}))</span>
-</span><span id="__span-6-6"><span class="c1"># or logging.config.dictConfig(logging_config(...)) at start, with uvicorn's --log-config</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+</span><span id="__span-8-2">
+</span><span id="__span-8-3"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.observability</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging_config</span>
+</span><span id="__span-8-4">
+</span><span id="__span-8-5"><span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"app:app"</span><span class="p">,</span> <span class="n">log_config</span><span class="o">=</span><span class="n">logging_config</span><span class="p">(</span><span class="n">static</span><span class="o">=</span><span class="p">{</span><span class="s2">"service"</span><span class="p">:</span> <span class="s2">"shop"</span><span class="p">}))</span>
+</span><span id="__span-8-6"><span class="c1"># or logging.config.dictConfig(logging_config(...)) at start, with uvicorn's --log-config</span>
 </span></code></pre></div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Order placed"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span> <span class="s2">"card_token"</span><span class="p">:</span> <span class="n">token</span><span class="p">})</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Order placed"</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span> <span class="s2">"card_token"</span><span class="p">:</span> <span class="n">token</span><span class="p">})</span>
 </span></code></pre></div>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-8-1"><span class="p">{</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-11-02T09:14:03.512+00:00"</span><span class="p">,</span><span class="nt">"level"</span><span class="p">:</span><span class="s2">"INFO"</span><span class="p">,</span><span class="nt">"logger"</span><span class="p">:</span><span class="s2">"shop.orders"</span><span class="p">,</span><span class="nt">"service"</span><span class="p">:</span><span class="s2">"shop"</span><span class="p">,</span><span class="nt">"message"</span><span class="p">:</span><span class="s2">"Order placed"</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"5f0c…"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="s2">"4bf9…"</span><span class="p">,</span><span class="nt">"span_id"</span><span class="p">:</span><span class="s2">"00f0…"</span><span class="p">,</span><span class="nt">"extra"</span><span class="p">:{</span><span class="nt">"order_id"</span><span class="p">:</span><span class="mi">42</span><span class="p">,</span><span class="nt">"card_token"</span><span class="p">:</span><span class="s2">"[redacted]"</span><span class="p">}}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-10-1"><span class="p">{</span><span class="nt">"time"</span><span class="p">:</span><span class="s2">"2026-11-02T09:14:03.512+00:00"</span><span class="p">,</span><span class="nt">"level"</span><span class="p">:</span><span class="s2">"INFO"</span><span class="p">,</span><span class="nt">"logger"</span><span class="p">:</span><span class="s2">"shop.orders"</span><span class="p">,</span><span class="nt">"service"</span><span class="p">:</span><span class="s2">"shop"</span><span class="p">,</span><span class="nt">"message"</span><span class="p">:</span><span class="s2">"Order placed"</span><span class="p">,</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"5f0c…"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="s2">"4bf9…"</span><span class="p">,</span><span class="nt">"span_id"</span><span class="p">:</span><span class="s2">"00f0…"</span><span class="p">,</span><span class="nt">"extra"</span><span class="p">:{</span><span class="nt">"order_id"</span><span class="p">:</span><span class="mi">42</span><span class="p">,</span><span class="nt">"card_token"</span><span class="p">:</span><span class="s2">"[redacted]"</span><span class="p">}}</span>
 </span></code></pre></div>
 <ul>
 <li><strong>What each line has:</strong> the time (UTC, to the millisecond), level, logger and message; the

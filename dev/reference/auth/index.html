@@ -4328,6 +4328,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.auth.TokenBlocklist.revoke_session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;revoke_session
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fastapi_alcazaba.auth.TokenBlocklist.is_revoked" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5570,6 +5581,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#fastapi_alcazaba.auth.TokenBlocklist.revoke_session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;revoke_session
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#fastapi_alcazaba.auth.TokenBlocklist.is_revoked" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6689,7 +6711,8 @@ function, which runs in a thread like FastAPI's sync dependencies.</p>
             <td>
               <div class="doc-md-description">
                 <p>the start of every key (<code>ak_...</code>): letters, digits and underscores, starting
-with a letter. Secret scanners (GitHub's, GitLab's) can be taught to spot it.</p>
+with a letter. Secret scanners (GitHub's, GitLab's) can be taught to spot it, and to
+check its checksum.</p>
               </div>
             </td>
             <td>
@@ -6983,7 +7006,8 @@ it after revoking a key, for this process to see it at once.</p>
 
 
 
-        <p>Revoked tokens (by their <code>jti</code>) and subjects logged out everywhere (<code>revoke_subject</code>).</p>
+        <p>Revoked tokens (by their <code>jti</code>), sessions (by their <code>sid</code>: every token of one login, see
+<code>RefreshTokens</code>) and subjects logged out everywhere (<code>revoke_subject</code>).</p>
 <div class="language-text highlight"><pre><span></span><code>blocklist = TokenBlocklist()
 
 async def current_user(claims: Annotated[dict[str, Any], Depends(decode_jwt)]) -&gt; str:
@@ -7157,6 +7181,32 @@ fails.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="fastapi_alcazaba.auth.TokenBlocklist.revoke_session" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">revoke_session</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#fastapi_alcazaba.auth.TokenBlocklist.revoke_session" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">revoke_session</span><span class="p">(</span><span class="n">session</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Refuse every token whose <code>sid</code> is <code>session</code> (one login, on one device), for <code>ttl</code>
+seconds: the longest lifetime of its tokens. Raises BackendUnavailable when the backend
+fails.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="fastapi_alcazaba.auth.TokenBlocklist.is_revoked" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">is_revoked</span>
 
@@ -7166,14 +7216,14 @@ fails.</p>
   </span>
 
 <a href="#fastapi_alcazaba.auth.TokenBlocklist.is_revoked" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">is_revoked</span><span class="p">(</span><span class="n">token_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">issued_at</span><span class="p">:</span> <span class="n">Moment</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">is_revoked</span><span class="p">(</span><span class="n">token_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">issued_at</span><span class="p">:</span> <span class="n">Moment</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Whether the token is refused: its <code>jti</code> was revoked, or its subject was logged out
-everywhere after it was issued (give its <code>sub</code> and <code>iat</code>). When the backend fails,
-<code>not fail_open</code>.</p>
+        <p>Whether the token is refused: its <code>jti</code> was revoked, its session (<code>sid</code>, give it as
+<code>session</code>) was, or its subject was logged out everywhere after it was issued (give its
+<code>sub</code> and <code>iat</code>). When the backend fails, <code>not fail_open</code>.</p>
 
 
     </div>
@@ -7205,7 +7255,8 @@ everywhere after it was issued (give its <code>sub</code> and <code>iat</code>).
 
 
         <p>Codes of <code>digits</code> digits, sent by e-mail or SMS, that prove who someone is: each lasts
-<code>ttl</code> seconds, works once and is lost after <code>max_attempts</code> wrong guesses.</p>
+<code>ttl</code> seconds, works once, and <code>subject</code> has <code>max_attempts</code> guesses for each <code>ttl</code> seconds,
+whatever the number of codes issued.</p>
 <div class="language-text highlight"><pre><span></span><code>codes = OneTimeCodes(secret=settings.otp_secret)
 
 code = await codes.issue(user.email, purpose="login")  # send it to the user
@@ -7215,8 +7266,11 @@ if not await codes.verify(form.email, form.code, purpose="login"):
 </code></pre></div>
 <p>The backend holds an HMAC of each code with <code>secret</code>, never the code: a plain digest of a
 6-digit code is brute-forced in milliseconds by whoever reads the backend. Issuing a code
-replaces the previous one and gives <code>max_attempts</code> again, so put a FastAPIRateLimiter on the
-route that issues them.</p>
+replaces the previous one, but doesn't give the guesses back: asking for code after code
+doesn't add up to more than <code>max_attempts</code> guesses each <code>ttl</code> seconds. Once they're used, the
+subject waits for the window to end (up to <code>ttl</code> seconds), new codes included; the right code
+starts the count again. Still put a FastAPIRateLimiter on the route that issues them: each
+code sent costs an e-mail or an SMS.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -7305,7 +7359,8 @@ each call.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>guesses allowed for each code, right or wrong.</p>
+                <p>guesses allowed for each subject and purpose in <code>ttl</code> seconds, right or
+wrong, across the codes issued.</p>
               </div>
             </td>
             <td>
@@ -7370,8 +7425,8 @@ each call.</p>
     <div class="doc doc-contents ">
 
         <p>A new code for <code>subject</code> (an e-mail address, a user id...) and <code>purpose</code> ("login",
-"reset-password"...), replacing the previous one. Raises BackendUnavailable when the
-backend fails.</p>
+"reset-password"...), replacing the previous one; the guesses already made still count.
+Raises BackendUnavailable when the backend fails.</p>
 
 
     </div>
@@ -7823,13 +7878,14 @@ someone else did (<code>stepup.verified_at</code>).</p>
 
 
 <a href="#fastapi_alcazaba.auth.FastAPITOTP.require_recent" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require_recent</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require_recent</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>A dependency that needs a second factor (this one, or a passkey) of the last
-<code>max_age</code> seconds in this session: <code>stepup.require_recent</code>.</p>
+<code>max_age</code> seconds in this session: <code>stepup.require_recent</code>, with its <code>methods</code>,
+<code>claims</code>, <code>acr_values</code> and <code>audit</code>.</p>
 
 
     </div>
@@ -8409,13 +8465,14 @@ for the routes of <code>require_recent</code>, and give the session a new id.</p
 
 
 <a href="#fastapi_alcazaba.auth.FastAPIWebAuthn.require_recent" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require_recent</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require_recent</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>A dependency that needs a second factor (a passkey, or a TOTP code) of the last
-<code>max_age</code> seconds in this session: <code>stepup.require_recent</code>.</p>
+<code>max_age</code> seconds in this session: <code>stepup.require_recent</code>, with its <code>methods</code> (e.g.
+<code>{"passkey"}</code> for passkeys only), <code>claims</code>, <code>acr_values</code> and <code>audit</code>.</p>
 
 
     </div>
@@ -8774,8 +8831,8 @@ up by, before <code>verify_authentication</code>.</p>
 
     <div class="doc doc-contents first">
 
-        <p>Note in the session that <code>user_id</code> just gave a second factor (<code>method</code>: "totp",
-"passkey"...), and give the session a new id (with ServerSessionMiddleware): it holds more
+        <p>Note in the session that <code>user_id</code> just authenticated with <code>method</code> ("totp", "passkey",
+"password"...), and give the session a new id (with ServerSessionMiddleware): it holds more
 privileges now.</p>
 
 
@@ -8812,15 +8869,92 @@ didn't, or someone else did.</p>
 
 
 <a href="#fastapi_alcazaba.auth.stepup.require_recent" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require_recent</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">require_recent</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">max_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">methods</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">claims</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">acr_values</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">subject</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">audit</span><span class="p">:</span> <span class="n">FastAPIAudit</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>A dependency that lets through the users who gave a second factor in the last <code>max_age</code>
-seconds in this session, and returns their ID; the others get a 403 ("Second factor
-required"), to ask for one and <code>mark</code> the session, and requests without a user a 401.
-<code>user_id</code> is a dependency that returns the request's user ID, or None.</p>
+        <p>A dependency that lets through the users who authenticated in the last <code>max_age</code> seconds,
+with one of <code>methods</code> when given, and returns their ID; requests without a user get a 401.</p>
+<ul>
+<li><strong>Sessions:</strong> the session's mark (<code>mark</code>) must be this user's, recent, and of one of
+  <code>methods</code> ("passkey", "totp"...). Otherwise a 403 problem (<code>PROBLEM_TYPE</code>, "Second factor
+  required") with <code>max_age</code> and <code>methods</code>, for the front end to ask for one and <code>mark</code> it.</li>
+<li><strong>Tokens:</strong> when <code>claims</code> (a dependency) gives the request's token claims (a dict), they
+  decide instead: the token must be the user's (its <code>sub</code> is <code>user_id</code>'s), with <code>auth_time</code>
+  within <code>max_age</code>, an <code>amr</code> among <code>methods</code> (RFC 8176's names: "hwk", "otp", "mfa"...), an
+  <code>acr</code> among <code>acr_values</code>. Otherwise a 401 with
+  <code>WWW-Authenticate: Bearer error="insufficient_user_authentication"</code> and the <code>max_age</code> and
+  <code>acr_values</code> to ask the provider for (RFC 9470), as a problem too.</li>
+<li><strong>Audited:</strong> with <code>audit</code>, each check is an <code>auth.stepup</code> event with the method and the
+  age (and the reason when it's refused).</li>
+</ul>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>user_id</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[..., <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>a dependency that returns the request's user ID, or None.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>claims</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[..., <span title="typing.Any">Any</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>a dependency that returns the token's claims when the request came with one
+(<code>auth.authenticate("jwt", optional=True)</code>), None for a session.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>subject</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]], <span title="typing.Any">Any</span>] | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the user ID a token's claims belong to, compared with <code>user_id</code>'s; the <code>sub</code>
+claim by default. A token of someone else (a fresh one of the attacker's own, sent with a
+stolen session) never steps anybody up.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
