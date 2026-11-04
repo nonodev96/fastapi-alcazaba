@@ -147,3 +147,6 @@ site/
 sbom/
 mutants/
 .benchmarks/
+
+.specify/
+specs/
