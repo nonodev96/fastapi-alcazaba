@@ -322,8 +322,9 @@ class TestStatus:
         queue.task("charge")(_charge)
         task_id = await queue.enqueue("charge", "4111-1111-1111-1111")
         record = await world.raw.hgetall(f"{queue._status}{task_id}")
-        assert b"4111" not in b"".join(record.values())
-        assert "4111" not in repr(await queue.status(task_id))
+        # Its dashes keep it from matching the task's ID, in hex, by chance.
+        assert b"4111-1111" not in b"".join(record.values())
+        assert "4111-1111" not in repr(await queue.status(task_id))
 
     async def test_it_expires_after_the_task_ends(self, world: World) -> None:
         queue = world.queue(status_ttl=60, replay_window=30)

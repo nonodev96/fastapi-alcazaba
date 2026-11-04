@@ -506,7 +506,7 @@ class TestRetries:
         stored = b"".join(b"".join(fields.values()) for fields in await world.dead_fields(queue))
         assert b"declined" not in stored
         messages = " ".join(record.getMessage() for record in caplog.records)
-        assert "4111" not in messages
+        assert "4111-1111" not in messages  # not "4111": hex task IDs may hold it
         assert "PaymentDeclined" in messages
 
     async def test_no_retries(self, world: World) -> None:
