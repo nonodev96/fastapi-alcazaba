@@ -59,7 +59,7 @@ $ curl -i http://127.0.0.1:8000/me -H "Authorization: Bearer alice"
 HTTP/1.1 200 OK
 cache-status: Alcazaba; fwd=miss; stored
 cache-control: private, max-age=30
-vary: Authorization, Cookie
+vary: Authorization, Cookie, X-Api-Key
 
 {"user":"alice"}
 ```

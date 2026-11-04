@@ -1,8 +1,9 @@
 """Warnings and exceptions of Alcazaba."""
 
 
-class UnsignedEntriesWarning(UserWarning):
-    """A coder whose decoding can run code (PickleCoder) is used without a signing key."""
+class UnsignedEntriesError(ValueError):
+    """A coder whose decoding can run code (PickleCoder) without a signing or encryption key:
+    whoever can write to the backend could run code in the app."""
 
 
 class UnstableCacheKeyWarning(UserWarning):

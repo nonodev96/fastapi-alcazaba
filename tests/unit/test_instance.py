@@ -173,7 +173,7 @@ async def test_the_configuration_through_class_methods() -> None:
     backend = InMemoryBackend()
     assert FastAPICache.get_enable() is True  # before init: defaults
     assert FastAPICache.get_expire() is None
-    assert FastAPICache.get_options().vary_headers == ("authorization", "cookie")
+    assert FastAPICache.get_options().vary_headers == ("authorization", "cookie", "x-api-key")
     assert not FastAPICache.get_metrics().enabled
     FastAPICache.init(backend, prefix="app", expire=30, cache_status="Shop-API")
     FastAPICache.init(InMemoryBackend(), prefix="ignored")  # later calls are ignored

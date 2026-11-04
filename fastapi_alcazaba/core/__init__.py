@@ -6,7 +6,7 @@ from fastapi_alcazaba.core.encryption import Encrypter
 from fastapi_alcazaba.core.errors import (
     BackendUnavailable,
     CircuitOpen,
-    UnsignedEntriesWarning,
+    UnsignedEntriesError,
     UnstableCacheKeyWarning,
     ValueTooLarge,
 )
@@ -23,7 +23,7 @@ __all__ = [
     "Secret",
     "Secrets",
     "Signer",
-    "UnsignedEntriesWarning",
+    "UnsignedEntriesError",
     "UnstableCacheKeyWarning",
     "ValueTooLarge",
 ]

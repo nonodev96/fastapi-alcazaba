@@ -31,7 +31,7 @@ from fastapi_alcazaba.response_cache.caches import (
     CacheOptions,
     FastAPICache,
     normalise_headers,
-    warn_unsigned,
+    refuse_unsigned,
 )
 from fastapi_alcazaba.response_cache.coder import Coder, JsonCoder, type_adapter_for
 from fastapi_alcazaba.response_cache.compression import decompress
@@ -54,7 +54,6 @@ R = TypeVar("R")
 
 # Misses being computed, by event loop and cache key (see `single_flight`).
 _in_flight: dict[tuple[int, str], "asyncio.Future[bytes | None]"] = {}
-_warned_coders: set[type[Coder]] = set()
 _UNUSABLE = object()
 # Entries being refreshed in the background by this process, by event loop and key, and the
 # asyncio tasks doing it outside routes (kept: the loop only holds weak references to tasks).
@@ -386,12 +385,6 @@ def _targets(response: Response | None, result: object) -> list[Response]:
     return targets
 
 
-def _warn_unsigned_once(coder: type[Coder]) -> None:
-    if coder not in _warned_coders:
-        _warned_coders.add(coder)
-        warn_unsigned(coder)
-
-
 def _pick(value: Any, default: Any) -> Any:
     return default if value is None else value
 
@@ -496,7 +489,7 @@ class _CachedCall:
         self.guard = self.config.guard
         self.protector = options.protector
         if self.coder.requires_signing and self.protector is None:
-            _warn_unsigned_once(self.coder)
+            refuse_unsigned(self.coder)
         await self._build_key()
 
         stale: bytes | None = None

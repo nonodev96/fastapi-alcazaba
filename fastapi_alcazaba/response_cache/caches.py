@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 from starlette.requests import HTTPConnection
 
 from fastapi_alcazaba.backends.base import Backend
-from fastapi_alcazaba.core.errors import UnsignedEntriesWarning
+from fastapi_alcazaba.core.errors import UnsignedEntriesError
 from fastapi_alcazaba.core.integrity import EntryProtector, Secrets, Signer
 from fastapi_alcazaba.core.resilience import BackendGuard, CircuitBreaker
 from fastapi_alcazaba.response_cache.coder import Coder, JsonCoder
@@ -28,7 +28,8 @@ T = TypeVar("T")
 
 #: Request headers that make each user's response different: by default each value gets its own
 #: cache entry, and the response says `Cache-Control: private` so shared proxies don't keep it.
-DEFAULT_VARY_HEADERS: tuple[str, ...] = ("authorization", "cookie")
+#: `X-API-Key` is FastAPIAPIKeys' header: add yours when the app reads credentials from another.
+DEFAULT_VARY_HEADERS: tuple[str, ...] = ("authorization", "cookie", "x-api-key")
 
 # A token of Structured Field Values (RFC 9651): what names a cache in Cache-Status.
 _TOKEN = re.compile(r"[A-Za-z*][!#$%&'*+\-.^_`|~0-9A-Za-z:/]*")
@@ -39,13 +40,12 @@ def normalise_headers(headers: Iterable[str]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(header.strip().lower() for header in headers if header.strip()))
 
 
-def warn_unsigned(coder: type[Coder]) -> None:
-    warnings.warn(
+def refuse_unsigned(coder: type[Coder]) -> None:
+    """Raise UnsignedEntriesError: `coder` can't be used without a signing or encryption key."""
+    raise UnsignedEntriesError(
         f"{coder.__name__} can run code when it reads an entry that someone else wrote to the "
         "backend; pass signing_key=... or encryption_key=... so that Alcazaba only reads entries "
-        "it wrote itself",
-        UnsignedEntriesWarning,
-        stacklevel=4,
+        "it wrote itself"
     )
 
 
@@ -98,9 +98,9 @@ class Cache:
     :param enable: False turns the cache off.
     :param signing_key: secret (at least 32 bytes; text, bytes, or pydantic's SecretStr or
         SecretBytes) used to sign every entry with HMAC-SHA256; entries without a valid signature
-        are ignored. Strongly recommended when the backend is
-        shared or reachable by others, and needed for PickleCoder. A list of keys rotates them:
-        the first one signs, all of them are accepted.
+        are ignored. Strongly recommended when the backend is shared or reachable by others,
+        and needed for PickleCoder (UnsignedEntriesError without it). A list of keys rotates
+        them: the first one signs, all of them are accepted.
     :param encryption_key: like `signing_key`, but the entries are also encrypted (AES-256-GCM):
         a dump or a backup of the backend doesn't reveal the cached responses. Needs the `crypto`
         extra. Use one or the other, not both.
@@ -203,7 +203,7 @@ class Cache:
         self.tracer = Tracer(enabled=tracing, tracer_provider=tracer_provider, version=__version__)
         self.guard = BackendGuard(backend_timeout, breaker, self.metrics, self.tracer)
         if coder.requires_signing and protector is None:
-            warn_unsigned(coder)
+            refuse_unsigned(coder)
         if distributed_lock and not backend.supports_locks:
             warnings.warn(
                 f"{type(backend).__name__} can't hold locks: distributed_lock does nothing",

@@ -222,6 +222,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   1 MiB, `MemcachedBackend(max_value_size=...)` for servers with `-I`) is refused before it's
   sent (`ValueTooLarge`), without counting against the circuit breaker: five large responses
   opened it for 30 s, for the cache, the limits and idempotency.
+- Task queue: a finished task's status record lasts as long as its payload is valid
+  (`replay_window`), not only `status_ttl`, and `requeue_dead_letters` reads staleness from the
+  sealed payload, not from the reason written next to it: a copy written straight to the dead
+  letters days after its task ran, or one marked as failed when it's stale, stays there.
+- The response cache varies on `X-API-Key` too (FastAPIAPIKeys' header) by default: two API
+  clients no longer share an entry of an endpoint that doesn't take the key as an argument.
+- `PickleCoder` without a `signing_key` or `encryption_key` raises `UnsignedEntriesError`
+  (which replaces `UnsignedEntriesWarning`; `refuse_unsigned` replaces `warn_unsigned`): unsigned
+  pickle runs whatever someone wrote to the backend.
 - The `fastapi_alcazaba.outbound.breaker` metric no longer has `server.address`: with the URLs
   users give (webhooks), its values had no end. The host stays in the log and the span event.
 

@@ -326,14 +326,25 @@ class TestStatus:
         assert "4111" not in repr(await queue.status(task_id))
 
     async def test_it_expires_after_the_task_ends(self, world: World) -> None:
-        queue = world.queue(status_ttl=60)
+        queue = world.queue(status_ttl=60, replay_window=30)
         queue.task("job")(_noop)
         task_id = await queue.enqueue("job")
         ttl = await world.raw.pttl(f"{queue._status}{task_id}")
         assert ttl > queue.replay_window * 1000  # the task's deadline, and then status_ttl
         async with queue:
             await eventually(lambda: _is(queue, task_id, "succeeded"))
-        assert 0 < await world.raw.pttl(f"{queue._status}{task_id}") <= 60_000
+        assert 30_000 < await world.raw.pttl(f"{queue._status}{task_id}") <= 60_000
+
+    async def test_it_lasts_as_long_as_the_payload(self, world: World) -> None:
+        """What tells a copy of a task that ran from a dead letter: kept while a copy could be
+        valid, even with a short status_ttl."""
+        queue = world.queue(status_ttl=60)
+        queue.task("job")(_noop)
+        task_id = await queue.enqueue("job")
+        async with queue:
+            await eventually(lambda: _is(queue, task_id, "succeeded"))
+        ttl = await world.raw.pttl(f"{queue._status}{task_id}")
+        assert ttl > (queue.replay_window - 60) * 1000
 
     async def test_unknown_and_malformed_ids(self, world: World) -> None:
         queue = world.queue()

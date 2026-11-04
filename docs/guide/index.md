@@ -91,7 +91,7 @@ content-type: application/json
 etag: W/"d5c916899a1291fccfef605e3d4ede40"
 cache-status: Alcazaba; fwd=miss; stored
 cache-control: max-age=60
-vary: Authorization, Cookie
+vary: Authorization, Cookie, X-Api-Key
 
 {"name":"Olive oil","price":9.5}
 
@@ -101,7 +101,7 @@ content-type: application/json
 etag: W/"d5c916899a1291fccfef605e3d4ede40"
 cache-status: Alcazaba; hit; ttl=60
 cache-control: max-age=60
-vary: Authorization, Cookie
+vary: Authorization, Cookie, X-Api-Key
 
 {"name":"Olive oil","price":9.5}
 ```
@@ -150,9 +150,10 @@ header of each response.
 
 !!! note "Technical details"
 
-    Each user gets entries of their own: requests with an `Authorization` or `Cookie` header
-    have their own keys, and their responses are sent as `Cache-Control: private`. That's what
-    `vary: Authorization, Cookie` tells browsers and proxies. `Cache-Status` is the header of
+    Each user gets entries of their own: requests with an `Authorization`, `Cookie` or
+    `X-API-Key` header have their own keys, and their responses are sent as
+    `Cache-Control: private`. That's what `vary: Authorization, Cookie, X-Api-Key` tells
+    browsers and proxies. `Cache-Status` is the header of
     [RFC 9211](https://www.rfc-editor.org/rfc/rfc9211), and the `ETag` lets clients revalidate
     with `If-None-Match` and get a `304 Not Modified`. The [response cache](cache.md) page
     has the rest: shared entries, keys, signed entries.
@@ -275,7 +276,7 @@ ratelimit-policy: "5/60s";q=5;w=60
 etag: W/"615d43a0044f76d19c5f354c5be3a495"
 cache-status: Alcazaba; fwd=miss; stored
 cache-control: max-age=60
-vary: Authorization, Cookie
+vary: Authorization, Cookie, X-Api-Key
 
 {"name":"Olive oil","price":8.0}
 ```

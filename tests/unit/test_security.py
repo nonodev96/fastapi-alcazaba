@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, SecretBytes, SecretStr
 from starlette.testclient import TestClient
 
-from fastapi_alcazaba import FastAPICache, UnsignedEntriesWarning
+from fastapi_alcazaba import FastAPICache, UnsignedEntriesError
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.core import Signer
 from fastapi_alcazaba.response_cache import PickleCoder, cache, decorator
@@ -65,13 +65,24 @@ class TestPerUserEntries:
         assert served(response.headers) == "miss"
         assert len(calls) == 2
 
+    def test_api_keys_get_their_own_entries(self) -> None:
+        """FastAPIAPIKeys' header: two clients' keys never share a response."""
+        FastAPICache.init(InMemoryBackend())
+        app, calls = make_app()
+        with TestClient(app) as client:
+            client.get("/me", headers={"X-API-Key": "ak_one"})
+            response = client.get("/me", headers={"X-API-Key": "ak_two"})
+        assert served(response.headers) == "miss"
+        assert response.headers["Cache-Control"] == "private, max-age=60"
+        assert len(calls) == 2
+
     def test_per_user_responses_are_private(self) -> None:
         FastAPICache.init(InMemoryBackend())
         app, _ = make_app()
         with TestClient(app) as client:
             response = client.get("/me", headers={"Authorization": "Bearer alice"})
         assert response.headers["Cache-Control"] == "private, max-age=60"
-        assert response.headers["Vary"] == "Authorization, Cookie"
+        assert response.headers["Vary"] == "Authorization, Cookie, X-Api-Key"
 
     def test_anonymous_responses_are_shared_but_say_what_they_vary_on(self) -> None:
         FastAPICache.init(InMemoryBackend())
@@ -81,7 +92,7 @@ class TestPerUserEntries:
             response = client.get("/me")
         assert served(response.headers) == "hit"
         assert response.headers["Cache-Control"] == "max-age=60"
-        assert response.headers["Vary"] == "Authorization, Cookie"
+        assert response.headers["Vary"] == "Authorization, Cookie, X-Api-Key"
         assert calls == ["anonymous"]
 
     def test_public_endpoints_can_opt_out(self) -> None:
@@ -192,24 +203,29 @@ class TestSignedEntries:
 
 
 class TestPickleCoderNeedsSigning:
-    def test_warns_at_init(self) -> None:
-        with pytest.warns(UnsignedEntriesWarning, match="PickleCoder"):
+    """Unsigned pickle runs whatever someone wrote to the backend: refused, not warned about."""
+
+    def test_refused_at_init(self) -> None:
+        with pytest.raises(UnsignedEntriesError, match="PickleCoder"):
             FastAPICache.init(InMemoryBackend(), coder=PickleCoder)
 
-    def test_no_warning_with_a_signing_key(self) -> None:
+    def test_with_a_signing_key(self) -> None:
         with warnings.catch_warnings():
             warnings.simplefilter("error")
             FastAPICache.init(InMemoryBackend(), coder=PickleCoder, signing_key=KEY)
 
-    async def test_warns_when_an_endpoint_uses_it(self) -> None:
+    async def test_refused_when_an_endpoint_uses_it(self) -> None:
         FastAPICache.init(InMemoryBackend())
+        ran = []
 
         @cache(coder=PickleCoder)
         async def pickled() -> int:
+            ran.append(1)
             return 1
 
-        with pytest.warns(UnsignedEntriesWarning):
-            assert await pickled() == 1
+        with pytest.raises(UnsignedEntriesError):
+            await pickled()
+        assert not ran
 
 
 class TestOnlySuccessfulResponsesAreCached:

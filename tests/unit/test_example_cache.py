@@ -72,7 +72,7 @@ class TestPersonalEntries:
         ]
         assert bob.json() == {"user": "bob"}
         assert bob.headers["cache-control"] == "private, max-age=30"
-        assert bob.headers["vary"] == "Authorization, Cookie"
+        assert bob.headers["vary"] == "Authorization, Cookie, X-Api-Key"
 
     def test_anonymous_requests_are_refused(self, client: TestClient) -> None:
         assert client.get("/me").status_code == 401

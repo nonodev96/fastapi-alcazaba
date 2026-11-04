@@ -26,7 +26,7 @@ from fastapi_alcazaba.background import (
 )
 from fastapi_alcazaba.core import (
     BackendUnavailable,
-    UnsignedEntriesWarning,
+    UnsignedEntriesError,
     UnstableCacheKeyWarning,
 )
 from fastapi_alcazaba.mail import FastAPIMail
@@ -49,7 +49,7 @@ from fastapi_alcazaba.response_cache import (
     default_key_builder,
     get_cache,
 )
-from fastapi_alcazaba.response_cache.caches import normalise_headers, warn_unsigned
+from fastapi_alcazaba.response_cache.caches import normalise_headers, refuse_unsigned
 from fastapi_alcazaba.uploads import FastAPIUploads
 from fastapi_alcazaba.webhooks import FastAPIWebhooks
 
@@ -91,10 +91,10 @@ __all__ = [
     "JsonCoder",
     "KeyBuilder",
     "Problem",
-    "UnsignedEntriesWarning",
+    "UnsignedEntriesError",
     "UnstableCacheKeyWarning",
     "default_key_builder",
     "get_cache",
     "normalise_headers",
-    "warn_unsigned",
+    "refuse_unsigned",
 ]

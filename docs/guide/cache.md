@@ -26,7 +26,7 @@ Call it once, at startup (in the `lifespan`).
 | `compression` | `None` | `"zstd"` or `"zlib"`: store large entries compressed |
 | `compression_min_size` | `1024` | bytes; smaller entries aren't compressed |
 | `compression_level` | codec's default | |
-| `vary_headers` | `("authorization", "cookie")` | request headers that give each value its own entry |
+| `vary_headers` | `("authorization", "cookie", "x-api-key")` | request headers that give each value its own entry: add any other header the app reads credentials from |
 | `respect_cache_control` | `False` | let clients skip the cache with `no-cache`/`no-store` |
 | `single_flight` | `True` | concurrent misses for one key compute once, per process |
 | `backend_timeout` | `1.0` | seconds a backend call may take before the request goes on without cache |
@@ -93,8 +93,8 @@ What each response is sent with, miss or hit:
 2. Else the endpoint's own `Cache-Control`, as it set it.
 3. Else `max-age`, the time the entry has left (and `stale-while-revalidate`).
 
-An entry of one user (a request with `Authorization` or `Cookie`, see `vary_headers`) is
-`private` whatever these say. A 304 repeats the response's `Cache-Control`, `Expires`, `Vary`
+An entry of one user (a request with `Authorization`, `Cookie` or `X-API-Key`, see
+`vary_headers`) is `private` whatever these say. A 304 repeats the response's `Cache-Control`, `Expires`, `Vary`
 and `Content-Location`. `no-store` isn't a directive to configure: set on the response, it keeps
 it out of the cache.
 
@@ -255,7 +255,8 @@ async def products() -> list[Product]: ...
 ```
 
 `PickleCoder` stores any picklable object. Unpickling runs code chosen by whoever wrote the
-bytes: use it only with a `signing_key` or an `encryption_key` (Alcazaba warns otherwise).
+bytes: it needs a `signing_key` or an `encryption_key`, and without one `FastAPICache.init`
+(or the first call of an endpoint that asks for it) raises `UnsignedEntriesError`.
 
 A custom coder subclasses `fastapi_alcazaba.Coder`:
 

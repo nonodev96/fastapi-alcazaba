@@ -644,6 +644,41 @@ class TestRefusedTasks:
         await self.run(queue)
         assert ran == [42]
 
+    async def test_a_copy_planted_after_status_ttl_stays(self, world: World) -> None:
+        """Past status_ttl but within its payload's deadline, a copy written straight to the dead
+        letters as failed: its task's status is kept that long, and still says it ran."""
+        queue = world.queue(status_ttl=0.05)
+        ran = []
+
+        @queue.task("refund")
+        async def refund(order_id: int) -> None:
+            ran.append(order_id)
+
+        captured = sealed(queue, body("refund", 42))
+        await world.plant(queue, {"p": captured})
+        await self.run(queue)
+        await asyncio.sleep(0.2)  # past status_ttl: the record lasts as long as the payload
+        await world.raw.xadd(queue._dead, {"p": captured, "reason": "failed"})
+        assert await queue.requeue_dead_letters() == 0
+        await self.run(queue)
+        assert ran == [42]
+
+    async def test_a_stale_copy_buried_for_another_reason_stays(self, world: World) -> None:
+        """Its sealed deadline says it's stale, whatever reason was written next to it."""
+        queue = world.queue()
+        ran = []
+
+        @queue.task("job")
+        async def job() -> None:
+            ran.append(1)
+
+        old = sealed(queue, {**body("job"), "until": time.time() - 1})
+        await world.raw.xadd(queue._dead, {"p": old, "reason": "failed"})
+        assert await queue.requeue_dead_letters() == 0
+        assert await queue.requeue_dead_letters(stale=True) == 1
+        await self.run(queue)
+        assert ran == [1]
+
     async def test_stale_tasks_are_refused(self, world: World) -> None:
         queue = world.queue()
         ran = []

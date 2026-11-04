@@ -585,7 +585,9 @@ class FastAPITaskQueue:
     :param replay_window: seconds a task may wait in the queue after it's due; later, it's
         refused as stale and goes to the dead letters (`requeue_dead_letters()` sends it again).
         Its run id is kept that long, so that a copy of it is refused.
-    :param status_ttl: seconds the status record of a task (`status()`) is kept after it ends.
+    :param status_ttl: seconds the status record of a task (`status()`) is kept after it ends;
+        never less than its payload stays valid (`replay_window`): the record is what tells a
+        dead letter from a copy of a task that ran (`requeue_dead_letters`).
     """
 
     def __init__(
@@ -1172,8 +1174,13 @@ class FastAPITaskQueue:
             state,
             body["id"],
             repr(time.time()),
-            _ms(self.status_ttl),
+            _ms(self._status_lifetime(body)),
         )
+
+    def _status_lifetime(self, body: dict[str, Any]) -> float:
+        """Seconds a finished task's status record lasts: `status_ttl`, and at least as long as
+        its payload is valid, so that a copy of it written to the dead letters is told apart."""
+        return max(self.status_ttl, float(body["until"]) - time.time())
 
     async def _run(self, entry: _Entry, task: _Task, body: dict[str, Any]) -> None:
         assert self._resolved is not None  # noqa: S101  # resolved by start()
@@ -1342,7 +1349,7 @@ class FastAPITaskQueue:
             str(attempts),
             repr(time.time()),
             "1" if status and body is not None else "",
-            _ms(self.status_ttl),
+            _ms(self._status_lifetime(body) if body is not None else self.status_ttl),
         )
 
     # endregion
@@ -1436,15 +1443,16 @@ class FastAPITaskQueue:
         async with contextlib.aclosing(self._dead_entries(dead_ids)) as entries:
             async for dead_id, fields in entries:
                 body = self._open(fields.get(b"p", b""))
-                buried_for = _text(fields.get(b"reason", b""))
                 if isinstance(body, str):
                     why = _REASONS[body]
                 elif body["task"] not in self._tasks:
                     why = _REASONS["unknown_task"]
-                elif buried_for == "replayed" or (buried_for == "stale" and not stale):
-                    why = (
-                        f"{_REASONS[buried_for]} (requeue_dead_letters(stale=True) for stale ones)"
-                    )
+                elif _text(fields.get(b"reason", b"")) == "replayed":
+                    why = _REASONS["replayed"]
+                # Whoever writes to the backend can write any reason next to a payload: only its
+                # sealed deadline is trusted to say it's stale.
+                elif body["until"] < time.time() and not stale:
+                    why = f"{_REASONS['stale']} (requeue_dead_letters(stale=True) to requeue it)"
                 elif (done := await self._requeue(dead_id, body)) >= 0:
                     requeued += done
                     continue
