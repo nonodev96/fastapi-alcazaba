@@ -37,6 +37,7 @@ from starlette.status import (
 )
 
 from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, Strategy, call
+from fastapi_alcazaba.core.asgi import mark_credential_header
 from fastapi_alcazaba.telemetry.metrics import Metrics
 
 try:
@@ -405,6 +406,8 @@ class UnkeyStrategy(Strategy):
     def _key(self, connection: HTTPConnection) -> str | None:
         if self.header is not None:
             key = connection.headers.get(self.header)
+            if key is not None:
+                mark_credential_header(connection.scope, self.header)
             return None if key is None else key.strip()
         scheme, _, token = connection.headers.get("authorization", "").partition(" ")
         return token.strip() if scheme.lower() == "bearer" else None

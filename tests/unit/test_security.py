@@ -76,6 +76,36 @@ class TestPerUserEntries:
         assert response.headers["Cache-Control"] == "private, max-age=60"
         assert len(calls) == 2
 
+    def test_a_custom_api_key_header_gets_its_own_entries(self) -> None:
+        """The header FastAPIAPIKeys reads a key from, whatever its name, varies the cache: the
+        strategy says so in the request's state."""
+        from fastapi_alcazaba.auth import FastAPIAPIKeys
+
+        FastAPICache.init(InMemoryBackend())
+        records: dict[str, Any] = {}
+        keys = FastAPIAPIKeys(records.get, header="X-Tenant-Key")
+        one, two = keys.generate(), keys.generate()
+        records.update({one.record.id: one.record, two.record.id: two.record})
+        calls: list[str] = []
+        app = FastAPI()
+
+        @app.get("/orders", dependencies=[Depends(keys)])
+        @cache(expire=60)
+        async def orders(request: Request) -> dict[str, str]:
+            calls.append(request.headers["x-tenant-key"])
+            return {"tenant": request.headers["x-tenant-key"][:19]}
+
+        with TestClient(app) as client:
+            first = client.get("/orders", headers={"X-Tenant-Key": one.key})
+            other = client.get("/orders", headers={"X-Tenant-Key": two.key})
+            again = client.get("/orders", headers={"X-Tenant-Key": one.key})
+        assert other.json() != first.json()
+        assert served(other.headers) == "miss"
+        assert served(again.headers) == "hit"
+        assert other.headers["Cache-Control"] == "private, max-age=60"
+        assert "X-Tenant-Key" in other.headers["Vary"]
+        assert len(calls) == 2
+
     def test_per_user_responses_are_private(self) -> None:
         FastAPICache.init(InMemoryBackend())
         app, _ = make_app()

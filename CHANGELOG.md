@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-04
+
 ### Added
 
 - `RefreshTokens`: refresh tokens for `JWTStrategy`'s access tokens. Each exchange gives a new
@@ -231,6 +233,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `PickleCoder` without a `signing_key` or `encryption_key` raises `UnsignedEntriesError`
   (which replaces `UnsignedEntriesWarning`; `refuse_unsigned` replaces `warn_unsigned`): unsigned
   pickle runs whatever someone wrote to the backend.
+- The response cache also varies on the header `FastAPIAPIKeys` or `UnkeyStrategy` read a key
+  from, whatever its name (`header="X-Tenant-Key"`): the strategies name it in the request's
+  state (`mark_credential_header`), unless the endpoint says `vary_headers=()`.
 - The `fastapi_alcazaba.outbound.breaker` metric no longer has `server.address`: with the URLs
   users give (webhooks), its values had no end. The host stays in the log and the span event.
 

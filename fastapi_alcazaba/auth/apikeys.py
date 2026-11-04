@@ -42,7 +42,9 @@ from typing import Annotated, Any, Generic, NamedTuple, Protocol, TypeVar
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from starlette.concurrency import run_in_threadpool
+from starlette.requests import HTTPConnection
 
+from fastapi_alcazaba.core.asgi import mark_credential_header
 from fastapi_alcazaba.core.integrity import Secrets, secret_list
 from fastapi_alcazaba.telemetry.metrics import Metrics
 
@@ -210,6 +212,9 @@ class FastAPIAPIKeys(Generic[R]):
         self._records: OrderedDict[str, tuple[float, R]] = OrderedDict()
         parameters = [
             inspect.Parameter(
+                "connection", inspect.Parameter.KEYWORD_ONLY, annotation=HTTPConnection
+            ),
+            inspect.Parameter(
                 "api_key",
                 inspect.Parameter.KEYWORD_ONLY,
                 default=None,
@@ -217,7 +222,7 @@ class FastAPIAPIKeys(Generic[R]):
                     str | None,
                     Security(APIKeyHeader(name=header, scheme_name=scheme_name, auto_error=False)),
                 ],
-            )
+            ),
         ]
         if bearer:
             parameters.append(
@@ -237,9 +242,13 @@ class FastAPIAPIKeys(Generic[R]):
     async def __call__(
         self,
         *,
+        connection: HTTPConnection | None = None,
         api_key: str | None = None,
         authorization: HTTPAuthorizationCredentials | None = None,
     ) -> R:
+        if api_key and connection is not None:
+            # For the response cache: each key gets entries of its own, whatever the header.
+            mark_credential_header(connection.scope, self.header)
         if not api_key and authorization is not None and self.bearer:
             api_key = authorization.credentials
         return await self.authenticate(api_key)

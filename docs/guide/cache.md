@@ -26,7 +26,7 @@ Call it once, at startup (in the `lifespan`).
 | `compression` | `None` | `"zstd"` or `"zlib"`: store large entries compressed |
 | `compression_min_size` | `1024` | bytes; smaller entries aren't compressed |
 | `compression_level` | codec's default | |
-| `vary_headers` | `("authorization", "cookie", "x-api-key")` | request headers that give each value its own entry: add any other header the app reads credentials from |
+| `vary_headers` | `("authorization", "cookie", "x-api-key")` | request headers that give each value its own entry. The header `FastAPIAPIKeys` or `UnkeyStrategy` read a key from counts too, whatever its name; add any other header the app reads credentials from itself |
 | `respect_cache_control` | `False` | let clients skip the cache with `no-cache`/`no-store` |
 | `single_flight` | `True` | concurrent misses for one key compute once, per process |
 | `backend_timeout` | `1.0` | seconds a backend call may take before the request goes on without cache |

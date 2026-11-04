@@ -12,6 +12,21 @@ TOKEN = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+")
 #: Where in the request's state the rate limiters leave their headers, for the error responses
 #: that FastAPIProblemDetails builds (FastAPI doesn't give them the dependencies' headers).
 RATE_LIMIT_HEADERS = "fastapi_alcazaba_rate_limit_headers"
+#: Where in the request's state the authentication strategies name the headers they read a
+#: credential from, for the response cache to give each value an entry of its own.
+CREDENTIAL_HEADERS = "fastapi_alcazaba_credential_headers"
+
+
+def mark_credential_header(scope: Scope, name: str) -> None:
+    """Say that the request's header `name` carries a credential: the response cache then varies
+    on it, as on `Authorization`, whatever its `vary_headers`."""
+    state = scope.setdefault("state", {})
+    state.setdefault(CREDENTIAL_HEADERS, set()).add(name.lower())
+
+
+def credential_headers(scope: Scope) -> tuple[str, ...]:
+    """The headers `mark_credential_header` named for this request, in order."""
+    return tuple(sorted(scope.get("state", {}).get(CREDENTIAL_HEADERS, ())))
 
 
 def route_path(scope: Scope) -> str:

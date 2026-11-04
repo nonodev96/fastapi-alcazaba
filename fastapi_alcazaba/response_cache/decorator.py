@@ -22,6 +22,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_304_NOT_MODIFIED
 
 from fastapi_alcazaba.backends.base import Backend
+from fastapi_alcazaba.core.asgi import credential_headers
 from fastapi_alcazaba.core.errors import BackendUnavailable, CircuitOpen, UnstableCacheKeyWarning
 from fastapi_alcazaba.core.integrity import EntryProtector
 from fastapi_alcazaba.core.resilience import BackendGuard
@@ -624,8 +625,12 @@ class _CachedCall:
         cache_key = await built_key if isawaitable(built_key) else built_key
         if not isinstance(cache_key, str):
             raise TypeError(f"the key builder returned {type(cache_key).__name__}, not str")
-        # Whatever the key builder, a user's response is never served to another one.
+        # Whatever the key builder, a user's response is never served to another one: the
+        # headers the strategies read credentials from count too, unless the endpoint said its
+        # response is the same for everybody (`vary_headers=()`).
         vary = _pick(endpoint.vary_headers, self.options.vary_headers)
+        if vary and self.request is not None:
+            vary = (*vary, *(h for h in credential_headers(self.request.scope) if h not in vary))
         vary_digest = _vary_digest(self.request, vary)
         if vary_digest is not None:
             cache_key = f"{cache_key}:vary:{vary_digest}"
