@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import Awaitable, Callable, Coroutine
 from typing import Any, assert_type
 
+from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -14,6 +15,16 @@ from fastapi_alcazaba.auth import RefreshTokens, TokenBlocklist, TokenPair
 from fastapi_alcazaba.auth.strategies.jwt import JWTKey, JWTStrategy
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.background import FastAPITaskQueue, TaskStatus
+from fastapi_alcazaba.countries import Country, CountryCode, country
+from fastapi_alcazaba.countries.spain import (
+    NIF,
+    Province,
+    ProvinceCode,
+    SpanishId,
+    SpanishIdKind,
+    parse_spanish_id,
+    province,
+)
 from fastapi_alcazaba.pagination.cursor import CursorPage, PaginationCursor
 from fastapi_alcazaba.pagination.keyset import KeysetPage, PaginationKeyset
 from fastapi_alcazaba.pagination.offset import OffsetPage, PaginationOffset
@@ -136,6 +147,25 @@ async def test_jwt_key_types() -> None:
     await strategy.aclose()
 
 
+class Customer(BaseModel):
+    country: CountryCode
+    nif: NIF
+    province: ProvinceCode
+
+
+def test_country_types() -> None:
+    assert_type(country("ES"), Country)
+    assert_type(country(724).alpha_3, str)
+    assert_type(country("ES").official_name, str | None)
+    assert_type(province(28), Province)
+    assert_type(parse_spanish_id("12345678Z"), SpanishId)
+    assert_type(parse_spanish_id("12345678Z", kinds={SpanishIdKind.DNI}).kind, SpanishIdKind)
+    customer = Customer(country="es", nif="12345678z", province=ProvinceCode.MADRID)
+    assert_type(customer.country, str)
+    assert_type(customer.nif, str)
+    assert customer.nif == "12345678Z"
+
+
 async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checked
     # pylint: disable=no-member  # wrong on purpose: mypy must refuse each of these calls
     await async_function("1")  # type: ignore[arg-type]
@@ -156,3 +186,7 @@ async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checke
     RefreshTokens(JWTStrategy("j" * 32), secret="r" * 32, grace="10")  # type: ignore[arg-type]
     JWTKey("k" * 32)  # type: ignore[call-arg]  # pylint: disable=missing-kwoa
     JWTStrategy(keys=[JWTKey("k" * 32, algorithm="HS256")], jwks_stale="1")  # type: ignore[arg-type]
+    country(None)  # type: ignore[arg-type]
+    parse_spanish_id(12345678)  # type: ignore[arg-type]
+    parse_spanish_id("12345678Z", kinds="DNI")  # type: ignore[arg-type]
+    province(ProvinceCode.MADRID).community.provinces.append(None)  # type: ignore[attr-defined]

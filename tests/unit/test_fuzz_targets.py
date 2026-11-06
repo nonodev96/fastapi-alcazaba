@@ -14,6 +14,7 @@ from hypothesis import strategies as st
 from fuzz import (
     audit_fuzzer,
     compression_fuzzer,
+    countries_fuzzer,
     cursors_fuzzer,
     entries_fuzzer,
     refresh_fuzzer,
@@ -27,6 +28,7 @@ from fuzz import (
 TARGETS = [
     audit_fuzzer,
     compression_fuzzer,
+    countries_fuzzer,
     cursors_fuzzer,
     entries_fuzzer,
     refresh_fuzzer,
@@ -114,6 +116,19 @@ def test_random_inputs(module: ModuleType, data: bytes) -> None:
         (stamps_fuzzer, b"\xff\n"),
         (stamps_fuzzer, b'{"e": 1e999, "g": {}}\n'),
         (stamps_fuzzer, b'{"e": false, "g": {}}\n'),
+        # Countries and Spanish IDs: "ß" is "SS" (South Sudan) once uppercased, Unicode digits,
+        # a NIE with no digits, each kind, a postal code with spaces, a province by ISO code.
+        (countries_fuzzer, "ß".encode()),
+        (countries_fuzzer, "\u0667\u0662\u0664".encode()),
+        (countries_fuzzer, b" 004 "),
+        (countries_fuzzer, b"XT"),
+        (countries_fuzzer, b"12.345.678-z"),
+        (countries_fuzzer, b"x-123456-s"),
+        (countries_fuzzer, b"K0123456S"),
+        (countries_fuzzer, b"G0012345E"),
+        (countries_fuzzer, b" 18001 "),
+        (countries_fuzzer, b"es-gr"),
+        (countries_fuzzer, b"-" * 21),
     ],
 )
 def test_known_cases(module: ModuleType, data: bytes) -> None:

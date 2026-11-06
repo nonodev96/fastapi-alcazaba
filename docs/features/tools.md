@@ -120,6 +120,13 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
     Signed URLs and upload forms for S3, R2 or MinIO: files go straight from the browser, bounded
     in size and type.
 
+-   :material-earth:{ .lg .middle } __[Countries and Spain](../guide/countries.md)__
+
+    ---
+
+    ISO 3166-1's countries by any code, and Spain's provinces, postal codes and tax IDs (DNI,
+    NIE, CIF) checked by their control character, as Pydantic fields.
+
 -   :material-email-fast:{ .lg .middle } __[E-mail](../guide/mail.md)__
 
     ---

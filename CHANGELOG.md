@@ -21,6 +21,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`fastapi_alcazaba.budget`, `fastapi_alcazaba.budget.usage`). Closed when the backend fails.
 - `SQLBudgetLimits` and `provider_budgets_table`: those limits in a table, by user, plan,
   default and total, with `save()` and `delete()` for the admin panel.
+- `fastapi_alcazaba.countries`: the 249 countries of ISO 3166-1 (`COUNTRIES`, `Country` with its
+  alpha-2, alpha-3 and numeric codes, English name, official name and flag), `country()` by any
+  of their codes, and `CountryCode`, a Pydantic field for an alpha-2 code. Generated from
+  Debian's iso-codes by `scripts/generate_countries.py`.
+- `fastapi_alcazaba.countries.spain`: the 52 provinces (`ProvinceCode`, by INE code) and 19
+  autonomous communities and cities (`CommunityCode`), with their names and ISO 3166-2 codes;
+  `province()`, `community()`, `province_for_postal_code()` and `SpanishPostalCode`. Spanish tax
+  IDs: `parse_spanish_id()` normalizes a DNI, NIE, NIF K/L/M or a legal entity's CIF and checks
+  its control character; `DNI`, `NIE`, `CIF`, `NIF` and `SpanishIdKinds(...)` as Pydantic
+  fields. ASCII only, bounded, and the errors never hold the value.
+
+### Changed
+
+- The Tutorial - User Guide is grouped by what you're building, in learning order: responses
+  and traffic, users and access, input data, talking to other services, background and
+  operations, usage and records, production.
 
 ## [0.8.0] - 2026-11-04
 

@@ -443,6 +443,22 @@ ANIMATIONS: dict[str, Animation] = {
         ),
         "Judged by their bytes, stored under names of the app's own",
     ),
+    "countries": Animation(
+        "Countries and Spain",
+        "What it's for: country codes that are ISO's, and Spanish NIFs and postal codes checked"
+        " by their rules, before the app stores a customer.",
+        ("Client", "Your app"),
+        (
+            request(0, 1, "POST /customers, ES, b-12345674"),
+            Note(1, "✓ a CIF, its control digit right"),
+            Note(1, "✓ 18001: Granada, Andalucía"),
+            reply(1, 0, "201, B12345674"),
+            request(0, 1, "the NIF 12345678A"),
+            Note(1, "✗ the DNI's letter is Z", refused=True),
+            refused(1, 0, "422 Unprocessable"),
+        ),
+        "ISO 3166-1 codes; NIFs and provinces checked, normalized",
+    ),
     "webhooks": Animation(
         "Webhooks in and out",
         "What it's for: webhooks taken only when signed with the sender's secret, each delivery"

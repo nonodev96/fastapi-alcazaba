@@ -73,6 +73,12 @@ Valkey lets every process share it. Only the background work needs one.
 
     The real type of a file from its bytes, size and pixel limits, and safe names.
 
+-   :material-earth:{ .lg .middle } __[Countries and Spain](countries.md)__
+
+    ---
+
+    Customers from anywhere: country codes checked, and a Spanish customer's NIF and province.
+
 -   :material-chart-timeline-variant:{ .lg .middle } __[Errors and observability](observability.md)__
 
     ---

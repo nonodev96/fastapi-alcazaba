@@ -330,7 +330,17 @@ can't flood it, and whose prices only the staff can change:
 
 The next pages take each tool in turn, starting with the [response cache](cache.md). Each one
 says what the tool does, its options and what it protects against, and links to an example app
-and to the reference.
+and to the reference. They're in groups, by what you're building:
+
+| Group | The tools |
+| --- | --- |
+| Responses and traffic | [response cache](cache.md), [pagination](pagination/index.md), [rate and concurrency limits](limits.md), [idempotency keys](idempotency.md) |
+| Users and access | [authentication strategies](authentication/index.md), [API keys, tokens and codes](auth.md), [passwords](passwords.md), [second factor](two-factor.md), [passkeys](passkeys.md), [authorization](authorization/index.md), [sessions, CSRF and security headers](browser.md) |
+| Input data | [countries and Spain](countries.md), [checking uploads](uploads.md), [object storage](storage.md) |
+| Talking to other services | [e-mail](mail.md), [webhooks and outbound calls](webhooks.md) |
+| Background and operations | [background work](background.md), [operations](operations.md), [errors and observability](observability.md) |
+| Usage and records | [accounting](accounting.md), [provider budgets](provider-budget.md), [audit trail](audit.md) |
+| Production | [backends](backends.md), [production setup](production.md), [security model and resilience](security-model.md) |
 
 <div class="grid cards" markdown>
 
@@ -338,8 +348,8 @@ and to the reference.
 
     ---
 
-    The cache, the backends, pagination, limits, authentication and authorization, sessions,
-    webhooks, background work and operations.
+    From responses and traffic to users and access, input data, other services, background
+    work, usage records and production.
 
 -   :material-server-network:{ .lg .middle } __[Production setup](production.md)__
 

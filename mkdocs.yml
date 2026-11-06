@@ -80,57 +80,67 @@ nav:
       - Performance: features/performance.md
   - Learn:
       - learn/index.md
+      # In learning order, by what the reader is building: each page needs only those before it,
+      # and the previous/next buttons (navigation.footer) follow it.
       - Tutorial - User Guide:
           - guide/index.md
-          - Authentication strategies:
-              - guide/authentication/index.md
-              - HTTPBearerStrategy: guide/authentication/http-bearer.md
-              - JWTStrategy: guide/authentication/jwt.md
-              - OAuth2Strategy: guide/authentication/oauth2.md
-              - OIDCStrategy: guide/authentication/oidc.md
-              - SAMLStrategy: guide/authentication/saml.md
-              - SessionStrategy: guide/authentication/session.md
-              - UnkeyStrategy: guide/authentication/unkey.md
-              - Your own strategy: guide/authentication/your-own.md
-          - Accounting: guide/accounting.md
-          - Provider budgets: guide/provider-budget.md
-          - API keys, tokens and codes: guide/auth.md
-          - Audit trail: guide/audit.md
-          - Authorization:
-              - guide/authorization/index.md
-              - In process:
-                  - Casbin: guide/authorization/casbin.md
-                  - Cedar: guide/authorization/cedar.md
-              - As a separate service:
-                  - guide/authorization/service.md
-                  - Open Policy Agent: guide/authorization/opa.md
-          - Backends: guide/backends.md
-          - Background work: guide/background.md
-          - Checking uploads: guide/uploads.md
-          - E-mail: guide/mail.md
-          - Errors and observability: guide/observability.md
-          - Idempotency keys: guide/idempotency.md
-          - Object storage: guide/storage.md
-          - Operations: guide/operations.md
-          - Pagination:
-              - guide/pagination/index.md
-              - PaginationCursor: guide/pagination/cursor.md
-              - PaginationKeyset: guide/pagination/keyset.md
-              - PaginationOffset: guide/pagination/offset.md
-              - PaginationPageNumber: guide/pagination/page-number.md
-              - PaginationRange: guide/pagination/range.md
-              - PaginationScroll: guide/pagination/scroll.md
-              - PaginationStreaming: guide/pagination/streaming.md
-              - With SQLAlchemy: guide/pagination/sqlalchemy.md
-          - Passkeys: guide/passkeys.md
-          - Passwords: guide/passwords.md
-          - Production setup: guide/production.md
-          - Rate and concurrency limits: guide/limits.md
-          - Response cache: guide/cache.md
-          - Second factor: guide/two-factor.md
-          - Security model and resilience: guide/security-model.md
-          - Sessions, CSRF and security headers: guide/browser.md
-          - Webhooks and outbound calls: guide/webhooks.md
+          - Responses and traffic:
+              - Response cache: guide/cache.md
+              - Pagination:
+                  - guide/pagination/index.md
+                  - PaginationPageNumber: guide/pagination/page-number.md
+                  - PaginationOffset: guide/pagination/offset.md
+                  - PaginationRange: guide/pagination/range.md
+                  - PaginationCursor: guide/pagination/cursor.md
+                  - PaginationKeyset: guide/pagination/keyset.md
+                  - PaginationScroll: guide/pagination/scroll.md
+                  - PaginationStreaming: guide/pagination/streaming.md
+                  - With SQLAlchemy: guide/pagination/sqlalchemy.md
+              - Rate and concurrency limits: guide/limits.md
+              - Idempotency keys: guide/idempotency.md
+          - Users and access:
+              - Authentication strategies:
+                  - guide/authentication/index.md
+                  - JWTStrategy: guide/authentication/jwt.md
+                  - SessionStrategy: guide/authentication/session.md
+                  - HTTPBearerStrategy: guide/authentication/http-bearer.md
+                  - OAuth2Strategy: guide/authentication/oauth2.md
+                  - OIDCStrategy: guide/authentication/oidc.md
+                  - SAMLStrategy: guide/authentication/saml.md
+                  - UnkeyStrategy: guide/authentication/unkey.md
+                  - Your own strategy: guide/authentication/your-own.md
+              - API keys, tokens and codes: guide/auth.md
+              - Passwords: guide/passwords.md
+              - Second factor: guide/two-factor.md
+              - Passkeys: guide/passkeys.md
+              - Authorization:
+                  - guide/authorization/index.md
+                  - In process:
+                      - Casbin: guide/authorization/casbin.md
+                      - Cedar: guide/authorization/cedar.md
+                  - As a separate service:
+                      - guide/authorization/service.md
+                      - Open Policy Agent: guide/authorization/opa.md
+              - Sessions, CSRF and security headers: guide/browser.md
+          - Input data:
+              - Countries and Spain: guide/countries.md
+              - Checking uploads: guide/uploads.md
+              - Object storage: guide/storage.md
+          - Talking to other services:
+              - E-mail: guide/mail.md
+              - Webhooks and outbound calls: guide/webhooks.md
+          - Background and operations:
+              - Background work: guide/background.md
+              - Operations: guide/operations.md
+              - Errors and observability: guide/observability.md
+          - Usage and records:
+              - Accounting: guide/accounting.md
+              - Provider budgets: guide/provider-budget.md
+              - Audit trail: guide/audit.md
+          - Production:
+              - Backends: guide/backends.md
+              - Production setup: guide/production.md
+              - Security model and resilience: guide/security-model.md
       - Examples:
           - examples/index.md
           - A browser app: examples/browser_app.md
@@ -157,6 +167,7 @@ nav:
                   - Open Policy Agent: examples/authorization/opa.md
           - Background work: examples/background.md
           - Checking uploads: examples/uploads.md
+          - Countries and Spain: examples/countries.md
           - Errors and observability: examples/observability.md
           - Idempotency keys: examples/idempotency.md
           - Operations: examples/operations.md
@@ -188,6 +199,7 @@ nav:
       - Accounting: reference/accounting.md
       - Audit trail: reference/audit.md
       - Checking uploads: reference/uploads.md
+      - Countries and Spain: reference/countries.md
       - E-mail: reference/mail.md
       - Webhooks and outbound calls: reference/webhooks.md
       - Errors and observability: reference/observability.md
