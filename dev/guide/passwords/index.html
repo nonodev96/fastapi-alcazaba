@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://nonodev96.github.io/fastapi-alcazaba/dev/guide/passwords/">
       
       
-        <link rel="prev" href="../passkeys/">
+        <link rel="prev" href="../auth/">
       
       
-        <link rel="next" href="../production/">
+        <link rel="next" href="../two-factor/">
       
       
         
@@ -735,38 +735,6 @@
       
         
       
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
     
     
     
@@ -829,18 +797,6 @@
     
       
         
-          
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
       
         
       
@@ -862,15 +818,14 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" >
         
           
-          <div class="md-nav__link md-nav__container">
-            <a href="../authentication/" class="md-nav__link ">
-              
+          <label class="md-nav__link" for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Authentication strategies
+    Responses and traffic
   
 
     
@@ -878,872 +833,35 @@
   
   
 
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
         <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2_2">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Authentication strategies
+    Responses and traffic
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
               
-            
-              
                 
   
   
   
   
     <li class="md-nav__item">
-      <a href="../authentication/http-bearer/" class="md-nav__link">
+      <a href="../cache/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    HTTPBearerStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authentication/jwt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    JWTStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authentication/oauth2/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OAuth2Strategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authentication/oidc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OIDCStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authentication/saml/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SAMLStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authentication/session/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SessionStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authentication/unkey/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    UnkeyStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authentication/your-own/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Your own strategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../accounting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Accounting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../auth/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API keys, tokens and codes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../audit/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Audit trail
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../authorization/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Authorization
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Authorization
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_2_6_2" id="__nav_3_2_6_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    In process
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_6_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_6_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    In process
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authorization/casbin/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Casbin
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authorization/cedar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Cedar
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_2_6_3" id="__nav_3_2_6_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    As a separate service
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_6_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_6_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    As a separate service
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authorization/service/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    As a separate service
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../authorization/opa/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Open Policy Agent
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../backends/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backends
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../background/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Background work
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../uploads/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Checking uploads
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../mail/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    E-mail
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Errors and observability
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../idempotency/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Idempotency keys
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../storage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Object storage
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../operations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Operations
+    Response cache
   
 
     
@@ -1797,7 +915,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_15" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -1819,14 +937,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_2_15" id="__nav_3_2_15_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_2_2_2" id="__nav_3_2_2_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_15_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_15">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1845,42 +963,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/cursor/" class="md-nav__link">
+      <a href="../pagination/page-number/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationCursor
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../pagination/keyset/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    PaginationKeyset
+    PaginationPageNumber
   
 
     
@@ -1929,14 +1019,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/page-number/" class="md-nav__link">
+      <a href="../pagination/range/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationPageNumber
+    PaginationRange
   
 
     
@@ -1957,14 +1047,42 @@
   
   
     <li class="md-nav__item">
-      <a href="../pagination/range/" class="md-nav__link">
+      <a href="../pagination/cursor/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    PaginationRange
+    PaginationCursor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pagination/keyset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PaginationKeyset
   
 
     
@@ -2077,14 +1195,459 @@
   
   
     <li class="md-nav__item">
-      <a href="../passkeys/" class="md-nav__link">
+      <a href="../limits/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Passkeys
+    Rate and concurrency limits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../idempotency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_3" id="__nav_3_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Users and access
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Users and access
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../authentication/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_3_1" id="__nav_3_2_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication strategies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/jwt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JWTStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/session/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SessionStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/http-bearer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTPBearerStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/oauth2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth2Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDCStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/saml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAMLStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/unkey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnkeyStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/your-own/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your own strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API keys, tokens and codes
   
 
     
@@ -2165,10 +1728,82 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#signing-up" class="md-nav__link">
+  <a href="#new-passwords" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Signing up
+        New passwords
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="New passwords">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The result
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strength" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strength
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blocklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blocklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leaked-passwords" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leaked passwords
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changing-a-password" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changing a password
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hashes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hashes
       
     </span>
   </a>
@@ -2224,90 +1859,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../production/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Production setup
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../limits/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Rate and concurrency limits
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cache/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Response cache
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../two-factor/" class="md-nav__link">
         
   
@@ -2336,14 +1887,167 @@
   
   
     <li class="md-nav__item">
-      <a href="../security-model/" class="md-nav__link">
+      <a href="../passkeys/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Security model and resilience
+    Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../authorization/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_2_3_6" id="__nav_3_2_3_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authorization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_3_6_2" id="__nav_3_2_3_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In process
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_2_3_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    In process
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authorization/casbin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Casbin
   
 
     
@@ -2364,6 +2068,170 @@
   
   
     <li class="md-nav__item">
+      <a href="../authorization/cedar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cedar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_3_6_3" id="__nav_3_2_3_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_2_3_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_3_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    As a separate service
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authorization/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authorization/opa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Policy Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../browser/" class="md-nav__link">
         
   
@@ -2372,6 +2240,248 @@
     
   
     Sessions, CSRF and security headers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_4" id="__nav_3_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Input data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../countries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Countries and Spain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../uploads/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Object storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_5" id="__nav_3_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Talking to other services
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Talking to other services
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E-mail
   
 
     
@@ -2431,8 +2541,154 @@
     
       
         
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_6" >
+        
           
+          <label class="md-nav__link" for="__nav_3_2_6" id="__nav_3_2_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background and operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Background and operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
       
         
       
@@ -2440,7 +2696,149 @@
       
         
       
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_7" id="__nav_3_2_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage and records
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Usage and records
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../provider-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider budgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit trail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
       
         
       
@@ -2448,12 +2846,160 @@
       
         
       
-        
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_8" id="__nav_3_2_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Production
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backends/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backends
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../production/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Production setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security model and resilience
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
       
         
-      
+          
         
       
         
@@ -2526,132 +3072,8 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../examples/browser_app/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    A browser app
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/accounting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Accounting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API keys, tokens and codes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/audit/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Audit trail
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
     
     
-      
-        
-          
-        
-      
-        
-      
-        
-      
-        
-      
-        
       
         
       
@@ -2672,383 +3094,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2" >
         
           
-          <div class="md-nav__link md-nav__container">
-            <a href="../../examples/auth_strategies/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Authentication strategies
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3_3_6" id="__nav_3_3_6_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Authentication strategies
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/jwt/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    JWTStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/oauth2/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OAuth2Strategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/oidc/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    OIDCStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/session/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SessionStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/http-bearer/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HTTPBearerStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/saml/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SAMLStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/unkey/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    UnkeyStrategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/auth_strategies/your-own/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Your own strategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../examples/authorization/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Authorization
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_3_3_7" id="__nav_3_3_7_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Authorization
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_3_7_2" id="__nav_3_3_7_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_3_2" id="__nav_3_3_2_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    In process
+    Responses and traffic
   
 
     
@@ -3059,12 +3115,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_7_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_7_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_2">
             <span class="md-nav__icon md-icon"></span>
             
   
-    In process
+    Responses and traffic
   
 
           </label>
@@ -3077,318 +3133,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/authorization/casbin/" class="md-nav__link">
+      <a href="../../examples/cache/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Casbin
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/authorization/cedar/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Cedar
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_3_7_3" id="__nav_3_3_7_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    As a separate service
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_7_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_7_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    As a separate service
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/authorization/service/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    As a separate service
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/authorization/opa/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Open Policy Agent
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/background/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Background work
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/uploads/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Checking uploads
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/observability/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Errors and observability
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/idempotency/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Idempotency keys
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/operations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Operations
+    Response cache
   
 
     
@@ -3440,7 +3192,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_2" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -3462,14 +3214,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_3_13" id="__nav_3_3_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3_2_2" id="__nav_3_3_2_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_13">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_2_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3692,34 +3444,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/passkeys/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Passkeys
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../examples/limits/" class="md-nav__link">
         
   
@@ -3748,14 +3472,457 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/cache/" class="md-nav__link">
+      <a href="../../examples/idempotency/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Response cache
+    Idempotency keys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3" id="__nav_3_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Users and access
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Users and access
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_1" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/auth_strategies/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication strategies
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_3_1" id="__nav_3_3_3_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authentication strategies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/jwt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    JWTStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/session/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SessionStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/http-bearer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTPBearerStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/oauth2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OAuth2Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/oidc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OIDCStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/saml/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAMLStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/unkey/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UnkeyStrategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth_strategies/your-own/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your own strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API keys, tokens and codes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/passwords/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passwords
   
 
     
@@ -3804,6 +3971,561 @@
   
   
     <li class="md-nav__item">
+      <a href="../../examples/passkeys/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Passkeys
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/authorization/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_3_6" id="__nav_3_3_3_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Authorization
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_6_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3_6_2" id="__nav_3_3_3_6_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    In process
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_3_6_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_6_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    In process
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/authorization/casbin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Casbin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/authorization/cedar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cedar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_6_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3_6_3" id="__nav_3_3_3_6_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_3_6_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_6_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    As a separate service
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/authorization/service/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    As a separate service
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/authorization/opa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Open Policy Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/browser_app/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A browser app
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_4" id="__nav_3_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Input data
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Input data
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/countries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Countries and Spain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/uploads/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_5" id="__nav_3_3_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Talking to other services
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Talking to other services
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../examples/webhooks/" class="md-nav__link">
         
   
@@ -3820,6 +4542,284 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_6" id="__nav_3_3_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background and operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Background and operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/background/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background work
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_7" id="__nav_3_3_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage and records
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Usage and records
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/accounting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accounting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/audit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Audit trail
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -3851,6 +4851,8 @@
       
         
           
+        
+      
         
       
         
@@ -4264,6 +5266,34 @@
     
   
     Checking uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/countries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Countries and Spain
   
 
     
@@ -4795,10 +5825,82 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#signing-up" class="md-nav__link">
+  <a href="#new-passwords" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Signing up
+        New passwords
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="New passwords">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The result
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strength" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strength
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#blocklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blocklist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leaked-passwords" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Leaked passwords
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#changing-a-password" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changing a password
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hashes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hashes
       
     </span>
   </a>
@@ -4911,6 +6013,32 @@
   
 
       
+        
+  
+  
+    
+    
+      
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../authentication/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    Users and access
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
     </ol>
   </nav>
 
@@ -4927,38 +6055,248 @@
 <p>New in 0.7: its API may still change in any release, as its use shows what's missing.
 <a href="../../features/scope/">Scope and stability</a> lists the tools that are settled.</p>
 </div>
-<p>Passwords from sign-up to reset: kept as slow hashes, checked against those known to be leaked,
-guessed at most a few times per account, and reset by a link that works once. <code>FastAPIPasswords</code>,
-with nothing to install: the hashes are scrypt's, from the standard library. The leak check needs
-the <code>passwords</code> extra.</p>
-<p>Every class and function: <a href="../../reference/auth/#fastapi_alcazaba.auth.FastAPIPasswords">the API reference</a>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIPasswords</span>
-</span><span id="__span-0-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">PwnedPasswords</span>
-</span><span id="__span-0-3">
-</span><span id="__span-0-4"><span class="n">passwords</span> <span class="o">=</span> <span class="n">FastAPIPasswords</span><span class="p">(</span>
-</span><span id="__span-0-5">    <span class="n">pepper</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">password_pepper</span><span class="p">,</span>  <span class="c1"># a SecretStr of 32 bytes or more</span>
-</span><span id="__span-0-6">    <span class="n">pwned</span><span class="o">=</span><span class="n">PwnedPasswords</span><span class="p">(),</span>
-</span><span id="__span-0-7">    <span class="n">audit</span><span class="o">=</span><span class="n">audit</span><span class="p">,</span>
-</span><span id="__span-0-8"><span class="p">)</span>
+<p>Passwords from sign-up to reset: new ones refused when they're easy to guess, common or leaked,
+kept as slow hashes, guessed at most a few times per account, and reset by a link that works
+once. <code>FastAPIPasswords</code>, with nothing to install: the hashes are scrypt's, from the standard
+library. Two checks of new passwords are optional, each with its extra.</p>
+<p>Every class and function: <a href="../../reference/auth/#fastapi_alcazaba.auth.FastAPIPasswords">the API reference</a>.
+In an app: <a href="../../examples/passwords/">the example</a>.</p>
+<div class="language-console highlight"><pre><span></span><code><span id="__span-0-1"><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[passwords]"</span><span class="w">           </span><span class="c1"># PwnedPasswords: httpx2</span>
+</span><span id="__span-0-2"><span class="gp">$ </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fastapi-alcazaba[password-strength]"</span><span class="w">   </span><span class="c1"># PasswordStrength: zxcvbn</span>
 </span></code></pre></div>
-<h2 id="signing-up">Signing up<a class="headerlink" href="#signing-up" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/signup"</span><span class="p">)</span>
-</span><span id="__span-1-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">signup</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">SignUp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-1-3">    <span class="n">problems</span> <span class="o">=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">user_inputs</span><span class="o">=</span><span class="p">[</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
-</span><span id="__span-1-4">    <span class="k">if</span> <span class="n">problems</span><span class="p">:</span>
-</span><span id="__span-1-5">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span> <span class="p">{</span><span class="s2">"password"</span><span class="p">:</span> <span class="n">problems</span><span class="p">})</span>
-</span><span id="__span-1-6">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
-</span><span id="__span-1-7">    <span class="o">...</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPIPasswords</span>
+</span><span id="__span-1-2"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">PasswordBlocklist</span><span class="p">,</span> <span class="n">PasswordStrength</span><span class="p">,</span> <span class="n">PwnedPasswords</span>
+</span><span id="__span-1-3">
+</span><span id="__span-1-4"><span class="n">passwords</span> <span class="o">=</span> <span class="n">FastAPIPasswords</span><span class="p">(</span>
+</span><span id="__span-1-5">    <span class="n">pepper</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">password_pepper</span><span class="p">,</span>  <span class="c1"># a SecretStr of 32 bytes or more</span>
+</span><span id="__span-1-6">    <span class="n">strength</span><span class="o">=</span><span class="n">PasswordStrength</span><span class="p">(</span><span class="n">min_score</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
+</span><span id="__span-1-7">    <span class="n">blocklist</span><span class="o">=</span><span class="n">PasswordBlocklist</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span><span class="s2">"banned.txt"</span><span class="p">),</span>
+</span><span id="__span-1-8">    <span class="n">pwned</span><span class="o">=</span><span class="n">PwnedPasswords</span><span class="p">(),</span>
+</span><span id="__span-1-9">    <span class="n">audit</span><span class="o">=</span><span class="n">audit</span><span class="p">,</span>
+</span><span id="__span-1-10"><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="new-passwords">New passwords<a class="headerlink" href="#new-passwords" title="Permanent link">&para;</a></h2>
+<p><code>evaluate</code> says what's wrong with a password at sign-up, at a change and at a reset, as NIST SP
+800-63B says, and what it checked:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/signup"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">201</span><span class="p">)</span>
+</span><span id="__span-2-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">signup</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">SignUp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
+</span><span id="__span-2-3">    <span class="n">password</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>  <span class="c1"># a SecretStr: out of reprs and logs</span>
+</span><span id="__span-2-4">    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">user_inputs</span><span class="o">=</span><span class="p">[</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+</span><span id="__span-2-5">    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+</span><span id="__span-2-6">        <span class="n">detail</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"password"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">problems</span><span class="p">),</span> <span class="s2">"suggestions"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">suggestions</span><span class="p">)}</span>
+</span><span id="__span-2-7">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span> <span class="n">detail</span><span class="p">)</span>
+</span><span id="__span-2-8">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">password</span><span class="p">))</span>
+</span><span id="__span-2-9">    <span class="o">...</span>
+</span></code></pre></div>
+<p>With nothing more, it refuses fewer than <code>min_length</code> characters (15 by default, the length for
+a password that is the only factor; 8 with a second factor), more than 1024, and the user's data
+in it (<code>user_inputs</code>: the e-mail address or its local part, the name, and their words, of 4
+characters or more, whatever their case and accents: <code>zurbaran84</code> for Belén Zurbarán).
+No rules on its characters (a digit, a capital, a symbol): length is what makes a password
+strong. Each check below is off until it's passed to <code>FastAPIPasswords</code>.</p>
+<p><code>check()</code> gives the same problems as a list, for a quick <code>if problems := await
+passwords.check(...)</code>.</p>
+<h3 id="the-result">The result<a class="headerlink" href="#the-result" title="Permanent link">&para;</a></h3>
+<div class="language-pycon highlight"><pre><span></span><code><span id="__span-3-1"><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s2">"qwertyuiopasdfghjkl"</span><span class="p">,</span> <span class="n">user_inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">"ana@example.com"</span><span class="p">])</span>
+</span><span id="__span-3-2"><span class="go">PasswordCheck(problems=('weak',), score=1, checks=('length', 'characters', 'user_inputs', 'blocklist', 'strength'), unavailable=(), suggestions=('This is similar to a commonly used password.', 'Add another word or two. Uncommon words are better.'))</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>What it says</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ok</code></td>
+<td>whether the password is accepted: no problems</td>
+</tr>
+<tr>
+<td><code>problems</code></td>
+<td>why it's refused, as codes for the app to translate (below)</td>
+</tr>
+<tr>
+<td><code>score</code></td>
+<td>zxcvbn's, 0 to 4; <code>None</code> without <code>strength</code></td>
+</tr>
+<tr>
+<td><code>checks</code></td>
+<td>the checks made</td>
+</tr>
+<tr>
+<td><code>unavailable</code></td>
+<td>the checks that couldn't be made: <code>("pwned",)</code> when Have I Been Pwned didn't answer and the check fails open</td>
+</tr>
+<tr>
+<td><code>suggestions</code></td>
+<td>zxcvbn's advice for a better one, in English, for weak ones</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>The password</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>too_short</code></td>
+<td>has fewer than <code>min_length</code> characters</td>
+</tr>
+<tr>
+<td><code>too_long</code></td>
+<td>has more than 1024: never hashed</td>
+</tr>
+<tr>
+<td><code>invalid_characters</code></td>
+<td>has a lone surrogate (<code>"\ud800"</code>), which JSON lets through but no text holds</td>
+</tr>
+<tr>
+<td><code>contains_user_input</code></td>
+<td>holds one of <code>user_inputs</code>, or one of their words</td>
+</tr>
+<tr>
+<td><code>blocklisted</code></td>
+<td>is in the app's blocklist</td>
+</tr>
+<tr>
+<td><code>weak</code></td>
+<td>scores below <code>min_score</code></td>
+</tr>
+<tr>
+<td><code>pwned</code></td>
+<td>is among those leaked; asked only when there's no other problem</td>
+</tr>
+</tbody>
+</table>
+<p>The result never holds the password, so it can be logged or returned as it is.</p>
+<h3 id="strength">Strength<a class="headerlink" href="#strength" title="Permanent link">&para;</a></h3>
+<p><code>PasswordStrength</code> measures how many guesses a password would take with
+<a href="https://github.com/dwolfhub/zxcvbn-python">zxcvbn</a>, Dropbox's estimator: it finds dictionary
+words, names, the 30 000 most common passwords, keyboard walks (<code>qwertyuiop</code>), dates, repeats,
+sequences and l33t (<code>p@ssw0rd</code>), and scores the guesses from 0 to 4:</p>
+<table>
+<thead>
+<tr>
+<th><code>min_score</code></th>
+<th>zxcvbn's guesses</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>10^8: "somewhat guessable"</td>
+<td>the least, with a second factor</td>
+</tr>
+<tr>
+<td>3 (default)</td>
+<td>10^10: "safely unguessable"</td>
+<td>most accounts</td>
+</tr>
+<tr>
+<td>4</td>
+<td>more: "very unguessable"</td>
+<td>administrators, money</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>The user's data</strong> in <code>user_inputs</code> count as words an attacker knows: their words (a name's,
+  an e-mail address's local part and domain) and without accents too, so that
+  <code>zurbaranbelen</code> is weak for Belén Zurbarán.</li>
+<li><strong>72 characters</strong> at most are measured (zxcvbn's limit): a longer password has its first 72
+  scored.</li>
+<li><strong>In a thread:</strong> zxcvbn takes a millisecond or so, up to some tens for long repetitive
+  passwords; <code>evaluate</code> runs it in a thread, one call at a time (zxcvbn keeps the user's data
+  of a call in a module global). <code>strength.measure(password)</code> is the same, synchronous, for a
+  Pydantic validator: it blocks the event loop meanwhile.</li>
+</ul>
+<h3 id="blocklist">Blocklist<a class="headerlink" href="#blocklist" title="Permanent link">&para;</a></h3>
+<p><code>PasswordBlocklist</code> refuses the app's own words, which no list of common passwords has (its name,
+its products, its city), or a list of common ones:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><span class="n">blocklist</span> <span class="o">=</span> <span class="n">PasswordBlocklist</span><span class="p">([</span><span class="s2">"Lighthouse"</span><span class="p">,</span> <span class="s2">"Lighthouse Notes"</span><span class="p">,</span> <span class="s2">"lighthousenotes"</span><span class="p">])</span>
+</span><span id="__span-4-2"><span class="n">blocklist</span> <span class="o">=</span> <span class="n">PasswordBlocklist</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span><span class="s2">"common-100k.txt"</span><span class="p">,</span> <span class="s2">"ours.txt"</span><span class="p">)</span>  <span class="c1"># one per line</span>
 </span></code></pre></div>
 <ul>
-<li><strong>What <code>check</code> refuses,</strong> as NIST SP 800-63B says: fewer than <code>min_length</code> characters (15 by
-  default, the length for a password that is the only factor; 8 with a second factor), more than
-  1024, the e-mail address or the name in it, and a password among those leaked. No rules on its
-  characters (a digit, a capital, a symbol): length is what makes a password strong.</li>
-<li><strong>Leaked passwords</strong> are the first that attackers try. <code>PwnedPasswords</code> asks Have I Been Pwned
-  without sending the password: only the first five characters of its SHA-1 go out, and the
-  answer is padded, so that its size doesn't tell them either. When the API doesn't answer, the
-  password is taken as not leaked and a warning logged (<code>fail_open=False</code> raises instead).</li>
+<li><strong>Loaded once,</strong> when it's built, at start-up: a <code>frozenset</code>, then each check is a lookup.
+  About a hundred bytes per entry: SecLists' or NCSC's top 100 000 take some 10 MB. Lists of
+  millions are Have I Been Pwned's job.</li>
+<li><strong>Normalized</strong> to compare (NFKC, casefolded, without spaces around): <code>Lighthouse</code>,
+  <code>LIGHTHOUSE</code> and <code>ＬＩＧＨＴＨＯＵＳＥ</code> are the same. The password that's hashed is the one
+  sent.</li>
+<li><strong>Whole passwords</strong> only: <code>lighthouse2024</code> isn't <code>lighthouse</code>. Variations are zxcvbn's job,
+  with the same words in <code>user_inputs</code> if they matter.</li>
+<li>A file that isn't UTF-8 raises at start-up: give its <code>encoding</code> (<code>"latin-1"</code> for RockYou).</li>
+</ul>
+<h3 id="leaked-passwords">Leaked passwords<a class="headerlink" href="#leaked-passwords" title="Permanent link">&para;</a></h3>
+<p>Leaked passwords are the first that attackers try. <code>PwnedPasswords</code> asks
+<a href="https://haveibeenpwned.com/Passwords">Have I Been Pwned</a> without sending the password: only the
+first five characters of its SHA-1 go out (k-anonymity), and the answer, the suffixes of every
+leaked hash with that prefix, is padded, so that its size doesn't tell them either. The match is
+made in the app.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><span class="n">pwned</span> <span class="o">=</span> <span class="n">PwnedPasswords</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">fail_open</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div>
+<p>When the API doesn't answer within <code>timeout</code>, answers an error, or answers something that isn't
+a range answer (a proxy's login page, a count of 5000 digits), the check is unavailable:</p>
+<table>
+<thead>
+<tr>
+<th><code>fail_open</code></th>
+<th>When unavailable</th>
+<th>For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>True</code> (default)</td>
+<td>the password is accepted; <code>result.unavailable == ("pwned",)</code>, and a warning logged</td>
+<td>most apps: a sign-up mustn't wait for a third party; check again at the next login if it matters</td>
+</tr>
+<tr>
+<td><code>False</code></td>
+<td><code>BackendUnavailable</code> is raised: answer a 503</td>
+<td>apps that would rather refuse than accept a password unchecked</td>
+</tr>
+</tbody>
+</table>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_alcazaba.core.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendUnavailable</span>
+</span><span id="__span-6-2">
+</span><span id="__span-6-3">
+</span><span id="__span-6-4"><span class="nd">@app</span><span class="o">.</span><span class="n">exception_handler</span><span class="p">(</span><span class="n">BackendUnavailable</span><span class="p">)</span>
+</span><span id="__span-6-5"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">unavailable</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="n">BackendUnavailable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JSONResponse</span><span class="p">:</span>
+</span><span id="__span-6-6">    <span class="k">return</span> <span class="n">JSONResponse</span><span class="p">({</span><span class="s2">"detail"</span><span class="p">:</span> <span class="s2">"Try again in a moment"</span><span class="p">},</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Without <code>pwned</code>, no call is made. The warning and the exception hold the error's class only,
+never the password, its hash or the prefix.</p>
+<div class="admonition warning">
+<p class="admonition-title">httpx2 logs the prefix</p>
+<p>httpx2 logs each request at <code>INFO</code>, with its URL, and so the prefix of the password's hash:
+20 of its 160 bits, which narrow an offline guess. Keep the <code>httpx2</code> logger at <code>WARNING</code>
+(<code>logging.getLogger("httpx2").setLevel(logging.WARNING)</code>), as Python's default is.</p>
+</div>
+<h2 id="changing-a-password">Changing a password<a class="headerlink" href="#changing-a-password" title="Permanent link">&para;</a></h2>
+<p>The current password first, then the new one, evaluated as at sign-up:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/password/change"</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="mi">204</span><span class="p">)</span>
+</span><span id="__span-7-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">change_password</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">PasswordChange</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-7-3">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">current_user</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+</span><span id="__span-7-4">    <span class="n">current</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">current_password</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>
+</span><span id="__span-7-5">    <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">current</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">):</span>
+</span><span id="__span-7-6">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Wrong password"</span><span class="p">)</span>
+</span><span id="__span-7-7">    <span class="n">new</span> <span class="o">=</span> <span class="n">form</span><span class="o">.</span><span class="n">new_password</span><span class="o">.</span><span class="n">get_secret_value</span><span class="p">()</span>
+</span><span id="__span-7-8">    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">user_inputs</span><span class="o">=</span><span class="p">[</span><span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+</span><span id="__span-7-9">    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+</span><span id="__span-7-10">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span> <span class="p">{</span><span class="s2">"password"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">problems</span><span class="p">)})</span>
+</span><span id="__span-7-11">    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">new</span><span class="p">))</span>
+</span><span id="__span-7-12">    <span class="k">await</span> <span class="n">user_sessions</span><span class="o">.</span><span class="n">end_all</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">,</span> <span class="n">keep_current</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># the others are out</span>
+</span></code></pre></div>
+<p><code>verify</code> counts the wrong current passwords as it does at login: someone with a stolen session
+can't use the form to guess.</p>
+<h2 id="hashes">Hashes<a class="headerlink" href="#hashes" title="Permanent link">&para;</a></h2>
+<ul>
 <li><strong>The hash:</strong> scrypt (RFC 7914) with OWASP's parameters (128 MiB, a fifth of a second), a
   random salt each, in a thread, in PHC's format: <code>$scrypt$ln=17,r=8,p=1$&lt;salt&gt;$&lt;hash&gt;</code>.</li>
 <li><strong>The pepper:</strong> the password is first an HMAC with it, so that a stolen database without the
@@ -4966,16 +6304,16 @@ the <code>passwords</code> extra.</p>
   can't be rotated without the passwords.</li>
 </ul>
 <h2 id="logging-in">Logging in<a class="headerlink" href="#logging-in" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">)</span>
-</span><span id="__span-2-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Login</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-2-3">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">by_email</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">)</span>
-</span><span id="__span-2-4">    <span class="n">user_id</span><span class="p">,</span> <span class="n">stored</span> <span class="o">=</span> <span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">password</span><span class="p">)</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="__span-2-5">    <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">stored</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">):</span>
-</span><span id="__span-2-6">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Wrong e-mail or password"</span><span class="p">)</span>
-</span><span id="__span-2-7">    <span class="k">if</span> <span class="n">passwords</span><span class="o">.</span><span class="n">needs_rehash</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">password</span><span class="p">):</span>
-</span><span id="__span-2-8">        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
-</span><span id="__span-2-9">    <span class="n">log_in</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
-</span><span id="__span-2-10">    <span class="o">...</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/login"</span><span class="p">)</span>
+</span><span id="__span-8-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Login</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="__span-8-3">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">by_email</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">)</span>
+</span><span id="__span-8-4">    <span class="n">user_id</span><span class="p">,</span> <span class="n">stored</span> <span class="o">=</span> <span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">password</span><span class="p">)</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-8-5">    <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">stored</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">):</span>
+</span><span id="__span-8-6">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">"Wrong e-mail or password"</span><span class="p">)</span>
+</span><span id="__span-8-7">    <span class="k">if</span> <span class="n">passwords</span><span class="o">.</span><span class="n">needs_rehash</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">password</span><span class="p">):</span>
+</span><span id="__span-8-8">        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+</span><span id="__span-8-9">    <span class="n">log_in</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+</span><span id="__span-8-10">    <span class="o">...</span>
 </span></code></pre></div>
 <ul>
 <li><strong>Guesses per account:</strong> after <code>max_attempts</code> wrong passwords (10), the account's logins are
@@ -4990,24 +6328,24 @@ the <code>passwords</code> extra.</p>
 <li><strong>When the backend fails,</strong> the attempts can't be counted, and the password is refused.</li>
 </ul>
 <h2 id="resetting">Resetting<a class="headerlink" href="#resetting" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/password/forgot"</span><span class="p">)</span>
-</span><span id="__span-3-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">forgot</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">Forgot</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-3-3">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">by_email</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">)</span>
-</span><span id="__span-3-4">    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-3-5">        <span class="n">token</span> <span class="o">=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">reset_token</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-</span><span id="__span-3-6">        <span class="k">await</span> <span class="n">mail</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">"Reset your password"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2">/reset?token=</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-3-7">    <span class="c1"># the same answer either way</span>
-</span><span id="__span-3-8">
-</span><span id="__span-3-9">
-</span><span id="__span-3-10"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/password/reset"</span><span class="p">)</span>
-</span><span id="__span-3-11"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Reset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-3-12">    <span class="k">if</span> <span class="n">problems</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">):</span>
-</span><span id="__span-3-13">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span> <span class="p">{</span><span class="s2">"password"</span><span class="p">:</span> <span class="n">problems</span><span class="p">})</span>
-</span><span id="__span-3-14">    <span class="n">user_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">use_reset_token</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">token</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
-</span><span id="__span-3-15">    <span class="k">if</span> <span class="n">user_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-3-16">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"The link expired or was used: ask for another"</span><span class="p">)</span>
-</span><span id="__span-3-17">    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
-</span><span id="__span-3-18">    <span class="k">await</span> <span class="n">user_sessions</span><span class="o">.</span><span class="n">end_all</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>  <span class="c1"># whoever knew the old password is logged out</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/password/forgot"</span><span class="p">)</span>
+</span><span id="__span-9-2"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">forgot</span><span class="p">(</span><span class="n">form</span><span class="p">:</span> <span class="n">Forgot</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-9-3">    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">by_email</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">email</span><span class="p">)</span>
+</span><span id="__span-9-4">    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-9-5">        <span class="n">token</span> <span class="o">=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">reset_token</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-9-6">        <span class="k">await</span> <span class="n">mail</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">"Reset your password"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2">/reset?token=</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-9-7">    <span class="c1"># the same answer either way</span>
+</span><span id="__span-9-8">
+</span><span id="__span-9-9">
+</span><span id="__span-9-10"><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/password/reset"</span><span class="p">)</span>
+</span><span id="__span-9-11"><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">form</span><span class="p">:</span> <span class="n">Reset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-9-12">    <span class="k">if</span> <span class="n">problems</span> <span class="o">:=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">):</span>
+</span><span id="__span-9-13">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span> <span class="p">{</span><span class="s2">"password"</span><span class="p">:</span> <span class="n">problems</span><span class="p">})</span>
+</span><span id="__span-9-14">    <span class="n">user_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">use_reset_token</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">token</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
+</span><span id="__span-9-15">    <span class="k">if</span> <span class="n">user_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-9-16">        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"The link expired or was used: ask for another"</span><span class="p">)</span>
+</span><span id="__span-9-17">    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="k">await</span> <span class="n">passwords</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+</span><span id="__span-9-18">    <span class="k">await</span> <span class="n">user_sessions</span><span class="o">.</span><span class="n">end_all</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>  <span class="c1"># whoever knew the old password is logged out</span>
 </span></code></pre></div>
 <ul>
 <li><strong>A token, once:</strong> 256 random bits, kept as a digest for <code>reset_ttl</code> seconds (an hour). Of two
@@ -5058,7 +6396,7 @@ wrong or locked is someone guessing. Neither ever has the password, nor the toke
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../passkeys/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Passkeys">
+          <a href="../auth/" class="md-footer__link md-footer__link--prev" aria-label="Previous: API keys, tokens and codes">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -5068,20 +6406,20 @@ wrong or locked is someone guessing. Neither ever has the password, nor the toke
                 Previous
               </span>
               <div class="md-ellipsis">
-                Passkeys
+                API keys, tokens and codes
               </div>
             </div>
           </a>
         
         
           
-          <a href="../production/" class="md-footer__link md-footer__link--next" aria-label="Next: Production setup">
+          <a href="../two-factor/" class="md-footer__link md-footer__link--next" aria-label="Next: Second factor">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Production setup
+                Second factor
               </div>
             </div>
             <div class="md-footer__button md-icon">
