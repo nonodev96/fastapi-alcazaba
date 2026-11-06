@@ -1,5 +1,7 @@
 """ISO 3166-1's countries: the table, the lookup by any code, and the Pydantic type."""
 
+import gzip
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -11,8 +13,26 @@ from pydantic import BaseModel, ValidationError
 
 from fastapi_alcazaba.countries import COUNTRIES, Country, CountryCode, UnknownCountry, country
 
-ISO_CODES = Path("/usr/share/iso-codes/json/iso_3166-1.json")
-SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "generate_countries.py"
+ROOT = Path(__file__).resolve().parents[2]
+SCRIPT = ROOT / "scripts" / "generate_countries.py"
+TABLE = ROOT / "fastapi_alcazaba" / "countries" / "_iso3166.py"
+CHANGELOG = Path("/usr/share/doc/iso-codes/changelog.Debian.gz")
+
+
+def installed_iso_codes() -> str | None:
+    """The version of Debian's iso-codes installed here, if any."""
+    if not CHANGELOG.exists():
+        return None
+    first = gzip.decompress(CHANGELOG.read_bytes()).decode().split("\n", 1)[0]
+    found = re.match(r"iso-codes \(([^-)]+)", first)
+    return found.group(1) if found else None
+
+
+def table_iso_codes() -> str:
+    """The version of iso-codes the table was generated from, in its docstring."""
+    found = re.search(r"from iso-codes (\S+):", TABLE.read_text(encoding="utf-8"))
+    assert found is not None
+    return found.group(1)
 
 
 class Address(BaseModel):
@@ -115,7 +135,12 @@ def test_a_request_with_a_wrong_code_gets_a_422() -> None:
     assert schema["pattern"] == "^[A-Za-z]{2}$"
 
 
-@pytest.mark.skipif(not ISO_CODES.exists(), reason="needs Debian's iso-codes")
+# Only against the version it was generated from: another one may have renamed a country, and
+# a release of Alcazaba brings the change, not the machine that runs the tests.
+@pytest.mark.skipif(
+    installed_iso_codes() != table_iso_codes(),
+    reason=f"needs Debian's iso-codes {table_iso_codes()}, the table's",
+)
 def test_the_table_and_spain_match_iso_codes() -> None:
     result = subprocess.run(  # noqa: S603  # our own interpreter and script
         [sys.executable, str(SCRIPT), "--check"],

@@ -2,11 +2,13 @@
 
     python scripts/generate_countries.py
     python scripts/generate_countries.py --check
+    python scripts/generate_countries.py --data <dpkg-deb -x root>/usr/share/iso-codes/json
 
 The data is Debian's iso-codes (`apt install iso-codes`), a maintained copy of ISO 3166 in
 JSON. --check writes nothing: it fails if the committed table, or the ISO 3166-2 codes of
 Spain's provinces and communities (fastapi_alcazaba/countries/spain/provinces.py), differ from
-the data.
+the data. The table names the version it was generated from; against another one, --check says
+what a new release would change.
 """
 
 import argparse
@@ -37,9 +39,10 @@ def _load(data: Path, name: str, key: str) -> list[dict[str, Any]]:
 
 
 def _version(data: Path) -> str:
-    """iso-codes' version, from the Debian package's changelog when there is one."""
-    changelog = Path("/usr/share/doc/iso-codes/changelog.Debian.gz")
-    if data == DEFAULT_DATA and changelog.exists():
+    """iso-codes' version, from the Debian package's changelog when there is one: next to the
+    data, in share/doc (an installed package, or one extracted with dpkg-deb -x)."""
+    changelog = data.parents[1] / "doc" / "iso-codes" / "changelog.Debian.gz"
+    if changelog.exists():
         first = gzip.decompress(changelog.read_bytes()).decode().split("\n", 1)[0]
         return first.split("(", 1)[1].split("-", 1)[0]  # iso-codes (4.16.0-1) unstable; ...
     return "(unknown version)"

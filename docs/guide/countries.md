@@ -189,7 +189,7 @@ The [example](../examples/countries.md) also gives each Spanish customer their p
 ## Updating the data
 
 The countries come from ISO 3166-1 through Debian's
-[iso-codes](https://salsa.debian.org/iso-codes-team/iso-codes) (4.16.0), and the provinces'
+[iso-codes](https://salsa.debian.org/iso-codes-team/iso-codes) (4.20.1), and the provinces'
 ISO codes are checked against its ISO 3166-2. When ISO changes a code, a release of Alcazaba
 brings it: `scripts/generate_countries.py` writes the table again, and `--check` compares it,
 and Spain's codes, with the data installed.
