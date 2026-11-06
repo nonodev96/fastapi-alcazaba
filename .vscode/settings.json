@@ -1,0 +1,31 @@
+{
+    // The same formatting as `make format` and pre-commit: Ruff from the project's .venv, with
+    // pyproject.toml's settings (100 columns, its import order), for Python and for the code
+    // blocks of Markdown. Nothing else is formatted on save: the CLI doesn't format it either.
+    "editor.formatOnSave": false,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        },
+        "editor.rulers": [100]
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.rulers": [100]
+    },
+    "ruff.path": ["${workspaceFolder}/.venv/bin/ruff"],
+    "ruff.configurationPreference": "filesystemFirst",
+    // Ruff sorts the imports, with pyproject.toml's sections: isort's warnings would disagree.
+    "isort.check": false,
+    // As pre-commit's end-of-file-fixer and trailing-whitespace.
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+}

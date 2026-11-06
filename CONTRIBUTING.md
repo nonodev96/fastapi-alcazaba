@@ -15,6 +15,11 @@ make deps
 .venv/bin/pre-commit install --install-hooks -t pre-commit -t pre-push
 ```
 
+In VS Code, install the recommended Ruff extension: `.vscode/settings.json` formats Python and
+Markdown's code blocks on save with the `.venv`'s Ruff and `pyproject.toml`'s settings, as
+`make format` does, and nothing else (Black and other formatters would disagree with it). The
+comma of multi-line signatures is `make format`'s or pre-commit's.
+
 ## Tests
 
 | Command | What runs |
