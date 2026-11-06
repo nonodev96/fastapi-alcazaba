@@ -1,5 +1,9 @@
 # Countries and Spain
 
+!!! warning "Experimental"
+    New in 0.9: its API may still change in any release, as its use shows what's missing.
+    [Scope and stability](../features/scope.md) lists the tools that are settled.
+
 In an app: [the example](../examples/countries.md). Every class and function: [the API reference](../reference/countries.md).
 
 Addresses, invoices and phone numbers need a country, and for Spain a tax ID and a province. The

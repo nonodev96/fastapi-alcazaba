@@ -143,49 +143,55 @@ nav:
               - Security model and resilience: guide/security-model.md
       - Examples:
           - examples/index.md
-          - A browser app: examples/browser_app.md
-          - Accounting: examples/accounting.md
-          - API keys, tokens and codes: examples/auth.md
-          - Audit trail: examples/audit.md
-          - Authentication strategies:
-              - examples/auth_strategies/index.md
-              - JWTStrategy: examples/auth_strategies/jwt.md
-              - OAuth2Strategy: examples/auth_strategies/oauth2.md
-              - OIDCStrategy: examples/auth_strategies/oidc.md
-              - SessionStrategy: examples/auth_strategies/session.md
-              - HTTPBearerStrategy: examples/auth_strategies/http-bearer.md
-              - SAMLStrategy: examples/auth_strategies/saml.md
-              - UnkeyStrategy: examples/auth_strategies/unkey.md
-              - Your own strategy: examples/auth_strategies/your-own.md
-          - Authorization:
-              - examples/authorization/index.md
-              - In process:
-                  - Casbin: examples/authorization/casbin.md
-                  - Cedar: examples/authorization/cedar.md
-              - As a separate service:
-                  - examples/authorization/service.md
-                  - Open Policy Agent: examples/authorization/opa.md
-          - Background work: examples/background.md
-          - Checking uploads: examples/uploads.md
-          - Countries and Spain: examples/countries.md
-          - Errors and observability: examples/observability.md
-          - Idempotency keys: examples/idempotency.md
-          - Operations: examples/operations.md
-          - Pagination:
-              - examples/pagination/index.md
-              - PaginationPageNumber: examples/pagination/page-number.md
-              - PaginationOffset: examples/pagination/offset.md
-              - PaginationRange: examples/pagination/range.md
-              - PaginationCursor: examples/pagination/cursor.md
-              - PaginationKeyset: examples/pagination/keyset.md
-              - PaginationScroll: examples/pagination/scroll.md
-              - PaginationStreaming: examples/pagination/streaming.md
-          - Passkeys: examples/passkeys.md
-          - Passwords: examples/passwords.md
-          - Rate and concurrency limits: examples/limits.md
-          - Response cache: examples/cache.md
-          - Second factor: examples/two_factor.md
-          - Webhooks in and out: examples/webhooks.md
+          - Responses and traffic:
+              - Response cache: examples/cache.md
+              - Pagination:
+                  - examples/pagination/index.md
+                  - PaginationPageNumber: examples/pagination/page-number.md
+                  - PaginationOffset: examples/pagination/offset.md
+                  - PaginationRange: examples/pagination/range.md
+                  - PaginationCursor: examples/pagination/cursor.md
+                  - PaginationKeyset: examples/pagination/keyset.md
+                  - PaginationScroll: examples/pagination/scroll.md
+                  - PaginationStreaming: examples/pagination/streaming.md
+              - Rate and concurrency limits: examples/limits.md
+              - Idempotency keys: examples/idempotency.md
+          - Users and access:
+              - Authentication strategies:
+                  - examples/auth_strategies/index.md
+                  - JWTStrategy: examples/auth_strategies/jwt.md
+                  - SessionStrategy: examples/auth_strategies/session.md
+                  - HTTPBearerStrategy: examples/auth_strategies/http-bearer.md
+                  - OAuth2Strategy: examples/auth_strategies/oauth2.md
+                  - OIDCStrategy: examples/auth_strategies/oidc.md
+                  - SAMLStrategy: examples/auth_strategies/saml.md
+                  - UnkeyStrategy: examples/auth_strategies/unkey.md
+                  - Your own strategy: examples/auth_strategies/your-own.md
+              - API keys, tokens and codes: examples/auth.md
+              - Passwords: examples/passwords.md
+              - Second factor: examples/two_factor.md
+              - Passkeys: examples/passkeys.md
+              - Authorization:
+                  - examples/authorization/index.md
+                  - In process:
+                      - Casbin: examples/authorization/casbin.md
+                      - Cedar: examples/authorization/cedar.md
+                  - As a separate service:
+                      - examples/authorization/service.md
+                      - Open Policy Agent: examples/authorization/opa.md
+              - A browser app: examples/browser_app.md
+          - Input data:
+              - Countries and Spain: examples/countries.md
+              - Checking uploads: examples/uploads.md
+          - Talking to other services:
+              - Webhooks in and out: examples/webhooks.md
+          - Background and operations:
+              - Background work: examples/background.md
+              - Operations: examples/operations.md
+              - Errors and observability: examples/observability.md
+          - Usage and records:
+              - Accounting: examples/accounting.md
+              - Audit trail: examples/audit.md
   - Reference:
       - reference/index.md
       - Response cache: reference/cache.md

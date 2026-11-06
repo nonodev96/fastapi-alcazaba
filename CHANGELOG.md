@@ -45,9 +45,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- The Tutorial - User Guide is grouped by what you're building, in learning order: responses
-  and traffic, users and access, input data, talking to other services, background and
-  operations, usage and records, production.
+- The Tutorial - User Guide and the examples are grouped by what you're building, in learning
+  order: responses and traffic, users and access, input data, talking to other services,
+  background and operations, usage and records, production (the guide's only).
 - `PwnedPasswords` with `fail_open=False` raises `BackendUnavailable`, not httpx2's errors, and
   an answer that isn't a range answer (an HTML page, an empty one) makes the check unavailable
   instead of passing for "not leaked". Its warning holds the error's class only: httpx2's

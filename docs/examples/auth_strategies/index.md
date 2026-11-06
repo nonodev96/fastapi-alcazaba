@@ -5,12 +5,12 @@
 Each strategy has an example of its own, a small app to run and try:
 
 - [`JWTStrategy`](jwt.md): scripts log in with a password and send a JWT, which they can revoke.
-- [`OAuth2Strategy`](oauth2.md): people log in with their GitHub account.
-- [`OIDCStrategy`](oidc.md): people log in with an OpenID Connect provider (Keycloak, Google…),
-  its ID token verified.
 - [`SessionStrategy`](session.md): a password, then a session that remembers who logged in.
 - [`HTTPBearerStrategy`](http-bearer.md): personal access tokens, refused as soon as they're
   deleted.
+- [`OAuth2Strategy`](oauth2.md): people log in with their GitHub account.
+- [`OIDCStrategy`](oidc.md): people log in with an OpenID Connect provider (Keycloak, Google…),
+  its ID token verified.
 - [`SAMLStrategy`](saml.md): single sign-on with a SAML identity provider.
 - [`UnkeyStrategy`](unkey.md): API keys made at sign-up, with permissions, credits and a rate
   limit that Unkey checks.

@@ -62,6 +62,7 @@ and what to change in an app. Beyond that, each tool is one of:
 | [Each user's sessions](../guide/browser.md#each-users-sessions) (`UserSessions`) | Experimental |
 | [Accounting](../guide/accounting.md) | Experimental |
 | [Provider budgets](../guide/provider-budget.md) | Experimental |
+| [Countries and Spain](../guide/countries.md) | Experimental |
 | [Passwords](../guide/passwords.md), [object storage](../guide/storage.md), [e-mail](../guide/mail.md) | Experimental |
 | [Broadcast](../guide/background.md#broadcast), [the outbox](../guide/background.md#outbox), [structured logs](../guide/observability.md#structured-logs) | Experimental |
 
