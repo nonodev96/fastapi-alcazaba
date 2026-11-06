@@ -56,8 +56,9 @@ Each tool has a page in the [Tutorial - User Guide](../guide/index.md), an
 
     ---
 
-    Slow hashes with a pepper, leaked passwords refused, guesses limited per account, and resets
-    by a link that works once.
+    Weak, common and leaked passwords refused with the reasons (zxcvbn, a blocklist, Have I
+    Been Pwned), slow hashes with a pepper, guesses limited per account, and resets by a link
+    that works once.
 
 -   :material-fingerprint:{ .lg .middle } __[Passkeys](../guide/passkeys.md)__
 

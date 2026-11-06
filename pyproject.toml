@@ -64,6 +64,8 @@ auth-strategy-unkey = ["httpx2>=2.15.1"]
 webhooks = ["httpx2>=2.15.1"]
 # Passwords checked against those leaked (PwnedPasswords), with httpx2; hashing needs nothing.
 passwords = ["httpx2>=2.15.1"]
+# How easy a new password is to guess (PasswordStrength), with zxcvbn's word lists and patterns.
+password-strength = ["zxcvbn>=4.5"]
 # Nothing more: HTTPBearerStrategy only needs FastAPI. There for every strategy to have its extra.
 auth-strategy-http-bearer = []
 # Scanning uploads with ClamAV (ClamAVScanner): clamd's protocol, with nothing more to install.
@@ -76,7 +78,7 @@ uploads = ["httpx2>=2.15.1"]
 auth-strategy-saml = ["signxml>=5.2"]
 # The queries of the pagination strategies, for SQLAlchemy 2 (fastapi_alcazaba.pagination.sqlalchemy).
 sqlalchemy = ["sqlalchemy>=2.0"]
-all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,sqlalchemy,webhooks,clamav,uploads,ses]"]
+all = ["fastapi-alcazaba[redis,valkey,glide,memcache,dynamodb,otel,crypto,zstd,casbin,cedar,opa,auth-strategy-jwt,auth-strategy-oauth2,auth-strategy-oidc,auth-strategy-http-bearer,auth-strategy-saml,auth-strategy-unkey,passwords,password-strength,sqlalchemy,webhooks,clamav,uploads,ses]"]
 
 [project.urls]
 Homepage = "https://github.com/nonodev96/fastapi-alcazaba"
@@ -233,7 +235,7 @@ strict = true
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["aiomcache.*", "atheris", "casbin.*", "fakeredis.*", "lxml.*"]
+module = ["aiomcache.*", "atheris", "casbin.*", "fakeredis.*", "lxml.*", "zxcvbn.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

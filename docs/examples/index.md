@@ -27,6 +27,13 @@ Valkey lets every process share it. Only the background work needs one.
     A site without passwords: sign-ups and logins by passkey, and the devices each user is
     logged in on.
 
+-   :material-form-textbox-password:{ .lg .middle } __[Passwords](passwords.md)__
+
+    ---
+
+    Sign-up, login and password change, with weak, common and leaked passwords refused and the
+    reasons why.
+
 -   :material-cellphone-key:{ .lg .middle } __[Second factor](two_factor.md)__
 
     ---

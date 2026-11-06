@@ -17,6 +17,7 @@ from fuzz import (
     countries_fuzzer,
     cursors_fuzzer,
     entries_fuzzer,
+    passwords_fuzzer,
     refresh_fuzzer,
     sessions_fuzzer,
     stamps_fuzzer,
@@ -31,6 +32,7 @@ TARGETS = [
     countries_fuzzer,
     cursors_fuzzer,
     entries_fuzzer,
+    passwords_fuzzer,
     refresh_fuzzer,
     sessions_fuzzer,
     stamps_fuzzer,
@@ -129,6 +131,14 @@ def test_random_inputs(module: ModuleType, data: bytes) -> None:
         (countries_fuzzer, b" 18001 "),
         (countries_fuzzer, b"es-gr"),
         (countries_fuzzer, b"-" * 21),
+        # Passwords: a range answer, a count past int()'s 4300 digits, digits of another
+        # script, a lone surrogate, a fullwidth blocklisted one, a megabyte.
+        (passwords_fuzzer, b"0" * 35 + b":42\r\n" + b"F" * 35 + b":0"),
+        (passwords_fuzzer, b"0" * 35 + b":" + b"9" * 5000),
+        (passwords_fuzzer, b"0" * 35 + b":" + "\u0664\u0662".encode()),
+        (passwords_fuzzer, b"a long password \xed\xa0\x80\nana"),
+        (passwords_fuzzer, "ＡＣＭＥ２０２４".encode()),
+        (passwords_fuzzer, b"ana@example.com" * 70_000 + b"\nana@example.com"),
     ],
 )
 def test_known_cases(module: ModuleType, data: bytes) -> None:

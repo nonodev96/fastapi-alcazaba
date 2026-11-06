@@ -31,12 +31,36 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   IDs: `parse_spanish_id()` normalizes a DNI, NIE, NIF K/L/M or a legal entity's CIF and checks
   its control character; `DNI`, `NIE`, `CIF`, `NIF` and `SpanishIdKinds(...)` as Pydantic
   fields. ASCII only, bounded, and the errors never hold the value.
+- `FastAPIPasswords.evaluate()`: what's wrong with a new password and what was checked, as a
+  `PasswordCheck` (`ok`, `problems`, `score`, `checks`, `unavailable`, `suggestions`) that never
+  holds the password. `check()` gives its problems, as before.
+- `PasswordStrength`: new passwords that zxcvbn scores below `min_score` (3 by default) refused
+  as "weak", with zxcvbn's advice; the user's data, their words and without accents, count as
+  known words. In a thread, one call at a time. The new `password-strength` extra.
+- `PasswordBlocklist`: the app's own words or a list of common passwords, from sets or files,
+  loaded once and compared normalized (NFKC, casefolded, stripped); "blocklisted".
+- `PwnedPasswords.lookup()`: the count, or None when the check was unavailable and fails open,
+  which `evaluate()` reports in `unavailable`.
+- An example, `examples/passwords`: sign-up, login and password change.
 
 ### Changed
 
 - The Tutorial - User Guide is grouped by what you're building, in learning order: responses
   and traffic, users and access, input data, talking to other services, background and
   operations, usage and records, production.
+- `PwnedPasswords` with `fail_open=False` raises `BackendUnavailable`, not httpx2's errors, and
+  an answer that isn't a range answer (an HTML page, an empty one) makes the check unavailable
+  instead of passing for "not leaked". Its warning holds the error's class only: httpx2's
+  messages held the URL, with the hash's prefix.
+- "contains_user_input" also finds the words of the user's data (a name's, an e-mail address's
+  local part), of 4 characters or more, whatever their case and accents.
+
+### Fixed
+
+- A password with a lone surrogate (valid in JSON) made `hash()`, `verify()` and the leak check
+  raise, a 500: `evaluate()` refuses it as "invalid_characters", and hashing it no longer
+  raises.
+- A Pwned Passwords count longer than 4300 digits raised a ValueError, a 500, even failing open.
 
 ## [0.8.0] - 2026-11-04
 

@@ -165,6 +165,8 @@ Each backend and integration needs a library of its own, which an extra installs
 | `auth-strategy-saml` | signxml | [`SAMLStrategy`](guide/authentication/saml.md) |
 | `auth-strategy-unkey` | httpx2 | [`UnkeyStrategy`](guide/authentication/unkey.md) |
 | `auth-strategy-http-bearer` | nothing more | [`HTTPBearerStrategy`](guide/authentication/http-bearer.md) |
+| `passwords` | httpx2 | [`PwnedPasswords`](guide/passwords.md#leaked-passwords) |
+| `password-strength` | zxcvbn | [`PasswordStrength`](guide/passwords.md#strength) |
 | `all` | all of the above | |
 
 ```console

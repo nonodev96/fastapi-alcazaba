@@ -3,7 +3,14 @@ one-time codes, and passwords, a second factor (TOTP, recovery codes, step-up), 
 (WebAuthn)."""
 
 from fastapi_alcazaba.auth.apikeys import APIKeyRecord, FastAPIAPIKeys
-from fastapi_alcazaba.auth.passwords import FastAPIPasswords, PwnedPasswords, ScryptParameters
+from fastapi_alcazaba.auth.passwords import (
+    FastAPIPasswords,
+    PasswordBlocklist,
+    PasswordCheck,
+    PasswordStrength,
+    PwnedPasswords,
+    ScryptParameters,
+)
 from fastapi_alcazaba.auth.refresh import RefreshRefused, RefreshTokens, TokenPair
 from fastapi_alcazaba.auth.strategies import (
     AuthenticationFailed,
@@ -28,6 +35,9 @@ __all__ = [
     "HTTPBearerStrategy",
     "OneTimeCodes",
     "Passkey",
+    "PasswordBlocklist",
+    "PasswordCheck",
+    "PasswordStrength",
     "PwnedPasswords",
     "RecoveryCodes",
     "RefreshRefused",

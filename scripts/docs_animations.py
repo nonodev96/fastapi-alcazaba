@@ -410,6 +410,23 @@ ANIMATIONS: dict[str, Animation] = {
         ),
         "A code of the app, after the password: each one once",
     ),
+    "passwords": Animation(
+        "Passwords",
+        "What it's for: new passwords that are easy to guess, the app's own words or among those"
+        " leaked refused, saying why, without sending the password anywhere.",
+        ("User", "Your app", "Have I Been Pwned"),
+        (
+            request(0, 1, "qwertyuiopasdfgh"),
+            refused(1, 0, "422 weak: keyboard"),
+            request(0, 1, "correct horse..."),
+            request(1, 2, "range ABF7A"),
+            reply(2, 1, "suffixes, padded"),
+            refused(1, 0, "422 pwned"),
+            request(0, 1, "sunrise velvet..."),
+            reply(1, 0, "201 Created"),
+        ),
+        "Strength, the app's blocklist, and the leaks by k-anonymity",
+    ),
     "audit": Animation(
         "Audit trail",
         "What it's for: a record of who did what to which resource, allowed or not, that nobody"

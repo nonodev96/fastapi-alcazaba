@@ -22,6 +22,8 @@ pip install "fastapi-alcazaba[auth-strategy-oauth2]"  # OAuth2Strategy
 pip install "fastapi-alcazaba[auth-strategy-oidc]"    # OIDCStrategy
 pip install "fastapi-alcazaba[auth-strategy-saml]"    # SAMLStrategy
 pip install "fastapi-alcazaba[auth-strategy-unkey]"   # UnkeyStrategy
+pip install "fastapi-alcazaba[passwords]"             # PwnedPasswords
+pip install "fastapi-alcazaba[password-strength]"     # PasswordStrength (zxcvbn)
 pip install "fastapi-alcazaba[sqlalchemy]"            # pagination queries for SQLAlchemy
 ```
 

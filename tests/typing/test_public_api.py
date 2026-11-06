@@ -11,7 +11,15 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from fastapi_alcazaba import Cache, FastAPIBreaker, FastAPICache, FastAPIScheduler
-from fastapi_alcazaba.auth import RefreshTokens, TokenBlocklist, TokenPair
+from fastapi_alcazaba.auth import (
+    FastAPIPasswords,
+    PasswordBlocklist,
+    PasswordCheck,
+    PasswordStrength,
+    RefreshTokens,
+    TokenBlocklist,
+    TokenPair,
+)
 from fastapi_alcazaba.auth.strategies.jwt import JWTKey, JWTStrategy
 from fastapi_alcazaba.backends.inmemory import InMemoryBackend
 from fastapi_alcazaba.background import FastAPITaskQueue, TaskStatus
@@ -166,6 +174,16 @@ def test_country_types() -> None:
     assert customer.nif == "12345678Z"
 
 
+async def test_password_check_types() -> None:
+    passwords = FastAPIPasswords(blocklist=PasswordBlocklist(["acme2024"]))
+    result = await passwords.evaluate("a long passphrase", user_inputs=["ana@example.com"])
+    assert_type(result, PasswordCheck)
+    assert_type(result.problems, tuple[str, ...])
+    assert_type(result.score, int | None)
+    assert_type(result.ok, bool)
+    assert_type(await passwords.check("a long passphrase"), list[str])
+
+
 async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checked
     # pylint: disable=no-member  # wrong on purpose: mypy must refuse each of these calls
     await async_function("1")  # type: ignore[arg-type]
@@ -190,3 +208,6 @@ async def _wrong_calls_are_type_errors() -> None:  # never run, only type-checke
     parse_spanish_id(12345678)  # type: ignore[arg-type]
     parse_spanish_id("12345678Z", kinds="DNI")  # type: ignore[arg-type]
     province(ProvinceCode.MADRID).community.provinces.append(None)  # type: ignore[attr-defined]
+    await FastAPIPasswords().evaluate(b"bytes")  # type: ignore[arg-type]
+    PasswordStrength(min_score="3")  # type: ignore[arg-type]
+    PasswordBlocklist([1])  # type: ignore[list-item]

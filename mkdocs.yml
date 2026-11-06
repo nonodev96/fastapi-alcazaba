@@ -181,6 +181,7 @@ nav:
               - PaginationScroll: examples/pagination/scroll.md
               - PaginationStreaming: examples/pagination/streaming.md
           - Passkeys: examples/passkeys.md
+          - Passwords: examples/passwords.md
           - Rate and concurrency limits: examples/limits.md
           - Response cache: examples/cache.md
           - Second factor: examples/two_factor.md
