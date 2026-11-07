@@ -39,7 +39,9 @@ message_id = await mail.send(
   with a comma, a line break or two `@` is refused, so a form field can't add recipients.
 - **Headers that can't be forged:** the subject is one line; `headers=` adds others
   (`List-Unsubscribe`...) but never `From`, `To`, `Cc`, `Bcc`, `Subject`, `Date`, `Message-ID`,
-  `Reply-To` nor `Sender`, and nothing with a line break.
+  `Reply-To`, `Sender`, `Return-Path`, `Received`, `Auto-Submitted` nor any `Resent-` header
+  (smtplib would send the message to its addresses instead), only valid header names, and
+  nothing with a line break. The SMTP envelope is always the message's `From` and `To`.
 - **What FastAPIMail adds:** `Date`, a `Message-ID` on the sender's domain (`send` returns it),
   `Reply-To` when given, and `Auto-Submitted: auto-generated` (RFC 3834), so that out-of-office
   replies don't answer it.

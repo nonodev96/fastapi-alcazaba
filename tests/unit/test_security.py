@@ -2,7 +2,7 @@
 
 import asyncio
 import warnings
-from typing import Any
+from typing import Annotated, Any
 
 import pytest
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
@@ -63,6 +63,16 @@ class TestPerUserEntries:
             client.get("/me", headers={"Cookie": "session=1"})
             response = client.get("/me", headers={"Cookie": "session=2"})
         assert served(response.headers) == "miss"
+        assert len(calls) == 2
+
+    def test_every_cookie_line_counts(self) -> None:
+        """Cookies sent in several lines (as HTTP/2 may): the session on the second one tells
+        two users apart even when their first ones are the same."""
+        FastAPICache.init(InMemoryBackend())
+        app, calls = make_app()
+        with TestClient(app) as client:
+            for user in ("ana", "ben"):
+                client.get("/me", headers=[("Cookie", "theme=dark"), ("Cookie", f"s={user}")])
         assert len(calls) == 2
 
     def test_api_keys_get_their_own_entries(self) -> None:
@@ -144,6 +154,52 @@ class TestPerUserEntries:
             response = client.get("/me", headers={"X-Api-Key": "2"})
         assert response.headers["Vary"] == "X-Api-Key"
         assert len(calls) == 2
+
+    def test_an_endpoints_vary_headers_add_to_the_credentials(self) -> None:
+        """`@cache(vary_headers=["accept-language"])` still keeps two users apart, and a request
+        without that header still gets a private entry."""
+        FastAPICache.init(InMemoryBackend())
+        app, calls = make_app(vary_headers=["accept-language"])
+        with TestClient(app) as client:
+            alice = client.get(
+                "/me", headers={"Authorization": "Bearer alice", "Accept-Language": "es"}
+            )
+            bob = client.get(
+                "/me", headers={"Authorization": "Bearer bob", "Accept-Language": "es"}
+            )
+            bare = client.get("/me", headers={"Authorization": "Bearer bob"})
+        assert alice.json() == {"user": "Bearer alice"}
+        assert bob.json() == {"user": "Bearer bob"}
+        assert served(bob.headers) == "miss"
+        assert bob.headers["Vary"] == "Authorization, Cookie, X-Api-Key, Accept-Language"
+        assert bare.headers["Cache-Control"] == "private, max-age=60"
+        assert calls == ["Bearer alice", "Bearer bob", "Bearer bob"]
+
+    def test_the_jwt_strategy_marks_its_header(self) -> None:
+        """A cache that doesn't vary on Authorization still does for a JWT user: the strategy
+        names the header it read the token from."""
+        from fastapi_alcazaba.auth import FastAPIAuth
+        from fastapi_alcazaba.auth.strategies import JWTStrategy
+
+        FastAPICache.init(InMemoryBackend(), vary_headers=["accept-language"])
+        strategy = JWTStrategy("s" * 32)
+        auth = FastAPIAuth(strategy)
+        app = FastAPI()
+
+        @app.get("/me")
+        @cache(expire=60, exclude_params=["user"])
+        async def me(
+            user: Annotated[dict[str, Any], Depends(auth.authenticate())],
+        ) -> dict[str, str]:
+            return {"user": user["sub"]}
+
+        with TestClient(app) as client:
+            ana = client.get("/me", headers={"Authorization": f"Bearer {strategy.issue('ana')}"})
+            ben = client.get("/me", headers={"Authorization": f"Bearer {strategy.issue('ben')}"})
+        assert ana.json() == {"user": "ana"}
+        assert ben.json() == {"user": "ben"}
+        assert served(ben.headers) == "miss"
+        assert "Authorization" in ben.headers["Vary"]
 
 
 class TestSignedEntries:

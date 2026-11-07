@@ -65,6 +65,8 @@ async def check_uploaded(
     when the service doesn't answer as it should.
 
     Up to `uploads.max_size` + 1 bytes are read: more is "too large" without reading the rest.
+    They're the stored bytes, whatever `Content-Encoding` the object has: a gzip is checked as
+    a gzip.
     The returned `CheckedFile`'s file holds the bytes read (in memory up to 1 MiB, then on
     disk): close it (`await checked.file.close()`) when done.
 
@@ -120,7 +122,9 @@ async def _download(
             etag = response.headers.get("etag")
             if response.status_code != 200 or not etag:
                 raise HTTPException(HTTP_502_BAD_GATEWAY, "The storage didn't answer")
-            async for chunk in response.aiter_bytes():
+            # The bytes as stored, never decoded: an uploader may set a Content-Encoding, and
+            # what's checked must be what's copied to move_to (nor may it inflate past `limit`).
+            async for chunk in response.aiter_raw():
                 chunk = chunk[: limit - size]
                 into.write(chunk)
                 size += len(chunk)

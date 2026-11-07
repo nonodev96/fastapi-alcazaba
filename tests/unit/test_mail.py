@@ -212,6 +212,22 @@ class TestSMTP:
         assert parsed["Auto-Submitted"] == "auto-generated"
         assert parsed.is_multipart()
 
+    async def test_the_envelope_is_from_and_to(
+        self,
+        tls: tuple[ssl.SSLContext, ssl.SSLContext],
+    ) -> None:
+        """Whatever other headers a message has (Resent-*, which smtplib would take the
+        envelope from), it goes to its To, from its From."""
+        with serve(tls[0]) as server:
+            mail = smtp_mail(server, tls[1])
+            message = mail.message("ana@example.com", "Reset your password", "Open the link.")
+            message["Resent-Date"] = "Thu, 01 Jan 2026 00:00:00 +0000"
+            message["Resent-From"] = "no-reply@example.com"
+            message["Resent-To"] = "eve@example.com"
+            await mail.sender.send(message)
+        received = server.received[0]
+        assert (received["from"], received["to"]) == ("no-reply@example.com", ["ana@example.com"])
+
     async def test_over_implicit_tls(self, tls: tuple[ssl.SSLContext, ssl.SSLContext]) -> None:
         with serve(tls[0], implicit=True) as server:
             await smtp_mail(server, tls[1], tls="implicit").send("ana@example.com", "Hi", "Text")
@@ -351,7 +367,13 @@ class TestMessages:
             ("Hello", {"Bcc": "eve@example.com"}, "FastAPIMail's"),
             ("Hello", {"From": "boss@example.com"}, "FastAPIMail's"),
             ("Hello", {"X-Note": "a\r\nBcc: eve@example.com"}, "no line breaks"),
-            ("Hello", {"X:Odd": "a"}, "no line breaks"),
+            ("Hello", {"X:Odd": "a"}, "not a header's name"),
+            ("Hello", {"Resent-To": "eve@example.com", "Resent-Date": "x"}, "FastAPIMail's"),
+            ("Hello", {"resent-bcc": "eve@example.com"}, "FastAPIMail's"),
+            ("Hello", {"Received": "from eve"}, "FastAPIMail's"),
+            ("Hello", {"To ": "eve@example.com"}, "not a header's name"),
+            ("Hello", {"Bcc\t": "eve@example.com"}, "not a header's name"),
+            ("Hello", {"": "a"}, "not a header's name"),
         ],
     )
     def test_what_would_forge_a_header(

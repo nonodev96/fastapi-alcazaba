@@ -250,11 +250,12 @@ class _GitHub(_Scheme):
         self.secrets = [_provider_secret(item) for item in _items(secret)]
 
     def read(self, headers: Mapping[str, str]) -> _Delivery:
-        delivery = headers.get("x-github-delivery")
         signature = headers.get("x-hub-signature-256")
-        if delivery is None or signature is None or not _valid_id(delivery):
+        if signature is None:
             raise _Malformed
-        return _Delivery(delivery, None, [signature])
+        # X-GitHub-Delivery isn't signed: a copy could change it, so what's signed names the
+        # message.
+        return _Delivery(None, None, [signature])
 
     def check(self, delivery: _Delivery, body: bytes) -> bool:
         scheme, _, value = delivery.signatures[0].partition("=")
@@ -335,9 +336,9 @@ _REFUSALS = {400: "malformed", 401: "rejected", 413: "too_large"}
 class WebhookMessage:
     """A webhook whose signature was checked: what `FastAPIWebhooks` gives the endpoint."""
 
-    #: The sender's id of the message (`webhook-id`, GitHub's delivery id), the same for every
-    #: attempt; for Stripe and Slack, which send none, a digest of what was signed (their event
-    #: id is in the body).
+    #: The sender's id of the message (`webhook-id`), the same for every attempt; for GitHub,
+    #: Stripe and Slack, which sign none, a digest of what was signed (their event id is in the
+    #: body).
     id: str
     #: When this attempt was signed, in UTC; None for GitHub, which signs no time.
     timestamp: datetime | None
@@ -461,9 +462,10 @@ class FastAPIWebhooks:
     retry of the sender has a new timestamp and signature and goes through: senders keep the id
     of a message for all its attempts, and a retry after a failed (5xx) attempt must get through.
     So make the endpoint idempotent on `message.id` (a unique constraint), if a message must not
-    be processed twice. GitHub signs no time: its deliveries are refused again only for the same
-    window, and a capture sent later goes through. Whoever can write to the backend can delete the
-    marks (and allow a replay within `tolerance`): keep it out of reach.
+    be processed twice. GitHub signs no time, nor its delivery id: a delivery is named by its
+    body, refused again only for the same window, and a capture sent later goes through.
+    Whoever can write to the backend can delete the marks (and allow a replay within
+    `tolerance`): keep it out of reach.
 
     :param secret: what the sender signs with. Standard Webhooks: `whsec_<base64>`, the base64
         alone or raw bytes (at least 24 bytes once decoded), or `whpk_<base64>`, the sender's
@@ -540,9 +542,9 @@ class FastAPIWebhooks:
         if not self._scheme.check(delivery, body):
             raise HTTPException(401, _INVALID)
         message_id = delivery.id
-        if message_id is None:  # Stripe, Slack: what was signed names the message
-            digest = hashlib.sha256(f"{delivery.sent}.".encode() + body).hexdigest()
-            message_id = f"sha256:{digest}"
+        if message_id is None:  # GitHub, Stripe, Slack: what was signed names the message
+            signed = body if delivery.sent is None else f"{delivery.sent}.".encode() + body
+            message_id = f"sha256:{hashlib.sha256(signed).hexdigest()}"
         when = datetime.fromtimestamp(timestamp, UTC) if timestamp is not None else None
         return WebhookMessage(message_id, when, body)
 

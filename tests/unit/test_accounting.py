@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, MutableMapping
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from zoneinfo import ZoneInfo
@@ -578,6 +578,33 @@ class TestWebSockets:
             pass
         assert await setup.used("acme", "connections") == used
 
+    async def test_closed_by_the_client_stays_charged(self) -> None:
+        """A client that closes its WebSocket was served: leaving can't make sessions free."""
+        setup = Setup(Quota("connections", limit=1))
+        app = FastAPI()
+
+        @app.websocket("/ws", dependencies=[Depends(setup.accounting.meter("connections"))])
+        async def chat(websocket: WebSocket) -> None:
+            await websocket.accept()
+            await websocket.send_text("hello")
+            while True:
+                await websocket.receive_text()  # until the client closes
+
+        client = TestClient(app)
+        with (  # the endpoint lets the disconnect through, and TestClient raises it again
+            pytest.raises(WebSocketDisconnect),
+            client.websocket_connect("/ws", headers=as_tenant("acme")) as websocket,
+        ):
+            assert websocket.receive_text() == "hello"
+        assert await setup.used("acme", "connections") == 1
+        assert setup.charged() == [("acme", "connections", 1)]
+        with (
+            pytest.raises(WebSocketDisconnect) as refused,
+            client.websocket_connect("/ws", headers=as_tenant("acme")) as websocket,
+        ):
+            websocket.receive_text()
+        assert refused.value.code == 1008
+
     def test_a_failing_backend_closes_with_try_again_later(self) -> None:
         setup = Setup(backend=Down(), fail_open=False)
         with (
@@ -594,6 +621,77 @@ class TestWebSockets:
         ):
             pass
         assert refused.value.code == 1008
+
+
+async def as_an_asgi_24_server(app: FastAPI, path: str, *, client_gone: bool) -> None:
+    """Calls `app` as an ASGI 2.4 server would: once the client has gone, send() raises OSError
+    and receive() says it's gone; while it's there, receive() waits."""
+    request_sent = False
+
+    async def receive() -> dict[str, Any]:
+        nonlocal request_sent
+        if not request_sent:
+            request_sent = True
+            return {"type": "http.request", "body": b"", "more_body": False}
+        if not client_gone:
+            await asyncio.Event().wait()
+        return {"type": "http.disconnect"}
+
+    async def send(message: MutableMapping[str, Any]) -> None:
+        if client_gone and message["type"] == "http.response.body":
+            raise OSError("the client disconnected")
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0", "spec_version": "2.4"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode(),
+        "root_path": "",
+        "query_string": b"",
+        "headers": [(b"x-tenant", b"acme")],
+        "client": ("127.0.0.1", 50000),
+        "server": ("testserver", 80),
+    }
+    try:
+        await app(scope, receive, send)
+    except OSError:
+        pass  # what the server sees: the app's, or send()'s
+
+
+class TestClientsThatLeave:
+    def app(self, setup: Setup, runs: list[str]) -> FastAPI:
+        app = FastAPI()
+
+        @app.get("/sms", dependencies=[Depends(setup.accounting.meter("sms"))])
+        async def sms() -> str:
+            runs.append("sms")
+            return "sent"
+
+        @app.get("/down", dependencies=[Depends(setup.accounting.meter("sms"))])
+        async def down() -> str:
+            raise OSError("the database went down")
+
+        return app
+
+    async def test_a_client_gone_before_the_response_stays_charged(self) -> None:
+        """Leaving after the endpoint ran can't make requests free."""
+        setup, runs = Setup(Quota("sms", limit=1)), list[str]()
+        app = self.app(setup, runs)
+        for _ in range(3):
+            await as_an_asgi_24_server(app, "/sms", client_gone=True)
+        assert runs == ["sms"]
+        assert await setup.used("acme", "sms") == 1
+        assert setup.charged() == [("acme", "sms", 1)]
+
+    async def test_the_endpoints_own_os_error_is_refunded(self) -> None:
+        """An OSError of the endpoint's own, with the client still waiting: a server error."""
+        setup = Setup(Quota("sms", limit=1))
+        await as_an_asgi_24_server(self.app(setup, []), "/down", client_gone=False)
+        assert await setup.used("acme", "sms") == 0
+        assert setup.charged() == []
 
 
 class TestLoggingSink:

@@ -28,8 +28,10 @@ The client sends a fresh key with each new request, and the same one when it ret
   compared byte for byte: a retry sends the same bytes, not the same JSON written another way
   (keys in another order, other spacing).
 - **Per client:** keys are looked up among the requests with the same credentials (hashed): the
-  `Authorization` header, or the cookies when there's none (a cookie session), so one user never
-  gets another's response, nor someone without the victim's cookie who learned their key. With
+  `Authorization` and `X-API-Key` headers, or the cookies when there's neither (a cookie
+  session), so one user never gets another's response, nor someone without the victim's
+  credentials who learned their key. Clients that send a key in another header need
+  `identifier=`: otherwise they share the space of requests without credentials. With
   access tokens that get refreshed, or cookies that change between a request and its retry
   (either way the retry would run again), pass `identifier=` returning the user's id. Requests
   without credentials share one space of keys, safe as long as clients make their keys random

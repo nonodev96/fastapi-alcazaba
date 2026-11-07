@@ -71,6 +71,13 @@ class CookieSettings:
         return b"set-cookie", f"{self.name}=; {_EXPIRED}; {self._attributes()}".encode("latin-1")
 
 
+#: What RFC 6265 trims around a cookie's name and value: spaces and tabs. Not what str.strip()
+#: does: it also takes away U+00A0 and U+0085 (bytes 0xA0 and 0x85 read as latin-1), so a cookie
+#: named "\xa0__Host-session", which browsers don't hold to the prefix's rules, would pass for
+#: "__Host-session".
+_WHITESPACE = " \t"
+
+
 def cookie_values(scope: Scope, name: str) -> list[str]:
     """Every value the request sends for the cookie `name`, in order: a sibling subdomain can add
     one of its own (cookie tossing), which `__Host-` names prevent."""
@@ -80,8 +87,8 @@ def cookie_values(scope: Scope, name: str) -> list[str]:
             continue
         for pair in raw.decode("latin-1").split(";"):
             key, sep, value = pair.partition("=")
-            if sep and key.strip() == name:
-                values.append(value.strip())
+            if sep and key.strip(_WHITESPACE) == name:
+                values.append(value.strip(_WHITESPACE))
     return values
 
 

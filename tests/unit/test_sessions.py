@@ -421,6 +421,37 @@ class TestClearing:
             assert (await client.get("/session", headers=cookie)).json() == {}
         assert app.key(session_id) not in app.backend.sessions()
 
+    @pytest.mark.parametrize("ending", ["/logout", "/rotate"])
+    async def test_a_request_still_running_cant_rotate_it_back(self, ending: str) -> None:
+        """A copied cookie in a slow request that rotates the session (a login, a step-up)
+        after the logout, or after another rotation: no new session with its data."""
+        app = App()
+        started, release = asyncio.Event(), asyncio.Event()
+
+        @app.app.post("/slow-rotate")
+        async def slow_rotate(request: Request) -> None:
+            assert request.session["user"] == "alice"
+            started.set()
+            await release.wait()
+            rotate_session(request)
+
+        transport = httpx.ASGITransport(app=app.app)
+        async with httpx.AsyncClient(transport=transport, base_url="https://testserver") as client:
+            session_id = issued(await client.post("/set?key=user&value=alice"))
+            client.cookies.clear()
+            cookie = {"Cookie": f"__Host-session={session_id}"}
+            copied = asyncio.create_task(client.post("/slow-rotate", headers=cookie))
+            await started.wait()
+            ended = await client.post(ending, headers=cookie)
+            release.set()
+            response = await copied
+        assert response.status_code == 200
+        assert "Max-Age=0" in response.headers["set-cookie"]  # expired, not a new id
+        survivors = 1 if ending == "/rotate" else 0  # the other rotation's, and only it
+        assert len(app.backend.sessions()) == survivors
+        if survivors:
+            assert app.key(issued(ended)) in app.backend.sessions()
+
 
 class TestExpiry:
     def test_max_age(self, clock: Clock) -> None:

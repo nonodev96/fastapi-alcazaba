@@ -26,7 +26,7 @@ Call it once, at startup (in the `lifespan`).
 | `compression` | `None` | `"zstd"` or `"zlib"`: store large entries compressed |
 | `compression_min_size` | `1024` | bytes; smaller entries aren't compressed |
 | `compression_level` | codec's default | |
-| `vary_headers` | `("authorization", "cookie", "x-api-key")` | request headers that give each value its own entry. The header `FastAPIAPIKeys` or `UnkeyStrategy` read a key from counts too, whatever its name; add any other header the app reads credentials from itself |
+| `vary_headers` | `("authorization", "cookie", "x-api-key")` | request headers that give each value its own entry. The header or cookie Alcazaba's strategies and sessions read a credential from counts too, whatever its name; add any other header the app reads credentials from itself |
 | `respect_cache_control` | `False` | let clients skip the cache with `no-cache`/`no-store` |
 | `single_flight` | `True` | concurrent misses for one key compute once, per process |
 | `backend_timeout` | `1.0` | seconds a backend call may take before the request goes on without cache |
@@ -52,7 +52,7 @@ Call it once, at startup (in the `lifespan`).
 | `namespace` | `""` | group of entries, for `FastAPICache.clear(namespace=...)` |
 | `injected_dependency_namespace` | `"__fastapi_alcazaba"` | prefix of the `Request`/`Response` parameters added to the endpoint |
 | `exclude_params` | `None` | arguments left out of the key (a nonce, a database session…) |
-| `vary_headers` | from `init` | `()` for responses that are the same for everybody |
+| `vary_headers` | from `init` | more headers, on top of the cache's; `()` for responses that are the same for everybody |
 | `respect_cache_control` | from `init` | |
 | `stale_while_revalidate` | `None` | seconds past `expire` an entry is served at once and refreshed in the background (see [below](#serving-stale-entries)); also that `Cache-Control` directive |
 | `stale_if_error` | `None` | seconds past `expire` an entry is served when computing a new one fails |
@@ -205,7 +205,8 @@ longest-lived entry.
 
 If an endpoint translates its response according to a request header, such as
 `Accept-Language`, add that header to `vary_headers` (`@cache(vary_headers=["accept-language"])`),
-or a user would get the cached response in another user's language.
+or a user would get the cached response in another user's language. An endpoint's
+`vary_headers` add to the cache's, so its responses still vary on the credentials too.
 
 ## Encrypted entries
 

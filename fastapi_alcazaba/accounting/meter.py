@@ -42,10 +42,11 @@ from datetime import UTC, datetime, timedelta
 from inspect import isawaitable
 from typing import Annotated, Any, Literal, NoReturn, TypeVar, cast, get_args
 
+import anyio
 from fastapi import Depends
 from fastapi.exceptions import RequestValidationError, WebSocketRequestValidationError
 from starlette.exceptions import HTTPException, WebSocketException
-from starlette.requests import HTTPConnection
+from starlette.requests import ClientDisconnect, HTTPConnection, Request
 from starlette.responses import Response
 from starlette.status import (
     HTTP_401_UNAUTHORIZED,
@@ -55,6 +56,7 @@ from starlette.status import (
     WS_1008_POLICY_VIOLATION,
     WS_1013_TRY_AGAIN_LATER,
 )
+from starlette.websockets import WebSocketDisconnect
 
 from fastapi_alcazaba.accounting.records import LoggingUsageSink, UsageRecord, UsageSink
 from fastapi_alcazaba.core.asgi import RATE_LIMIT_HEADERS
@@ -206,14 +208,41 @@ class _Account:
     limit: int | None
 
 
-def _not_served(exc: BaseException) -> bool:
+async def _not_served(exc: BaseException, connection: HTTPConnection) -> bool:
     """Whether the request that raised `exc` wasn't served (its charge is refunded): a server
-    error or a client that went away, not a client error (4xx, a validation error)."""
+    error, not a client error (4xx, a validation error) nor a client that went away once the
+    endpoint ran. Leaving is the client's choice: refunding it would let a client use the
+    endpoint without being charged (by closing its WebSocket, or its connection before the
+    response)."""
+    if isinstance(exc, WebSocketDisconnect | ClientDisconnect):
+        return False
+    if isinstance(exc, OSError) and isinstance(connection, Request):
+        # What an ASGI 2.4 server raises from send() once the client left; the endpoint's own
+        # (a database that went down) is refunded, the client still waiting for its response.
+        return not await _client_gone(connection)
     if isinstance(exc, HTTPException):
         return exc.status_code >= 500
     if isinstance(exc, WebSocketException):
         return exc.code != WS_1008_POLICY_VIOLATION
     return not isinstance(exc, RequestValidationError | WebSocketRequestValidationError)
+
+
+#: How many messages of a request's body `_client_gone` reads, at most, looking past them.
+_MAX_UNREAD = 1024
+
+
+async def _client_gone(request: Request) -> bool:
+    """Whether `request`'s client went away: the server says so once the body it didn't read
+    has been, without waiting for more."""
+    with anyio.CancelScope() as scope:
+        scope.cancel()  # a receive() that would wait returns at once, cancelled
+        for _ in range(_MAX_UNREAD):
+            message = await request.receive()
+            if message["type"] == "http.disconnect":
+                return True
+            if message["type"] != "http.request":
+                break
+    return False
 
 
 def _subject_id(value: Any) -> str | None:
@@ -240,9 +269,10 @@ class FastAPIAccounting:
     Responses carry the `RateLimit` and `RateLimit-Policy` headers of the IETF draft, the
     quota's name being the meter's, for clients to see what they have left.
 
-    What's charged: a request that gets a client error (a 4xx, a validation error) was served
-    and stays charged; one that fails on the server (an exception, a 5xx) or whose client went
-    away is refunded, and has no record. What an endpoint added to its `Metering` is charged
+    What's charged: a request that gets a client error (a 4xx, a validation error), or whose
+    client went away once the endpoint ran (it closed its WebSocket, or its connection), was
+    served and stays charged; one that fails on the server (an exception, a 5xx) is refunded,
+    and has no record. What an endpoint added to its `Metering` is charged
     whatever happens next: it was used.
 
     :param subject: a dependency that returns who uses it: a user's, an API key's or a tenant's
@@ -338,7 +368,7 @@ class FastAPIAccounting:
             except GeneratorExit:
                 raise  # closed without ending: charged, without a record
             except BaseException as exc:
-                if _not_served(exc):
+                if await _not_served(exc, connection):
                     if counted:
                         await self._shielded(self._refund(account, amount))
                     raise

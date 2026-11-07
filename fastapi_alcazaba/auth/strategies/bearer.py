@@ -18,6 +18,7 @@ from fastapi.security import HTTPBearer
 from starlette.requests import HTTPConnection
 
 from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, Strategy, call
+from fastapi_alcazaba.core.asgi import mark_credential_header
 
 #: The longest token read from a request.
 MAX_TOKEN = 4_096
@@ -63,6 +64,7 @@ class HTTPBearerStrategy(Strategy):
         scheme, _, token = connection.headers.get("authorization", "").partition(" ")
         if scheme.lower() != "bearer":
             return None
+        mark_credential_header(connection.scope, "authorization")
         token = token.strip()
         if len(token) > MAX_TOKEN or not _TOKEN.fullmatch(token):
             raise AuthenticationFailed("malformed token")

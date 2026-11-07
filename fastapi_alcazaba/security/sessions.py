@@ -39,7 +39,7 @@ from starlette.requests import HTTPConnection
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from fastapi_alcazaba.backends.tiered import shared_backend
-from fastapi_alcazaba.core.asgi import respond
+from fastapi_alcazaba.core.asgi import mark_credential_header, respond
 from fastapi_alcazaba.core.errors import BackendUnavailable
 from fastapi_alcazaba.response_cache.caches import Cache, FastAPICache, get_cache
 from fastapi_alcazaba.security._cookies import CookieSettings, SameSite, cookie_values
@@ -66,6 +66,8 @@ class ServerSession(dict[str, Any]):
         self.rotate = False
         self.new_id: str | None = None  # the id it got when saved, if it got a new one
         self.cleared = False
+        # The cutoff of this request's own end_all(keep_current=True): not one that ended it.
+        self.kept_cutoff: int | None = None
 
     def mark_accessed(self) -> None:
         """Called by `request.session`: the response then depends on the cookie."""
@@ -283,6 +285,7 @@ class ServerSessionMiddleware:
         session_id = next((value for value in values if _ID.fullmatch(value)), None)
         if session_id is None:
             return ServerSession(), fresh
+        mark_credential_header(scope, "cookie")
         key = self._key(cache, session_id)
         backend = shared_backend(cache.backend)
         try:
@@ -368,13 +371,24 @@ class ServerSessionMiddleware:
             raise BackendUnavailable("the session couldn't be read, so it can't be written")
         backend = shared_backend(cache.backend)
         old_key = loaded.key
+        rotation: bytes | None = None
         if old_key is not None and (renew or not session):
             # Marked and deleted first: if what follows fails, the old id (maybe planted) is gone
             # anyway, and the mark keeps requests still running with it from saving it again.
             gone = _gone(old_key)
             ttl = max(1, self.max_age - (now - loaded.created))
-            await cache.guard.run("set", lambda: backend.set(gone, b"1", ttl))
-            await cache.guard.run("delete", lambda: backend.clear(key=old_key))
+            if session and not session.cleared:
+                # A rotation: not of a session a logout, an end or another rotation ended while
+                # this request ran, which would bring it back under a new id.
+                if await self._ended_meanwhile(cache, gone, loaded, session):
+                    await cache.guard.run("delete", lambda: backend.clear(key=old_key))
+                    return self._lost(cache, session)
+                rotation = b"rotated:" + secrets.token_hex(16).encode()
+            mark = rotation or b"1"
+            await cache.guard.run("set", lambda: backend.set(gone, mark, ttl))
+            deleted = await cache.guard.run("delete", lambda: backend.clear(key=old_key))
+            if rotation is not None and deleted != 1:
+                return self._lost(cache, session)  # ended by another request meanwhile
             if session.cleared or not session:
                 _count(cache, "deleted")
         if not session:
@@ -385,10 +399,48 @@ class ServerSessionMiddleware:
             return None
         session_id = secrets.token_urlsafe(32)
         started = int(time.time() * 1000)
-        await self._write(cache, self._key(cache, session_id), data, now, now, started)
+        new_key = self._key(cache, session_id)
+        await self._write(cache, new_key, data, now, now, started)
+        if rotation is not None and old_key is not None:
+            # A logout or an end that marked the old id after this rotation did: its mark
+            # replaced this one's, and the new session goes with the old.
+            gone = _gone(old_key)
+            if await cache.guard.run("get", lambda: backend.get(gone)) != rotation:
+                await cache.guard.run("delete", lambda: backend.clear(key=new_key))
+                return self._lost(cache, session)
         _count(cache, "rotated" if old_key is not None and not session.cleared else "created")
         session.new_id = session_id
         return self.cookie.header(session_id, self.max_age)
+
+    async def _ended_meanwhile(
+        self,
+        cache: Cache,
+        gone: str,
+        loaded: _Loaded,
+        session: ServerSession,
+    ) -> bool:
+        """Whether the loaded session was ended after this request loaded it: marked by a
+        logout, an end or a rotation, or its user's sessions ended by another request's
+        `end_all`."""
+        backend = shared_backend(cache.backend)
+        if await cache.guard.run("get", lambda: backend.get(gone)) is not None:
+            return True
+        return self.users is not None and await self.users.ended(
+            cache,
+            json.loads(loaded.original),
+            loaded.started,
+            kept=session.kept_cutoff,
+        )
+
+    def _lost(self, cache: Cache, session: ServerSession) -> tuple[bytes, bytes]:
+        """What a rotation of a session that ended meanwhile answers: nothing saved, and the
+        cookie expired, as for a logout."""
+        logger.debug("Not rotating a session that ended meanwhile")
+        _count(cache, "deleted")
+        session.clear()
+        session.cleared = True
+        session.rotate = False
+        return self.cookie.expired()
 
     def _touch_due(self, loaded: _Loaded, now: int) -> bool:
         return self._touch_after is not None and now - loaded.seen >= self._touch_after
@@ -520,9 +572,16 @@ class UserSessions:
 
     # What the middleware calls.
 
-    async def ended(self, cache: Cache, data: dict[str, Any], started: int) -> bool:
+    async def ended(
+        self,
+        cache: Cache,
+        data: dict[str, Any],
+        started: int,
+        *,
+        kept: int | None = None,
+    ) -> bool:
         """Whether a session of `data`, started at `started` (Unix milliseconds), was ended by
-        `end_all`."""
+        `end_all`; not by the one whose cutoff is `kept` (the request's own, that keeps it)."""
         user = data.get(self.user_key)
         if user is None:
             return False
@@ -533,7 +592,7 @@ class UserSessions:
         except BackendUnavailable as exc:
             logger.warning("Couldn't check whether the session was ended: refused", exc_info=exc)
             return True
-        return cutoff is not None and started < int(cutoff)
+        return cutoff is not None and started < int(cutoff) and int(cutoff) != kept
 
     async def follow(
         self,
@@ -641,6 +700,7 @@ class UserSessions:
         if keep_current and current is not None and request is not None:
             # Started before the cutoff, it would be refused too: a new one, not before it.
             rotate_session(request)
+            _session(request).kept_cutoff = int(cutoff)
         kept = {ref: e for ref, e in index.items() if keep_current and e["key"] == current}
 
         def only_kept(found: dict[str, dict[str, Any]]) -> None:

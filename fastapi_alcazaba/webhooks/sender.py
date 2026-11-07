@@ -116,7 +116,8 @@ class WebhookSender:
         queue's, or FastAPICache's.
     :param client: the httpx2 client to send with; by default one whose transport refuses
         private, loopback and metadata addresses (`SSRFGuardTransport`) and bounds each attempt
-        (`ResilientTransport`). A client given replaces both.
+        (`ResilientTransport`, without a circuit breaker: endpoints of different users may share
+        a host, and each one's failures are its own). A client given replaces both.
     :param allow: hosts or networks the SSRF guard lets through although they aren't public (an
         internal receiver; `localhost` in development).
     :param timeout: seconds for each attempt, the answer included.
@@ -162,6 +163,10 @@ class WebhookSender:
                 transport=ResilientTransport(
                     SSRFGuardTransport(allow=allow),
                     timeout=timeout,
+                    # No breaker per origin: one user's endpoint that fails would refuse the
+                    # others' on the same host, and count against them. Each endpoint's own
+                    # failures disable it (`disable_after`).
+                    failure_threshold=None,
                     max_response_size=MAX_RESPONSE,
                 ),
                 follow_redirects=False,

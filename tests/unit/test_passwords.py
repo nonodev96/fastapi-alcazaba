@@ -249,6 +249,21 @@ class TestResets:
         stored = b"".join(value.data for value in backend._state["passwords"].values())  # pylint: disable=protected-access
         assert token.encode() not in stored
 
+    async def test_a_planted_token_isnt_taken_with_a_signing_key(self) -> None:
+        """Whoever can write to the backend, without the app's key, can't make a token of their
+        own work for another user: the records are sealed, and those the app didn't seal are
+        unknown."""
+        backend = InMemoryBackend()
+        cache = Cache(backend, prefix="app", signing_key="k" * 40)
+        passwords = make(cache=cache)
+        token = "a token of the writer's own"  # noqa: S105
+        digest = hashlib.sha256(token.encode()).hexdigest()
+        await backend.set(passwords._key(cache, "reset", digest), b"victim", 3600)  # pylint: disable=protected-access
+        await backend.set(passwords._key(cache, "reset-of", "victim"), digest.encode(), 3600)  # pylint: disable=protected-access
+        assert await passwords.use_reset_token(token) is None
+        genuine = await passwords.reset_token("victim")
+        assert await passwords.use_reset_token(genuine) == "victim"
+
 
 async def test_the_audit_trail() -> None:
     sink = MemoryAuditSink()

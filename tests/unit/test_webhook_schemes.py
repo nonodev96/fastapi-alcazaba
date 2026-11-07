@@ -119,16 +119,15 @@ class TestGitHub:
             ),
         }
         message = webhooks.verify(headers, b"Hello, World!")
-        assert message.id == "72d3162e-cc78-11e3-81ab-4c9367dc0958"
+        # X-GitHub-Delivery isn't signed: the body names the message.
+        assert message.id == "sha256:" + hashlib.sha256(b"Hello, World!").hexdigest()
         assert message.timestamp is None  # GitHub signs no time
         assert refused(webhooks, headers, b"Hello, World?") == 401
 
     @pytest.mark.parametrize(
         ("headers", "status"),
         [
-            ({"X-Hub-Signature-256": "sha256=" + "0" * 64}, 400),  # no delivery id
             ({"X-GitHub-Delivery": "d1"}, 400),  # no signature
-            ({"X-GitHub-Delivery": "d 1", "X-Hub-Signature-256": "sha256=" + "0" * 64}, 400),
             ({"X-GitHub-Delivery": "d1", "X-Hub-Signature-256": "sha1=" + "0" * 40}, 401),
             ({"X-GitHub-Delivery": "d1", "X-Hub-Signature-256": "sha256=zz"}, 401),
             ({"X-GitHub-Delivery": "d1", "X-Hub-Signature-256": "sha256=" + "é" * 64}, 401),
@@ -143,7 +142,7 @@ class TestGitHub:
         mac = hmac.new(GITHUB_SECRET.encode(), BODY, hashlib.sha256).hexdigest()
         headers = {"X-GitHub-Delivery": "d1", "X-Hub-Signature-256": f"sha256={mac}"}
         webhooks = FastAPIWebhooks(["a-newer-github-secret", GITHUB_SECRET], scheme="github")
-        assert webhooks.verify(headers, BODY).id == "d1"
+        assert webhooks.verify(headers, BODY).id == "sha256:" + hashlib.sha256(BODY).hexdigest()
 
 
 class TestStripe:
@@ -250,6 +249,20 @@ class TestTheSameChecks:
             assert client.post("/hook", content=BODY, headers=headers).status_code == 200
             replay = client.post("/hook", content=BODY, headers=headers)
             assert (replay.status_code, replay.json()) == (401, {"detail": "Invalid webhook"})
+        del clock
+
+    def test_a_github_replay_with_another_delivery_id(self, clock: Clock) -> None:
+        """X-GitHub-Delivery isn't signed: changing it doesn't make a copy another message."""
+        mac = hmac.new(GITHUB_SECRET.encode(), BODY, hashlib.sha256).hexdigest()
+        webhooks = FastAPIWebhooks(GITHUB_SECRET, scheme="github", cache=Cache(InMemoryBackend()))
+        client = self.app(webhooks)
+        ids = []
+        for delivery in ("d1", "d2", "d3"):
+            headers = {"X-GitHub-Delivery": delivery, "X-Hub-Signature-256": f"sha256={mac}"}
+            response = client.post("/hook", content=BODY, headers=headers)
+            ids.append((response.status_code, response.json().get("id")))
+        digest = "sha256:" + hashlib.sha256(BODY).hexdigest()
+        assert ids == [(200, digest), (401, None), (401, None)]
         del clock
 
     def test_the_body_size_limit(self, clock: Clock) -> None:

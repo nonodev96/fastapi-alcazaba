@@ -12,6 +12,7 @@ import httpx2 as httpx
 import pytest
 
 from fastapi_alcazaba.background import FastAPITaskQueue
+from fastapi_alcazaba.outbound.transports import ResilientTransport, SSRFGuardTransport
 from fastapi_alcazaba.webhooks import (
     FastAPIWebhooks,
     WebhookDeliveryFailed,
@@ -206,6 +207,34 @@ class TestDefaults:
         assert delivery.error == "BlockedDestinationError"
         await sender.aclose()
         assert sender.client.is_closed
+
+    async def test_one_endpoints_failures_dont_block_anothers_on_its_host(self) -> None:
+        """Its own client has no breaker per host: a user's endpoint that keeps failing neither
+        keeps another user's on the same host from being called, nor counts against it."""
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(500 if request.url.path == "/failing" else 200)
+
+        endpoints = {
+            "failing": WebhookEndpoint("https://93.184.215.14/failing", SECRET),
+            "healthy": WebhookEndpoint("https://93.184.215.14/healthy", SECRET),
+        }
+        world = World()
+        sender = WebhookSender(world.queue(), endpoints.get, retries=0)
+        resilient = sender.client._transport
+        assert isinstance(resilient, ResilientTransport)
+        guard = resilient._transport
+        assert isinstance(guard, SSRFGuardTransport)
+        guard._shared = httpx.MockTransport(handler)  # what the guard sends through
+        for n in range(10):
+            with pytest.raises(WebhookDeliveryFailed):
+                await sender._deliver("failing", f"m{n}", "{}")
+        await sender._deliver("healthy", "m", "{}")
+        delivery = await sender.delivery("healthy", "m")
+        assert delivery is not None
+        assert delivery.state == "succeeded"
+        assert (await sender.health("healthy")).failures == 0
+        await sender.aclose()
 
     async def test_a_client_given_is_not_closed(self) -> None:
         client = httpx.AsyncClient()

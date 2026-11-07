@@ -68,6 +68,15 @@ class TestReading:
         assert cookie_values(scope, "session") == ["first", "second"]
         assert cookie_values(scope, "missing") == []
 
+    @pytest.mark.parametrize("prefix", [b"\xa0", b"\x85", b"\x1f", b"\x0b", b"\x0c"])
+    def test_names_padded_with_more_than_spaces_arent_the_cookie(self, prefix: bytes) -> None:
+        """A name a browser doesn't hold to `__Host-`'s rules (it doesn't start with it) isn't
+        taken for one that does: only spaces and tabs are trimmed."""
+        scope = {"headers": [(b"cookie", prefix + b"__Host-session=tossed; __Host-session=real")]}
+        assert cookie_values(scope, "__Host-session") == ["real"]
+        tabbed = {"headers": [(b"cookie", b" \t__Host-session=real \t")]}
+        assert cookie_values(tabbed, "__Host-session") == ["real"]
+
     @pytest.mark.parametrize(
         ("headers", "expected"),
         [([], False), ([(b"cookie", b"  ")], False), ([(b"cookie", b"a=1")], True)],

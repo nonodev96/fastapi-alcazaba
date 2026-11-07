@@ -40,15 +40,27 @@ _MAX_KEY_LENGTH = 255
 _NOT_KEPT = frozenset({401, 403, 404, 405, 406, 408, 409, 411, 413, 414, 415, 422, 425, 429, 431})
 
 
+#: The headers the default identifier takes a client's credentials from: `X-API-Key` is the one
+#: FastAPIAPIKeys and UnkeyStrategy read a key from.
+_CREDENTIAL_HEADERS = (b"authorization", b"x-api-key")
+
+
 def credentials(connection: HTTPConnection) -> str:
     """The default identifier: the request's credentials, hashed before they're stored, so that
-    one user never gets another's response, whatever key they send: the `Authorization` header,
-    or the cookies without one (a cookie session; any cookie that changes between a request and
-    its retry makes the retry run again). Nothing for requests that carry neither."""
-    if authorization := connection.headers.get("authorization"):
-        return "authorization:" + authorization
-    if cookie := connection.headers.get("cookie"):
-        return "cookie:" + cookie
+    one user never gets another's response, whatever key they send: the `Authorization` and
+    `X-API-Key` headers, or all the cookies without either (a cookie session; any cookie that
+    changes between a request and its retry makes the retry run again). Nothing for requests
+    that carry none."""
+    headers: list[tuple[bytes, bytes]] = connection.scope["headers"]
+    found = [
+        f"{name.decode('latin-1')}:{value.decode('latin-1')}"
+        for name, value in headers
+        if name in _CREDENTIAL_HEADERS
+    ]
+    if found:
+        return "\n".join(found)
+    if cookies := [value.decode("latin-1") for name, value in headers if name == b"cookie"]:
+        return "cookie:" + "; ".join(cookies)
     return ""
 
 
@@ -98,8 +110,9 @@ class IdempotencyMiddleware:
         FastAPICache's by default. Its backend must support locks.
     :param methods: the methods it applies to; PUT and DELETE are idempotent already.
     :param expire: seconds a response is kept for retries.
-    :param identifier: who the client is (`credentials` by default: the `Authorization` header,
-        or the cookies). Return the user's id with tokens that get refreshed, and with cookies
+    :param identifier: who the client is (`credentials` by default: the `Authorization` and
+        `X-API-Key` headers, or the cookies). Pass one when clients send a key in another
+        header. Return the user's id with tokens that get refreshed, and with cookies
         that change between requests: a retry sent with others would run again. Requests without
         credentials share one space of keys, unguessable as long as clients make them random
         (UUIDs).

@@ -512,15 +512,10 @@ class FastAPIPasswords:
         """A token for `user_id` to set a new password, for the link of the e-mail it's sent by;
         it replaces their last one. Raises BackendUnavailable when the backend fails."""
         cache = resolve_cache(self.cache)
-        backend = shared_backend(cache.backend)
         token = secrets.token_urlsafe(32)
         digest = hashlib.sha256(token.encode()).hexdigest()
-        latest = self._key(cache, "reset-of", user_id)
-        stored = f"{digest}".encode()
-        await cache.guard.run("set", lambda: backend.set(latest, stored, self.reset_ttl))
-        record = str(user_id).encode()
-        key = self._key(cache, "reset", digest)
-        await cache.guard.run("set", lambda: backend.set(key, record, self.reset_ttl))
+        await self._put(cache, self._key(cache, "reset-of", user_id), digest.encode())
+        await self._put(cache, self._key(cache, "reset", digest), str(user_id).encode())
         return token
 
     async def use_reset_token(
@@ -545,15 +540,14 @@ class FastAPIPasswords:
         digest = hashlib.sha256(token.encode()).hexdigest()
         key = self._key(cache, "reset", digest)
         try:
-            stored = await cache.guard.run("get", lambda: backend.get(key))
+            stored = await self._get(cache, key)
             if stored is None:
-                return "unknown", None
+                return "unknown", None  # none, or one this app didn't write
             # Used once: of two requests with the token, the one that deletes it.
             if await cache.guard.run("delete", lambda: backend.clear(key=key)) != 1:
                 return "unknown", None
             user_id = stored.decode()
-            latest_key = self._key(cache, "reset-of", user_id)
-            latest = await cache.guard.run("get", lambda: backend.get(latest_key))
+            latest = await self._get(cache, self._key(cache, "reset-of", user_id))
         except BackendUnavailable as exc:
             logger.warning("Couldn't check a password reset token", exc_info=exc)
             return "unchecked", None
@@ -566,6 +560,23 @@ class FastAPIPasswords:
     def _key(self, cache: Cache, kind: str, value: Any) -> str:
         digest = hashlib.sha256(f"{kind}\0{value}".encode()).hexdigest()
         return cache.state_key(self.namespace, f"{kind}:{digest}")
+
+    async def _put(self, cache: Cache, key: str, payload: bytes) -> None:
+        """Stores a reset record, sealed with the cache's protector: whoever can write to the
+        backend can't plant one this app would take as its own."""
+        protector = cache.options.protector
+        value = protector.seal(key, payload) if protector is not None else payload
+        backend = shared_backend(cache.backend)
+        await cache.guard.run("set", lambda: backend.set(key, value, self.reset_ttl))
+
+    async def _get(self, cache: Cache, key: str) -> bytes | None:
+        """A reset record; None when there's none, or it isn't one this app sealed."""
+        backend = shared_backend(cache.backend)
+        data = await cache.guard.run("get", lambda: backend.get(key))
+        protector = cache.options.protector
+        if data is None or protector is None:
+            return data
+        return protector.open(key, data)
 
     async def _audit(
         self,

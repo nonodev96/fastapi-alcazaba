@@ -205,18 +205,20 @@ def _etag_matches(if_none_match: str | None, etag: str) -> bool:
 
 
 def _vary_digest(request: Request | None, headers: tuple[str, ...]) -> str | None:
-    """Digest of the request's values of `headers`; None when it carries none of them."""
+    """Digest of the request's values of `headers`, every line of each (cookies may come in
+    several, and authentication reads them all); None when it carries none of them."""
     if request is None or not headers:
         return None
-    values = [request.headers.get(name) for name in headers]
-    if all(value is None for value in values):
+    values = [request.headers.getlist(name) for name in headers]
+    if not any(values):
         return None
     digest = hashlib.sha256()
-    for name, value in zip(headers, values, strict=True):
-        digest.update(name.encode() + b"\0")
-        # Starlette decodes header values as latin-1, so this gives back the original bytes.
-        digest.update(b"\1" if value is None else b"\2" + value.encode("latin-1"))
-        digest.update(b"\0")
+    for name, lines in zip(headers, values, strict=True):
+        digest.update(name.encode() + b"\0" + len(lines).to_bytes(4, "big"))
+        for line in lines:
+            # Starlette decodes header values as latin-1, so this gives back the original bytes.
+            raw = line.encode("latin-1")
+            digest.update(len(raw).to_bytes(4, "big") + raw)
     return digest.hexdigest()
 
 
@@ -388,6 +390,16 @@ def _targets(response: Response | None, result: object) -> list[Response]:
 
 def _pick(value: Any, default: Any) -> Any:
     return default if value is None else value
+
+
+def _vary_headers(own: tuple[str, ...] | None, default: tuple[str, ...]) -> tuple[str, ...]:
+    """The headers that tell requests apart: the cache's (the ones credentials come in, by
+    default) and the endpoint's on top of them; none when the endpoint says `()`."""
+    if own is None:
+        return default
+    if not own:
+        return ()
+    return (*default, *(header for header in own if header not in default))
 
 
 @dataclass
@@ -626,9 +638,10 @@ class _CachedCall:
         if not isinstance(cache_key, str):
             raise TypeError(f"the key builder returned {type(cache_key).__name__}, not str")
         # Whatever the key builder, a user's response is never served to another one: the
-        # headers the strategies read credentials from count too, unless the endpoint said its
-        # response is the same for everybody (`vary_headers=()`).
-        vary = _pick(endpoint.vary_headers, self.options.vary_headers)
+        # endpoint's headers add to the cache's, and the headers the strategies read credentials
+        # from count too, unless the endpoint said its response is the same for everybody
+        # (`vary_headers=()`).
+        vary = _vary_headers(endpoint.vary_headers, self.options.vary_headers)
         if vary and self.request is not None:
             vary = (*vary, *(h for h in credential_headers(self.request.scope) if h not in vary))
         vary_digest = _vary_digest(self.request, vary)
@@ -1030,7 +1043,8 @@ def cache(
     :param exclude_params: arguments left out of the cache key: calls that only differ in them
         share an entry (e.g. a nonce, or a database session whose repr changes with each call).
     :param vary_headers: request headers that give each value its own entry and make the
-        response `private`; `()` when the response is the same for everybody.
+        response `private`, on top of the cache's (`Authorization`, `Cookie` and `X-API-Key` by
+        default); `()` when the response is the same for everybody.
     :param respect_cache_control: let clients skip the cache with Cache-Control no-cache or
         no-store.
     :param stale_while_revalidate: seconds past `expire` during which the expired entry is

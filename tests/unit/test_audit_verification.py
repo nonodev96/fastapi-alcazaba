@@ -9,6 +9,9 @@ import json
 import logging
 import os
 import stat
+import subprocess
+import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -284,6 +287,36 @@ class TestCheckpoints:
         assert list((await audit.checkpoint()).details["heads"]) == [audit._stream]
         del clock
 
+    async def test_heads_planted_in_the_backend_cant_stop_checkpoints(self, clock: Clock) -> None:
+        """Whoever writes to the backend can't plant a head that can't be signed (a number no
+        double holds, a lone surrogate) nor one that never expires: they're dropped, the
+        checkpoint is written and the chain has no gaps."""
+        cache = Cache(InMemoryBackend())
+        trail = MemoryAuditSink()
+        audit = FastAPIAudit([trail], signing_key=SECRET, cache=cache)
+        key = cache.state_key(
+            "audit", "heads:{" + hashlib.sha256(b"default").hexdigest()[:32] + "}"
+        )
+        now = int(time.time())  # the heads' times are the wall clock's
+        planted = {
+            "0123456789abcdef": [2**53 + 1, "hs256:k:x", now],
+            "1123456789abcdef": [1, chr(0xD800), now],  # a lone surrogate
+            "2123456789abcdef": [1, "hs256:k:x", now + 10**9],
+            "not-a-stream": [1, "hs256:k:x", now],
+            "3123456789abcdef": [7, "hs256:k:x", now],  # well-formed: kept
+        }
+        await cache.backend.set(key, json.dumps(planted).encode())
+        await write(audit, 1)
+        checkpoint = await audit.checkpoint()
+        assert checkpoint.details["heads"] == {
+            "3123456789abcdef": [7, "hs256:k:x"],
+            audit._stream: [1, trail.events[0].signature],
+        }
+        await write(audit, 1)
+        own = [event for event in trail.events if event.stream == audit._stream]
+        assert [event.sequence for event in own] == [1, 2, 3]
+        del clock
+
     async def test_invalid(self) -> None:
         with pytest.raises(ValueError, match="needs a signing_key"):
             FastAPIAudit(checkpoint_interval=60)
@@ -311,6 +344,36 @@ class TestCheckpoints:
 
 
 class TestCommandLine:
+    @pytest.mark.parametrize("command", [["keygen", "private.pem", "public.pem"], ["verify"]])
+    def test_never_imports_from_the_current_directory(
+        self,
+        tmp_path: Path,
+        command: list[str],
+    ) -> None:
+        """A module next to the files being checked doesn't run: `bcrypt`, which cryptography
+        imports when it loads keys. In a new interpreter, as the command runs (here,
+        cryptography's already imported)."""
+        (tmp_path / "bcrypt.py").write_text("open('planted-ran', 'w').close()\n")
+        if command == ["verify"]:
+            private = ed25519.Ed25519PrivateKey.generate()
+            public = private.public_key().public_bytes(
+                serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+            (tmp_path / "public.pem").write_bytes(public)
+            (tmp_path / "events.jsonl").write_text("")
+            command = ["verify", "events.jsonl", "--key", "public.pem"]
+        arguments = ["audit", *command]
+        code = f"import sys; from fastapi_alcazaba.cli import main; sys.exit(main({arguments!r}))"
+        result = subprocess.run(  # noqa: S603  # our own interpreter and code
+            [sys.executable, "-I", "-c", code],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode in (0, NOT_DONE), result.stderr
+        assert not (tmp_path / "planted-ran").exists()
+
     def test_keygen_and_verify(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         private, public = tmp_path / "private.pem", tmp_path / "public.pem"
         assert main(["audit", "keygen", str(private), str(public)]) == 0

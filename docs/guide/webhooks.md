@@ -88,13 +88,14 @@ slack = FastAPIWebhooks(settings.slack_signing_secret, scheme="slack")
 
 | Scheme | What's checked | `message.id` | `message.timestamp` |
 | --- | --- | --- | --- |
-| `github` | `X-Hub-Signature-256: sha256=<HMAC of the body>` | `X-GitHub-Delivery` | None |
+| `github` | `X-Hub-Signature-256: sha256=<HMAC of the body>` | a digest of what's signed | None |
 | `stripe` | `Stripe-Signature: t=<time>,v1=<HMAC of "time.body">` (any of its `v1`) | a digest of what's signed | `t` |
 | `slack` | `X-Slack-Signature: v0=<HMAC of "v0:time:body">`, `X-Slack-Request-Timestamp` | a digest of what's signed | the header |
 
-- **GitHub signs no time:** a delivery is refused again only within the replay window (twice
-  `tolerance`, plus a minute); a capture sent later goes through. Keep the endpoint idempotent on
-  `message.id`, the delivery id, which redeliveries keep.
+- **GitHub signs no time, nor `X-GitHub-Delivery`:** a copy could change that header, so the
+  message is named by its body (a redelivery sends the same one). A delivery is refused again
+  only within the replay window (twice `tolerance`, plus a minute); a capture sent later goes
+  through. Keep the endpoint idempotent on `message.id`.
 - **Stripe's secret** is used as the string it gives you, `whsec_` included (not decoded as
   Standard Webhooks' are); its event id is in the body (`message.json()["id"]`).
 - **Slack** sends slash commands and interactions as forms: take the body with
@@ -152,7 +153,9 @@ relay = OutboxRelay(outbox, deliver)
   only for its status. `client=` gives yours instead, and the guard is then yours to add.
 - **Endpoints that keep failing:** after `disable_after` (20) failed attempts in a row, or at
   once when the receiver answers 410 Gone, the endpoint is disabled: its deliveries are skipped,
-  not retried. `health(endpoint_id)` says how many failures in a row and whether it's disabled;
+  not retried. Each endpoint's failures are its own: its client has no circuit breaker per host,
+  so one user's endpoint that fails never blocks nor counts against another user's on the same
+  host. `health(endpoint_id)` says how many failures in a row and whether it's disabled;
   `enable()` turns it back on (send the skipped messages again), `disable()` turns it off.
 - **Records:** `delivery(endpoint_id, message_id)` gives its state as of its last attempt
   (retrying, succeeded, failed, skipped), the attempts, the last status code and error type, and

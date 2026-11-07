@@ -2,6 +2,7 @@
 PUTs bounded by size and checksum, and files uploaded straight to the bucket read back."""
 
 import asyncio
+import gzip
 import hashlib
 import io
 import logging
@@ -309,6 +310,7 @@ class Bucket:
     def __init__(self, objects: dict[str, bytes]) -> None:
         self.objects = objects
         self.types: dict[str, str] = {}
+        self.encodings: dict[str, str] = {}  # the Content-Encoding an uploader set
         self.deleted: list[str] = []
         self.status = 200
         self.delete_status = 204
@@ -341,7 +343,11 @@ class Bucket:
         data = self.objects[key]
         if self.after_read is not None:
             self.objects[key] = self.after_read
-        return httpx.Response(200, content=data, headers={"etag": self.etag(data)})
+        headers = {"etag": self.etag(data)}
+        if key in self.encodings:
+            headers["content-encoding"] = self.encodings[key]
+        # A stream, as from the network: read raw, never decoded.
+        return httpx.Response(200, stream=httpx.ByteStream(data), headers=headers)
 
 
 def client_of(bucket: Bucket) -> httpx.AsyncClient:
@@ -364,6 +370,22 @@ class TestCheckUploaded:
         await checked.file.close()  # the caller's
         assert bucket.objects == {"checked/1": TEXT}
         assert bucket.types == {"checked/1": "text/plain"}  # the type found, not the uploader's
+
+    async def test_checked_as_stored_whatever_its_content_encoding(self) -> None:
+        """An uploader that sets `Content-Encoding: gzip` gets its gzip checked, not the text it
+        unpacks to: what would be moved is what was checked."""
+        bucket = Bucket({"scans/1": gzip.compress(TEXT)})
+        bucket.encodings["scans/1"] = "gzip"
+        with pytest.raises(HTTPException) as refused:
+            await check_uploaded(
+                FastAPIUploads("text/plain", scanner=FakeScanner()),
+                presigner(),
+                "scans/1",
+                move_to="checked/1",
+                client=client_of(bucket),
+            )
+        assert refused.value.status_code == 415
+        assert bucket.objects == {}
 
     async def test_replaced_after_it_was_read(self) -> None:
         """A presigned URL works until it expires: an object replaced once checked is never

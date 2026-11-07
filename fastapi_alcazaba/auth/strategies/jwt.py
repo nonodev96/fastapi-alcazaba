@@ -38,6 +38,7 @@ from starlette.status import HTTP_503_SERVICE_UNAVAILABLE, WS_1013_TRY_AGAIN_LAT
 
 from fastapi_alcazaba.auth.strategies.base import AuthenticationFailed, Strategy, _secure, call
 from fastapi_alcazaba.auth.tokens import TokenBlocklist
+from fastapi_alcazaba.core.asgi import mark_credential_header
 from fastapi_alcazaba.core.integrity import Secrets, reveal, secret_list
 from fastapi_alcazaba.security._cookies import cookie_values
 
@@ -626,10 +627,12 @@ class JWTStrategy(Strategy):
     def _token(self, connection: HTTPConnection) -> str | None:
         scheme, _, token = connection.headers.get("authorization", "").partition(" ")
         if scheme.lower() == "bearer" and token.strip():
+            mark_credential_header(connection.scope, "authorization")
             return token.strip()
         if self.cookie is not None:
             values = cookie_values(connection.scope, self.cookie)
             if values:
+                mark_credential_header(connection.scope, "cookie")
                 return values[0]
         return None
 

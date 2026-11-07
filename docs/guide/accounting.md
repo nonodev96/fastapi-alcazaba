@@ -63,8 +63,10 @@ async def summarize(
 - **Periods:** calendar hours, days or months, in UTC: a monthly quota starts again on the 1st
   at 00:00 UTC. `period_of("month", at)` gives a period's label (`2026-11`) and its bounds.
 - **What's charged:** a client error (a 4xx, a validation error) was served, and stays charged:
-  otherwise invalid requests would be free. A server error (an exception, a 5xx) or a client
-  that went away is refunded, without a record. What an endpoint added to its `Metering` is
+  otherwise invalid requests would be free. So does a request whose client went away once the
+  endpoint ran (it closed its WebSocket, or its connection before the response): otherwise
+  leaving would make any request free. A server error (an exception, a 5xx) is refunded,
+  without a record. What an endpoint added to its `Metering` is
   charged whatever happens next: it was used.
 - **Who:** `subject` is a dependency that returns an ID (a str, an int or a UUID), from your
   authentication: a user's, an API key's, a tenant's to share one quota among its users. Without

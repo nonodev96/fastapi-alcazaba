@@ -43,9 +43,25 @@ MAX_RECIPIENTS = 50
 MAX_ATTACHMENTS = 10
 #: A content type without parameters (RFC 6838's restricted names): `application/pdf`, `text/csv`.
 _CONTENT_TYPE = re.compile(r"[a-z0-9][a-z0-9!#$&^_.+-]{0,126}/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}")
-#: Headers a message may not be given: they're the library's, or would forge where it comes from.
+#: A header's name (RFC 5322's field-name): printable ASCII but the colon, no spaces.
+_FIELD_NAME = re.compile(r"[!-9;-~]{1,76}")
+#: Headers a message may not be given: they're the library's, or would forge where it comes from
+#: or where it goes (as would any `Resent-` header, which smtplib takes the envelope from).
 _RESERVED = frozenset(
-    {"from", "to", "cc", "bcc", "subject", "date", "message-id", "sender", "return-path"}
+    {
+        "from",
+        "to",
+        "cc",
+        "bcc",
+        "subject",
+        "date",
+        "message-id",
+        "sender",
+        "return-path",
+        "reply-to",
+        "received",
+        "auto-submitted",
+    }
 )
 
 
@@ -153,10 +169,12 @@ class FastAPIMail:
             message["Reply-To"] = self.reply_to
         message["Auto-Submitted"] = "auto-generated"  # RFC 3834: no auto-replies to it
         for name, value in (headers or {}).items():
-            if name.lower() in _RESERVED or name.lower() == "reply-to":
+            if not _FIELD_NAME.fullmatch(name):
+                raise ValueError(f"not a header's name: {name!r}")
+            if name.lower() in _RESERVED or name.lower().startswith("resent-"):
                 raise ValueError(f"the header {name} is FastAPIMail's")
-            if any(char in name + value for char in "\r\n\0") or ":" in name:
-                raise ValueError(f"the header {name!r} has no line breaks")
+            if any(char in value for char in "\r\n\0"):
+                raise ValueError(f"the header {name} has no line breaks")
             message[name] = value
         message.set_content(text)
         if html is not None:
@@ -327,7 +345,12 @@ class SMTPSender:
     def _send(self, message: EmailMessage) -> None:
         try:
             with self._connect() as client:
-                refused = client.send_message(message)
+                # The envelope from From and To, never from other headers.
+                refused = client.send_message(
+                    message,
+                    from_addr=message["From"].addresses[0].addr_spec,
+                    to_addrs=[address.addr_spec for address in message["To"].addresses],
+                )
         except (smtplib.SMTPException, OSError, ssl.SSLError) as exc:
             raise MailNotSent(f"{type(exc).__name__}: {str(exc)[:200]}") from exc
         if refused:

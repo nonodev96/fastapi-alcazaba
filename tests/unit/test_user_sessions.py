@@ -7,6 +7,7 @@ import asyncio
 import json
 from typing import Any
 
+import httpx2 as httpx
 import pytest
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
@@ -254,6 +255,45 @@ class TestEnding:
         assert laptop.post("/everywhere").json() == 0  # none in the index but this one
         assert not logged_in(phone)  # refused all the same: it started before
         assert logged_in(laptop)
+
+    @pytest.mark.parametrize("missed", [False, True])
+    async def test_a_rotation_still_running_doesnt_outlive_everywhere(
+        self,
+        clock: Clock,
+        missed: bool,
+    ) -> None:
+        """A copied cookie in a slow request that rotates the session (a login, a step-up) while
+        another device ends the user's sessions: it gets no new one, even when the index missed
+        it; and the device that ended them keeps its own."""
+        site = Site()
+        started, release = asyncio.Event(), asyncio.Event()
+
+        @site.app.post("/slow-login")
+        async def slow_login(request: Request) -> None:
+            started.set()
+            await release.wait()
+            rotate_session(request)
+
+        transport = httpx.ASGITransport(app=site.app)
+        async with (
+            httpx.AsyncClient(transport=transport, base_url="http://testserver") as phone,
+            httpx.AsyncClient(transport=transport, base_url="http://testserver") as laptop,
+        ):
+            await phone.post("/login/ana")
+            copied = {"Cookie": f"s={phone.cookies['s']}"}
+            if missed:
+                await site.backend.clear(key=site.users._key(site.cache, "user", "ana"))
+            await laptop.post("/login/ana")
+            clock.now += 10
+            slow = asyncio.create_task(phone.post("/slow-login", headers=copied))
+            await started.wait()
+            assert (await laptop.post("/everywhere")).status_code == 200
+            release.set()
+            response = await slow
+            assert response.status_code == 200
+            assert "Max-Age=0" in response.headers["set-cookie"]  # expired, not a new id
+            assert (await phone.get("/me", headers=copied)).status_code == 401
+            assert (await laptop.get("/me")).json() == "ana"
 
     def test_a_failing_backend_refuses_the_users_sessions(self) -> None:
         class NoCutoffs(InMemoryBackend):

@@ -9,7 +9,8 @@ trail, from a shell.
 The target is `module:attribute`: a `FastAPITaskQueue`, or a function (sync or async) that sets up
 what the queue needs (FastAPICache, when the queue uses it: the app's lifespan isn't run) and
 returns it. A bare `module` stands for all the queues in it. The current directory is importable,
-as with uvicorn. Add `--json` for output that scripts read.
+as with uvicorn (for `tasks` only: `audit` never imports from it). Add `--json` for output that
+scripts read.
 
     fastapi-alcazaba audit verify events.jsonl --key audit-public.pem
     fastapi-alcazaba audit keygen audit-private.pem audit-public.pem
@@ -48,11 +49,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the command with `argv` (the process's arguments by default); returns its exit status."""
     parser = _parser()
     arguments = parser.parse_args(argv)
-    if "." not in sys.path and "" not in sys.path:
-        sys.path.insert(0, "")  # the app's modules, from the current directory
     try:
         if arguments.group == "audit":
+            # Never from the current directory: it may hold the files being checked, and
+            # whoever wrote them could put a module there that the check would import.
             return _audit(arguments)
+        if "." not in sys.path and "" not in sys.path:
+            sys.path.insert(0, "")  # the app's modules, from the current directory
         return asyncio.run(_tasks(arguments))
     except _UsageError as exc:
         parser.print_usage(sys.stderr)

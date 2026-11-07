@@ -7,6 +7,47 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- `@cache(vary_headers=[...])`: an endpoint's headers add to the cache's instead of replacing
+  them, so `vary_headers=["accept-language"]` no longer serves one user's response to another.
+  `JWTStrategy`, `HTTPBearerStrategy` and `ServerSessionMiddleware` now mark the header or
+  cookie they read a credential from, as the API key strategies did, so it varies the cache
+  whatever its `vary_headers`.
+- `FastAPIPasswords`: reset tokens are sealed with the cache's `signing_key` or
+  `encryption_key`, so whoever can write to the backend can't plant one that resets another
+  user's password.
+- `FastAPIAccounting.meter()`: a request whose client goes away once the endpoint ran (it closes
+  its WebSocket, or its connection before the response) stays charged and gets its record;
+  only server errors are refunded. Closing the connection made any metered request free.
+- `IdempotencyMiddleware`: the default identifier counts `X-API-Key`, and every `Cookie` line,
+  so API-key clients no longer share one space of keys with each other and with anonymous
+  requests.
+- `FastAPIWebhooks(scheme="github")`: `message.id` is a digest of the signed body, as for Stripe
+  and Slack, not the unsigned `X-GitHub-Delivery`, which a copy could change to get past the
+  replay check.
+- `ServerSessionMiddleware`: a request that rotates a session (a login, a step-up) no longer
+  brings it back under a new id when a logout, `UserSessions.end`, `end_sid` or `end_all` ended
+  it while the request ran.
+- `FastAPIMail`: `headers=` refuses every `Resent-` header, `Received` and `Auto-Submitted`, and
+  names that aren't valid header names (`"To "`); `SMTPSender` takes the envelope from `From`
+  and `To` alone. `Resent-To` sent the message to its address instead.
+- `fastapi-alcazaba audit`: no longer imports modules from the current directory (where the
+  logs it checks may be); only `tasks` does.
+- `FastAPIAudit`: heads of other streams read from the backend are checked before a checkpoint
+  lists them, and an event's number is only taken once it's signed, so a value planted in the
+  backend can't stop checkpoints nor leave gaps in the chain.
+- Cookies: only spaces and tabs are trimmed around a cookie's name, as RFC 6265 says. A name led
+  by a 0xA0 or 0x85 byte, which browsers don't hold to `__Host-`'s rules, was read as
+  `__Host-session`.
+- The response cache varies on every line of each header (cookies may come in several), not
+  only the first, as authentication reads them.
+- `check_uploaded`: the object is read back as stored, never decoded, so an uploader's
+  `Content-Encoding` can't make it check other bytes than those it moves to `move_to`, nor
+  inflate them past `max_size`.
+- `WebhookSender`: its own client has no circuit breaker per host, so one user's endpoint that
+  keeps failing no longer blocks, and eventually disables, other users' endpoints on that host.
+
 ## [0.9.0] - 2026-11-06
 
 ### Added

@@ -141,6 +141,12 @@ CHECKPOINT = "audit.checkpoint"
 # Heads of streams kept in the backend for the checkpoints: dropped after this many seconds
 # without a checkpoint of theirs (a process gone).
 _HEADS_TTL = 7 * 24 * 3600
+#: A stream's name: 8 random bytes, in hex.
+_STREAM = re.compile(r"[0-9a-f]{16}")
+#: A signature as AuditKey.sign writes it: `<algorithm>:<kid>:<value>`, printable ASCII.
+_SIGNATURE = re.compile(r"[!-~]{1,512}")
+#: How far ahead of this process's clock another's may publish its head.
+_HEADS_SKEW = 300
 # Lone surrogates (text decoded with errors="surrogateescape") have no UTF-8.
 _SURROGATES = re.compile(f"[{chr(0xD800)}-{chr(0xDFFF)}]")
 
@@ -473,6 +479,25 @@ class MemoryAuditSink:
         self.events.append(event)
 
 
+def _valid_head(stream: Any, head: Any, now: int) -> bool:
+    """Whether a stream's head, as the backend holds it, is one a process published: its name,
+    `[sequence, signature, time]` and not older than `_HEADS_TTL`. The backend isn't trusted
+    with the trail's integrity: anything else is dropped, never signed into a checkpoint."""
+    if not isinstance(stream, str) or not _STREAM.fullmatch(stream):
+        return False
+    if not isinstance(head, list) or len(head) != 3:
+        return False
+    sequence, signature, published = head
+    return (
+        type(sequence) is int
+        and 0 < sequence <= MAX_SAFE_INTEGER
+        and isinstance(signature, str)
+        and _SIGNATURE.fullmatch(signature) is not None
+        and type(published) is int
+        and -_HEADS_SKEW <= now - published < _HEADS_TTL
+    )
+
+
 class FastAPIAudit:
     """An audit trail: `action()` records what endpoints do, `record()` and `log()` the rest.
 
@@ -687,7 +712,7 @@ class FastAPIAudit:
                 shared = {
                     stream: head
                     for stream, head in (shared if isinstance(shared, dict) else {}).items()
-                    if isinstance(head, list) and len(head) == 3 and now - head[2] < _HEADS_TTL
+                    if _valid_head(stream, head, now)
                 }
                 if own:
                     shared[self._stream] = [self._sequence, self._previous, now]
@@ -735,7 +760,7 @@ class FastAPIAudit:
         if os.getpid() != self._pid:
             self._pid, self._stream = os.getpid(), secrets.token_hex(8)
             self._sequence, self._previous = 0, None
-        self._sequence += 1
+        sequence = self._sequence + 1  # taken once the event is signed: no gap if that fails
         event = AuditEvent(
             id=uuid.uuid4().hex,
             time=datetime.now(UTC),
@@ -752,15 +777,15 @@ class FastAPIAudit:
             client=client,
             details=details if details is not None else self._cleaner.details(entry.details),
             stream=self._stream,
-            sequence=self._sequence,
+            sequence=sequence,
             previous=self._previous,  # only set with a signing key
         )
-        if self._keys is None:
-            return event
-        data = event.to_dict()
-        del data["signature"]
-        event = dataclasses.replace(event, signature=self._keys[0].sign(_signed(data)))
-        self._previous = event.signature
+        if self._keys is not None:
+            data = event.to_dict()
+            del data["signature"]
+            event = dataclasses.replace(event, signature=self._keys[0].sign(_signed(data)))
+            self._previous = event.signature
+        self._sequence = sequence
         return event
 
     async def _deliver(self, event: AuditEvent) -> None:

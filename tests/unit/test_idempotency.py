@@ -281,6 +281,27 @@ class TestClients:
             assert client.post("/orders", json={"item": "a"}, headers=headers).status_code == 201
         assert app.runs == 2
 
+    def test_each_api_key_has_its_own_keys(self) -> None:
+        """FastAPIAPIKeys' header: another key, or none, doesn't get a client's response."""
+        app = App()
+        client = app.client()
+        for headers in ({"X-API-Key": "ak_tenant_a"}, {"X-API-Key": "ak_tenant_b"}, {}):
+            response = client.post("/orders", json={"item": "a"}, headers={**KEY, **headers})
+            assert "idempotent-replayed" not in response.headers
+        assert app.runs == 3
+
+    def test_every_cookie_line_counts(self) -> None:
+        """Cookies sent in several lines: the session on the second one tells clients apart."""
+        app = App()
+        for user in ("ana", "ben"):
+            response = app.client().post(
+                "/orders",
+                json={"item": "a"},
+                headers=[*KEY.items(), ("Cookie", "theme=dark"), ("Cookie", f"session={user}")],
+            )
+            assert "idempotent-replayed" not in response.headers
+        assert app.runs == 2
+
     def test_a_custom_identifier(self) -> None:
         async def tenant(connection: Any) -> str:
             return str(connection.headers.get("x-tenant", ""))
