@@ -5956,7 +5956,9 @@ sends them through Amazon SES's API instead.</p>
   with a comma, a line break or two <code>@</code> is refused, so a form field can't add recipients.</li>
 <li><strong>Headers that can't be forged:</strong> the subject is one line; <code>headers=</code> adds others
   (<code>List-Unsubscribe</code>...) but never <code>From</code>, <code>To</code>, <code>Cc</code>, <code>Bcc</code>, <code>Subject</code>, <code>Date</code>, <code>Message-ID</code>,
-  <code>Reply-To</code> nor <code>Sender</code>, and nothing with a line break.</li>
+  <code>Reply-To</code>, <code>Sender</code>, <code>Return-Path</code>, <code>Received</code>, <code>Auto-Submitted</code> nor any <code>Resent-</code> header
+  (smtplib would send the message to its addresses instead), only valid header names, and
+  nothing with a line break. The SMTP envelope is always the message's <code>From</code> and <code>To</code>.</li>
 <li><strong>What FastAPIMail adds:</strong> <code>Date</code>, a <code>Message-ID</code> on the sender's domain (<code>send</code> returns it),
   <code>Reply-To</code> when given, and <code>Auto-Submitted: auto-generated</code> (RFC 3834), so that out-of-office
   replies don't answer it.</li>

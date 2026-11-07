@@ -5915,8 +5915,10 @@ request, authorization whether they may; accounting, how much they have used.</p
 <li><strong>Periods:</strong> calendar hours, days or months, in UTC: a monthly quota starts again on the 1st
   at 00:00 UTC. <code>period_of("month", at)</code> gives a period's label (<code>2026-11</code>) and its bounds.</li>
 <li><strong>What's charged:</strong> a client error (a 4xx, a validation error) was served, and stays charged:
-  otherwise invalid requests would be free. A server error (an exception, a 5xx) or a client
-  that went away is refunded, without a record. What an endpoint added to its <code>Metering</code> is
+  otherwise invalid requests would be free. So does a request whose client went away once the
+  endpoint ran (it closed its WebSocket, or its connection before the response): otherwise
+  leaving would make any request free. A server error (an exception, a 5xx) is refunded,
+  without a record. What an endpoint added to its <code>Metering</code> is
   charged whatever happens next: it was used.</li>
 <li><strong>Who:</strong> <code>subject</code> is a dependency that returns an ID (a str, an int or a UUID), from your
   authentication: a user's, an API key's, a tenant's to share one quota among its users. Without

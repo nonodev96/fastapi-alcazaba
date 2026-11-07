@@ -6051,7 +6051,7 @@ and one 401 for every failure.</p>
 <tr>
 <td><code>github</code></td>
 <td><code>X-Hub-Signature-256: sha256=&lt;HMAC of the body&gt;</code></td>
-<td><code>X-GitHub-Delivery</code></td>
+<td>a digest of what's signed</td>
 <td>None</td>
 </tr>
 <tr>
@@ -6069,9 +6069,10 @@ and one 401 for every failure.</p>
 </tbody>
 </table>
 <ul>
-<li><strong>GitHub signs no time:</strong> a delivery is refused again only within the replay window (twice
-  <code>tolerance</code>, plus a minute); a capture sent later goes through. Keep the endpoint idempotent on
-  <code>message.id</code>, the delivery id, which redeliveries keep.</li>
+<li><strong>GitHub signs no time, nor <code>X-GitHub-Delivery</code>:</strong> a copy could change that header, so the
+  message is named by its body (a redelivery sends the same one). A delivery is refused again
+  only within the replay window (twice <code>tolerance</code>, plus a minute); a capture sent later goes
+  through. Keep the endpoint idempotent on <code>message.id</code>.</li>
 <li><strong>Stripe's secret</strong> is used as the string it gives you, <code>whsec_</code> included (not decoded as
   Standard Webhooks' are); its event id is in the body (<code>message.json()["id"]</code>).</li>
 <li><strong>Slack</strong> sends slash commands and interactions as forms: take the body with
@@ -6126,7 +6127,9 @@ retried with backoff until the receiver takes them, at least once. With the <cod
   only for its status. <code>client=</code> gives yours instead, and the guard is then yours to add.</li>
 <li><strong>Endpoints that keep failing:</strong> after <code>disable_after</code> (20) failed attempts in a row, or at
   once when the receiver answers 410 Gone, the endpoint is disabled: its deliveries are skipped,
-  not retried. <code>health(endpoint_id)</code> says how many failures in a row and whether it's disabled;
+  not retried. Each endpoint's failures are its own: its client has no circuit breaker per host,
+  so one user's endpoint that fails never blocks nor counts against another user's on the same
+  host. <code>health(endpoint_id)</code> says how many failures in a row and whether it's disabled;
   <code>enable()</code> turns it back on (send the skipped messages again), <code>disable()</code> turns it off.</li>
 <li><strong>Records:</strong> <code>delivery(endpoint_id, message_id)</code> gives its state as of its last attempt
   (retrying, succeeded, failed, skipped), the attempts, the last status code and error type, and

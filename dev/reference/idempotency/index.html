@@ -5939,8 +5939,9 @@ FastAPICache's by default. Its backend must support locks.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>who the client is (<code>credentials</code> by default: the <code>Authorization</code> header,
-or the cookies). Return the user's id with tokens that get refreshed, and with cookies
+                <p>who the client is (<code>credentials</code> by default: the <code>Authorization</code> and
+<code>X-API-Key</code> headers, or the cookies). Pass one when clients send a key in another
+header. Return the user's id with tokens that get refreshed, and with cookies
 that change between requests: a retry sent with others would run again. Requests without
 credentials share one space of keys, unguessable as long as clients make them random
 (UUIDs).</p>
@@ -6084,9 +6085,10 @@ answering 503. Off by default: running a payment twice is worse than refusing it
     <div class="doc doc-contents first">
 
         <p>The default identifier: the request's credentials, hashed before they're stored, so that
-one user never gets another's response, whatever key they send: the <code>Authorization</code> header,
-or the cookies without one (a cookie session; any cookie that changes between a request and
-its retry makes the retry run again). Nothing for requests that carry neither.</p>
+one user never gets another's response, whatever key they send: the <code>Authorization</code> and
+<code>X-API-Key</code> headers, or all the cookies without either (a cookie session; any cookie that
+changes between a request and its retry makes the retry run again). Nothing for requests
+that carry none.</p>
 
 
     </div>

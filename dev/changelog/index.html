@@ -5675,6 +5675,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#091-2026-11-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.9.1] - 2026-11-07
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.9.1] - 2026-11-07">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#090-2026-11-06" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5759,7 +5787,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
+  <a href="#security_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -5787,7 +5815,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security_1" class="md-nav__link">
+  <a href="#security_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -6132,7 +6160,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security_2" class="md-nav__link">
+  <a href="#security_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -6226,6 +6254,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#091-2026-11-07" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.9.1] - 2026-11-07
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.9.1] - 2026-11-07">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#090-2026-11-06" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6310,7 +6366,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
+  <a href="#security_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -6338,7 +6394,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security_1" class="md-nav__link">
+  <a href="#security_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -6683,7 +6739,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#security_2" class="md-nav__link">
+  <a href="#security_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Security
@@ -6761,6 +6817,48 @@
 <p>The format is based on <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>, and this project
 adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h2 id="091-2026-11-07">[0.9.1] - 2026-11-07<a class="headerlink" href="#091-2026-11-07" title="Permanent link">&para;</a></h2>
+<h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>@cache(vary_headers=[...])</code>: an endpoint's headers add to the cache's instead of replacing
+  them, so <code>vary_headers=["accept-language"]</code> no longer serves one user's response to another.
+  <code>JWTStrategy</code>, <code>HTTPBearerStrategy</code> and <code>ServerSessionMiddleware</code> now mark the header or
+  cookie they read a credential from, as the API key strategies did, so it varies the cache
+  whatever its <code>vary_headers</code>.</li>
+<li><code>FastAPIPasswords</code>: reset tokens are sealed with the cache's <code>signing_key</code> or
+  <code>encryption_key</code>, so whoever can write to the backend can't plant one that resets another
+  user's password.</li>
+<li><code>FastAPIAccounting.meter()</code>: a request whose client goes away once the endpoint ran (it closes
+  its WebSocket, or its connection before the response) stays charged and gets its record;
+  only server errors are refunded. Closing the connection made any metered request free.</li>
+<li><code>IdempotencyMiddleware</code>: the default identifier counts <code>X-API-Key</code>, and every <code>Cookie</code> line,
+  so API-key clients no longer share one space of keys with each other and with anonymous
+  requests.</li>
+<li><code>FastAPIWebhooks(scheme="github")</code>: <code>message.id</code> is a digest of the signed body, as for Stripe
+  and Slack, not the unsigned <code>X-GitHub-Delivery</code>, which a copy could change to get past the
+  replay check.</li>
+<li><code>ServerSessionMiddleware</code>: a request that rotates a session (a login, a step-up) no longer
+  brings it back under a new id when a logout, <code>UserSessions.end</code>, <code>end_sid</code> or <code>end_all</code> ended
+  it while the request ran.</li>
+<li><code>FastAPIMail</code>: <code>headers=</code> refuses every <code>Resent-</code> header, <code>Received</code> and <code>Auto-Submitted</code>, and
+  names that aren't valid header names (<code>"To "</code>); <code>SMTPSender</code> takes the envelope from <code>From</code>
+  and <code>To</code> alone. <code>Resent-To</code> sent the message to its address instead.</li>
+<li><code>fastapi-alcazaba audit</code>: no longer imports modules from the current directory (where the
+  logs it checks may be); only <code>tasks</code> does.</li>
+<li><code>FastAPIAudit</code>: heads of other streams read from the backend are checked before a checkpoint
+  lists them, and an event's number is only taken once it's signed, so a value planted in the
+  backend can't stop checkpoints nor leave gaps in the chain.</li>
+<li>Cookies: only spaces and tabs are trimmed around a cookie's name, as RFC 6265 says. A name led
+  by a 0xA0 or 0x85 byte, which browsers don't hold to <code>__Host-</code>'s rules, was read as
+  <code>__Host-session</code>.</li>
+<li>The response cache varies on every line of each header (cookies may come in several), not
+  only the first, as authentication reads them.</li>
+<li><code>check_uploaded</code>: the object is read back as stored, never decoded, so an uploader's
+  <code>Content-Encoding</code> can't make it check other bytes than those it moves to <code>move_to</code>, nor
+  inflate them past <code>max_size</code>.</li>
+<li><code>WebhookSender</code>: its own client has no circuit breaker per host, so one user's endpoint that
+  keeps failing no longer blocks, and eventually disables, other users' endpoints on that host.</li>
+</ul>
 <h2 id="090-2026-11-06">[0.9.0] - 2026-11-06<a class="headerlink" href="#090-2026-11-06" title="Permanent link">&para;</a></h2>
 <h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6992,7 +7090,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
 <li>Outbox: the relay purges the messages sent more than 7 days ago by default
   (<code>retention=None</code> keeps them).</li>
 </ul>
-<h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<h3 id="security_1">Security<a class="headerlink" href="#security_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Step-up with tokens (<code>require_recent(claims=...)</code>) checks that the token is the user's: its
   <code>sub</code> (or <code>subject=</code>) must be what <code>user_id</code> returns. Before, a stolen session and a fresh
@@ -7049,7 +7147,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
   users give (webhooks), its values had no end. The host stays in the log and the span event.</li>
 </ul>
 <h2 id="071-2026-11-02">[0.7.1] - 2026-11-02<a class="headerlink" href="#071-2026-11-02" title="Permanent link">&para;</a></h2>
-<h3 id="security_1">Security<a class="headerlink" href="#security_1" title="Permanent link">&para;</a></h3>
+<h3 id="security_2">Security<a class="headerlink" href="#security_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Response cache: a response that sets a cookie is no longer stored. A <code>Response</code> returned with
   <code>Set-Cookie</code> and cached (<code>PickleCoder</code>) gave that cookie, the session of whoever filled the
@@ -7735,7 +7833,7 @@ metrics, spans and the <code>fastapi_alcazaba.audit.events</code> logger keep th
 </ul>
 <h2 id="010-2026-10-24">[0.1.0] - 2026-10-24<a class="headerlink" href="#010-2026-10-24" title="Permanent link">&para;</a></h2>
 <p>First release of Alcazaba.</p>
-<h3 id="security_2">Security<a class="headerlink" href="#security_2" title="Permanent link">&para;</a></h3>
+<h3 id="security_3">Security<a class="headerlink" href="#security_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Per-user cache entries for requests with <code>Authorization</code> or <code>Cookie</code> (<code>vary_headers</code>), sent as
   <code>Cache-Control: private</code> with <code>Vary</code>: one user's response is never served to another.</li>

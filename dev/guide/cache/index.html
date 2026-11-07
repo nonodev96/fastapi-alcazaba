@@ -6187,7 +6187,7 @@ one up.</p>
 <tr>
 <td><code>vary_headers</code></td>
 <td><code>("authorization", "cookie", "x-api-key")</code></td>
-<td>request headers that give each value its own entry. The header <code>FastAPIAPIKeys</code> or <code>UnkeyStrategy</code> read a key from counts too, whatever its name; add any other header the app reads credentials from itself</td>
+<td>request headers that give each value its own entry. The header or cookie Alcazaba's strategies and sessions read a credential from counts too, whatever its name; add any other header the app reads credentials from itself</td>
 </tr>
 <tr>
 <td><code>respect_cache_control</code></td>
@@ -6304,7 +6304,7 @@ one up.</p>
 <tr>
 <td><code>vary_headers</code></td>
 <td>from <code>init</code></td>
-<td><code>()</code> for responses that are the same for everybody</td>
+<td>more headers, on top of the cache's; <code>()</code> for responses that are the same for everybody</td>
 </tr>
 <tr>
 <td><code>respect_cache_control</code></td>
@@ -6477,7 +6477,8 @@ longest-lived entry.</p>
 <h2 id="responses-in-several-languages">Responses in several languages<a class="headerlink" href="#responses-in-several-languages" title="Permanent link">&para;</a></h2>
 <p>If an endpoint translates its response according to a request header, such as
 <code>Accept-Language</code>, add that header to <code>vary_headers</code> (<code>@cache(vary_headers=["accept-language"])</code>),
-or a user would get the cached response in another user's language.</p>
+or a user would get the cached response in another user's language. An endpoint's
+<code>vary_headers</code> add to the cache's, so its responses still vary on the credentials too.</p>
 <h2 id="encrypted-entries">Encrypted entries<a class="headerlink" href="#encrypted-entries" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><span class="n">FastAPICache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
 </span><span id="__span-4-2">    <span class="n">RedisBackend</span><span class="p">(</span><span class="n">redis</span><span class="p">),</span>

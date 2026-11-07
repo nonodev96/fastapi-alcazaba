@@ -7465,6 +7465,8 @@ it was replaced while it was checked, deleted too, with a 409. When it couldn't 
 (503), it stays at <code>key</code>: check it again later. A 404 when there's no such object, a 502
 when the service doesn't answer as it should.</p>
 <p>Up to <code>uploads.max_size</code> + 1 bytes are read: more is "too large" without reading the rest.
+They're the stored bytes, whatever <code>Content-Encoding</code> the object has: a gzip is checked as
+a gzip.
 The returned <code>CheckedFile</code>'s file holds the bytes read (in memory up to 1 MiB, then on
 disk): close it (<code>await checked.file.close()</code>) when done.</p>
 

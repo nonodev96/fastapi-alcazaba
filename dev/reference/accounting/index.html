@@ -6656,9 +6656,10 @@ uses as it goes (tokens, bytes, seconds), charged when it ends; the quota is che
 starts, so the requests already running may together go past it.</p>
 <p>Responses carry the <code>RateLimit</code> and <code>RateLimit-Policy</code> headers of the IETF draft, the
 quota's name being the meter's, for clients to see what they have left.</p>
-<p>What's charged: a request that gets a client error (a 4xx, a validation error) was served
-and stays charged; one that fails on the server (an exception, a 5xx) or whose client went
-away is refunded, and has no record. What an endpoint added to its <code>Metering</code> is charged
+<p>What's charged: a request that gets a client error (a 4xx, a validation error), or whose
+client went away once the endpoint ran (it closed its WebSocket, or its connection), was
+served and stays charged; one that fails on the server (an exception, a 5xx) is refunded,
+and has no record. What an endpoint added to its <code>Metering</code> is charged
 whatever happens next: it was used.</p>
 
 
