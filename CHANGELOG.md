@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-07
+
 ### Security
 
 - `@cache(vary_headers=[...])`: an endpoint's headers add to the cache's instead of replacing
