@@ -23,6 +23,7 @@ sealed with the cache's signing or encryption key, and logging out deletes it.
 """
 
 import asyncio
+import builtins
 import hashlib
 import json
 import logging
@@ -635,7 +636,7 @@ class UserSessions:
         user_id: Any,
         *,
         request: HTTPConnection | None = None,
-    ) -> list[SessionInfo]:
+    ) -> builtins.list[SessionInfo]:  # the builtin: in the class, `list` is this method
         """The user's live sessions, the newest first; those that expired are dropped from the
         index. Raises BackendUnavailable when the backend fails."""
         cache = self._cache(request)

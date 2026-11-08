@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `UserSessions.list`'s annotations can be read on Python 3.14 (`typing.get_type_hints`,
+  documentation tools): its return type named the method itself, which 3.14 sees when it
+  evaluates them, instead of the builtin `list`.
+- The weekly mutation testing runs again: mutmut, which runs the tests twice in one process,
+  met both that annotation and an example's test that flushed a stream already closed.
+
 ## [0.9.1] - 2026-11-07
 
 ### Security

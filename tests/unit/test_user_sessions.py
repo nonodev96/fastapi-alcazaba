@@ -5,6 +5,7 @@ them, across the browsers they logged in from."""
 
 import asyncio
 import json
+import typing
 from typing import Any
 
 import httpx2 as httpx
@@ -311,6 +312,14 @@ class TestEnding:
         assert not logged_in(laptop)  # fail closed: it can't tell whether it was ended
         anonymous = site.device("anonymous")
         assert anonymous.get("/me").status_code == 401
+
+
+def test_its_annotations_can_be_read() -> None:
+    """`list` is one of its methods: its annotations name the builtin, so they can be read
+    where `list` is the method (Python 3.14 evaluates them lazily, in the class)."""
+    from fastapi_alcazaba.security.sessions import SessionInfo
+
+    assert typing.get_type_hints(UserSessions.list)["return"] == list[SessionInfo]
 
 
 class TestConfiguration:

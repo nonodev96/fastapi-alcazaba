@@ -116,13 +116,14 @@ def test_verifying_the_trail(client: TestClient) -> None:
 def test_the_trail_is_a_line_of_json_per_event(client: TestClient) -> None:
     # The example's handler; pytest adds its own to loggers that don't propagate.
     (handler,) = [h for h in trail_log.handlers if type(h) is logging.StreamHandler]
+    # Swapped without setStream(), which flushes the stream it had: the stdout of the session
+    # that imported the example, closed when pytest runs again in the same process (mutmut).
     output = io.StringIO()
-    stdout = handler.setStream(output)
-    assert stdout is not None
+    stdout, handler.stream = handler.stream, output
     try:
         client.put("/accounts/u3/role", json={"role": "support"}, headers=ADA)
     finally:
-        handler.setStream(stdout)
+        handler.stream = stdout
 
     (line,) = output.getvalue().splitlines()
     assert json.loads(line) == events()[0].to_dict()
