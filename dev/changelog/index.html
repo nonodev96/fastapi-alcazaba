@@ -5672,6 +5672,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5737,7 +5754,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
+  <a href="#fixed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -5826,7 +5843,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_1" class="md-nav__link">
+  <a href="#fixed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -5865,7 +5882,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_2" class="md-nav__link">
+  <a href="#fixed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -5954,7 +5971,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_3" class="md-nav__link">
+  <a href="#fixed_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6004,7 +6021,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_4" class="md-nav__link">
+  <a href="#fixed_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6082,7 +6099,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_5" class="md-nav__link">
+  <a href="#fixed_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6132,7 +6149,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_6" class="md-nav__link">
+  <a href="#fixed_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6182,7 +6199,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_7" class="md-nav__link">
+  <a href="#fixed_8" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6251,6 +6268,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -6316,7 +6350,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
+  <a href="#fixed_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6405,7 +6439,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_1" class="md-nav__link">
+  <a href="#fixed_2" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6444,7 +6478,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_2" class="md-nav__link">
+  <a href="#fixed_3" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6533,7 +6567,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_3" class="md-nav__link">
+  <a href="#fixed_4" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6583,7 +6617,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_4" class="md-nav__link">
+  <a href="#fixed_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6661,7 +6695,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_5" class="md-nav__link">
+  <a href="#fixed_6" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6711,7 +6745,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_6" class="md-nav__link">
+  <a href="#fixed_7" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6761,7 +6795,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_7" class="md-nav__link">
+  <a href="#fixed_8" class="md-nav__link">
     <span class="md-ellipsis">
       
         Fixed
@@ -6817,6 +6851,14 @@
 <p>The format is based on <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a>, and this project
 adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>UserSessions.list</code>'s annotations can be read on Python 3.14 (<code>typing.get_type_hints</code>,
+  documentation tools): its return type named the method itself, which 3.14 sees when it
+  evaluates them, instead of the builtin <code>list</code>.</li>
+<li>The weekly mutation testing runs again: mutmut, which runs the tests twice in one process,
+  met both that annotation and an example's test that flushed a stream already closed.</li>
+</ul>
 <h2 id="091-2026-11-07">[0.9.1] - 2026-11-07<a class="headerlink" href="#091-2026-11-07" title="Permanent link">&para;</a></h2>
 <h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6908,7 +6950,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
 <li>"contains_user_input" also finds the words of the user's data (a name's, an e-mail address's
   local part), of 4 characters or more, whatever their case and accents.</li>
 </ul>
-<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li>A password with a lone surrogate (valid in JSON) made <code>hash()</code>, <code>verify()</code> and the leak check
   raise, a 500: <code>evaluate()</code> refuses it as "invalid_characters", and hashing it no longer
@@ -7154,7 +7196,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
   entry, to every client served from it. Entries stored by earlier versions that carry one are
   recomputed instead of served.</li>
 </ul>
-<h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_2">Fixed<a class="headerlink" href="#fixed_2" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>FastAPICache.clear()</code> without arguments deleted nothing with the default prefix (<code>""</code>), and
   <code>Cache.clear()</code> likewise: every backend took the empty namespace for none. It now deletes every
@@ -7199,7 +7241,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
 <li><code>fastapi_alcazaba.audit.redacted</code>, the audit trail's redaction for other uses.</li>
 <li>These are experimental, as the scope and stability page says.</li>
 </ul>
-<h3 id="fixed_2">Fixed<a class="headerlink" href="#fixed_2" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_3">Fixed<a class="headerlink" href="#fixed_3" title="Permanent link">&para;</a></h3>
 <ul>
 <li>A test of the circuit breaker moves its clock by hand instead of sleeping, and no longer fails
   on a slow runner.</li>
@@ -7362,7 +7404,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
   it, and <code>sort_key()</code> gives <code>paginate</code> its <code>key</code>.</li>
 <li>A Performance page with the benchmarks' numbers.</li>
 </ul>
-<h3 id="fixed_3">Fixed<a class="headerlink" href="#fixed_3" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_4">Fixed<a class="headerlink" href="#fixed_4" title="Permanent link">&para;</a></h3>
 <ul>
 <li>A session ended by a logout or a rotation came back when a request still running with its
   cookie saved it afterwards; the old id is now marked for the rest of its life.</li>
@@ -7457,7 +7499,7 @@ adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>
   starts with an animation of what its tool is for, a sequence diagram whose steps appear one by
   one, in the theme's colours; <code>scripts/docs_animations.py</code> draws them.</li>
 </ul>
-<h3 id="fixed_4">Fixed<a class="headerlink" href="#fixed_4" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_5">Fixed<a class="headerlink" href="#fixed_5" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>@cache</code> on an endpoint that returns a <code>StreamingResponse</code> logged a warning with a traceback on
   every request, trying to encode the stream: streams go through uncached.</li>
@@ -7534,7 +7576,7 @@ metrics, spans and the <code>fastapi_alcazaba.audit.events</code> logger keep th
   leads. The other versions say they're not the latest.</p>
 </li>
 </ul>
-<h3 id="fixed_5">Fixed<a class="headerlink" href="#fixed_5" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_6">Fixed<a class="headerlink" href="#fixed_6" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>FastAPIPaginationCursor.decode()</code> raised a TypeError, instead of the 400 of an invalid cursor,
   for a signed cursor with non-ASCII characters (the route's own parameter never lets one in).</li>
@@ -7810,7 +7852,7 @@ metrics, spans and the <code>fastapi_alcazaba.audit.events</code> logger keep th
 <li>A backend asked for something it can't do (locks, tags, counters) raises a NotImplementedError
   that says so, e.g. <code>MemcachedBackend can't hold locks</code>, instead of one without a message.</li>
 </ul>
-<h3 id="fixed_6">Fixed<a class="headerlink" href="#fixed_6" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_7">Fixed<a class="headerlink" href="#fixed_7" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>TieredBackend</code>: a tag invalidation didn't reach the copies of processes that had only read the
   entry (they never saw its tags), not even in the process that invalidated, so they kept serving
@@ -7880,7 +7922,7 @@ metrics, spans and the <code>fastapi_alcazaba.audit.events</code> logger keep th
 <li><code>exclude_params</code>; <code>stale_while_revalidate</code>; <code>MemcachedBackend</code> and <code>DynamoBackend</code> can delete
   single keys; <code>DynamoBackend(endpoint_url=...)</code>; <code>cache_status_header=""</code> turns the header off.</li>
 </ul>
-<h3 id="fixed_7">Fixed<a class="headerlink" href="#fixed_7" title="Permanent link">&para;</a></h3>
+<h3 id="fixed_8">Fixed<a class="headerlink" href="#fixed_8" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Cache hits return the annotated return type (Pydantic models, dataclasses).</li>
 <li>Deterministic, quoted ETags; <code>If-None-Match</code> lists, weak tags and <code>*</code>.</li>
