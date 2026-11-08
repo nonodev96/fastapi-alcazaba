@@ -5956,7 +5956,7 @@ vulnerabilities as described in
 <tr>
 <td>Response cache</td>
 <td>One user's response served to another: requests are told apart by the endpoint's arguments and the <code>vary_headers</code> (<code>Authorization</code>, <code>Cookie</code>, <code>X-API-Key</code>), and per-user entries are sent <code>private</code>. Only 200s without <code>no-store</code> are kept, and none that sets a cookie; with a response model, only what it has.</td>
-<td>A response that depends on anything else (<code>request.state</code>, a header the app reads credentials from by itself, the client IP) needs it in <code>vary_headers</code> or the key builder; a shared entry otherwise. The headers Alcazaba's API key strategies read count already.</td>
+<td>A response that depends on anything else (<code>request.state</code>, a header the app reads credentials from by itself, the client IP) needs it in <code>vary_headers</code> or the key builder; a shared entry otherwise. The headers and cookies Alcazaba's strategies and sessions read credentials from count already, also when an endpoint adds its own <code>vary_headers</code>.</td>
 </tr>
 <tr>
 <td>Rate and concurrency limits</td>
@@ -5965,7 +5965,7 @@ vulnerabilities as described in
 </tr>
 <tr>
 <td>Idempotency keys</td>
-<td>A retried POST running twice; another client getting a response by guessing a key (keys are per <code>Authorization</code>, or per cookies without one). Replays never carry <code>Set-Cookie</code>.</td>
+<td>A retried POST running twice; another client getting a response by guessing a key (keys are per <code>Authorization</code> and <code>X-API-Key</code>, or per cookies without either). Replays never carry <code>Set-Cookie</code>.</td>
 <td>A replay is answered before the route's dependencies: a copy of the request gets the response until it expires, even with a revoked token. An async <code>identifier</code> that checks the credentials closes that.</td>
 </tr>
 <tr>

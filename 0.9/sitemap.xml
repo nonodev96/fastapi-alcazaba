@@ -2,478 +2,478 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/changelog/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/development/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/releasing/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/security/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/verifying/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/about/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/accounting/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/audit/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/background/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/browser_app/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/cache/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/countries/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/idempotency/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/limits/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/observability/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/operations/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/passkeys/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/passwords/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/two_factor/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/uploads/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/webhooks/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/http-bearer/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/jwt/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/oauth2/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/oidc/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/saml/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/session/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/unkey/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/auth_strategies/your-own/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/authorization/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/authorization/casbin/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/authorization/cedar/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/authorization/opa/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/authorization/service/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/cursor/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/keyset/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/offset/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/page-number/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/range/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/scroll/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/examples/pagination/streaming/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/features/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/features/performance/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/features/scope/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/features/tools/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/accounting/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/audit/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/auth/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/backends/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/background/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/browser/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/cache/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/countries/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/idempotency/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/limits/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/mail/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/observability/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/operations/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/passkeys/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/passwords/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/production/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/provider-budget/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/security-model/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/storage/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/two-factor/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/uploads/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/webhooks/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/http-bearer/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/jwt/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/oauth2/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/oidc/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/saml/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/session/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/unkey/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authentication/your-own/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authorization/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authorization/casbin/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authorization/cedar/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authorization/opa/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/authorization/service/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/cursor/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/keyset/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/offset/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/page-number/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/range/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/scroll/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/sqlalchemy/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/guide/pagination/streaming/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/learn/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/accounting/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/audit/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/auth/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/authentication/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/authz/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/backends/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/background/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/browser/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/cache/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/countries/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/idempotency/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/integrity/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/limits/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/mail/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/observability/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/operations/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/pagination/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/uploads/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/reference/webhooks/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/resources/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
     <url>
          <loc>https://nonodev96.github.io/fastapi-alcazaba/0.9/resources/help/</loc>
-         <lastmod>2026-11-06</lastmod>
+         <lastmod>2026-11-08</lastmod>
     </url>
 </urlset>

@@ -6455,9 +6455,10 @@ backend until its timestamp can't be accepted anymore, so every process refuses 
 retry of the sender has a new timestamp and signature and goes through: senders keep the id
 of a message for all its attempts, and a retry after a failed (5xx) attempt must get through.
 So make the endpoint idempotent on <code>message.id</code> (a unique constraint), if a message must not
-be processed twice. GitHub signs no time: its deliveries are refused again only for the same
-window, and a capture sent later goes through. Whoever can write to the backend can delete the
-marks (and allow a replay within <code>tolerance</code>): keep it out of reach.</p>
+be processed twice. GitHub signs no time, nor its delivery id: a delivery is named by its
+body, refused again only for the same window, and a capture sent later goes through.
+Whoever can write to the backend can delete the marks (and allow a replay within
+<code>tolerance</code>): keep it out of reach.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6967,7 +6968,8 @@ queue's, or FastAPICache's.</p>
               <div class="doc-md-description">
                 <p>the httpx2 client to send with; by default one whose transport refuses
 private, loopback and metadata addresses (<code>SSRFGuardTransport</code>) and bounds each attempt
-(<code>ResilientTransport</code>). A client given replaces both.</p>
+(<code>ResilientTransport</code>, without a circuit breaker: endpoints of different users may share
+a host, and each one's failures are its own). A client given replaces both.</p>
               </div>
             </td>
             <td>

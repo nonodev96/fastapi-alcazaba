@@ -6799,13 +6799,13 @@ they start, rotate and end.</p>
   </span>
 
 <a href="#fastapi_alcazaba.security.UserSessions.ended" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">ended</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">started</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><span class="nf">ended</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">started</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kept</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Whether a session of <code>data</code>, started at <code>started</code> (Unix milliseconds), was ended by
-<code>end_all</code>.</p>
+<code>end_all</code>; not by the one whose cutoff is <code>kept</code> (the request's own, that keeps it).</p>
 
 
     </div>
